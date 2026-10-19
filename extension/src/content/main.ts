@@ -40,6 +40,9 @@ function pushContext(): void {
 }
 
 // ---------- page/ (mundo da página) ----------
+// Declarado antes do listener: page.js pode responder ao request-context de forma síncrona.
+const decorated = new WeakSet<Element>();
+
 document.addEventListener('trail:context', (e) => {
   const d = (e as CustomEvent<{ token?: string; userName?: string; table?: string; sysId?: string }>).detail ?? {};
   ctx = {
@@ -57,7 +60,6 @@ document.dispatchEvent(new CustomEvent('trail:request-context'));
 pushContext();
 
 // ---------- ícone nos campos (UI16) ----------
-const decorated = new WeakSet<Element>();
 
 function decorateForm(): void {
   if (!ctx.table || !ctx.sysId) return;
