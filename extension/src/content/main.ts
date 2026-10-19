@@ -24,7 +24,7 @@ function applyIcons(on: boolean): void {
   showIcons = on;
   for (const h of hosts) { if (!h.isConnected) hosts.delete(h); else h.style.display = on ? 'inline-block' : 'none'; }
 }
-chrome.storage.onChanged.addListener((ch, area) => {
+chrome.storage?.onChanged.addListener((ch, area) => {
   if (area !== 'sync' || !ch[PREFS_KEY]) return;
   const before = normalize(ch[PREFS_KEY].oldValue as Partial<Prefs> | undefined);
   const after = normalize(ch[PREFS_KEY].newValue as Partial<Prefs> | undefined);
@@ -66,7 +66,7 @@ function notice(text: string, title?: string, sticky = false): void {
 function welcome(): void {
   if (window !== window.top) return;
   const k = `welcomed:${origin}`;
-  void chrome.storage.local.get(k).then((o) => {
+  void chrome.storage?.local.get(k).then((o) => {
     if (o[k]) return;
     void chrome.storage.local.set({ [k]: Date.now() });
     notice(fmt(strings.welcomeText, { key: KEY_HINT }), strings.welcomeTitle, true);
