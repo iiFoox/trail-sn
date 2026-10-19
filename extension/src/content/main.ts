@@ -75,7 +75,7 @@ function makeIcon(field: string): HTMLElement {
   const host = document.createElement('span');
   host.className = 'trail-host';
   host.style.cssText = 'display:inline-block;margin-left:4px;vertical-align:middle;line-height:0;';
-  const root = host.attachShadow({ mode: 'closed' });
+  const root = host.attachShadow({ mode: 'open' });
   root.innerHTML = `
     <style>
       button{all:unset;cursor:pointer;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
@@ -101,12 +101,51 @@ function investigate(field: string): void {
   }).catch(() => { /* noop */ });
 }
 
+// ---------- ícone nos campos (Workspace / Next Experience) ----------
+// Observado na SOW (Zurich): dentro de now-record-form-section-column-layout, cada campo é um
+// componente sn-record-input-connected | now-record-typeahead(-multiple) | now-record-date-picker | ...
+// com atributo name=<campo técnico>; o rótulo é um div.now-form-field-label no shadow root do componente.
+const WS_FIELD = /^(sn|now)-record-/;
+
+function* deepWalk(root: ParentNode, depth = 0): Generator<Element> {
+  if (depth > 60) return;
+  for (const el of root.querySelectorAll('*')) {
+    yield el;
+    if (el.shadowRoot) yield* deepWalk(el.shadowRoot, depth + 1);
+  }
+}
+
+function decorateWorkspace(): void {
+  if (!ctx.table || !ctx.sysId || ctx.surface !== 'workspace') return;
+  for (const el of deepWalk(document)) {
+    if (!WS_FIELD.test(el.tagName.toLowerCase()) || decorated.has(el)) continue;
+    const field = el.getAttribute('name') ?? '';
+    if (!/^[a-z0-9_]+$/.test(field) || !el.shadowRoot) continue;
+    const label = el.shadowRoot.querySelector('.now-form-field-label, label');
+    if (!label) continue;
+    decorated.add(el);
+    label.appendChild(makeIcon(field));
+  }
+}
+
+let wsTimer: number | undefined;
+function scheduleWorkspaceScan(): void {
+  if (ctx.surface !== 'workspace') return;
+  window.clearTimeout(wsTimer);
+  wsTimer = window.setTimeout(decorateWorkspace, 800);
+}
+// Mudanças dentro de shadow roots não chegam ao MutationObserver do documento:
+// varre após cliques (troca de aba "Details"), após navegação e algumas vezes no início.
+document.addEventListener('click', scheduleWorkspaceScan, true);
+for (const ms of [1500, 4000, 8000, 15000]) window.setTimeout(decorateWorkspace, ms);
+
 // Reage a navegação dentro da página (Workspace é SPA) e a formulários que carregam depois.
 const mo = new MutationObserver(() => {
   const fromUrl = contextFromUrl(location.href);
   if (fromUrl.sysId && fromUrl.sysId !== ctx.sysId) {
     ctx = { ...ctx, ...fromUrl };
     pushContext();
+    scheduleWorkspaceScan();
   }
   decorateForm();
 });

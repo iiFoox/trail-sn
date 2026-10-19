@@ -62,3 +62,9 @@ Com duas automações em sequência no mesmo campo (before e depois async), a ja
 ## 10. Regras de atribuição
 
 Para `assignment_group` e `assigned_to`, quando o formulário enviou outro valor e o servidor gravou um diferente, o motor consulta `sysrule_assignment` (ativas, na hierarquia) e nomeia a regra; +20 se o grupo/usuário da regra é exatamente o valor gravado. A condição da regra não é avaliada (lacuna declarada). Casos para a PDI em `tests/regression/pdi-setup-fase1.js` (rodar manualmente, como admin).
+
+## 11. Workspace (Next Experience): onde o ícone entra
+
+Observado na Service Operations Workspace da PDI (2026-10-19): a URL é `/now/sow/record/<tabela>/<sys_id>[/params/...]`, `window.g_ck` existe (string), `g_form` global não. O formulário só renderiza na aba **Details**; dentro de `now-record-form-section-column-layout` (shadow DOM), cada campo é um componente `sn-record-input-connected`, `now-record-typeahead`, `now-record-typeahead-multiple` ou `now-record-date-picker` com `name=<campo técnico>` e `context="form"`; o rótulo é `div.now-form-field-label` no shadow root do componente. Não há iframes.
+
+Implementação: `deepWalk` atravessa shadow roots abertos, encontra `^(sn|now)-record-` com `name` válido e anexa o ícone ao rótulo. Como mutações dentro de shadow roots não chegam ao `MutationObserver` do documento, a varredura roda após cliques (troca de aba), após navegação SPA e em alguns instantes iniciais. Teste offline em `tests/e2e/content-workspace.mjs`. Falta validar na SOW real com a extensão carregada (passo 1 do status).

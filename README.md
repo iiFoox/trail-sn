@@ -39,7 +39,7 @@ npm install
 npm test                 # unitários (vitest)
 npm run typecheck        # tsc -b
 npm run build            # core + extensão -> extension/dist
-node tests/e2e/smoke.mjs # carrega extension/dist num Chromium headless
+npm run e2e              # carrega extension/dist num Chromium; ícone no UI16 e no Workspace (fixtures)
 ```
 
 Carregar no Chrome: `chrome://extensions` → modo do desenvolvedor → "Carregar sem compactação" → pasta `extension/dist`.

@@ -2,7 +2,7 @@
   "name": "trail-monorepo",
   "private": true,
   "version": "0.1.0",
-  "description": "Trail: perícia de registros para ServiceNow. Extensão de navegador, somente leitura.",
+  "description": "Trail: per\u00edcia de registros para ServiceNow. Extens\u00e3o de navegador, somente leitura.",
   "license": "MIT",
   "workspaces": [
     "packages/core",
@@ -14,7 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc -b",
-    "regression": "node --import tsx tests/regression/run.mts"
+    "regression": "node --import tsx tests/regression/run.mts",
+    "e2e": "node tests/e2e/smoke.mjs && node tests/e2e/content-ui16.mjs && node tests/e2e/content-workspace.mjs"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.270",
