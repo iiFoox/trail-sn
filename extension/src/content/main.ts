@@ -6,15 +6,72 @@
  *
  * Convivência com o SN Utils: prefixo trail- em tudo, shadowRoot próprio, ícone depois dos badges.
  */
-import { t } from '../shared/i18n';
-import { loadPrefs } from '../shared/prefs';
+import { fmt, t } from '../shared/i18n';
+import { loadPrefs, normalize, PREFS_KEY, type Prefs } from '../shared/prefs';
 import type { PageContext } from '../shared/messages';
 (window as unknown as { __trailContent?: boolean }).__trailContent = true; // o worker não injeta de novo onde já está
 
 // Português até a preferência chegar do storage; os ícones criados depois já saem no idioma escolhido.
 let strings = t('pt');
 let panelMode: 'side' | 'window' | undefined;
-void loadPrefs().then((p) => { strings = t(p.lang); panelMode = p.panelMode; }).catch(() => undefined);
+let showIcons = true;
+const hosts = new Set<HTMLElement>();
+const KEY_HINT = 'Alt+Shift+T';
+void loadPrefs().then((p) => { strings = t(p.lang); panelMode = p.panelMode; applyIcons(p.showIcons); welcome(); }).catch(() => undefined);
+
+// ---------- mostrar / esconder os ícones (atalho, popup ou opções) ----------
+function applyIcons(on: boolean): void {
+  showIcons = on;
+  for (const h of hosts) { if (!h.isConnected) hosts.delete(h); else h.style.display = on ? 'inline-block' : 'none'; }
+}
+chrome.storage.onChanged.addListener((ch, area) => {
+  if (area !== 'sync' || !ch[PREFS_KEY]) return;
+  const before = normalize(ch[PREFS_KEY].oldValue as Partial<Prefs> | undefined);
+  const after = normalize(ch[PREFS_KEY].newValue as Partial<Prefs> | undefined);
+  panelMode = after.panelMode;
+  if (before.showIcons === after.showIcons) return;
+  applyIcons(after.showIcons);
+  if (window === window.top) notice(fmt(after.showIcons ? strings.iconsShown : strings.iconsHidden, { key: KEY_HINT }));
+});
+
+// ---------- aviso discreto no canto da página (só no quadro de cima) ----------
+function notice(text: string, title?: string, sticky = false): void {
+  document.getElementById('trail-notice')?.remove();
+  const host = document.createElement('div');
+  host.id = 'trail-notice';
+  host.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:2147483647;';
+  const root = host.attachShadow({ mode: 'open' });
+  root.innerHTML = `
+    <style>
+      .b{font:13px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;color:#e8eef2;background:#16212a;border:1px solid #2a3a46;border-radius:14px;
+         box-shadow:0 12px 32px rgba(0,0,0,.35);padding:12px 14px;max-width:340px;display:flex;gap:10px;align-items:flex-start;animation:in .18s ease-out}
+      .m{flex:none;width:26px;height:26px;border-radius:8px;background:#1f8476;display:grid;place-items:center}
+      .m svg{width:15px;height:15px}
+      b{display:block;margin-bottom:2px;color:#fff}
+      kbd{font:11px ui-monospace,monospace;background:#22323d;border:1px solid #37485a;border-radius:5px;padding:0 5px}
+      button{all:unset;cursor:pointer;margin-top:8px;font-weight:600;color:#5fd3c1}
+      @keyframes in{from{opacity:0;transform:translateY(6px)}}
+    </style>
+    <div class="b" role="status"><span class="m"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M4 18c3-6 6-6 9 0s6 6 7-6"/></svg></span>
+      <div>${title ? `<b></b>` : ''}<span class="t"></span>${sticky ? `<div><button type="button"></button></div>` : ''}</div></div>`;
+  if (title) root.querySelector('b')!.textContent = title;
+  root.querySelector('.t')!.innerHTML = text.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]!)).replace(KEY_HINT, `<kbd>${KEY_HINT}</kbd>`);
+  const close = () => host.remove();
+  if (sticky) { const btn = root.querySelector('button')!; btn.textContent = strings.gotIt; btn.addEventListener('click', close); }
+  else window.setTimeout(close, 3500);
+  document.documentElement.appendChild(host);
+}
+
+/** Primeira vez nesta instância: explica em uma frase como usar e o atalho. */
+function welcome(): void {
+  if (window !== window.top) return;
+  const k = `welcomed:${origin}`;
+  void chrome.storage.local.get(k).then((o) => {
+    if (o[k]) return;
+    void chrome.storage.local.set({ [k]: Date.now() });
+    notice(fmt(strings.welcomeText, { key: KEY_HINT }), strings.welcomeTitle, true);
+  }).catch(() => undefined);
+}
 const origin = location.origin;
 
 let ctx: PageContext = { origin, surface: 'unknown', ...contextFromUrl(location.href) };
@@ -81,7 +138,8 @@ function decorateForm(): void {
 function makeIcon(field: string): HTMLElement {
   const host = document.createElement('span');
   host.className = 'trail-host';
-  host.style.cssText = 'display:inline-block;margin-left:5px;vertical-align:middle;line-height:0;';
+  host.style.cssText = `display:${showIcons ? 'inline-block' : 'none'};margin-left:5px;vertical-align:middle;line-height:0;`;
+  hosts.add(host);
   const root = host.attachShadow({ mode: 'open' });
   root.innerHTML = `
     <style>

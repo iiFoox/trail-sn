@@ -10,10 +10,11 @@
 export type Theme = 'dark' | 'light' | 'system';
 export type Lang = 'pt' | 'en';
 export type PanelMode = 'side' | 'window';
-export interface Prefs { theme: Theme; lang: Lang; panelMode: PanelMode }
+export interface Prefs { theme: Theme; lang: Lang; panelMode: PanelMode; showIcons: boolean }
 
-export const DEFAULT_PREFS: Prefs = { theme: 'dark', lang: 'pt', panelMode: 'side' };
+export const DEFAULT_PREFS: Prefs = { theme: 'dark', lang: 'pt', panelMode: 'side', showIcons: true };
 const KEY = 'trail.prefs';
+export const PREFS_KEY = KEY;
 
 function params(): URLSearchParams {
   try { return new URLSearchParams(location.search); } catch { return new URLSearchParams(); }
@@ -28,6 +29,7 @@ export function normalize(p: Partial<Prefs> | undefined): Prefs {
     theme: p?.theme === 'light' || p?.theme === 'system' ? p.theme : 'dark',
     lang: p?.lang === 'en' ? 'en' : 'pt',
     panelMode: p?.panelMode === 'window' ? 'window' : 'side',
+    showIcons: p?.showIcons !== false,
   };
 }
 
@@ -49,7 +51,9 @@ export async function loadPrefs(): Promise<Prefs> {
 }
 
 export async function savePrefs(patch: Partial<Prefs>): Promise<Prefs> {
-  const next = normalize({ ...normalize(readLocal()), ...patch });
+  // Parte do que está salvo no sync (vale para todas as páginas e o worker), não só do localStorage desta página.
+  const stored = await loadPrefs().catch(() => normalize(readLocal()));
+  const next = normalize({ ...stored, ...patch });
   try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* sem localStorage */ }
   try { await chrome.storage.sync.set({ [KEY]: next }); } catch { /* demo fora da extensão */ }
   return next;

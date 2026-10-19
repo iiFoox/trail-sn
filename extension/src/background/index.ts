@@ -3,9 +3,9 @@
  * guarda estado em chrome.storage.session e abre o painel. Não toca no DOM.
  * Nenhum estado em memória que importe: o worker pode ser encerrado a qualquer momento.
  */
-import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, type AccessReport, type MetaCache, type TableMeta } from '@trail/core';
+import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, recordTimeline, type AccessReport, type MetaCache, type TableMeta } from '@trail/core';
 import { addInstance, listInstances, removeInstance } from '../shared/instances';
-import { loadPrefs, type PanelMode } from '../shared/prefs';
+import { loadPrefs, PREFS_KEY, type PanelMode } from '../shared/prefs';
 import { storageKey, type Message, type PageContext, type ProbeResult, type TabState } from '../shared/messages';
 
 const session = chrome.storage.session;
@@ -129,6 +129,12 @@ chrome.permissions.onAdded.addListener((p) => {
   }
 });
 
+// Atalho (Alt+Shift+T): liga e desliga os ícones nos campos em todas as abas; o content script escuta a mudança.
+chrome.commands?.onCommand.addListener((cmd) => {
+  if (cmd !== 'toggle-icons') return;
+  void loadPrefs().then((p) => chrome.storage.sync.set({ [PREFS_KEY]: { ...p, showIcons: !p.showIcons } }));
+});
+
 chrome.runtime.onInstalled.addListener(() => {
   void syncRegistrations();
   chrome.contextMenus.create({ id: 'trail-open', title: 'Trail', contexts: ['page'] });
@@ -237,6 +243,8 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
         await setTab({ ...(await getTab(tabId)), tabId, ctx: safeCtx });
         return;
       }
+      case 'timeline':
+        return recordTimeline(makeClient(msg.origin), msg.target);
       case 'investigate': {
         const id = tabId ?? (await activeTabId());
         if (id === undefined) return;
@@ -251,7 +259,7 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
       case 'probe-auth':
         return probeAuth(msg.origin);
       case 'check-access':
-        return checkAccess(msg.origin, true);
+        return checkAccess(msg.origin, msg.force ?? true);
       case 'activate':
         await activateOrigin(msg.origin);
         return true;

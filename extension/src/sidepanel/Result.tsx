@@ -10,6 +10,9 @@ import { Glyph, typeGlyph } from '../shared/icons';
 import { recordLink } from '../shared/instances';
 import { send } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
+import { RecordTimeline } from './Timeline';
+import { diffLines, looksLong } from '../shared/diff';
+import { DiffView, type DiffLabels } from '../shared/DiffView';
 
 const lang = getPrefs().lang;
 const s = t(lang);
@@ -20,6 +23,7 @@ type Tab = 'answer' | 'trace' | 'proof' | 'history';
 const TABS: Tab[] = ['answer', 'trace', 'proof', 'history'];
 const demoParams = new URLSearchParams(location.search);
 const isDemo = demoParams.has('demo');
+const forcedHist: 'field' | 'record' = isDemo && demoParams.get('hist') === 'record' ? 'record' : 'field';
 const forcedTab: Tab | undefined = isDemo && TABS.includes(demoParams.get('tab') as Tab) ? (demoParams.get('tab') as Tab) : undefined;
 /** Certeza baixa ou sem causa: o que ajuda é ver o que aconteceu, então abre no Rastro. */
 function tabFor(c: Change | undefined): Tab {
@@ -39,7 +43,7 @@ export function humanField(f: string): string {
   return x.charAt(0).toUpperCase() + x.slice(1);
 }
 
-function parts(utc: string): { date: string; time: string; full: string; rel: string } {
+export function parts(utc: string): { date: string; time: string; full: string; rel: string } {
   const d = new Date(utc.replace(' ', 'T') + 'Z');
   if (isNaN(d.getTime())) return { date: utc, time: '', full: utc, rel: '' };
   const loc = lang === 'en' ? 'en-US' : 'pt-BR';
@@ -64,7 +68,7 @@ function valueLabel(r: Investigation, v: string): string {
 
 const certaintyDots: Record<Grade, number> = { confirmed: 3, probable: 2, candidate: 1 };
 
-const plural = (forms: string[], n: number) => fmt(forms[n === 1 ? 0 : 1] ?? forms[0]!, { n });
+export const plural = (forms: string[], n: number) => fmt(forms[n === 1 ? 0 : 1] ?? forms[0]!, { n });
 const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
 
 /** O motor escreve horários em UTC; o painel mostra tudo no fuso de quem lê. */
@@ -80,8 +84,10 @@ function factText(kind: string, field: string): string {
 }
 
 // ---------- componente principal ----------
-export function Result({ r, origin, access, toast }: { r: Investigation; origin: string; access?: AccessReport; toast: (m: string) => void }) {
+export function Result({ r, origin, access, toast, onField }: { r: Investigation; origin: string; access?: AccessReport; toast: (m: string) => void; onField: (field: string) => void }) {
   const [tab, setTab] = useState<Tab>(() => tabFor(r.changes[0]));
+  const [histMode, setHistMode] = useState<'field' | 'record'>(forcedHist);
+  const [diffOpen, setDiffOpen] = useState(false);
   const [sel, setSel] = useState(0);
   useEffect(() => { setSel(0); setTab(tabFor(r.changes[0])); }, [r.target.field, r.target.sysId]);
   // No site, os textos ao lado do painel trocam a aba (só em demonstração).
@@ -115,14 +121,15 @@ export function Result({ r, origin, access, toast }: { r: Investigation; origin:
         <div class="chg">
           <span class="fld">{field}</span>
           {c ? (
-            c.oldValue && c.oldValue.length > 40 && c.newValue.startsWith(c.oldValue) ? <span class="added" title={c.newValue}>{P.added} <b>“{c.newValue.slice(c.oldValue.length).trim()}”</b></span>
-            : c.oldValue && (c.oldValue.length > 40 || c.newValue.length > 40) ? <span class="longv"><span class="old">{valueLabel(r, c.oldValue)}</span><span class="new">{valueLabel(r, c.newValue)}</span></span>
+            c.oldValue && c.oldValue.length > 40 && c.newValue.startsWith(c.oldValue) && !c.newValue.slice(c.oldValue.length).includes('\n') ? <span class="added" title={c.newValue}>{P.added} <b>“{c.newValue.slice(c.oldValue.length).trim()}”</b></span>
+            : c.oldValue && looksLong(c.oldValue, c.newValue) ? <DiffSummary oldText={c.oldValue} newText={c.newValue} onOpen={() => setDiffOpen(true)} />
             : c.oldValue || c.checkpoint > 1 ? <><span class="old" title={c.oldValue}>{valueLabel(r, c.oldValue)}</span><span class="arr">→</span><span class="new" title={c.newValue}>{valueLabel(r, c.newValue)}</span></>
               : <><span class="muted small">{P.createdAs}</span><span class="new" title={c.newValue}>{valueLabel(r, c.newValue)}</span></>
           ) : <span class="muted small">{s.noChanges}</span>}
         </div>
         {c && <div class="when2">{when(c.at)}</div>}
       </div>
+      {c && diffOpen && <DiffOverlay title={`${r.target.display} · ${field}`} sub={when(c.at)} oldText={c.oldValue} newText={c.newValue} onClose={() => setDiffOpen(false)} />}
 
       {c && (
         <div class="seg-tabs" role="tablist">
@@ -138,7 +145,17 @@ export function Result({ r, origin, access, toast }: { r: Investigation; origin:
       {c && tab === 'answer' && <Answer r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} goProof={() => setTab('proof')} copy={copy} />}
       {c && tab === 'trace' && <Trace r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} />}
       {c && tab === 'proof' && <Proof r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} access={access} copy={copy} />}
-      {c && tab === 'history' && <History r={r} origin={origin} sel={sel} onPick={(i) => { setSel(i); setTab(tabFor(r.changes[i]) === 'trace' ? 'trace' : 'answer'); }} />}
+      {c && tab === 'history' && (
+        <>
+          <div class="seg2 hist-switch" role="group">
+            <button aria-pressed={histMode === 'field'} onClick={() => setHistMode('field')}>{P.histField} · {field}</button>
+            <button aria-pressed={histMode === 'record'} onClick={() => setHistMode('record')}>{P.histRecord}</button>
+          </div>
+          {histMode === 'field'
+            ? <History r={r} origin={origin} sel={sel} onPick={(i) => { setSel(i); setTab(tabFor(r.changes[i]) === 'trace' ? 'trace' : 'answer'); }} />
+            : <RecordTimeline origin={origin} table={r.target.table} sysId={r.target.sysId} onField={(f) => { setHistMode('field'); onField(f); }} />}
+        </>
+      )}
 
       <div class="footer">
         <span>{fmt(s.timing, { calls: r.timing.calls, ms: r.timing.totalMs })}</span>
@@ -391,6 +408,42 @@ function History({ r, origin, sel, onPick }: { r: Investigation; origin: string;
         ))}
         {suspects === 0 && <div class="li muted">{s.noSuspects}</div>}
       </details>
+    </div>
+  );
+}
+
+const diffLabels = (): DiffLabels => ({ onlyChanges: P.diffOnly, whole: P.diffWhole, same: P.diffSame, added: P.diffAdded, removed: P.diffRemoved, before: P.diffBefore, after: P.diffAfter });
+
+/** Valor longo (script, descrição): em vez do texto inteiro, quantas linhas mudaram e a primeira delas. */
+function DiffSummary({ oldText, newText, onOpen }: { oldText: string; newText: string; onOpen: () => void }) {
+  const d = useMemo(() => diffLines(oldText, newText), [oldText, newText]);
+  const first = d.ops.find((o) => o.t !== 'eq');
+  return (
+    <button class="dsum" onClick={onOpen}>
+      <span class="stat"><b class="add">+{d.added}</b> <b class="del">−{d.removed}</b> {P.diffLines}</span>
+      {first && <code class={first.t}>{first.t === 'add' ? '+ ' : '− '}{first.text.trim().slice(0, 90) || ' '}</code>}
+      <span class="go">{Glyph.open} {P.diffOpen}</span>
+    </button>
+  );
+}
+
+/** Diferença em tela cheia dentro do painel, com opção de abrir lado a lado numa janela larga. */
+function DiffOverlay({ title, sub, oldText, newText, onClose }: { title: string; sub: string; oldText: string; newText: string; onClose: () => void }) {
+  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); }; addEventListener('keydown', k); return () => removeEventListener('keydown', k); }, []);
+  const sideBySide = async () => {
+    if (isDemo) return;
+    const key = `diff:${Date.now()}`;
+    await chrome.storage.session.set({ [key]: { title, sub, oldText, newText } });
+    await chrome.windows.create({ url: chrome.runtime.getURL(`src/diff/index.html?k=${encodeURIComponent(key)}`), type: 'popup', width: 1200, height: 860 });
+  };
+  return (
+    <div class="overlay" role="dialog" aria-label={title}>
+      <div class="ohead">
+        <div class="grow"><b>{title}</b><div class="muted small">{sub}</div></div>
+        {!isDemo && <button class="btn sm" onClick={sideBySide}>{Glyph.detach} {P.diffSide}</button>}
+        <button class="icon-btn" aria-label={P.close} title={P.close} onClick={onClose}>✕</button>
+      </div>
+      <DiffView oldText={oldText} newText={newText} labels={diffLabels()} />
     </div>
   );
 }

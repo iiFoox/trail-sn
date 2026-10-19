@@ -421,4 +421,17 @@ describe('Rastro e rótulos', () => {
     expect(e.type).toBe('br_after');
     expect(e.artifact.name).toBe('PT after certo');
   });
+  it('botão Save do formulário não vira causa: a pessoa digitou e o formulário enviou o valor', async () => {
+    const s = scenario();
+    const save = id();
+    audit(s, 'short_description', 'antes', 'depois', T0, 'admin', 1);
+    const p = new URLSearchParams({ sys_action: save, sys_uniqueValue: INC.sysId, 'incident.short_description': 'depois' });
+    tx(s, T0, 'form', `/incident.do?${p}`, 'admin');
+    s.uiActions.push({ sys_id: save, name: 'Save', script: '', table: 'global', action_name: 'sysverb_update_and_stay' });
+    const r = await run(s, 'short_description');
+    const e = top(r);
+    expect(e.type).toBe('user_action');
+    expect(e.grade).toBe('confirmed');
+    expect(r.changes[0]!.trace.find((t) => t.kind === 'form')?.label).toBe('Save');
+  });
 });

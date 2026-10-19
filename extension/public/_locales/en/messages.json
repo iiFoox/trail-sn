@@ -1,3 +1,8 @@
 {
-  "description": { "message": "Record forensics for ServiceNow: what changed this field, when and why. Read-only." }
+  "description": {
+    "message": "Record forensics for ServiceNow: what changed this field, when and why. Read-only."
+  },
+  "cmdToggleIcons": {
+    "message": "Show or hide Trail icons next to fields"
+  }
 }

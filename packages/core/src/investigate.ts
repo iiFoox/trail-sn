@@ -12,6 +12,7 @@ import {
   type Target,
   type TraceItem,
 } from './types';
+import { isSaveButton } from './signatures/uiAction';
 import { conditionFields, mergeWindows, refsField, shift, toMs, withTimeout } from './util';
 
 /** Cache de metadados por tabela (hierarquia, BRs, script includes). A extensão guarda em chrome.storage.session. */
@@ -55,7 +56,7 @@ export async function investigate(
   // ---------- rodada 1: registro, auditoria e metadados ----------
   const recQuery = target.sysId ? `sys_id=${target.sysId}` : `number=${target.number ?? ''}`;
   const [recRows, metaOrNull, dict] = await Promise.all([
-    q(target.table, recQuery, ['sys_id', 'number', 'short_description', 'sys_mod_count', 'sys_updated_on', 'sys_updated_by'], 1, 'record'),
+    q(target.table, recQuery, ['sys_id', 'number', 'name', 'short_description', 'sys_mod_count', 'sys_updated_on', 'sys_updated_by'], 1, 'record'),
     loadMeta(target.table, target.field),
     quiet('sys_dictionary', `element=${target.field}^nameIN${target.table},task,cmdb_ci`, ['name', 'internal_type', 'reference'], 5),
   ]);
@@ -110,7 +111,7 @@ export async function investigate(
   const [jobsByName, scriptActions, uiActions, jobsByScript, assignmentRules, lookupSets, clientRows, uiActionSuspects] = await Promise.all([
     jobNames.length ? q('sysauto_script', `nameIN${jobNames.join(',')}`, ['sys_id', 'name', 'script'], 50) : Promise.resolve([]),
     eventNames.length ? q('sysevent_script_action', `active=true^event_nameIN${eventNames.join(',')}`, ['sys_id', 'name', 'event_name', 'script'], 50) : Promise.resolve([]),
-    uiActionIds.length ? q('sys_ui_action', `sys_idIN${uiActionIds.join(',')}`, ['sys_id', 'name', 'script', 'table'], 20) : Promise.resolve([]),
+    uiActionIds.length ? q('sys_ui_action', `sys_idIN${uiActionIds.join(',')}`, ['sys_id', 'name', 'script', 'table', 'action_name'], 20) : Promise.resolve([]),
     needsJobScan ? q('sysauto_script', `scriptLIKE${target.field}^scriptLIKE${target.table}`, ['sys_id', 'name', 'script', 'run_type', 'run_start', 'run_time', 'run_as.user_name', 'active'], 50) : Promise.resolve([]),
     isAssignmentField ? q('sysrule_assignment', `active=true^tableIN${meta.tables.join(',')}`, ['sys_id', 'name', 'table', 'condition', 'group', 'user', 'order'], 50) : Promise.resolve([]),
     quiet('dl_definition_rel_set', `source_table_field=${target.field}^dl_definition.active=true^dl_definition.source_tableIN${meta.tables.join(',')}`, ['dl_definition', 'dl_definition.name', 'dl_definition.run_on_form_change', 'dl_definition.run_on_update', 'dl_definition.matcher_table', 'matcher_table_field'], 20),
@@ -225,7 +226,7 @@ export async function investigate(
   const gaps = Object.entries(access).filter(([, s]) => s === 'denied' || s === 'timeout' || s === 'no_filter').map(([k, s]) => `${k}: ${s}`);
 
   return {
-    target: { ...target, sysId, display: rec.number || sysId, ...(rec.short_description ? { title: rec.short_description } : {}) },
+    target: { ...target, sysId, display: rec.number || rec.name || sysId, ...(rec.short_description ? { title: rec.short_description } : rec.number && rec.name ? { title: rec.name } : {}) },
     labels,
     tables: meta.tables,
     changes,
@@ -292,8 +293,8 @@ function buildTrace(ctx: ChangeContext, top: Change['evidence'][number] | undefi
     if (url.includes('/sys.scripts.do')) { items.push({ ...base, kind: 'background_script', label: 'Scripts - Background', cause: top?.type === 'background_script' }); continue; }
     if (!url.includes(ctx.sysId)) continue;
     const action = url.match(/sys_action=([0-9a-f]{32})/)?.[1];
-    if (action) {
-      const ua = ctx.traces.uiActions.find((u) => u.sys_id === action);
+    const ua = action ? ctx.traces.uiActions.find((u) => u.sys_id === action) : undefined;
+    if (action && !isSaveButton(ua)) {
       items.push({ ...base, kind: 'ui_action', label: ua?.name ?? action, cause: top?.type === 'ui_action' && top.artifact.sysId === action });
       continue;
     }
@@ -302,7 +303,7 @@ function buildTrace(ctx: ChangeContext, top: Change['evidence'][number] | undefi
     if (!url.includes('sys_uniqueValue=')) continue;
     const sent = new URLSearchParams(url.split('?')[1] ?? '').get(`${ctx.table}.${ctx.field}`);
     const formCause = !!top && ['user_action', 'br_before', 'server_change', 'assignment_rule', 'data_lookup', 'client_script'].includes(top.type);
-    items.push({ ...base, kind: 'form', label: url.split('?')[0] ?? url, ...(sent !== null ? { sent } : {}), cause: formCause && sent !== null });
+    items.push({ ...base, kind: 'form', label: ua?.name ?? url.split('?')[0] ?? url, ...(sent !== null ? { sent } : {}), cause: formCause && sent !== null });
   }
   const sref = (table: string, sysId?: string) => (sysId ? { ref: { table, sysId } } : {});
   // Eventos de infraestrutura (indexação, motor de notificação) não explicam mudança de campo: ficam fora, e repetidos no mesmo segundo viram um só.

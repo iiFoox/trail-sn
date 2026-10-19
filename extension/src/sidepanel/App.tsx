@@ -48,6 +48,14 @@ export function App() {
     if (msg) toastTimer.current = window.setTimeout(() => setToast(undefined), 3200);
   };
 
+  // Investigar outro campo do mesmo registro (a partir da linha do tempo).
+  const investigateField = (f: string) => {
+    if (isDemo) { showToast(); setState({ ...demoState(f), status: 'running' }); setTimeout(() => setState(demoState(f)), 650); return; }
+    const tgt = state?.result?.target;
+    if (!origin || !tgt) return;
+    void send({ type: 'investigate', origin, target: { table: tgt.table, sysId: tgt.sysId, field: f } });
+  };
+
   // Demonstração: a página que hospeda o painel troca o campo; links não saem do site.
   useEffect(() => {
     if (!isDemo) return;
@@ -117,7 +125,7 @@ export function App() {
         {state?.access && !state.result && <AccessNotice report={state.access} />}
         {state?.status === 'running' && <Loading />}
         {state?.status === 'error' && <div class="notice bad"><div class="title">{s.errorTitle}</div>{state.error}</div>}
-        {state?.result && origin && state.status !== 'running' && <Result r={state.result} origin={origin} access={state.access} toast={(m) => showToast(m)} />}
+        {state?.result && origin && state.status !== 'running' && <Result r={state.result} origin={origin} access={state.access} toast={(m) => showToast(m)} onField={investigateField} />}
         {!state?.result && state?.status !== 'running' && (
           <div class="empty">
             <EmptyIllustration />

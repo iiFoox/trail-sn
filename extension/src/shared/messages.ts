@@ -14,9 +14,10 @@ export interface PageContext {
 export type Message =
   | { type: 'context'; ctx: PageContext }
   | { type: 'investigate'; origin: string; target: Target; token?: string; mode?: import('./prefs').PanelMode }
+  | { type: 'timeline'; origin: string; target: { table: string; sysId: string } }
   | { type: 'open-panel'; mode?: import('./prefs').PanelMode }
   | { type: 'probe-auth'; origin: string }
-  | { type: 'check-access'; origin: string }
+  | { type: 'check-access'; origin: string; force?: boolean }
   | { type: 'activate'; origin: string }
   | { type: 'deactivate'; origin: string }
   | { type: 'clear-cache'; origin: string };

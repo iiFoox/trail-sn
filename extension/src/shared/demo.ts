@@ -1,4 +1,4 @@
-import type { AccessReport, Change, Evidence, Investigation, StaticSuspects, TraceItem } from '@trail/core';
+import type { AccessReport, Change, Evidence, Investigation, StaticSuspects, Timeline, TimelineSave, TraceItem } from '@trail/core';
 
 type DemoChange = Omit<Change, 'trace'>;
 import type { TabState } from './messages';
@@ -203,7 +203,7 @@ const STORIES: Record<string, FieldStory> = {
     ms: 1922, calls: 12,
     changes: [
       {
-        at: '2026-10-18 02:25:31', oldValue: 'Impressora PRN-3A-01 não responde no ping desde as 08:40. Já reiniciada pelo usuário.', newValue: 'Impressora PRN-3A-01 não responde no ping desde as 08:40. Já reiniciada pelo usuário. [marcado para perícia]', user: 'admin', checkpoint: 12, notes: [],
+        at: '2026-10-18 02:25:31', oldValue: 'Impressora PRN-3A-01 não responde no ping desde as 08:40.\nJá reiniciada pelo usuário.\nUsuário no ramal 4410.', newValue: 'Impressora PRN-3A-01 não responde no ping desde as 08:40.\nJá reiniciada pelo usuário duas vezes.\nUsuário no ramal 4410.\n[marcado para perícia]', user: 'admin', checkpoint: 12, notes: [],
         evidence: [
           { type: 'ui_action', grade: 'confirmed', score: 80, artifact: { name: '[PT] C8 Marcar perícia', sysId: ID.uiAction, table: 'sys_ui_action' }, gaps: [], facts: [
             { kind: 'trace_names_artifact', source: 'syslog_transaction', detail: 'transação com sys_action do botão "[PT] C8 Marcar perícia" às 02:25:31', points: 50 },
@@ -212,7 +212,7 @@ const STORIES: Record<string, FieldStory> = {
           ] },
         ],
       },
-      creation('Impressora PRN-3A-01 não responde no ping desde as 08:40. Já reiniciada pelo usuário.'),
+      creation('Impressora PRN-3A-01 não responde no ping desde as 08:40.\nJá reiniciada pelo usuário.\nUsuário no ramal 4410.'),
     ],
   },
   assignment_group: {
@@ -334,4 +334,36 @@ export function describeLink(href: string): string {
     sysauto_script: 'o job agendado', sys_ui_action: 'a UI action', sysrule_assignment: 'a regra de atribuição', dl_u_priority: 'o data lookup',
   };
   return map[table] ?? 'o artefato';
+}
+
+/** Linha do tempo do registro de demonstração, montada a partir das mesmas histórias. */
+export function demoTimeline(): Timeline {
+  const COLS: Record<string, string> = { state: 'State', impact: 'Impact', urgency: 'Urgency', priority: 'Priority', category: 'Category', subcategory: 'Subcategory', contact_type: 'Channel', severity: 'Severity', description: 'Description', assignment_group: 'Assignment group', assigned_to: 'Assigned to', cmdb_ci: 'Configuration item', caller_id: 'Caller', short_description: 'Short description', close_code: 'Resolution code', close_notes: 'Resolution notes', work_notes: 'Work notes' };
+  const VIA: Record<string, TimelineSave['via']> = { form: 'form', async: 'async', job: 'job', background_script: 'background', ui_action: 'ui_action', event: 'form' };
+  const byCp = new Map<number, TimelineSave>();
+  const add = (field: string, c: DemoChange) => {
+    const sv = byCp.get(c.checkpoint) ?? { checkpoint: c.checkpoint, at: c.at, user: c.user, via: 'unknown' as TimelineSave['via'], fields: [] };
+    if (!sv.fields.some((f) => f.field === field)) {
+      const lb = LABELS[field] ?? {};
+      sv.fields.push({ field, label: COLS[field] ?? field, oldValue: c.oldValue, newValue: c.newValue, oldDisplay: lb[c.oldValue] ?? c.oldValue, newDisplay: lb[c.newValue] ?? c.newValue, journal: field === 'work_notes' });
+    }
+    const tr = TRACES[`${field}:${c.checkpoint}`] ?? [];
+    const cause = tr.find((x) => x.cause) ?? tr[0];
+    if (cause && sv.via === 'unknown') {
+      sv.via = VIA[cause.kind] ?? 'unknown';
+      if (!['form', 'event', 'background_script'].includes(cause.kind)) sv.detail = cause.label;
+    }
+    if (c.checkpoint === 1) sv.via = 'created';
+    else if (sv.via === 'unknown' && c.user === 'system') sv.via = 'expired';
+    for (const w of SAME_WRITE[`${field}:${c.checkpoint}`] ?? []) {
+      if (sv.fields.some((f) => f.field === w.field)) continue;
+      const lb = LABELS[w.field] ?? {};
+      sv.fields.push({ field: w.field, label: COLS[w.field] ?? w.field, oldValue: w.oldValue, newValue: w.newValue, oldDisplay: lb[w.oldValue] ?? w.oldValue, newDisplay: lb[w.newValue] ?? w.newValue, journal: w.field === 'work_notes' });
+    }
+    byCp.set(c.checkpoint, sv);
+  };
+  for (const [field, st] of Object.entries(STORIES)) for (const c of st.changes) add(field, c);
+  const saves = [...byCp.values()].sort((a, b) => b.checkpoint - a.checkpoint);
+  for (const sv of saves) sv.fields.sort((a, b) => Number(a.journal) - Number(b.journal) || a.label.localeCompare(b.label));
+  return { target: { table: 'incident', sysId: SYS_ID, display: 'INC0010001', title: 'Impressora do 3º andar sem rede' }, saves, truncated: false, timing: { totalMs: 1240, calls: 9 } };
 }

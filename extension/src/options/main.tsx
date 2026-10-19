@@ -5,7 +5,8 @@ import { bootPage, getPrefs, applyTheme, savePrefs, type Prefs } from '../shared
 import { t } from '../shared/i18n';
 import { Glyph, TrailMark } from '../shared/icons';
 import { listInstances, type InstanceSettings } from '../shared/instances';
-import { send } from '../shared/messages';
+import { send, type ProbeResult } from '../shared/messages';
+import type { AccessReport } from '@trail/core';
 
 bootPage();
 const s = t(getPrefs().lang);
@@ -37,6 +38,7 @@ function Options() {
           <div class="pref-row"><b>{s.theme}</b><Seg k="theme" value={prefs.theme} onPick={pick} options={[['dark', s.themeDark], ['light', s.themeLight], ['system', s.themeSystem]]} /></div>
           <div class="pref-row"><b>{s.language}</b><Seg k="lang" value={prefs.lang} onPick={pick} options={[['pt', 'Português'], ['en', 'English']]} /></div>
           <div class="pref-row"><b>{s.panelMode}</b><div><Seg k="panelMode" value={prefs.panelMode} onPick={pick} options={[['side', s.panelSide], ['window', s.panelWindow]]} /><div class="muted small" style="margin-top:6px">{s.panelModeHint}</div></div></div>
+          <div class="pref-row"><b>{s.showIcons}</b><div><Seg k="showIcons" value={prefs.showIcons} onPick={pick} options={[[true, s.iconsOn], [false, s.iconsOff]]} /><div class="muted small" style="margin-top:6px">{s.shortcut}: <kbd>Alt+Shift+T</kbd> · {s.shortcutHint}</div></div></div>
         </div>
         <h2>{s.instancesTitle}</h2>
         <div class="card flat">
@@ -52,10 +54,36 @@ function Options() {
             ))}
           </ul>
         </div>
+        {list.length > 0 && <Diagnostics origins={list.map((i) => i.origin)} />}
         <h2>{s.privacyTitle}</h2>
         <div class="card flat"><p class="muted" style="margin:0">{s.privacy}</p></div>
       </main>
     </>
+  );
+}
+
+/** Diagnóstico técnico, recolhido: probe de autenticação e leitura de cada tabela, com explicação. */
+function Diagnostics({ origins }: { origins: string[] }) {
+  const [origin, setOrigin] = useState(origins[0]!);
+  const [probe, setProbe] = useState<ProbeResult>();
+  const [access, setAccess] = useState<AccessReport>();
+  const [busy, setBusy] = useState(false);
+  const run = async <T,>(f: () => Promise<T>, set: (v: T) => void) => { setBusy(true); try { set(await f()); } finally { setBusy(false); } };
+  return (
+    <details class="card flat diag">
+      <summary><h2 style="margin:0">{s.diagTitle}</h2><span class="muted small">{s.diagHint}</span></summary>
+      {origins.length > 1 && <select value={origin} onChange={(e) => setOrigin((e.target as HTMLSelectElement).value)}>{origins.map((o) => <option value={o}>{o}</option>)}</select>}
+      <div class="diag-row">
+        <div><b>{s.probe}</b><p class="muted small">{s.probeExplain}</p></div>
+        <button class="btn sm" disabled={busy} onClick={() => run(() => send<ProbeResult>({ type: 'probe-auth', origin }), setProbe)}>{Glyph.shield} {s.run}</button>
+      </div>
+      {probe && <table class="simple">{probe.steps.map((st) => <tr><td style="width:18px">{st.ok ? '✅' : '❌'}</td><td>{st.label}</td><td><code>{String(st.status)}</code></td></tr>)}</table>}
+      <div class="diag-row">
+        <div><b>{s.checkAccess}</b><p class="muted small">{s.accessExplain}</p></div>
+        <button class="btn sm" disabled={busy} onClick={() => run(() => send<AccessReport>({ type: 'check-access', origin, force: true }), setAccess)}>{Glyph.refresh} {s.run}</button>
+      </div>
+      {access && <div><b>{s.accessLevel[access.level]}</b><div class="access-grid" style="margin-top:8px">{Object.entries(access.states).map(([k, v]) => <><code>{k}</code><span class={`state ${v}`}>{s.state[v] ?? v}</span></>)}</div></div>}
+    </details>
   );
 }
 

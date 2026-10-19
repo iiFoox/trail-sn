@@ -1,11 +1,11 @@
 import type { AccessReport } from '@trail/core';
 import { useEffect, useState } from 'preact/hooks';
 import { DEMO_ORIGIN } from '../shared/demo';
-import { t } from '../shared/i18n';
-import { applyTheme, getPrefs, resolvedTheme, savePrefs } from '../shared/prefs';
+import { fmt, t } from '../shared/i18n';
+import { applyTheme, getPrefs, loadPrefs, resolvedTheme, savePrefs } from '../shared/prefs';
 import { Glyph, TrailMark } from '../shared/icons';
 import { isEnabled, looksLikeServiceNow } from '../shared/instances';
-import { send, type ProbeResult } from '../shared/messages';
+import { send } from '../shared/messages';
 
 const s = t(getPrefs().lang);
 const isDemo = new URLSearchParams(location.search).has('demo');
@@ -15,15 +15,17 @@ export function App() {
   const [tabId, setTabId] = useState<number>();
   const [isSn, setIsSn] = useState(isDemo);
   const [enabled, setEnabled] = useState(isDemo);
-  const [probe, setProbe] = useState<ProbeResult>();
-  const [probing, setProbing] = useState(false);
-  const [access, setAccess] = useState<AccessReport>();
+  const [access, setAccess] = useState<AccessReport | undefined>(isDemo ? ({ level: 'full', denied: [], states: {}, checkedAt: '' } as unknown as AccessReport) : undefined);
+  const [icons, setIcons] = useState(getPrefs().showIcons);
+  const [shortcut, setShortcut] = useState('Alt+Shift+T');
   const [err, setErr] = useState<string>();
   const [theme, setTheme] = useState(resolvedTheme(getPrefs().theme));
   const flipTheme = () => { const next = theme === 'dark' ? 'light' : 'dark'; setTheme(next); applyTheme(next); if (!isDemo) void savePrefs({ theme: next }); };
 
   useEffect(() => {
     if (isDemo) return;
+    void loadPrefs().then((p) => setIcons(p.showIcons));
+    void chrome.commands?.getAll().then((c) => { const k = c.find((x) => x.name === 'toggle-icons')?.shortcut; if (k) setShortcut(k); }).catch(() => undefined);
     void (async () => {
       const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
       if (tab?.id !== undefined) setTabId(tab.id);
@@ -32,12 +34,14 @@ export function App() {
         const o = new URL(tab.url).origin;
         setOrigin(o);
         setIsSn(looksLikeServiceNow(tab.url));
-        const on = await isEnabled(o);
+        let on = await isEnabled(o);
         // Permissão já concedida mas instância ainda desligada (o popup fechou durante o pedido): liga agora.
         if (!on && await chrome.permissions.contains({ origins: [`${o}/*`] }).catch(() => false)) {
           await send({ type: 'activate', origin: o });
-          setEnabled(true);
-        } else setEnabled(on);
+          on = true;
+        }
+        setEnabled(on);
+        if (on) setAccess(await send<AccessReport>({ type: 'check-access', origin: o, force: false }));
       } catch { /* chrome:// */ }
     })();
   }, []);
@@ -50,76 +54,68 @@ export function App() {
     } else void send({ type: 'open-panel', mode: 'side' });
   };
 
-  const activate = async () => {
+  const connect = async () => {
     setErr(undefined);
+    // O worker liga a instância sozinho quando a permissão é concedida, mesmo que este popup feche no meio.
     const ok = await chrome.permissions.request({ origins: [`${origin}/*`] });
     if (!ok) { setErr(s.permissionDenied); return; }
     await send({ type: 'activate', origin });
     setEnabled(true);
+    setAccess(await send<AccessReport>({ type: 'check-access', origin, force: false }));
   };
-  const deactivate = async () => {
+  const disconnect = async () => {
     await send({ type: 'deactivate', origin });
     await chrome.permissions.remove({ origins: [`${origin}/*`] }).catch(() => undefined);
     setEnabled(false);
+    setAccess(undefined);
   };
-  const runProbe = async () => {
-    setProbing(true);
-    try { setProbe(await send<ProbeResult>({ type: 'probe-auth', origin })); } finally { setProbing(false); }
-  };
+  const toggleIcons = () => { const next = !icons; setIcons(next); if (!isDemo) void savePrefs({ showIcons: next }); };
 
+  const host = origin ? origin.replace(/^https?:\/\//, '') : '—';
+  const denied = (access?.denied ?? []).map((d) => s.p.srcName[d] ?? d).join(', ');
   return (
     <>
       <header class="topbar">
         <div class="brand"><span class="mark"><TrailMark /></span>Trail</div>
-        {enabled && <span class="dot" />}
         <div class="actions"><button class="icon-btn" title={s.toggleTheme} aria-label={s.toggleTheme} onClick={flipTheme}>{theme === 'dark' ? Glyph.sun : Glyph.moon}</button></div>
       </header>
-      <main class="wrap">
+      <main class="wrap pop">
         <div class="card">
-          <div class="kv">
-            <span class="k">{s.instance}</span>
-            <span class="mono" style="overflow:hidden;text-overflow:ellipsis">{origin ? origin.replace(/^https?:\/\//, '') : '—'}</span>
-          </div>
-          {!isSn && <p class="muted small" style="margin:8px 0 0">{s.notServiceNow}</p>}
-          <div style="margin-top:10px">
-            {enabled
-              ? <button class="btn toggle" onClick={deactivate}>{Glyph.plug} {s.deactivate}</button>
-              : <button class="btn primary toggle" onClick={activate} disabled={!origin || !origin.startsWith('https://')}>{Glyph.plug} {s.activate}</button>}
-          </div>
-          {err && <div class="notice bad small">{err}</div>}
+          <div class="inst"><span class="k">{s.instance}</span><span class="mono" title={origin}>{host}</span></div>
+
+          {!isSn && !enabled && <p class="muted small">{s.notServiceNow}</p>}
+
+          {isSn && !enabled && (
+            <>
+              <p class="lead">{s.connectHint}</p>
+              <button class="btn primary big full" onClick={connect} disabled={!origin.startsWith('https://')}>{Glyph.plug} {s.activate}</button>
+              {err && <div class="notice bad small">{err}</div>}
+            </>
+          )}
+
+          {enabled && (
+            <>
+              <div class={`status ${access?.level ?? 'wait'}`}>
+                <span class="sdot" />
+                <div>
+                  <b>{s.connected}</b>
+                  <div class="small">{!access ? s.checking : access.level === 'full' ? s.accessFullHint : access.level === 'partial' ? fmt(s.accessPartialHint, { what: denied }) : s.accessNoneHint}</div>
+                </div>
+              </div>
+              <button class="sw" role="switch" aria-checked={icons} onClick={toggleIcons}>
+                <span class="grow">{s.showIcons}<small>{s.shortcut} <kbd>{shortcut}</kbd></small></span>
+                <span class="knob" />
+              </button>
+            </>
+          )}
         </div>
 
         <div class="row" style="margin-top:10px">
-          <button class="btn grow" onClick={openSide}>{Glyph.search} {s.openPanel}</button>
+          <button class="btn primary grow" onClick={openSide}>{Glyph.search} {s.openPanel}</button>
           <button class="btn" title={s.detach} aria-label={s.detach} onClick={() => send({ type: 'open-panel', mode: 'window' })}>{Glyph.detach}</button>
           <button class="btn" title={s.options} aria-label={s.options} onClick={() => chrome.runtime.openOptionsPage()}>{Glyph.gear}</button>
         </div>
-
-        {enabled && (
-          <div class="card" style="margin-top:10px">
-            <div class="row">
-              <button class="btn sm" onClick={runProbe} disabled={probing}>{probing ? <span class="spin" /> : Glyph.shield} {probing ? s.probing : s.probe}</button>
-              <button class="btn sm" onClick={async () => setAccess(await send<AccessReport>({ type: 'check-access', origin }))}>{s.checkAccess}</button>
-            </div>
-            {probe && (
-              <div style="margin-top:10px">
-                <h2 style="margin-top:0">{s.probeTitle}</h2>
-                <table class="simple">
-                  {probe.steps.map((st) => <tr><td style="width:18px">{st.ok ? '✅' : '❌'}</td><td>{st.label}</td><td><code>{String(st.status)}</code></td></tr>)}
-                </table>
-                <div class={`notice ${probe.steps.some((x) => x.ok) ? 'ok' : 'bad'} small`}>{probe.conclusion}</div>
-              </div>
-            )}
-            {access && (
-              <div style="margin-top:10px">
-                <h2 style="margin-top:0">{s.accessLevel[access.level]}</h2>
-                <div class="access-grid">
-                  {Object.entries(access.states).map(([k, v]) => <><code>{k}</code><span class={`state ${v}`}>{s.state[v] ?? v}</span></>)}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        {enabled && <button class="link quiet" onClick={disconnect}>{s.disconnect}</button>}
       </main>
     </>
   );
