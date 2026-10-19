@@ -7,14 +7,22 @@ const P = (d: string) => (
   </svg>
 );
 
+/** Logo do Trail: relógio com a seta voltando no tempo (o mesmo do site). */
 export const TrailMark = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M4 18c3-6 6-6 9 0s6 6 7-6" />
-    <circle cx="20" cy="6" r="1.6" fill="#fff" stroke="none" />
+  <svg viewBox="0 0 128 128" aria-hidden="true">
+    <rect width="128" height="128" rx="64" fill="#032d42" />
+    <circle cx="64" cy="64" r="38" fill="none" stroke="#244f63" stroke-width="12" />
+    <path d="M64 26a38 38 0 1 1-36.4 27" fill="none" stroke="#62d84e" stroke-width="12" stroke-linecap="round" />
+    <path d="M18 40l10 15 15-9" fill="none" stroke="#62d84e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M64 44v22l14 9" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
   </svg>
 );
 
+/** O mesmo desenho em traço único, para tamanhos pequenos. */
+export { TRAIL_GLYPH, TRAIL_MINI } from './mark';
+
 export const Glyph = {
+  compare: P('M7 4v16M17 4v16M3 8h8M13 16h8M9 6l2 2-2 2M15 14l-2 2 2 2'),
   rule: P('M4 6h16M4 12h10M4 18h7M17 15l2 2 4-4'),
   async: P('M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.2 2.2M16.2 16.2l2.2 2.2M5.6 18.4l2.2-2.2M16.2 7.8l2.2-2.2'),
   include: P('M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2M9 12h6'),
@@ -66,7 +74,8 @@ export const EmptyIllustration = () => (
   <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
     <rect x="8" y="12" width="48" height="40" rx="6" opacity=".5" />
     <path d="M16 24h20M16 32h28M16 40h14" opacity=".5" />
-    <path d="M38 44c4-8 8-8 12 0" stroke="#1f8476" stroke-width="2" />
-    <circle cx="52" cy="40" r="1.6" fill="#1f8476" stroke="none" />
+    <circle cx="46" cy="42" r="9" fill="#032d42" stroke="none" />
+    <path d="M46 36.3a5.7 5.7 0 1 1-5.4 4" stroke="#62d84e" stroke-width="2" />
+    <path d="M46 39v3.2l2 1.3" stroke="#fff" stroke-width="1.6" />
   </svg>
 );

@@ -31,15 +31,25 @@ describe('Fase 0: 12 casos', () => {
     expect(e.artifact.name).toBe('PT Async state');
   });
 
-  it('C2 BR before via REST (sem transação de formulário) → CANDIDATO', async () => {
+  it('C2 BR before via REST sem condição: grava sempre o valor, mas nada a liga a esta gravação → PROVÁVEL', async () => {
     const s = scenario();
     br(s, 'PT Before impact', 'before', "current.impact = 1;");
     audit(s, 'impact', '3', '1', T0, 'admin', 1);
     tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
     const r = await run(s, 'impact');
     const before = r.changes[0]!.evidence.find((e) => e.type === 'br_before')!;
-    expect(before.grade).toBe('candidate');
+    expect(before.grade).toBe('probable');
     expect(before.gaps.length).toBeGreaterThan(0);
+  });
+
+  it('C2-REST BR before reage ao gatilho mudado pela API e grava o valor: o envio não importa → CONFIRMADO', async () => {
+    const s = scenario();
+    br(s, 'PT Before just', 'before', "if (current.description.changes()) current.impact = '1';");
+    audit(s, 'description', 'a', 'b', T0, 'admin', 1);
+    audit(s, 'impact', '3', '1', T0, 'admin', 1);
+    tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
+    const e = top(await run(s, 'impact'));
+    expect([e.type, e.grade]).toEqual(['br_before', 'confirmed']);
   });
 
   it('C2-FORM BR before com valor enviado diferente do gravado → CONFIRMADO', async () => {

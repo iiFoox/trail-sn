@@ -15,6 +15,8 @@ export interface Env {
   old: Record<string, string>;
   /** Campos que mudaram nesta gravação. */
   changed: Set<string>;
+  /** Não se sabe o que mudou (leitura do desenho das regras, fora de uma gravação): changes() vira desconhecido. */
+  unknownChanges?: boolean;
   /** Client script onChange: valor novo e antigo do campo que disparou. */
   newValue?: string;
   oldValue?: string;
@@ -282,7 +284,7 @@ export function evalExpr(expr: string, env: Env): Val {
         if (name === 'getValue' || name === 'getDisplayValue') return a[0] !== undefined ? value({ kind: 'field', obj: n.name, name: String(a[0]) }) : U;
         if (name === 'isNewRecord') return false;
         if (name === 'operation') return 'update';
-        if (name === 'changes') return env.changed.size > 0;
+        if (name === 'changes') return env.unknownChanges ? U : env.changed.size > 0;
         return U;
       }
       if (n.name === 'g_form') {
@@ -293,6 +295,7 @@ export function evalExpr(expr: string, env: Env): Val {
     }
     if (isRef(n)) {
       if (!call) return U; // current.campo.algo sem chamada
+      if (env.unknownChanges && (name === 'changes' || name === 'changesTo' || name === 'changesFrom')) return U;
       if (name === 'changes') return n.obj === 'current' ? env.changed.has(n.name) : U;
       if (name === 'changesTo') return n.obj === 'current' ? (env.changed.has(n.name) ? (fieldVal(n) === U ? U : str(fieldVal(n)) === str(a[0])) : false) : U;
       if (name === 'changesFrom') return n.obj === 'current' ? (env.changed.has(n.name) ? (n.name in env.old ? env.old[n.name] === str(a[0]) : U) : false) : U;

@@ -1,6 +1,10 @@
 import type { EvidenceType } from '@trail/core';
+/** Logo do Trail: relógio com a seta voltando no tempo (o mesmo do site). */
 export declare const TrailMark: () => import("preact").JSX.Element;
+/** O mesmo desenho em traço único, para tamanhos pequenos. */
+export { TRAIL_GLYPH, TRAIL_MINI } from './mark';
 export declare const Glyph: {
+    compare: import("preact").JSX.Element;
     rule: import("preact").JSX.Element;
     async: import("preact").JSX.Element;
     include: import("preact").JSX.Element;

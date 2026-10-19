@@ -188,6 +188,8 @@ export interface Investigation {
   access: Record<string, AccessState>;
   /** Fontes negadas ou vazias que limitam o resultado, por nome técnico. */
   gaps: string[];
+  /** Regras ativas que gravam este campo com valores diferentes e podem rodar juntas. */
+  conflicts?: import('./conflicts').RuleConflict[];
   timing: { totalMs: number; calls: number };
 }
 

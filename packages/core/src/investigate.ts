@@ -1,3 +1,4 @@
+import { findConflicts } from './conflicts';
 import type { QueryRequest, RestClient } from './client/RestClient';
 import { scoreAll } from './scoring';
 import { fieldsRead } from './scriptEval';
@@ -280,6 +281,7 @@ export async function investigate(
     },
     access,
     gaps,
+    conflicts: findConflicts(target.field, meta.brField, clientRows, { ...record, sys_id: sysId }),
     timing: { totalMs: Date.now() - started, calls: client.calls - callsBefore },
   };
 

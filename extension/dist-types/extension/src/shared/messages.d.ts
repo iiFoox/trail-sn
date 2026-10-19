@@ -46,6 +46,9 @@ export type Message = {
 } | {
     type: 'clear-cache';
     origin: string;
+} | {
+    type: 'open-diff-popup';
+    key: string;
 };
 export interface ProbeResult {
     origin: string;

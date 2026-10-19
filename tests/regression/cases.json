@@ -639,5 +639,199 @@
     "expectedType": "scheduled_job",
     "minGrade": "probable",
     "expectedName": "[PT] F6 Reprocessa pendências"
+  },
+  {
+    "id": "F7-CHG-BEFORE",
+    "table": "change_request",
+    "sysId": "4544e319c3c413101cbdb8e1b40131b4",
+    "field": "justification",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F7 CHG before"
+  },
+  {
+    "id": "F7-CHG-AFTER",
+    "table": "change_request",
+    "sysId": "0944e319c3c413101cbdb8e1b40131cb",
+    "field": "implementation_plan",
+    "expectedType": "br_after",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F7 CHG after"
+  },
+  {
+    "id": "F7-CHG-ASYNC",
+    "table": "change_request",
+    "sysId": "9d44e319c3c413101cbdb8e1b40131d3",
+    "field": "risk_impact_analysis",
+    "expectedType": "br_async",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F7 CHG async"
+  },
+  {
+    "id": "F7-CHG-CLIENT",
+    "table": "change_request",
+    "sysId": "9d442719c3c413101cbdb8e1b4013126",
+    "field": "backout_plan",
+    "expectedType": "client_script",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F7 CHG client"
+  },
+  {
+    "id": "F7-CHG-UI",
+    "table": "change_request",
+    "sysId": "91442719c3c413101cbdb8e1b4013148",
+    "field": "close_notes",
+    "expectedType": "ui_action",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F7 CHG botão"
+  },
+  {
+    "id": "F7-CHG-API",
+    "table": "change_request",
+    "sysId": "ed442719c3c413101cbdb8e1b401315c",
+    "field": "cab_recommendation",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F7-RITM-BEFORE",
+    "table": "sc_req_item",
+    "sysId": "0a442719c3c413101cbdb8e1b40131e0",
+    "field": "close_notes",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F7 RITM before"
+  },
+  {
+    "id": "F7-RITM-AFTER",
+    "table": "sc_req_item",
+    "sysId": "56446719c3c413101cbdb8e1b4013106",
+    "field": "order",
+    "expectedType": "br_after",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F7 RITM after"
+  },
+  {
+    "id": "F7-RITM-ASYNC",
+    "table": "sc_req_item",
+    "sysId": "1e446719c3c413101cbdb8e1b40131b9",
+    "field": "correlation_id",
+    "expectedType": "br_async",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F7 RITM async"
+  },
+  {
+    "id": "F7-RITM-CLIENT",
+    "table": "sc_req_item",
+    "sysId": "52446719c3c413101cbdb8e1b40131bf",
+    "field": "backordered",
+    "expectedType": "client_script",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F7 RITM client"
+  },
+  {
+    "id": "F7-RITM-UI",
+    "table": "sc_req_item",
+    "sysId": "a6446719c3c413101cbdb8e1b40131c4",
+    "field": "estimated_delivery",
+    "expectedType": "ui_action",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F7 RITM botão"
+  },
+  {
+    "id": "F7-RITM-API",
+    "table": "sc_req_item",
+    "sysId": "22446719c3c413101cbdb8e1b40131ef",
+    "field": "correlation_display",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F7-CUSTOM-BEFORE",
+    "table": "u_pt_trail_teste",
+    "sysId": "0744a719c3c413101cbdb8e1b401313d",
+    "field": "u_antes",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F7 CUSTOM before"
+  },
+  {
+    "id": "F7-CUSTOM-AFTER",
+    "table": "u_pt_trail_teste",
+    "sysId": "5f44a719c3c413101cbdb8e1b4013140",
+    "field": "u_depois",
+    "expectedType": "br_after",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F7 CUSTOM after"
+  },
+  {
+    "id": "F7-CUSTOM-ASYNC",
+    "table": "u_pt_trail_teste",
+    "sysId": "df44a719c3c413101cbdb8e1b401314f",
+    "field": "u_assincrono",
+    "expectedType": "br_async",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F7 CUSTOM async"
+  },
+  {
+    "id": "F7-CUSTOM-CLIENT",
+    "table": "u_pt_trail_teste",
+    "sysId": "9b44a719c3c413101cbdb8e1b4013152",
+    "field": "u_cliente",
+    "expectedType": "client_script",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F7 CUSTOM client"
+  },
+  {
+    "id": "F7-CUSTOM-UI",
+    "table": "u_pt_trail_teste",
+    "sysId": "6744a719c3c413101cbdb8e1b4013155",
+    "field": "u_botao",
+    "expectedType": "ui_action",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F7 CUSTOM botão"
+  },
+  {
+    "id": "F7-CUSTOM-API",
+    "table": "u_pt_trail_teste",
+    "sysId": "2344a719c3c413101cbdb8e1b4013158",
+    "field": "u_api",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F7-FLOWMULTI-severity",
+    "table": "incident",
+    "sysId": "62666f1dc3c413101cbdb8e1b4013127",
+    "field": "severity",
+    "expectedType": "flow",
+    "expectedName": "[PT] F7 flow varios campos",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F7-FLOWMULTI-description",
+    "table": "incident",
+    "sysId": "62666f1dc3c413101cbdb8e1b4013127",
+    "field": "description",
+    "expectedType": "flow",
+    "expectedName": "[PT] F7 flow varios campos",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F7-FLOWMULTI-notify",
+    "table": "incident",
+    "sysId": "62666f1dc3c413101cbdb8e1b4013127",
+    "field": "notify",
+    "expectedType": "flow",
+    "expectedName": "[PT] F7 flow varios campos",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F7-FLOWMULTI-gatilho",
+    "table": "incident",
+    "sysId": "62666f1dc3c413101cbdb8e1b4013127",
+    "field": "contact_type",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
   }
 ]

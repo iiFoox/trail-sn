@@ -1,3 +1,4 @@
+import { sameVal } from '../util';
 import { fact } from '../scoring';
 import { evidence, type Signature } from './context';
 
@@ -16,7 +17,7 @@ export const flow: Signature = (ctx) =>
       const w = writers[0]!;
       const v = w.writes[ctx.field] ?? '';
       facts.push(fact('trace_identifies_mechanism', 'sys_hub_action_instance_v2', `o passo ${w.order} (${w.action}) grava ${ctx.field} = ${v || 'vazio'}`));
-      if (v && !v.includes('{{')) facts.push(v === (ctx.audit.newvalue ?? '') ? fact('sets_same_value', 'sys_hub_action_instance_v2', `o passo grava exatamente "${v}"`) : fact('sets_other_value', 'sys_hub_action_instance_v2', `o passo grava "${v}", não "${ctx.audit.newvalue ?? ''}"`));
+      if (v && !v.includes('{{')) facts.push(sameVal(v, ctx.audit.newvalue ?? '') ? fact('sets_same_value', 'sys_hub_action_instance_v2', `o passo grava exatamente "${v}"`) : fact('sets_other_value', 'sys_hub_action_instance_v2', `o passo grava "${v}", não "${ctx.audit.newvalue ?? ''}"`));
       name = `${name} · passo ${w.order} (${w.action})`;
     } else if (steps.length) {
       facts.push(fact('no_step_writes_field', 'sys_hub_action_instance_v2', `nenhum dos ${steps.length} passos do flow grava "${ctx.field}"`));

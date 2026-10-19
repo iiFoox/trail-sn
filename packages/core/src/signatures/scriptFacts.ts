@@ -1,6 +1,6 @@
 import { fact } from '../scoring';
 import { evalExpr, scriptVerdict, writesOf, type Env } from '../scriptEval';
-import { assignedLiterals, parseFieldValues } from '../util';
+import { assignedLiterals, parseFieldValues, sameVal } from '../util';
 import type { Evidence, Fact, Row } from '../types';
 import type { ChangeContext } from './context';
 
@@ -68,7 +68,7 @@ export function scriptFacts(ctx: ChangeContext, script: string | undefined, sour
   const tpl = parseFieldValues(opts.template);
   if (ctx.field in tpl) {
     const v = tpl[ctx.field]!;
-    out.push(v === nv ? fact('sets_same_value', source, `as ações da regra gravam "${v}"`) : fact('sets_other_value', source, `as ações da regra gravam "${v}", não "${nv}"`));
+    out.push(sameVal(v, nv) ? fact('sets_same_value', source, `as ações da regra gravam "${v}"`) : fact('sets_other_value', source, `as ações da regra gravam "${v}", não "${nv}"`));
     return out;
   }
 
@@ -83,12 +83,12 @@ export function scriptFacts(ctx: ChangeContext, script: string | undefined, sour
   const guarded = !!scan?.writes.some((w) => w.guards.length);
   if (v.guardsTrue && guarded && !condDone) out.push(fact('condition_true', source, 'a condição do trecho que grava o campo vale nesta gravação'));
   const known = v.values.filter((x): x is string => x !== undefined);
-  if (known.includes(nv)) out.push(fact('sets_same_value', source, `o código grava "${nv}" neste campo`));
+  if (known.some((x) => sameVal(x, nv))) out.push(fact('sets_same_value', source, `o código grava "${nv}" neste campo`));
   else if (known.length && known.length === v.values.length) out.push(fact('sets_other_value', source, `o código grava ${known.map((x) => `"${short(x, 40)}"`).join(', ')}, não "${short(nv, 40)}"`));
   else if (!known.length) {
     // Expressão que não calculamos: cai no reconhecimento de literais (compatível com a versão anterior).
     const lits = assignedLiterals(script, ctx.field);
-    if (lits && !lits.includes(nv)) out.push(fact('sets_other_value', source, `o código grava ${lits.map((x) => `"${x}"`).join(', ')}, não "${nv}"`));
+    if (lits && !lits.some((x) => sameVal(x, nv))) out.push(fact('sets_other_value', source, `o código grava ${lits.map((x) => `"${x}"`).join(', ')}, não "${nv}"`));
   }
   return out;
 }

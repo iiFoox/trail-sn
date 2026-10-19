@@ -46,3 +46,15 @@ describe('onde o script grava', () => {
     expect(fieldsRead("if (current.category == 'x' && g_form.getValue('short_description')) current.impact = previous.urgency;").sort()).toEqual(['category', 'impact', 'short_description', 'urgency']);
   });
 });
+
+import { sameVal } from '../src/util';
+describe('mesmo valor', () => {
+  it('booleanos e data/hora em outro fuso', () => {
+    expect(sameVal('true', '1')).toBe(true);
+    expect(sameVal('false', '0')).toBe(true);
+    expect(sameVal('1', '0')).toBe(false);
+    expect(sameVal('2026-12-01 10:00:00', '2026-12-01 18:00:00')).toBe(true);
+    expect(sameVal('2026-12-01 10:00:00', '2026-12-01 18:00:07')).toBe(false);
+    expect(sameVal('2026-12-01 10:00:00', '2026-12-03 10:00:00')).toBe(false);
+  });
+});

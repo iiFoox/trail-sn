@@ -3,7 +3,7 @@
  * O cartão do topo (registro, campo, de → para, quando) fica fixo em todas.
  * Princípio: a resposta primeiro, em linguagem de gente; o detalhe técnico continua lá, um clique abaixo.
  */
-import type { AccessReport, Change, Investigation, TraceItem } from '@trail/core';
+import type { AccessReport, Change, Evidence, Investigation, TraceItem } from '@trail/core';
 /** Link para o passo na instância: o registro pelo sys_id ou a lista já filtrada. */
 export declare function refLink(origin: string, ref: {
     table: string;
@@ -31,3 +31,16 @@ export declare function Result({ r, origin, access, toast, onField }: {
     onField: (field: string) => void;
 }): import("preact").JSX.Element;
 export declare function traceTitle(r: Investigation, c: Change, it: TraceItem, field: string): string;
+/** Regras ativas que gravam este campo com valores diferentes e podem rodar juntas. */
+export declare function conflictLines(r: Investigation): {
+    a: string;
+    b: string;
+    win: string;
+    overlap: string;
+    aLink?: string;
+    bLink?: string;
+}[];
+/** Dias até a prova principal desta mudança expirar (só quando faltam menos de 30); null = não se aplica. */
+export declare function traceDaysLeft(c: Change): number | null;
+/** Por que este candidato perdeu, numa frase: o fato que mais pesou contra ele (ou "pontuação menor"). */
+export declare function lossReason(e: Evidence, field: string): string;

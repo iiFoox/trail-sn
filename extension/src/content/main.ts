@@ -1,3 +1,4 @@
+import { TRAIL_GLYPH, TRAIL_MINI } from '../shared/mark';
 /**
  * Content script (mundo isolado, all_frames). Orquestra a interface:
  *  - detecta o contexto (URL primeiro, depois o page/, DOM só para posicionar o ícone);
@@ -54,14 +55,14 @@ function notice(text: string, title?: string, sticky = false): void {
     <style>
       .b{font:13px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;color:#e8eef2;background:#16212a;border:1px solid #2a3a46;border-radius:14px;
          box-shadow:0 12px 32px rgba(0,0,0,.35);padding:12px 14px;max-width:340px;display:flex;gap:10px;align-items:flex-start;animation:in .18s ease-out}
-      .m{flex:none;width:26px;height:26px;border-radius:8px;background:#1f8476;display:grid;place-items:center}
+      .m{flex:none;width:26px;height:26px;border-radius:50%;background:#032d42;display:grid;place-items:center}
       .m svg{width:15px;height:15px}
       b{display:block;margin-bottom:2px;color:#fff}
       kbd{font:11px ui-monospace,monospace;background:#22323d;border:1px solid #37485a;border-radius:5px;padding:0 5px}
       button{all:unset;cursor:pointer;margin-top:8px;font-weight:600;color:#5fd3c1}
       @keyframes in{from{opacity:0;transform:translateY(6px)}}
     </style>
-    <div class="b" role="status"><span class="m"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M4 18c3-6 6-6 9 0s6 6 7-6"/></svg></span>
+    <div class="b" role="status"><span class="m">${TRAIL_MINI()}</span>
       <div>${title ? `<b></b>` : ''}<span class="t"></span>${sticky ? `<div><button type="button"></button></div>` : ''}</div></div>`;
   if (title) root.querySelector('b')!.textContent = title;
   root.querySelector('.t')!.innerHTML = text.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]!)).replace(KEY_HINT, `<kbd>${KEY_HINT}</kbd>`);
@@ -154,11 +155,11 @@ function makeIcon(field: string): HTMLElement {
     <style>
       button{all:unset;cursor:pointer;width:16px;height:16px;border-radius:50%;display:inline-grid;place-items:center;
              color:#6e7984;background:transparent;border:1px solid #c3cbd3;transition:all .12s ease;opacity:.7}
-      button:hover,button:focus-visible{opacity:1;color:#fff;background:#1f8476;border-color:#1f8476;box-shadow:0 0 0 3px rgba(31,132,118,.18)}
-      svg{width:10px;height:10px;display:block}
+      button:hover,button:focus-visible{opacity:1;color:#62d84e;background:#032d42;border-color:#032d42;box-shadow:0 0 0 3px rgba(98,216,78,.22)}
+      svg{width:12px;height:12px;display:block}
     </style>
     <button type="button" title="${strings.whyChanged} · ${field}" aria-label="${strings.whyChanged} (${field})">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18c3-7 6-7 9 0s6 7 8-7"/><circle cx="21" cy="5" r="2" fill="currentColor" stroke="none"/></svg>
+      ${TRAIL_GLYPH('currentColor', 2.8)}
     </button>`;
   root.querySelector('button')!.addEventListener('click', (ev) => {
     ev.preventDefault();

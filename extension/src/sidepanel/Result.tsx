@@ -12,7 +12,7 @@ import { send } from '../shared/messages';
 import { getPrefs, resolvedTheme } from '../shared/prefs';
 import { trackedTab } from '../shared/tabRef';
 import { RecordTimeline } from './Timeline';
-import { fullReport, savePdf } from './export';
+import { fullReport, plainSummary, savePdf } from './export';
 import { diffLines, looksLong } from '../shared/diff';
 import { DiffView, type DiffLabels } from '../shared/DiffView';
 
@@ -195,6 +195,7 @@ function Answer({ r, c, origin, field, denied, expired, goProof, copy, toastFn }
     denied.length ? plural(P.warnDenied, denied.length) : '',
     r.unaudited ? plural(P.warnUnaudited, r.unaudited.count) : '',
     expired ? P.warnExpired : '',
+    r.conflicts?.length ? plural(P.warnConflict, r.conflicts.length) : '',
   ].filter(Boolean);
   const summary = () => fmt(P.summary, {
     rec: r.target.display, field, old: valueLabel(r, c.oldValue), new: valueLabel(r, c.newValue), when: when(c.at),
@@ -224,6 +225,11 @@ function Answer({ r, c, origin, field, denied, expired, goProof, copy, toastFn }
       ) : (
         <div class="who none"><span class="ic">{Glyph.question}</span><div><div class="nm">{P.noCause}</div><div class="tech">{P.noCauseHint}</div></div></div>
       )}
+      <div class="plain">
+        <div class="pl-hd"><b>{P.plainTitle}</b><span class="muted small">{P.plainHint}</span></div>
+        <p>{plainSummary(r, c)}</p>
+        <button class="link" onClick={() => copy(plainSummary(r, c))}>{Glyph.copy} {P.plainCopy}</button>
+      </div>
       <div class={`btns ${link ? '' : 'one'}`}>
         {link && <a class="btn primary big" href={link} target="_blank" rel="noreferrer">{Glyph.open} {fmt(P.openArtifact, { what: P.what[top?.artifact.table ?? ''] ?? s.openInStudio })}</a>}
         <button class="btn big" onClick={() => copy(summary())}>{Glyph.copy} {P.copySummary}</button>
@@ -319,6 +325,7 @@ function Proof({ r, c, origin, field, denied, expired, access, copy }: { r: Inve
         </div>
       )}
       {others.map((e) => <Other e={e} origin={origin} field={field} day={c.at.slice(0, 10)} />)}
+      {(r.conflicts?.length ?? 0) > 0 && <Conflicts r={r} origin={origin} />}
       <div class="box">
         <h4 class={missingCount ? 'warnh' : ''}>{P.missing}</h4>
         {!missingCount && <div class="li"><span class="ck">{Glyph.check}</span><span class="grow">{P.nothingMissing}</span></div>}
@@ -345,6 +352,31 @@ function Proof({ r, c, origin, field, denied, expired, access, copy }: { r: Inve
         </div>
         <div class="pad"><button class="btn sm" onClick={() => send({ type: 'check-access', origin })}>{Glyph.shield} {P.recheck}</button></div>
       </details>
+    </div>
+  );
+}
+
+/** Regras ativas que gravam este campo com valores diferentes e podem rodar juntas. */
+export function conflictLines(r: Investigation): { a: string; b: string; win: string; overlap: string; aLink?: string; bLink?: string }[] {
+  const rule = (x: NonNullable<Investigation['conflicts']>[number]['a']) => fmt(P.cfRule, { name: x.name, kind: s.type[x.kind] ?? x.kind, order: x.kind === 'br_before' ? fmt(P.cfOrder, { n: x.order }) : '', value: valueLabel(r, x.values[0] ?? '') || P.tlEmptyValue });
+  return (r.conflicts ?? []).map((k) => ({
+    a: rule(k.a), b: rule(k.b), overlap: P.cfOverlap[k.overlap] ?? k.overlap,
+    win: k.winner ? fmt(P.cfWins, { name: (k.winner === 'a' ? k.a : k.b).name, why: P.cfWhy[k.why ?? ''] ?? '' }) : P.cfNoWinner,
+  }));
+}
+function Conflicts({ r, origin }: { r: Investigation; origin: string }) {
+  const lines = conflictLines(r);
+  return (
+    <div class="box conflict">
+      <h4 class="warnh">{P.cfTitle}<span>{lines.length}</span></h4>
+      <div class="li"><span class="grow muted small">{P.cfHint}</span></div>
+      {(r.conflicts ?? []).map((k, i) => (
+        <div class="li"><span class="ck w">!</span><div class="grow">
+          <div><a href={recordLink(origin, k.a.kind === 'client_script' ? 'sys_script_client' : 'sys_script', k.a.sysId)} target="_blank" rel="noreferrer">{lines[i]!.a}</a></div>
+          <div><a href={recordLink(origin, k.b.kind === 'client_script' ? 'sys_script_client' : 'sys_script', k.b.sysId)} target="_blank" rel="noreferrer">{lines[i]!.b}</a></div>
+          <div class="det">{lines[i]!.overlap} · {lines[i]!.win}</div>
+        </div></div>
+      ))}
     </div>
   );
 }

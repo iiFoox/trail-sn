@@ -37,3 +37,29 @@ describe('linha do tempo do registro', () => {
     expect(tl.saves.map((x) => [x.via, x.detail])).toEqual([['ui_action', 'Marcar perícia'], ['form', 'Save']]);
   });
 });
+
+import { compareSaves, type Timeline as TLT } from '../src/timeline';
+describe('comparar duas gravações', () => {
+  const f = (field: string, o: string, n: string, journal = false) => ({ field, label: field, oldValue: o, newValue: n, oldDisplay: o, newDisplay: n, journal });
+  const tl: TLT = {
+    target: { table: 'incident', sysId: 'x', display: 'INC1' }, truncated: false, timing: { totalMs: 0, calls: 0 },
+    saves: [
+      { checkpoint: 4, at: '2026-01-01 10:04:00', user: 'beth', via: 'form', fields: [f('state', '2', '6'), f('impact', '2', '3')] },
+      { checkpoint: 3, at: '2026-01-01 10:03:00', user: 'system', via: 'chained', fields: [f('priority', '3', '1'), f('work_notes', '', 'oi', true)] },
+      { checkpoint: 2, at: '2026-01-01 10:02:00', user: 'abel', via: 'api', fields: [f('impact', '3', '2'), f('state', '1', '2')] },
+      { checkpoint: 1, at: '2026-01-01 10:01:00', user: 'abel', via: 'created', fields: [f('state', '', '1')] },
+    ],
+  };
+  it('mostra de onde para onde cada campo foi entre A e B, quem mexeu e o que voltou', () => {
+    const d = compareSaves(tl, 4, 1)!;
+    expect([d.from.checkpoint, d.to.checkpoint, d.saves, d.journal]).toEqual([1, 4, 3, 1]);
+    expect(d.rows.map((r) => [r.field, r.fromValue, r.toValue, r.touches, r.reverted, r.users.join()])).toEqual([
+      ['priority', '3', '1', 1, false, 'system'],
+      ['state', '1', '6', 2, false, 'abel,beth'],
+      ['impact', '3', '3', 2, true, 'abel,beth'],
+    ]);
+  });
+  it('gravações vizinhas mostram só o que a de cima gravou', () => {
+    expect(compareSaves(tl, 2, 3)!.rows.map((r) => r.field)).toEqual(['priority']);
+  });
+});

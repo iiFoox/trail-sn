@@ -2,11 +2,33 @@ import type { Change, Investigation } from '@trail/core';
 import { fmt, t } from '../shared/i18n';
 import { getPrefs } from '../shared/prefs';
 import { recordLink } from '../shared/instances';
-import { factText, humanField, localizeTimes, traceTitle, valueLabel, when } from './Result';
+import { factText, humanField, localizeTimes, parts, traceTitle, valueLabel, when } from './Result';
+import { looksLong } from '../shared/diff';
 
 const s = t(getPrefs().lang);
 const P = s.p;
 const isDemo = new URLSearchParams(location.search).has('demo');
+
+const PLAIN: Record<string, string> = {
+  user_action: 'form', br_before: 'rule', br_after: 'rule', br_async: 'rule', br_via_script_include: 'rule', script_action: 'rule', assignment_rule: 'rule', data_lookup: 'rule', server_change: 'rule',
+  client_script: 'client', ui_action: 'ui', scheduled_job: 'job', flow: 'flow', workflow: 'flow', import_set: 'import', background_script: 'script', unknown_background: 'unknown',
+};
+
+/** Uma frase sem termos técnicos sobre a mudança, para o usuário final (colar no chamado). */
+export function plainSummary(r: Investigation, c: Change): string {
+  const top = c.evidence[0];
+  const L = P.plain;
+  const field = humanField(r.target.field);
+  const p = parts(c.at);
+  const show = (v: string) => (valueLabel(r, v) || L.empty).replace(/\s+/g, ' ').trim();
+  const chg = looksLong(c.oldValue, c.newValue) || show(c.oldValue).length > 60 || show(c.newValue).length > 60 ? L.chgText : fmt(L.chg, { old: show(c.oldValue), new: show(c.newValue) });
+  let key = top ? PLAIN[top.type] ?? 'unknown' : 'unknown';
+  if (top?.type === 'user_action' && top.facts.some((f) => f.kind === 'integration_user' || /\/api\//.test(f.detail))) key = 'api';
+  if (key === 'rule' && (c.user === 'system' || top?.type === 'br_async' && c.user === 'system')) key = 'ruleSystem';
+  const q = top ? L.q[top.grade] ?? '' : '';
+  const out = fmt((L as unknown as Record<string, string>)[key] ?? L.unknown, { q, field, chg, when: fmt(P.at, { date: p.date, time: p.time }), user: c.user || '?', name: top?.artifact.name ?? '' });
+  return out.charAt(0).toUpperCase() + out.slice(1);
+}
 
 /** Relatório completo em texto puro, para colar no chamado: resposta, provas, lacunas, alternativas e rastro. */
 export function fullReport(r: Investigation, c: Change, origin: string): string {
@@ -16,6 +38,8 @@ export function fullReport(r: Investigation, c: Change, origin: string): string 
   const L: string[] = [];
   L.push(`${P.rpTitle} — ${r.target.display}${r.target.title ? ` · ${r.target.title}` : ''}`);
   L.push(recordLink(origin, r.target.table, r.target.sysId));
+  L.push('');
+  L.push(`${P.plainLbl}: ${plainSummary(r, c)}`);
   L.push('');
   L.push(`${P.rpField}: ${field}`);
   L.push(`${P.rpChange}: ${valueLabel(r, c.oldValue) || P.tlEmptyValue} → ${valueLabel(r, c.newValue) || P.tlEmptyValue} · ${when(c.at)} · ${c.user}`);

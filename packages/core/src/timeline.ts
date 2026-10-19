@@ -190,3 +190,48 @@ function merge(ws: { from: string; to: string }[]): { from: string; to: string }
   }
   return out;
 }
+
+export interface SaveDiffRow {
+  field: string;
+  label: string;
+  /** Valor logo depois da gravação A (o mais antigo dos dois pontos). */
+  fromValue: string; fromDisplay: string;
+  /** Valor logo depois da gravação B. */
+  toValue: string; toDisplay: string;
+  /** Quantas gravações entre A (exclusive) e B (inclusive) mexeram no campo, e por quem. */
+  touches: number;
+  users: string[];
+  /** O campo mudou e voltou ao valor de A no meio do caminho. */
+  reverted: boolean;
+}
+export interface SaveDiff { from: TimelineSave; to: TimelineSave; rows: SaveDiffRow[]; saves: number; journal: number }
+
+/**
+ * Compara o registro em dois pontos da linha do tempo: o estado logo depois da gravação `a`
+ * e o estado logo depois da gravação `b` (a ordem dos argumentos não importa).
+ * Usa só a auditoria: para cada campo mexido entre as duas, o valor de partida é o `oldValue`
+ * da primeira mudança depois de A e o de chegada é o `newValue` da última até B.
+ */
+export function compareSaves(tl: Timeline, a: number, b: number): SaveDiff | undefined {
+  const sa = tl.saves.find((s) => s.checkpoint === a);
+  const sb = tl.saves.find((s) => s.checkpoint === b);
+  if (!sa || !sb) return undefined;
+  const [from, to] = sa.checkpoint <= sb.checkpoint ? [sa, sb] : [sb, sa];
+  const between = tl.saves.filter((s) => s.checkpoint > from.checkpoint && s.checkpoint <= to.checkpoint).sort((x, y) => x.checkpoint - y.checkpoint);
+  const acc = new Map<string, { first: TimelineField; last: TimelineField; touches: number; users: Set<string>; seenFrom: boolean }>();
+  let journal = 0;
+  for (const s of between) for (const f of s.fields) {
+    if (f.journal) { journal++; continue; }
+    const cur = acc.get(f.field);
+    if (!cur) acc.set(f.field, { first: f, last: f, touches: 1, users: new Set([s.user]), seenFrom: false });
+    else { if (f.newValue === cur.first.oldValue) cur.seenFrom = true; cur.last = f; cur.touches++; cur.users.add(s.user); }
+  }
+  const rows: SaveDiffRow[] = [];
+  for (const [field, x] of acc) {
+    const changed = x.first.oldValue !== x.last.newValue;
+    if (!changed && x.touches < 2) continue;
+    rows.push({ field, label: x.first.label, fromValue: x.first.oldValue, fromDisplay: x.first.oldDisplay, toValue: x.last.newValue, toDisplay: x.last.newDisplay, touches: x.touches, users: [...x.users], reverted: !changed });
+  }
+  rows.sort((p, q) => Number(p.reverted) - Number(q.reverted) || p.label.localeCompare(q.label));
+  return { from, to, rows, saves: between.length, journal };
+}

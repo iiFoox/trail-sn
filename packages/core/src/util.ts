@@ -172,3 +172,15 @@ export function uiActionQuery(refs: string[], tables: string[]): string {
 }
 /** A UI action corresponde à referência da transação? */
 export const uiActionMatches = (ua: Row | undefined, ref: string | undefined): boolean => !!ua && !!ref && (ua.sys_id === ref || (!isSysId(ref) && ua.action_name === ref));
+
+/** Campo booleano: a auditoria grava "1"/"0" e o script ou o formulário usam "true"/"false". */
+const BOOL: Record<string, number> = { true: 1, '1': 1, false: 0, '0': 0 };
+const DT = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+export function sameVal(a: string | undefined, b: string | undefined): boolean {
+  if (a === b) return true;
+  if (a === undefined || b === undefined) return false;
+  // Data e hora: o script grava no fuso do usuário e a auditoria guarda em UTC. Diferença de fuso (múltiplo de 15 min, até 14 h) é o mesmo instante.
+  if (DT.test(a) && DT.test(b)) { const d = Math.abs(toMs(a) - toMs(b)); return d <= 14 * 3600e3 && d % (15 * 60e3) === 0; }
+  const x = BOOL[a], y = BOOL[b];
+  return x !== undefined && y !== undefined && x === y && (a.length > 1 || b.length > 1);
+}

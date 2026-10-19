@@ -10,7 +10,8 @@ import { recordLink } from '../shared/instances';
 import { send } from '../shared/messages';
 import { diffLines, looksLong } from '../shared/diff';
 import { DiffView } from '../shared/DiffView';
-import { factText, humanField, localizeTimes, traceTitle, valueLabel, when } from '../sidepanel/Result';
+import { conflictLines, factText, humanField, localizeTimes, traceTitle, valueLabel, when } from '../sidepanel/Result';
+import { plainSummary } from '../sidepanel/export';
 
 document.documentElement.dataset.theme = 'light'; // papel é sempre claro
 const s = t(getPrefs().lang);
@@ -112,6 +113,8 @@ function Report() {
         ) : <div class="vwho"><b>{P.noCause}</b></div>}
       </section>
 
+      <p class="plainline"><b>{P.plainLbl}:</b> {plainSummary(r, c)}</p>
+
       {/* Linha do tempo desenhada */}
       {c.trace?.length > 0 && (
         <section class="blk">
@@ -168,6 +171,14 @@ function Report() {
               <tr><td><b>{e.artifact.name}</b><div class="sub">{s.type[e.type]}</div></td><td>{whyLost(e, field, day)}{e.gaps[0] ? <div class="sub">{localizeTimes(e.gaps[0], day)}</div> : null}</td><td class="n">{e.score}</td></tr>
             ))}</tbody>
           </table>
+        </section>
+      )}
+
+      {(r.conflicts?.length ?? 0) > 0 && (
+        <section class="blk">
+          <h2>{P.cfTitle}</h2>
+          <p class="sub">{P.cfHint}</p>
+          <table class="ev"><tbody>{conflictLines(r).map((k) => <tr><td>{k.a}<br />{k.b}</td><td>{k.overlap}<div class="sub">{k.win}</div></td></tr>)}</tbody></table>
         </section>
       )}
 

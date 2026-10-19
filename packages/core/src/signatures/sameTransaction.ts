@@ -1,7 +1,8 @@
 import { fact } from '../scoring';
 import { evalCondition, refsField, toMs } from '../util';
-import { writesOf } from '../scriptEval';
-import { reactsFacts, resolveOrder, scriptFacts } from './scriptFacts';
+import { evalExpr, scriptVerdict, writesOf } from '../scriptEval';
+import { envFor, reactsFacts, resolveOrder, scriptFacts } from './scriptFacts';
+import { parseFieldValues, sameVal } from '../util';
 import { evidence, type ChangeContext, type Signature } from './context';
 import type { Evidence, Fact, Row } from '../types';
 
@@ -92,6 +93,22 @@ export const backgroundBefores = (ctx: ChangeContext): Evidence[] => {
   return evs.map((x) => x.e);
 };
 
+/**
+ * A BR before com certeza rodou e gravou exatamente o novo valor: condição (filtro e script) verdadeira ou ausente,
+ * e o trecho que grava o campo sem condição desconhecida. Nesse caso o valor enviado pela API não importa:
+ * a BR roda depois de aplicado o envio e é ela quem deixa o valor.
+ */
+function surelyWrites(ctx: ChangeContext, b: Row, cond: Fact[]): boolean {
+  const nv = ctx.audit.newvalue ?? '';
+  if (brCondition(b) && !cond.some((f) => f.kind === 'condition_true')) return false;
+  const env = envFor(ctx, { mode: 'save' });
+  if (b.condition?.trim()) { const c = evalExpr(b.condition, env); if (c === undefined || c === false || c === '' || c === 0) return false; }
+  const tpl = parseFieldValues(b.template);
+  if (ctx.field in tpl) return sameVal(tpl[ctx.field], nv);
+  const v = scriptVerdict(b.script, ctx.field, env);
+  return !!v && v.writes && !v.dynamic && v.reachable === true && v.guardsTrue && v.values.length > 0 && v.values.every((x) => sameVal(x, nv));
+}
+
 function brCondition(b: Row): string | undefined {
   return b.filter_condition || undefined;
 }
@@ -142,7 +159,7 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
     const p = new URLSearchParams((t.url ?? '').split('?')[1] ?? '');
     const sent = p.get(`${ctx.table}.${ctx.field}`);
     if (sent === null) continue;
-    verdict = sent === (ctx.audit.newvalue ?? '') ? 'user' : 'server';
+    verdict = sameVal(sent, ctx.audit.newvalue ?? '') ? 'user' : 'server';
     sentValue = sent;
     formAt = t.sys_created_on ?? '';
     formUser = t.sys_created_by ?? ctx.user;
@@ -225,7 +242,7 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
     const server: Evidence[] = [];
     const bs = befores.map((b) => ({ e: evidence('br_before', { name: b.name ?? '?', sysId: b.sys_id, table: 'sys_script' }, brFacts(b), gap), row: b }));
     resolveOrder(bs);
-    for (const x of bs) x.e.facts = x.e.facts.filter((f) => f.kind !== 'sets_same_value');
+    for (const x of bs) if (!surelyWrites(ctx, x.row, conditionFacts(ctx, brCondition(x.row), 'sys_script'))) x.e.facts = x.e.facts.filter((f) => f.kind !== 'sets_same_value');
     server.push(...bs.map((x) => x.e));
     // Data lookups e regras de atribuição também rodam no servidor quando a gravação vem pela API.
     for (const d of lookups.filter((d) => d.runOnUpdate)) server.push(evidence('data_lookup', { name: d.name, sysId: d.sysId, table: 'dl_definition' }, lookupFacts(d), gap));

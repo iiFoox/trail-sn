@@ -10,8 +10,8 @@ body { background: #e9edf1; }
 .cover { background: linear-gradient(135deg, #032d42 0%, #0b4a5e 55%, #1f8476 100%); color: #fff; padding: 34px 40px 30px; position: relative; overflow: hidden; }
 .cover::after { content: ''; position: absolute; right: -60px; top: -60px; width: 260px; height: 260px; border-radius: 50%; border: 28px solid rgba(255,255,255,.06); }
 .cover .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; letter-spacing: .01em; }
-.cover .mark { width: 30px; height: 30px; border-radius: 9px; background: rgba(255,255,255,.14); display: grid; place-items: center; }
-.cover .mark svg { width: 18px; height: 18px; }
+.cover .mark { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; }
+.cover .mark svg { width: 32px; height: 32px; display: block; }
 .cover .kicker { margin-top: 26px; text-transform: uppercase; letter-spacing: .14em; font-size: 11px; color: #9fe3d6; font-weight: 600; }
 .cover h1 { font-size: 30px; line-height: 1.1; margin: 6px 0 4px; letter-spacing: -.01em; }
 .cover h1 a { color: #fff; }
@@ -95,3 +95,5 @@ ul.plain { margin: 0; padding-left: 18px; }
 .vd .dstat .add { color: var(--ok); } .vd .dstat .del { color: var(--no); }
 .vd .vwho { display: block; }
 .diffblk .seg2 { display: none; }
+
+.plainline { margin: 14px 0 4px; padding: 10px 14px; border-left: 3px solid #2bb3a3; background: #f4faf9; font-size: 12.5px; line-height: 1.5; }

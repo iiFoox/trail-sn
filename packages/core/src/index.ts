@@ -8,3 +8,4 @@ export * from './client/RestClient';
 export * from './client/FetchRestClient';
 export * from './client/FakeRestClient';
 export * from './timeline';
+export * from './conflicts';

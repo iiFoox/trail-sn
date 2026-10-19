@@ -34,8 +34,8 @@ button, input, select { font: inherit; }
 /* ----- topo navy ----- */
 .topbar { position: sticky; top: 0; z-index: 5; background: linear-gradient(180deg, var(--navy), var(--navy-2)); color: #fff; padding: 10px 14px; display: flex; align-items: center; gap: 10px; }
 .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: .2px; font-size: 14px; }
-.brand .mark { width: 22px; height: 22px; border-radius: 7px; background: var(--teal); display: grid; place-items: center; }
-.brand .mark svg { width: 14px; height: 14px; }
+.brand .mark { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg) 10%, transparent); }
+.brand .mark svg { width: 24px; height: 24px; display: block; }
 .topbar .host { margin-left: auto; font: 11px/1 var(--mono); color: #cfe3ea; background: rgba(255,255,255,.08); padding: 5px 8px; border-radius: 999px; max-width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--mint); box-shadow: 0 0 0 3px rgba(98,216,78,.18); }
 .dot.partial { background: #f0c75a; box-shadow: 0 0 0 3px rgba(240,199,90,.2); }
@@ -474,8 +474,8 @@ ul.fl .fbtn .v .o.nil { text-decoration: none; font-style: italic; }
 .paper { max-width: 760px; margin: 0 auto; padding: 28px 28px 40px; color: #1b2228; font-size: 13.5px; line-height: 1.5; }
 .paper .ph { display: flex; gap: 12px; align-items: center; margin-bottom: 18px; }
 .paper .ph > div { flex: 1; }
-.paper .ph .mark { width: 34px; height: 34px; border-radius: 10px; background: #1f8476; display: grid; place-items: center; }
-.paper .ph .mark svg { width: 20px; height: 20px; }
+.paper .ph .mark { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; }
+.paper .ph .mark svg { width: 34px; height: 34px; display: block; }
 .paper .pcard { border: 1px solid #d7dde3; border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; break-inside: avoid; }
 .paper h1 { font-size: 18px; margin: 2px 0 6px; } .paper h1 a { color: #1f8476; }
 .paper h2 { font-size: 14px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: .04em; color: #4b5560; }
@@ -621,3 +621,27 @@ html.embed .wrap.wide{height:100vh}
 .drawer-x { all: unset; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; cursor: pointer; color: var(--fg-2); font-size: 12px; transition: background .15s, color .15s; }
 .drawer-x:hover { background: color-mix(in srgb, var(--fg) 10%, transparent); color: var(--fg); }
 .drawer-x:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* comparar duas gravações */
+.cmpbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.cmpbar .btn.on { border-color: var(--accent, #2bb3a3); color: var(--accent, #2bb3a3); }
+ol.rtl .hd .pk { flex: none; width: 24px; height: 24px; border-radius: 50%; border: 1.5px dashed var(--muted); background: transparent; color: #fff; font: 600 11px var(--mono); cursor: pointer; display: grid; place-items: center; }
+ol.rtl .hd .pk.on { border: 0; background: var(--accent, #2bb3a3); }
+ol.rtl > li.picked { border-color: var(--accent, #2bb3a3); box-shadow: 0 0 0 1px var(--accent, #2bb3a3) inset; }
+.card.cmp { display: flex; flex-direction: column; gap: 8px; animation: rise .25s ease both; }
+.cmp-hd { display: flex; gap: 8px; align-items: flex-start; }
+table.cmpt { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.cmpt th { text-align: left; font-weight: 600; padding: 6px 8px 6px 0; vertical-align: top; width: 38%; }
+table.cmpt th .muted { font-weight: 400; font-size: 11px; }
+table.cmpt td { padding: 6px 4px; vertical-align: top; word-break: break-word; }
+table.cmpt td.ar { color: var(--muted); width: 14px; }
+table.cmpt tr + tr > * { border-top: 1px solid var(--line); }
+table.cmpt .o { text-decoration: line-through; color: var(--fg-2); }
+table.cmpt .o.nil, table.cmpt tr.rev .o { text-decoration: none; }
+table.cmpt tr.rev { opacity: .7; }
+/* frase para o usuário final */
+.plain { border: 1px dashed var(--line); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; background: var(--surface); }
+.plain .pl-hd { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: 12px; }
+.plain p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--fg); }
+.plain .link { align-self: flex-start; }
+.box.conflict a { color: var(--fg); text-decoration: none; border-bottom: 1px dotted var(--muted); }

@@ -1,4 +1,4 @@
-import type { Timeline as TL, TimelineSave } from '@trail/core';
+import { compareSaves, type Timeline as TL, type TimelineSave } from '@trail/core';
 import { useEffect, useState } from 'preact/hooks';
 import { demoTimeline } from '../shared/demo';
 import { fmt, t } from '../shared/i18n';
@@ -33,6 +33,7 @@ export function RecordTimeline({ origin, table, sysId, onField }: { origin: stri
   const [via, setVia] = useState<Group>('all');
   const [who, setWho] = useState('');
   const [q, setQ] = useState('');
+  const [cmp, setCmp] = useState<number[] | null>(null);
 
   useEffect(() => {
     setData(undefined); setErr(undefined); setShown(PAGE);
@@ -69,9 +70,16 @@ export function RecordTimeline({ origin, table, sysId, onField }: { origin: stri
         </div>
         {(via !== 'all' || who || needle) && <div class="muted small">{fmt(P.tlShowing, { n: filtered.length, total: data.saves.length })} <button class="link" onClick={() => { setVia('all'); setWho(''); setQ(''); }}>{P.tlClear}</button></div>}
       </div>
+      {data.saves.length > 1 && <div class="cmpbar">
+        <button class={`btn sm ${cmp ? 'on' : ''}`} aria-pressed={!!cmp} onClick={() => setCmp(cmp ? null : [])}>{Glyph.compare} {cmp ? P.cmpOff : P.cmpBtn}</button>
+        {cmp && cmp.length < 2 && <span class="muted small">{cmp.length ? P.cmpPickOne : P.cmpPick}</span>}
+      </div>}
+      {cmp?.length === 2 && <Compare data={data} a={cmp[0]!} b={cmp[1]!} onClose={() => setCmp([])} />}
       {!filtered.length && <div class="muted small">{P.tlNone}</div>}
       <ol class="rtl">
-        {saves.map((sv, i) => <Save i={i % PAGE} sv={sv} origin={origin} sysId={data.target.sysId} onField={onField} />)}
+        {saves.map((sv, i) => <Save i={i % PAGE} sv={sv} origin={origin} sysId={data.target.sysId} onField={onField}
+          pick={cmp ? (cmp.indexOf(sv.checkpoint) === 0 ? 'A' : cmp.indexOf(sv.checkpoint) === 1 ? 'B' : '') : undefined}
+          onPick={() => setCmp((c) => { const cur = c ?? []; if (cur.includes(sv.checkpoint)) return cur.filter((x) => x !== sv.checkpoint); return [...cur, sv.checkpoint].slice(-2); })} />)}
       </ol>
       {filtered.length > shown && <button class="btn sm" onClick={() => setShown(shown + PAGE)}>{fmt(P.tlMore, { n: Math.min(PAGE, filtered.length - shown) })}</button>}
       {data.truncated && <div class="muted small">{P.tlTruncated}</div>}
@@ -80,14 +88,41 @@ export function RecordTimeline({ origin, table, sysId, onField }: { origin: stri
   );
 }
 
-function Save({ i, sv, origin, sysId, onField }: { i: number; sv: TimelineSave; origin: string; sysId: string; onField: (field: string) => void }) {
+/** Diferença do registro entre duas gravações escolhidas na linha do tempo. */
+function Compare({ data, a, b, onClose }: { data: TL; a: number; b: number; onClose: () => void }) {
+  const d = compareSaves(data, a, b);
+  if (!d) return null;
+  const pa = parts(d.from.at), pb = parts(d.to.at);
+  return (
+    <div class="card cmp" role="region" aria-label={P.cmpBtn}>
+      <div class="cmp-hd">
+        <div class="grow"><b>{fmt(P.cmpTitle, { a: `${pa.date} ${pa.full}`, b: `${pb.date} ${pb.full}` })}</b>
+          <div class="muted small">{d.from.user} → {d.to.user} · {fmt(P.cmpSaves, { n: d.saves })}</div></div>
+        <button class="drawer-x" style="position:static" aria-label={P.cmpClose} title={P.cmpClose} onClick={onClose}>✕</button>
+      </div>
+      {!d.rows.length ? <div class="muted small">{P.cmpSame}</div> : (
+        <table class="cmpt"><tbody>{d.rows.map((r) => (
+          <tr class={r.reverted ? 'rev' : ''}>
+            <th>{r.label}<div class="muted">{r.reverted ? P.cmpReverted : r.touches > 1 ? fmt(P.cmpTouches, { n: r.touches }) : ''}{r.users.length ? ` · ${r.users.join(', ')}` : ''}</div></th>
+            <td><span class={`o ${r.fromDisplay ? '' : 'nil'}`}>{short(r.fromDisplay, P.tlEmptyValue)}</span></td>
+            <td class="ar">→</td>
+            <td><span class="n">{short(r.toDisplay, P.tlEmptyValue)}</span></td>
+          </tr>))}</tbody></table>
+      )}
+      {d.journal > 0 && <div class="muted small">{fmt(P.cmpJournal, { n: d.journal })}</div>}
+    </div>
+  );
+}
+
+function Save({ i, sv, origin, sysId, onField, pick, onPick }: { i: number; sv: TimelineSave; origin: string; sysId: string; onField: (field: string) => void; pick?: string; onPick?: () => void }) {
   const p = parts(sv.at);
   const audit = refLink(origin, { table: 'sys_audit', query: `documentkey=${sysId}^record_checkpoint=${sv.checkpoint}` });
   const fields = sv.fields.filter((f) => !f.journal);
   const notes = sv.fields.filter((f) => f.journal);
   return (
-    <li class={`via-${sv.via}`} style={`--i:${i}`}>
+    <li class={`via-${sv.via} ${pick ? 'picked' : ''}`} style={`--i:${i}`}>
       <div class="hd">
+        {pick !== undefined && <button class={`pk ${pick ? 'on' : ''}`} aria-pressed={!!pick} aria-label={P.cmpBtn} onClick={onPick}>{pick || ''}</button>}
         <span class="ti" title={P.viaHint[sv.via]}>{viaIcon[sv.via]}</span>
         <div class="grow">
           <div class="tm"><b>{p.date} {p.full}</b>{p.rel && <span class="muted"> · {p.rel}</span>}</div>

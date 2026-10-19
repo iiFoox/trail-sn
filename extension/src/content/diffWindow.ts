@@ -1,3 +1,4 @@
+import { TRAIL_MINI } from '../shared/mark';
 /**
  * Janela "lado a lado" por cima da própria página do ServiceNow, no estilo de uma janela do macOS:
  * cantos arredondados, botões fechar / minimizar / maximizar, arrastar pela barra de título,
@@ -42,7 +43,7 @@ iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(
   background:var(--bar);color:var(--fg);border:1px solid var(--line);box-shadow:0 12px 32px rgba(0,0,0,.35);cursor:pointer;
   font:600 12.5px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;animation:pop .3s cubic-bezier(.2,1.3,.4,1) both}
 .dock.dark{--bar:#16212a;--line:#2a3a46;--fg:#e8edf1}.dock.light{--bar:#fff;--line:#cfd3da;--fg:#1d2329}
-.dock i{width:22px;height:22px;border-radius:6px;background:#1f8476;display:grid;place-items:center}
+.dock i{width:22px;height:22px;border-radius:50%;background:#032d42;display:grid;place-items:center}
 .dock i svg{width:13px;height:13px}
 @keyframes zoom{from{opacity:0;transform:scale(.35) translate(var(--tx,30%),0)}60%{opacity:1}to{opacity:1;transform:none}}
 @keyframes shrink{to{opacity:0;transform:scale(.6)}}
@@ -51,7 +52,7 @@ iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(
 @media (prefers-reduced-motion:reduce){.win,.win.closing,.win.mini,.dock{animation:none!important;transition:none!important}}
 `;
 
-const MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M3 18c3-7 6-7 9 0s6 7 8-7"/></svg>';
+const MARK = TRAIL_MINI(3);
 
 let current: { host: HTMLElement; close: () => void } | null = null;
 

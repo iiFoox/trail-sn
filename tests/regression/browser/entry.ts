@@ -15,6 +15,7 @@ export async function runOne(target: { table: string; number?: string; sysId?: s
   const r = await investigate(makeClient(), target);
   return {
     ms: Math.round(performance.now() - t0), calls: r.timing.calls, title: r.target.title, labels: r.labels, gaps: r.gaps,
+    conflicts: (r.conflicts ?? []).map((k) => `${k.overlap} ${k.a.name}=${k.a.values[0]} x ${k.b.name}=${k.b.values[0]} vence:${k.winner ?? '?'}`),
     unaudited: r.unaudited, changes: r.changes.slice(0, 3).map((c) => ({
       at: c.at, old: c.oldValue, neu: c.newValue, cp: c.checkpoint, user: c.user, notes: c.notes,
       ev: c.evidence.slice(0, 3).map((e) => `${e.type} ${e.grade} ${e.score} "${e.artifact.name}" {${e.facts.map((f) => f.kind + (f.points >= 0 ? '+' : '') + f.points).join(' ')}}`),

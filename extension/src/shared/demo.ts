@@ -317,6 +317,11 @@ export function demoState(field = 'state'): TabState {
     suspects: story.suspects ?? noSuspects,
     access: { sys_audit: 'ok', syslog_transaction: 'ok', sysevent: 'empty', sys_flow_context: 'denied' },
     gaps: ['sys_flow_context: denied'],
+    ...(f === 'impact' ? { conflicts: [{
+      field: 'impact', overlap: 'possible' as const, winner: 'a' as const, why: 'server_after_client' as const,
+      a: { kind: 'br_before' as const, name: 'Impacto alto para rede', sysId: 'b1', table: 'incident', order: 100, values: ['1'], condition: 'category=network' },
+      b: { kind: 'client_script' as const, name: 'Sugere impacto pelo contato', sysId: 'c1', table: 'incident', order: 0, values: ['2'] },
+    }] } : {}),
     timing: { totalMs: story.ms, calls: story.calls },
   };
   return { tabId: 0, status: 'done', result, access, ctx: { origin: DEMO_ORIGIN, table: 'incident', sysId: SYS_ID, surface: 'ui16' } };
