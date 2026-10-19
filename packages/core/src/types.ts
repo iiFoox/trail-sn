@@ -95,6 +95,24 @@ export interface Evidence {
   gaps: string[];
 }
 
+/** Um passo do que aconteceu no registro perto da mudança, para a aba Rastro. */
+export type TraceKind = 'form' | 'ui_action' | 'async' | 'job' | 'api' | 'background_script' | 'event' | 'flow' | 'workflow' | 'change';
+
+export interface TraceItem {
+  /** UTC, "YYYY-MM-DD HH:mm:ss". */
+  at: string;
+  kind: TraceKind;
+  /** Nome legível: regra, job, evento, flow ou "antigo → novo". */
+  label: string;
+  user?: string;
+  /** Tabela de onde veio. */
+  source: string;
+  /** Valor do campo enviado pelo formulário, quando houver. */
+  sent?: string;
+  /** Marca o passo ligado à causa mais provável. */
+  cause?: boolean;
+}
+
 export interface Change {
   /** Instante da auditoria, UTC, "YYYY-MM-DD HH:mm:ss". */
   at: string;
@@ -105,6 +123,8 @@ export interface Change {
   evidence: Evidence[];
   /** Avisos sobre esta mudança, ex.: rastros de execução já expirados pela retenção. */
   notes: string[];
+  /** O que rodou no registro de windowBefore a windowAfter segundos em volta da mudança, em ordem. */
+  trace: TraceItem[];
 }
 
 export interface UnauditedUpdates {
@@ -123,7 +143,9 @@ export interface StaticSuspects {
 }
 
 export interface Investigation {
-  target: Target & { sysId: string; display: string };
+  target: Target & { sysId: string; display: string; title?: string };
+  /** Rótulo legível de cada valor do campo (choice ou registro referenciado), quando a instância deixa ler. */
+  labels: Record<string, string>;
   tables: string[];
   changes: Change[];
   unaudited: UnauditedUpdates | null;

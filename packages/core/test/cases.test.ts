@@ -221,3 +221,31 @@ describe('Fase 1: casos novos (fixtures)', () => {
     expect(r.changes[0]!.notes).toEqual(['traces_expired:syslog_transaction', 'traces_expired:sysevent']);
   });
 });
+
+describe('Rastro e rótulos', () => {
+  it('C1: rastro em ordem com o job marcado como causa e a mudança por último', async () => {
+    const s = scenario();
+    br(s, 'PT Async state', 'async', "current.state = 2; current.update();");
+    audit(s, 'state', '1', '2', shiftStr(T0, 2), 'admin', 2);
+    formTx(s, shiftStr(T0, 1), 'admin', { state: '1' });
+    tx(s, shiftStr(T0, 2), 'other', 'JOB: ASYNC: PT Async state', 'system');
+    const c = (await run(s, 'state')).changes[0]!;
+    expect(c.trace.map((t) => t.kind)).toEqual(['form', 'async', 'change']);
+    expect(c.trace.find((t) => t.kind === 'async')?.cause).toBe(true);
+    expect(c.trace[0]?.sent).toBe('1');
+  });
+
+  it('rótulos de choice vêm de sys_choice, preferindo inglês', async () => {
+    const s = scenario();
+    audit(s, 'state', '1', '2', T0, 'admin', 1);
+    const c = build(s);
+    c.rows('sys_choice', [
+      { name: 'incident', element: 'state', value: '2', label: 'Em andamento', language: 'pt', inactive: 'false' },
+      { name: 'incident', element: 'state', value: '2', label: 'In Progress', language: 'en', inactive: 'false' },
+      { name: 'incident', element: 'state', value: '1', label: 'New', language: 'en', inactive: 'false' },
+    ]);
+    const r = await investigate(c, { table: 'incident', number: INC.number, field: 'state' });
+    expect(r.labels).toEqual({ '2': 'In Progress', '1': 'New' });
+    expect(r.gaps.some((g) => g.startsWith('sys_choice'))).toBe(false);
+  });
+});

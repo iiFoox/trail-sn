@@ -10,6 +10,7 @@ import {
   type InvestigationOptions,
   type Row,
   type Target,
+  type TraceItem,
 } from './types';
 import { mergeWindows, refsField, shift, toMs, withTimeout } from './util';
 
@@ -47,11 +48,16 @@ export async function investigate(
     return r.rows;
   };
 
+  // Consultas só para rótulos: falha aqui não é lacuna de perícia, então não entra no relatório de acesso.
+  const quiet = async (table: string, query: string, fields: string[], limit = 100): Promise<Row[]> =>
+    (await withTimeout(client.query({ table, query, fields, limit }), opts.sourceTimeoutMs, { rows: [], status: 0, access: 'timeout' as AccessState })).rows;
+
   // ---------- rodada 1: registro, auditoria e metadados ----------
   const recQuery = target.sysId ? `sys_id=${target.sysId}` : `number=${target.number ?? ''}`;
-  const [recRows, metaOrNull] = await Promise.all([
-    q(target.table, recQuery, ['sys_id', 'number', 'sys_mod_count', 'sys_updated_on', 'sys_updated_by'], 1, 'record'),
+  const [recRows, metaOrNull, dict] = await Promise.all([
+    q(target.table, recQuery, ['sys_id', 'number', 'short_description', 'sys_mod_count', 'sys_updated_on', 'sys_updated_by'], 1, 'record'),
     loadMeta(target.table, target.field),
+    quiet('sys_dictionary', `element=${target.field}^nameIN${target.table},task,cmdb_ci`, ['name', 'internal_type', 'reference'], 5),
   ]);
   const rec = recRows[0];
   if (!rec) throw new RecordNotFoundError(target);
@@ -72,12 +78,21 @@ export async function investigate(
   // ---------- rodada 2: rastros por mudança (janelas fundidas) ----------
   const windows = fieldChanges.map((c) => ({ from: shift(c.sys_created_on ?? '', -opts.windowBefore), to: shift(c.sys_created_on ?? '', opts.windowAfter) }));
   const merged = mergeWindows(windows);
-  const [txAll, evAll, flowsAll, wfAll] = await Promise.all([
+  const values = unique(fieldChanges.flatMap((c) => [c.oldvalue ?? '', c.newvalue ?? '']).filter(Boolean));
+  const refTable = dict.find((d) => d.internal_type === 'reference' && d.reference)?.reference;
+  const [txAll, evAll, flowsAll, wfAll, labelRows] = await Promise.all([
     Promise.all(merged.map((w) => q('syslog_transaction', `sys_created_on>=${w.from}^sys_created_on<=${w.to}^ORDERBYsys_created_on`, ['sys_id', 'sys_created_on', 'type', 'url', 'sys_created_by'], 200))).then((r) => r.flat()),
     Promise.all(merged.map((w) => q('sysevent', `instance=${sysId}^processed>=${shift(w.from, -1)}^processed<=${shift(w.to, 1)}`, ['sys_id', 'name', 'processed', 'sys_created_on'], 50))).then((r) => r.flat()),
     fieldChanges.length ? q('sys_flow_context', `source_record=${sysId}`, ['sys_id', 'name', 'state', 'sys_created_on', 'sys_updated_on'], 50) : Promise.resolve([]),
     fieldChanges.length ? q('wf_context', `id=${sysId}`, ['sys_id', 'workflow_version.name', 'state', 'started', 'ended'], 50) : Promise.resolve([]),
+    !values.length ? Promise.resolve([])
+      : refTable ? quiet(refTable, `sys_idIN${values.filter((v) => /^[0-9a-f]{32}$/.test(v)).join(',')}`, ['sys_id', 'name', 'number', 'user_name'], 50)
+        .then((rows) => rows.map((r) => ({ value: r.sys_id ?? '', label: r.name || r.number || r.user_name || '' })))
+      : quiet('sys_choice', `nameIN${meta.tables.join(',')}^element=${target.field}^inactive=false`, ['value', 'label', 'language'], 300)
+        .then((rows) => rows.sort((a, b) => (a.language === 'en' ? -1 : 0) - (b.language === 'en' ? -1 : 0))),
   ]);
+  const labels: Record<string, string> = {};
+  for (const r of labelRows) if (r.value && r.label && !(r.value in labels)) labels[r.value] = r.label;
 
   // ---------- rodada 3: artefatos citados pelos rastros ----------
   const jobNames = unique(txAll.filter((t) => /^JOB: /.test(t.url ?? '') && !/^JOB: ASYNC: /.test(t.url ?? '')).map((t) => (t.url ?? '').slice(5).trim()));
@@ -133,9 +148,10 @@ export async function investigate(
       const keep = opts.retention?.[t];
       if (keep && ageSec > keep) notes.push(`traces_expired:${t}`);
     }
+    const evidence = scoreAll(runSignatures(ctx));
     return {
       at, oldValue: c.oldvalue ?? '', newValue: c.newvalue ?? '', user: c.user ?? '', checkpoint: ctx.checkpoint,
-      evidence: scoreAll(runSignatures(ctx)), notes,
+      evidence, notes, trace: buildTrace(ctx, evidence[0]),
     };
   });
 
@@ -158,7 +174,8 @@ export async function investigate(
   const gaps = Object.entries(access).filter(([, s]) => s === 'denied' || s === 'timeout' || s === 'no_filter').map(([k, s]) => `${k}: ${s}`);
 
   return {
-    target: { ...target, sysId, display: rec.number || sysId },
+    target: { ...target, sysId, display: rec.number || sysId, ...(rec.short_description ? { title: rec.short_description } : {}) },
+    labels,
     tables: meta.tables,
     changes,
     unaudited,
@@ -200,6 +217,40 @@ export async function investigate(
     const scriptIncludes = siNames.size ? await q('sys_script_include', `active=true^nameIN${[...siNames].join(',')}`, ['sys_id', 'name', 'script'], 200) : [];
     return { tables, businessRules, scriptIncludes, brField: [], siField: [], brViaSi: [] };
   }
+}
+
+/**
+ * Monta a sequência do que aconteceu no registro perto da mudança. Transações de outras
+ * telas ficam de fora; jobs, scripts de fundo e chamadas de API entram porque podem ter escrito no registro.
+ */
+function buildTrace(ctx: ChangeContext, top: Change['evidence'][number] | undefined): TraceItem[] {
+  const items: TraceItem[] = [];
+  const name = top?.artifact.name ?? '';
+  for (const t of ctx.traces.transactions) {
+    const url = t.url ?? '';
+    const at = t.sys_created_on ?? '';
+    const user = t.sys_created_by ?? '';
+    if (url.startsWith('JOB: ASYNC: ')) { const n = url.slice(12).trim(); items.push({ at, kind: 'async', label: n, user, source: 'syslog_transaction', cause: !!name && name === n }); continue; }
+    if (url.startsWith('JOB: ')) { const n = url.slice(5).trim(); items.push({ at, kind: 'job', label: n, user, source: 'syslog_transaction', cause: !!name && name === n }); continue; }
+    if (url.includes('/sys.scripts.do')) { items.push({ at, kind: 'background_script', label: 'Scripts - Background', user, source: 'syslog_transaction', cause: top?.type === 'background_script' }); continue; }
+    if (!url.includes(ctx.sysId)) continue;
+    const action = url.match(/sys_action=([0-9a-f]{32})/)?.[1];
+    if (action) {
+      const ua = ctx.traces.uiActions.find((u) => u.sys_id === action);
+      items.push({ at, kind: 'ui_action', label: ua?.name ?? action, user, source: 'syslog_transaction', cause: top?.type === 'ui_action' && top.artifact.sysId === action });
+      continue;
+    }
+    if (url.includes('/api/')) { items.push({ at, kind: 'api', label: url.split('?')[0]?.slice(0, 80) ?? url, user, source: 'syslog_transaction' }); continue; }
+    const sent = new URLSearchParams(url.split('?')[1] ?? '').get(`${ctx.table}.${ctx.field}`);
+    const formCause = !!top && ['user_action', 'br_before', 'server_change', 'assignment_rule'].includes(top.type);
+    items.push({ at, kind: 'form', label: url.split('?')[0] ?? url, user, source: 'syslog_transaction', ...(sent !== null ? { sent } : {}), cause: formCause && user === ctx.user });
+  }
+  for (const e of ctx.traces.events) items.push({ at: e.processed ?? e.sys_created_on ?? '', kind: 'event', label: e.name ?? '', source: 'sysevent', cause: top?.type === 'script_action' });
+  for (const f of ctx.traces.flows) items.push({ at: f.sys_created_on ?? '', kind: 'flow', label: f.name ?? '', source: 'sys_flow_context', cause: top?.type === 'flow' && name === f.name });
+  for (const w of ctx.traces.workflows) items.push({ at: w.started ?? '', kind: 'workflow', label: w['workflow_version.name'] ?? '', source: 'wf_context', cause: top?.type === 'workflow' });
+  items.push({ at: ctx.at, kind: 'change', label: '', user: ctx.user, source: 'sys_audit' });
+  const rank = (k: TraceItem['kind']) => (k === 'change' ? 1 : 0);
+  return items.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : rank(a.kind) - rank(b.kind)));
 }
 
 function unique<T>(xs: T[]): T[] {

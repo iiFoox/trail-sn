@@ -1,4 +1,6 @@
-import type { AccessReport, Change, Evidence, Investigation, StaticSuspects } from '@trail/core';
+import type { AccessReport, Change, Evidence, Investigation, StaticSuspects, TraceItem } from '@trail/core';
+
+type DemoChange = Omit<Change, 'trace'>;
 import type { TabState } from './messages';
 
 /**
@@ -33,7 +35,7 @@ const ID = {
 const T0 = '2026-07-02 09:15:40'; // inserção, por integração; rastros já expiraram
 const expired = ['traces_expired:syslog_transaction', 'traces_expired:sysevent'];
 
-function creation(value: string): Change {
+function creation(value: string): DemoChange {
   return { at: T0, oldValue: '', newValue: value, user: 'system', checkpoint: 1, notes: expired, evidence: [] };
 }
 
@@ -49,7 +51,7 @@ function userForm(user: string, at: string, sent: string): Evidence {
 
 const noSuspects: StaticSuspects = { businessRules: [], viaScriptInclude: [], scriptIncludes: [] };
 
-interface FieldStory { changes: Change[]; suspects?: StaticSuspects; ms: number; calls: number }
+interface FieldStory { changes: DemoChange[]; suspects?: StaticSuspects; ms: number; calls: number }
 
 const STORIES: Record<string, FieldStory> = {
   state: {
@@ -70,7 +72,7 @@ const STORIES: Record<string, FieldStory> = {
             { kind: 'references_field', source: 'sys_script', detail: 'o script referencia "state"', points: 20 },
             { kind: 'references_table', source: 'sys_script', detail: 'BR da tabela incident', points: 10 },
           ] },
-          { type: 'user_action', grade: 'candidate', score: 30, artifact: { name: 'admin' }, gaps: ['o formulário salvo às 01:37:01 não enviou o campo state'], facts: [
+          { type: 'user_action', grade: 'candidate', score: 30, artifact: { name: 'admin' }, gaps: ['o formulário que ele salvou às 01:37:01 enviou State = In Progress, não Resolved'], facts: [
             { kind: 'execution_in_window', source: 'syslog_transaction', detail: 'form /incident.do às 01:37:01', points: 20 },
             { kind: 'user_matches', source: 'syslog_transaction', detail: 'por admin', points: 10 },
           ] },
@@ -242,6 +244,41 @@ const STORIES: Record<string, FieldStory> = {
 
 export const DEMO_FIELDS = Object.keys(STORIES);
 
+// ---------- o que rodou no registro em volta de cada mudança (aba Rastro) ----------
+const form = (at: string, user: string, sent?: string, cause = true): TraceItem => ({ at, kind: 'form', label: '/incident.do', user, source: 'syslog_transaction', ...(sent !== undefined ? { sent } : {}), cause });
+const TRACES: Record<string, TraceItem[]> = {
+  'state:3': [form('2026-10-18 01:37:01', 'admin', '2', false), { at: '2026-10-18 01:37:02', kind: 'async', label: '[PERICIA-TESTE] Resolve incidente por palavra-chave', user: 'system', source: 'syslog_transaction', cause: true }],
+  'state:2': [form('2026-10-17 14:02:10', 'pericia.itil', '2')],
+  'impact:6': [form('2026-10-18 02:10:33', 'pericia.itil', '3')],
+  'urgency:7': [form('2026-10-18 02:12:05', 'admin', '2')],
+  'priority:7': [form('2026-10-18 02:12:05', 'admin')],
+  'priority:6': [form('2026-10-18 02:10:33', 'pericia.itil')],
+  'category:10': [form('2026-10-18 02:16:40', 'admin', undefined, false)],
+  'contact_type:8': [form('2026-10-18 02:14:06', 'admin', undefined, false), { at: '2026-10-18 02:14:07', kind: 'event', label: 'pt.contato', source: 'sysevent', cause: true }],
+  'severity:11': [{ at: '2026-10-18 02:19:59', kind: 'job', label: '[PT] C5 job ajusta severidade', user: 'system', source: 'syslog_transaction', cause: true }],
+  'severity:4': [{ at: '2026-10-18 02:05:11', kind: 'background_script', label: 'Scripts - Background', user: 'admin', source: 'syslog_transaction', cause: true }],
+  'description:12': [{ at: '2026-10-18 02:25:31', kind: 'ui_action', label: '[PT] C8 Marcar perícia', user: 'admin', source: 'syslog_transaction', cause: true }],
+  'assignment_group:13': [form('2026-10-18 02:30:12', 'admin', '')],
+  'assigned_to:14': [form('2026-10-18 02:31:50', 'admin', ID.howard)],
+  'cmdb_ci:9': [form('2026-10-18 02:16:40', 'admin', ID.printer)],
+};
+
+const HML = { '1': '1 - High', '2': '2 - Medium', '3': '3 - Low' };
+const LABELS: Record<string, Record<string, string>> = {
+  state: { '1': 'New', '2': 'In Progress', '3': 'On Hold', '6': 'Resolved', '7': 'Closed' },
+  impact: HML, urgency: HML, severity: HML,
+  priority: { '1': '1 - Critical', '2': '2 - High', '3': '3 - Moderate', '4': '4 - Low', '5': '5 - Planning' },
+  category: { inquiry: 'Inquiry / Help', network: 'Network', hardware: 'Hardware' },
+  contact_type: { phone: 'Phone', email: 'Email', 'self-service': 'Self-service' },
+  assignment_group: { [ID.network]: 'Network' }, assigned_to: { [ID.howard]: 'Howard Johnson' },
+  cmdb_ci: { [ID.printer]: 'PRN-3A-01' }, caller_id: { [ID.beth]: 'Beth Anglin' },
+};
+
+function withTrace(field: string, c: DemoChange): Change {
+  const before = TRACES[`${field}:${c.checkpoint}`] ?? [];
+  return { ...c, trace: [...before, { at: c.at, kind: 'change', label: '', user: c.user, source: 'sys_audit' }] };
+}
+
 const access: AccessReport = {
   level: 'partial', denied: ['sys_flow_context', 'wf_context'], checkedAt: '2026-10-19T12:00:00.000Z',
   states: { sys_audit: 'ok', syslog_transaction: 'ok', sysevent: 'empty', sysevent_script_action: 'ok', sys_flow_context: 'denied', wf_context: 'denied', sys_script: 'ok', sys_script_include: 'ok', sys_ui_action: 'ok', sysauto_script: 'ok', sys_db_object: 'ok' },
@@ -252,10 +289,11 @@ export function demoState(field = 'state'): TabState {
   const f = STORIES[field] ? field : 'state';
   const story = STORIES[f]!;
   const result: Investigation = {
-    target: { table: 'incident', sysId: SYS_ID, field: f, display: 'INC0010001' },
+    target: { table: 'incident', sysId: SYS_ID, field: f, display: 'INC0010001', title: 'Impressora do 3º andar sem rede' },
     tables: ['incident', 'task'],
-    changes: story.changes,
-    unaudited: { count: 1, lastUpdatedOn: '2026-10-18 02:10:00', lastUpdatedBy: 'admin', clues: ['2026-10-18 02:10:00 /sys.scripts.do (admin)'] },
+    labels: LABELS[f] ?? {},
+    changes: story.changes.map((c) => withTrace(f, c)),
+    unaudited: { count: 1, lastUpdatedOn: '2026-10-18 02:40:00', lastUpdatedBy: 'admin', clues: ['2026-10-18 02:40:00 /sys.scripts.do (admin)'] },
     suspects: story.suspects ?? noSuspects,
     access: { sys_audit: 'ok', syslog_transaction: 'ok', sysevent: 'empty', sys_flow_context: 'denied' },
     gaps: ['sys_flow_context: denied'],

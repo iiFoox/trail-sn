@@ -20,6 +20,11 @@ export declare const Glyph: {
     moon: import("preact").JSX.Element;
     sun: import("preact").JSX.Element;
     detach: import("preact").JSX.Element;
+    copy: import("preact").JSX.Element;
+    open: import("preact").JSX.Element;
+    warn: import("preact").JSX.Element;
+    check: import("preact").JSX.Element;
+    chevron: import("preact").JSX.Element;
     gear: import("preact").JSX.Element;
 };
 export declare const typeGlyph: Record<EvidenceType, preact.JSX.Element>;
