@@ -20,7 +20,18 @@ type Tab = 'answer' | 'trace' | 'proof' | 'history';
 const TABS: Tab[] = ['answer', 'trace', 'proof', 'history'];
 const demoParams = new URLSearchParams(location.search);
 const isDemo = demoParams.has('demo');
-const startTab: Tab = isDemo && TABS.includes(demoParams.get('tab') as Tab) ? (demoParams.get('tab') as Tab) : 'answer';
+const forcedTab: Tab | undefined = isDemo && TABS.includes(demoParams.get('tab') as Tab) ? (demoParams.get('tab') as Tab) : undefined;
+/** Certeza baixa ou sem causa: o que ajuda é ver o que aconteceu, então abre no Rastro. */
+function tabFor(c: Change | undefined): Tab {
+  if (forcedTab) return forcedTab;
+  const top = c?.evidence[0];
+  return !c || !top || top.grade === 'candidate' ? (c ? 'trace' : 'answer') : 'answer';
+}
+
+/** Link para o passo na instância: o registro pelo sys_id ou a lista já filtrada. */
+export function refLink(origin: string, ref: { table: string; sysId?: string; query?: string }): string {
+  return ref.sysId ? `${origin}/${ref.table}.do?sys_id=${ref.sysId}` : `${origin}/${ref.table}_list.do?sysparm_query=${encodeURIComponent(ref.query ?? '')}`;
+}
 
 // ---------- formatação ----------
 export function humanField(f: string): string {
@@ -70,9 +81,9 @@ function factText(kind: string, field: string): string {
 
 // ---------- componente principal ----------
 export function Result({ r, origin, access, toast }: { r: Investigation; origin: string; access?: AccessReport; toast: (m: string) => void }) {
-  const [tab, setTab] = useState<Tab>(startTab);
+  const [tab, setTab] = useState<Tab>(() => tabFor(r.changes[0]));
   const [sel, setSel] = useState(0);
-  useEffect(() => { setSel(0); setTab((x) => (x === startTab ? x : 'answer')); }, [r.target.field, r.target.sysId]);
+  useEffect(() => { setSel(0); setTab(tabFor(r.changes[0])); }, [r.target.field, r.target.sysId]);
   // No site, os textos ao lado do painel trocam a aba (só em demonstração).
   useEffect(() => {
     if (!isDemo) return;
@@ -125,9 +136,9 @@ export function Result({ r, origin, access, toast }: { r: Investigation; origin:
 
       {!c && <History r={r} origin={origin} sel={-1} onPick={() => undefined} />}
       {c && tab === 'answer' && <Answer r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} goProof={() => setTab('proof')} copy={copy} />}
-      {c && tab === 'trace' && <Trace r={r} c={c} field={field} denied={denied} expired={expired} />}
+      {c && tab === 'trace' && <Trace r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} />}
       {c && tab === 'proof' && <Proof r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} access={access} copy={copy} />}
-      {c && tab === 'history' && <History r={r} origin={origin} sel={sel} onPick={(i) => { setSel(i); setTab('answer'); }} />}
+      {c && tab === 'history' && <History r={r} origin={origin} sel={sel} onPick={(i) => { setSel(i); setTab(tabFor(r.changes[i]) === 'trace' ? 'trace' : 'answer'); }} />}
 
       <div class="footer">
         <span>{fmt(s.timing, { calls: r.timing.calls, ms: r.timing.totalMs })}</span>
@@ -202,23 +213,38 @@ const traceIcon: Record<string, preact.JSX.Element> = {
   event: Glyph.event, flow: Glyph.flow, workflow: Glyph.flow, change: Glyph.check,
 };
 
-function Trace({ r, c, field, denied, expired }: { r: Investigation; c: Change; field: string; denied: string[]; expired: boolean }) {
+function rawValue(v: string): string {
+  if (!v) return P.empty;
+  return v.length > 48 ? v.slice(0, 45) + '…' : v;
+}
+
+function Trace({ r, c, origin, field, denied, expired }: { r: Investigation; c: Change; origin: string; field: string; denied: string[]; expired: boolean }) {
   const items = c.trace ?? [];
   const blind = denied.filter((d) => ['sys_flow_context', 'wf_context', 'sysevent', 'syslog_transaction'].includes(d));
+  const txIds = items.filter((it) => it.ref?.table === 'syslog_transaction' && it.ref.sysId).map((it) => it.ref!.sysId!);
   return (
     <div class="stack">
       <div class="muted small">{fmt(P.traceIntro, WINDOW)}</div>
+      {txIds.length > 1 && (
+        <a class="btn sm openall" href={refLink(origin, { table: 'syslog_transaction', query: `sys_idIN${txIds.join(',')}` })} target="_blank" rel="noreferrer">{Glyph.open} {fmt(P.openAllTx, { n: txIds.length })}</a>
+      )}
       <ol class="tl">
         {items.map((it) => {
           const p = parts(it.at);
           const isChange = it.kind === 'change';
+          const isWrite = it.kind === 'write';
           return (
-            <li class={`${it.cause ? 'key' : ''} ${isChange ? 'res' : ''}`}>
+            <li class={`${it.cause ? 'key' : ''} ${isChange ? 'res' : ''} ${isWrite ? 'other' : ''}`}>
               <div class="t"><b>{p.full}</b>{it.cause ? <span class="tag">{P.cause}</span> : it.user ? <span class="muted">{it.user}</span> : null}</div>
-              <div class="x"><span class="ti">{traceIcon[it.kind]}</span>{traceTitle(r, c, it, field)}</div>
+              <div class="x"><span class="ti">{isWrite ? Glyph.rule : traceIcon[it.kind]}</span>{isWrite ? P.otherWrite : traceTitle(r, c, it, field)}</div>
               {(it.kind === 'async' || it.kind === 'job') && <div class="sub2">{it.label}</div>}
               {it.sent !== undefined && <div class="sub2">{fmt(P.sent, { field, value: valueLabel(r, it.sent) })}</div>}
-              <div class="src">{P.srcName[it.source] ?? it.source}{isChange ? ` · ${fmt(P.checkpoint, { n: c.checkpoint })}` : ''}{it.kind === 'form' || it.kind === 'api' ? ` · ${it.label}` : ''}</div>
+              {isWrite && <ul class="fw">{(it.fields ?? []).slice(0, 6).map((f) => <li><b>{humanField(f.field)}</b> {rawValue(f.oldValue)} → {rawValue(f.newValue)}</li>)}{(it.fields?.length ?? 0) > 6 && <li class="muted">{fmt(P.moreFields, { n: (it.fields?.length ?? 0) - 6 })}</li>}</ul>}
+              {isChange && it.fields?.length ? <div class="sub2 muted">{fmt(P.sameWrite, { list: it.fields.map((f) => humanField(f.field)).join(', ') })}</div> : null}
+              <div class="src">
+                <span>{P.srcName[it.source] ?? it.source}{isChange || isWrite ? ` · ${fmt(P.checkpoint, { n: it.checkpoint ?? c.checkpoint })}` : ''}{it.kind === 'form' || it.kind === 'api' ? ` · ${it.label}` : ''}</span>
+                {it.ref && <a class="see" href={refLink(origin, it.ref)} target="_blank" rel="noreferrer">{P.seeInSn} {Glyph.open}</a>}
+              </div>
             </li>
           );
         })}
@@ -228,6 +254,7 @@ function Trace({ r, c, field, denied, expired }: { r: Investigation; c: Change; 
             <div class="x small">{fmt(P.notCheckedText, { what: blind.map((b) => P.srcName[b] ?? b).join(', ') })}</div></li>
         )}
       </ol>
+      {c.traceOmitted ? <div class="muted small">{fmt(P.omitted, { n: c.traceOmitted })}</div> : null}
       {items.length <= 1 && !expired && <div class="muted small">{P.traceEmpty}</div>}
     </div>
   );

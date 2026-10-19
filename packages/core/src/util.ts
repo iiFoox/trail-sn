@@ -61,3 +61,60 @@ export function mergeWindows(windows: { from: string; to: string }[]): { from: s
   }
   return out;
 }
+
+/**
+ * Avalia uma encoded query simples contra os valores ATUAIS do registro.
+ * Devolve true/false quando todos os termos são avaliáveis; undefined quando há OR, NQ,
+ * operadores desconhecidos ou campos que não temos (nesses casos o motor não usa a condição).
+ */
+export function evalCondition(cond: string | undefined, rec: Record<string, string>, skipField?: string): boolean | undefined {
+  if (!cond) return undefined;
+  if (/\^NQ|\^OR|javascript:/.test(cond)) return undefined;
+  const terms = cond.split('^').filter((t) => t && t !== 'EQ' && !t.startsWith('ORDERBY'));
+  if (!terms.length) return undefined;
+  for (const term of terms) {
+    const m = term.match(/^([a-z0-9_]+)(ISNOTEMPTY|ISEMPTY|STARTSWITH|ENDSWITH|NOTLIKE|LIKE|NOT IN|IN|!=|=)(.*)$/);
+    if (!m) return undefined;
+    const [, field, op, raw] = m as unknown as [string, string, string, string];
+    if (field === skipField || !(field in rec)) return undefined;
+    const v = rec[field] ?? '';
+    const val = raw ?? '';
+    let ok: boolean;
+    switch (op) {
+      case 'ISEMPTY': ok = v === ''; break;
+      case 'ISNOTEMPTY': ok = v !== ''; break;
+      case 'STARTSWITH': ok = v.startsWith(val); break;
+      case 'ENDSWITH': ok = v.endsWith(val); break;
+      case 'LIKE': ok = v.includes(val); break;
+      case 'NOTLIKE': ok = !v.includes(val); break;
+      case 'IN': ok = val.split(',').includes(v); break;
+      case 'NOT IN': ok = !val.split(',').includes(v); break;
+      case '!=': ok = v !== val; break;
+      default: ok = v === val;
+    }
+    if (!ok) return false;
+  }
+  return true;
+}
+
+/** Campos citados numa encoded query (para buscar só o necessário do registro). */
+export function conditionFields(cond: string | undefined): string[] {
+  if (!cond) return [];
+  return [...new Set(cond.split(/\^(?:OR|NQ)?/).map((t) => t.match(/^([a-z0-9_]+)(?:ISNOTEMPTY|ISEMPTY|STARTSWITH|ENDSWITH|NOTLIKE|LIKE|NOT IN|IN|!=|=)/)?.[1]).filter((x): x is string => !!x))];
+}
+
+/**
+ * Valores literais que um script grava no campo (`x.campo = 'v'`, `x.campo = 2`, `setValue('campo', 'v')`).
+ * undefined quando o script não grava o campo de forma reconhecível ou grava algo não literal (variável, expressão).
+ */
+export function assignedLiterals(script: string | undefined, field: string): string[] | undefined {
+  if (!script) return undefined;
+  const f = escapeRegExp(field);
+  const lit = String.raw`\s*(?:(['"])((?:(?!\1).)*)\1|(-?\d+(?:\.\d+)?))\s*(?=[;)\n}]|$)`;
+  const anyAssign = new RegExp(String.raw`(?:\.${f}\s*=(?!=)|setValue\(\s*['"]${f}['"]\s*,)`, 'g');
+  const litAssign = new RegExp(String.raw`(?:\.${f}\s*=(?!=)|setValue\(\s*['"]${f}['"]\s*,)` + lit, 'g');
+  const total = (script.match(anyAssign) ?? []).length;
+  if (!total) return undefined;
+  const vals = [...script.matchAll(litAssign)].map((m) => m[2] ?? m[3] ?? '');
+  return vals.length === total ? vals : undefined;
+}

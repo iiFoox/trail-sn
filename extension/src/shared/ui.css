@@ -331,3 +331,14 @@ details.fold summary h4 .pill + * { display: none; }
 .headcard .added b { color: var(--teal-2); font-weight: 700; }
 :root[data-theme="dark"] .headcard .added b { color: #7ad3c4; }
 .headcard .longv { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; font-weight: 400; flex-basis: 100%; }
+/* 0.5: rastro do registro inteiro e links para a instância */
+ol.tl li.other { background: transparent; box-shadow: none; }
+ol.tl li.other::before { width: 8px; height: 8px; left: -21px; top: 13px; }
+ol.tl li.other .x { font-weight: 600; color: var(--fg-2); }
+.tl ul.fw { list-style: none; margin: 4px 0 0 21px; padding: 0; font-size: 12px; color: var(--fg-2); display: flex; flex-direction: column; gap: 2px; overflow-wrap: anywhere; }
+.tl ul.fw b { color: var(--fg); font-weight: 600; }
+.tl .src { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.tl .src a.see { font: 600 11px var(--font); color: var(--accent); white-space: nowrap; display: inline-flex; gap: 4px; align-items: center; text-decoration: none; }
+.tl .src a.see:hover { text-decoration: underline; }
+.tl .src a.see svg { width: 11px; height: 11px; }
+a.btn.openall { align-self: flex-start; }

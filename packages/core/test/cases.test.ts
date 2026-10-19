@@ -243,9 +243,182 @@ describe('Rastro e rótulos', () => {
       { name: 'incident', element: 'state', value: '2', label: 'Em andamento', language: 'pt', inactive: 'false' },
       { name: 'incident', element: 'state', value: '2', label: 'In Progress', language: 'en', inactive: 'false' },
       { name: 'incident', element: 'state', value: '1', label: 'New', language: 'en', inactive: 'false' },
+      { name: 'task', element: 'state', value: '2', label: 'Work in Progress', language: 'en', inactive: 'false' },
     ]);
     const r = await investigate(c, { table: 'incident', number: INC.number, field: 'state' });
     expect(r.labels).toEqual({ '2': 'In Progress', '1': 'New' });
     expect(r.gaps.some((g) => g.startsWith('sys_choice'))).toBe(false);
+  });
+
+  it('rastro do registro inteiro: outras gravações na janela e campos da mesma atualização', async () => {
+    const s = scenario();
+    br(s, 'PT Async state', 'async', "current.state = 2; current.update();");
+    audit(s, 'urgency', '3', '2', shiftStr(T0, 1), 'admin', 1);
+    audit(s, 'priority', '4', '3', shiftStr(T0, 1), 'admin', 1);
+    audit(s, 'state', '1', '2', shiftStr(T0, 2), 'admin', 2);
+    audit(s, 'work_notes', '', 'resolvido', shiftStr(T0, 2), 'admin', 2);
+    tx(s, shiftStr(T0, 2), 'other', 'JOB: ASYNC: PT Async state', 'system');
+    const c = (await run(s, 'state')).changes[0]!;
+    const write = c.trace.find((t) => t.kind === 'write');
+    expect(write?.checkpoint).toBe(1);
+    expect(write?.fields?.map((f) => f.field).sort()).toEqual(['priority', 'urgency']);
+    const change = c.trace.find((t) => t.kind === 'change');
+    expect(change?.fields?.map((f) => f.field)).toEqual(['work_notes']);
+    expect(change?.ref?.query).toContain('record_checkpoint=2');
+  });
+
+  it('a causa registrada até 3 s depois da mudança aparece antes dela; eventos de infraestrutura ficam fora', async () => {
+    const s = scenario();
+    br(s, 'PT Async state', 'async', "current.state = 2; current.update();");
+    audit(s, 'state', '1', '2', shiftStr(T0, 2), 'admin', 2);
+    tx(s, shiftStr(T0, 3), 'other', 'JOB: ASYNC: PT Async state', 'system');
+    s.events.push({ name: 'text_index', processed: shiftStr(T0, 2), sys_created_on: shiftStr(T0, 2) });
+    const c = (await run(s, 'state')).changes[0]!;
+    expect(c.trace.map((t) => t.kind)).toEqual(['async', 'change']);
+  });
+
+  it('script action genérica (não cita o campo) não vira causa forte', async () => {
+    const s = scenario();
+    audit(s, 'urgency', '3', '1', T0, 'admin', 1);
+    formTx(s, T0, 'admin', { urgency: '1' });
+    s.events.push({ name: 'metric.update', processed: T0, sys_created_on: T0 });
+    s.scriptActions.push({ sys_id: id(), name: 'Metric Update', event_name: 'metric.update', script: 'new MetricInstance().process();' });
+    const e = top(await run(s, 'urgency'));
+    expect(e.type).toBe('user_action');
+    expect(e.grade).toBe('confirmed');
+  });
+
+  it('data lookup no navegador: prioridade recalculada quando o impacto mudou na mesma gravação', async () => {
+    const s = scenario();
+    audit(s, 'priority', '4', '3', T0, 'admin', 1);
+    audit(s, 'impact', '3', '1', T0, 'admin', 1);
+    formTx(s, T0, 'admin', { priority: '3', impact: '1' });
+    const c = build(s);
+    c.rows('dl_definition_rel_set', [{ dl_definition: 'dl1', source_table_field: 'priority', 'dl_definition.name': 'Priority Lookup', 'dl_definition.run_on_form_change': 'true', 'dl_definition.run_on_update': 'true', 'dl_definition.active': 'true', 'dl_definition.source_table': 'incident' }]);
+    c.rows('dl_definition_rel_match', [{ dl_definition: 'dl1', source_table_field: 'impact' }, { dl_definition: 'dl1', source_table_field: 'urgency' }]);
+    c.rows('sys_script_client', []);
+    const r = await investigate(c, { table: 'incident', number: INC.number, field: 'priority' });
+    const ev = r.changes[0]!.evidence;
+    expect(ev[0]!.type).toBe('data_lookup');
+    expect(ev.find((e) => e.type === 'user_action')!.score).toBeLessThan(ev[0]!.score);
+  });
+
+  it('client script onChange que preenche o campo quando o gatilho mudou na mesma gravação', async () => {
+    const s = scenario();
+    audit(s, 'urgency', '3', '1', T0, 'admin', 1);
+    audit(s, 'category', 'inquiry', 'hardware', T0, 'admin', 1);
+    formTx(s, T0, 'admin', { urgency: '1', category: 'hardware' });
+    const c = build(s);
+    c.rows('dl_definition_rel_set', []);
+    c.rows('sys_script_client', [{ sys_id: id(), name: '[PT] client', type: 'onChange', field: 'category', table: 'incident', active: 'true', script: "g_form.setValue('urgency', '1');" }]);
+    const r = await investigate(c, { table: 'incident', number: INC.number, field: 'urgency' });
+    expect(r.changes[0]!.evidence[0]!.type).toBe('client_script');
+  });
+
+  it('condição falsa da BR desempata candidatas iguais', async () => {
+    const s = scenario();
+    s.record.short_description = '[PT] F1-SEQ';
+    br(s, 'PT certa', 'before', 'current.impact = 2;');
+    br(s, 'PT errada', 'before', 'current.impact = 2;');
+    s.brs[0]!.filter_condition = 'short_descriptionSTARTSWITH[PT] F1-SEQ^EQ';
+    s.brs[1]!.filter_condition = 'short_descriptionSTARTSWITH[PT] C2^EQ';
+    audit(s, 'impact', '1', '2', T0, 'admin', 1);
+    formTx(s, T0, 'admin', { impact: '3' });
+    const e = top(await run(s, 'impact'));
+    expect(e.artifact.name).toBe('PT certa');
+    expect(e.grade).toBe('confirmed');
+  });
+
+  it('regra de atribuição gravada como system dentro do salvamento de outra pessoa', async () => {
+    const s = scenario();
+    s.assignmentRules = [{ sys_id: id(), name: '[PT] Atribui rede', table: 'incident', condition: 'category=network', group: 'grp_rede', user: '', order: '100' }];
+    audit(s, 'assignment_group', '', 'grp_rede', T0, 'system', 1);
+    formTx(s, shiftStr(T0, 3), 'admin', { assignment_group: '', category: 'network' });
+    const e = top(await run(s, 'assignment_group'));
+    expect(e.type).toBe('assignment_rule');
+  });
+
+  it('BR assíncrona rápida, sem transação de job, reconhecida pela segunda gravação no mesmo segundo', async () => {
+    const s = scenario();
+    br(s, 'PT before', 'before', 'current.impact = 2;');
+    br(s, 'PT async', 'async', 'var gr = new GlideRecord("incident"); gr.impact = 1; gr.update();');
+    audit(s, 'impact', '1', '2', T0, 'admin', 1);
+    formTx(s, T0, 'admin', { impact: '3' });
+    audit(s, 'impact', '2', '1', T0, 'admin', 2);
+    const r = await run(s, 'impact');
+    expect(r.changes[0]!.evidence[0]!.type).toBe('br_async');
+  });
+  it('BR async_always (variante nova) é tratada como assíncrona', async () => {
+    const s = scenario();
+    br(s, 'PT async sempre', 'async_always', 'var gr = new GlideRecord("incident"); gr.impact = 1; gr.update();');
+    audit(s, 'impact', '1', '2', T0, 'admin', 1);
+    formTx(s, T0, 'admin', { impact: '2' });
+    audit(s, 'impact', '2', '1', T0, 'admin', 2);
+    expect(top(await run(s, 'impact')).type).toBe('br_async');
+  });
+
+  it('data lookup sem linha que produza o valor perde para a regra de atribuição', async () => {
+    const s = scenario();
+    s.record.category = 'network';
+    s.assignmentRules = [{ sys_id: id(), name: '[PT] Atribui rede', table: 'incident', condition: 'category=network^assignment_groupISEMPTY', group: 'grp_rede', user: '', order: '100' }];
+    audit(s, 'assignment_group', '', 'grp_rede', T0, 'system', 1);
+    audit(s, 'category', 'inquiry', 'network', T0, 'admin', 1);
+    formTx(s, T0, 'admin', { assignment_group: '', category: 'network' });
+    const c = build(s);
+    c.rows('dl_definition_rel_set', [{ dl_definition: 'dl2', source_table_field: 'assignment_group', matcher_table_field: 'assignment_group', 'dl_definition.name': 'Assignment Lookup', 'dl_definition.run_on_form_change': 'true', 'dl_definition.run_on_update': 'true', 'dl_definition.matcher_table': 'dl_u_assignment', 'dl_definition.active': 'true', 'dl_definition.source_table': 'incident' }]);
+    c.rows('dl_definition_rel_match', [{ dl_definition: 'dl2', source_table_field: 'category', matcher_table_field: 'category', exact_match: 'false' }]);
+    c.rows('dl_u_assignment', []);
+    c.rows('sys_script_client', []);
+    const r = await investigate(c, { table: 'incident', number: INC.number, field: 'assignment_group' });
+    const ev = r.changes[0]!.evidence;
+    expect(ev[0]!.type).toBe('assignment_rule');
+    expect(ev[0]!.grade).toBe('confirmed');
+    expect(ev.find((e) => e.type === 'data_lookup')!.facts.some((f) => f.kind === 'condition_false')).toBe(true);
+  });
+
+  it('gravações REST em rajada no mesmo segundo não viram cadeia de BRs', async () => {
+    const s = scenario();
+    br(s, 'PT after qualquer', 'after', 'if (current.state == 2) current.work_notes = "x";');
+    audit(s, 'state', '1', '2', T0, 'admin', 1);
+    audit(s, 'state', '2', '1', T0, 'admin', 2);
+    tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
+    tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
+    const e = top(await run(s, 'state'));
+    expect(e.type).toBe('user_action');
+  });
+  it('cópia da mudança regravada por update() de BR after não vira uma segunda mudança', async () => {
+    const s = scenario();
+    audit(s, 'contact_type', 'phone', 'email', T0, 'admin', 1);
+    audit(s, 'contact_type', 'phone', 'email', T0, 'admin', 2);
+    audit(s, 'urgency', '3', '2', T0, 'admin', 2);
+    formTx(s, T0, 'admin', { contact_type: 'email' });
+    const r = await run(s, 'contact_type');
+    expect(r.changes.length).toBe(1);
+    expect(top(r).type).toBe('user_action');
+  });
+  it('client script que grava outro valor literal não leva a culpa de vários campos digitados', async () => {
+    const s = scenario();
+    audit(s, 'description', 'inicial', 'F2 user', T0, 'admin', 1);
+    audit(s, 'contact_type', 'self-service', 'phone', T0, 'admin', 1);
+    formTx(s, T0, 'admin', { description: 'F2 user', contact_type: 'phone' });
+    const c = build(s);
+    c.rows('dl_definition_rel_set', []);
+    c.rows('sys_script_client', [{ sys_id: id(), name: '[PT] client', type: 'onChange', field: 'contact_type', table: 'incident', active: 'true', script: "g_form.setValue('description', 'F2 client');" }]);
+    const r = await investigate(c, { table: 'incident', number: INC.number, field: 'description' });
+    expect(r.changes[0]!.evidence[0]!.type).toBe('user_action');
+    expect(r.changes[0]!.evidence[0]!.grade).toBe('confirmed');
+  });
+
+  it('BR after com update(): a recarga da página não desfaz a cadeia; o valor literal escolhe entre BRs', async () => {
+    const s = scenario();
+    br(s, 'PT before outro', 'before', "current.description = 'outro';");
+    br(s, 'PT after certo', 'after', "current.description = 'F2 after'; current.update();");
+    audit(s, 'contact_type', 'a', 'b', T0, 'admin', 1);
+    audit(s, 'description', 'inicial', 'F2 after', T0, 'admin', 2);
+    formTx(s, T0, 'admin', { contact_type: 'b', description: 'inicial' });
+    tx(s, T0, 'form', `/incident.do?sys_id=${INC.sysId}`, 'admin');
+    const e = top(await run(s, 'description'));
+    expect(e.type).toBe('br_after');
+    expect(e.artifact.name).toBe('PT after certo');
   });
 });

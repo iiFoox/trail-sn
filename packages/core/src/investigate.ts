@@ -12,7 +12,7 @@ import {
   type Target,
   type TraceItem,
 } from './types';
-import { mergeWindows, refsField, shift, toMs, withTimeout } from './util';
+import { conditionFields, mergeWindows, refsField, shift, toMs, withTimeout } from './util';
 
 /** Cache de metadados por tabela (hierarquia, BRs, script includes). A extensão guarda em chrome.storage.session. */
 export interface MetaCache {
@@ -73,7 +73,12 @@ export async function investigate(
   const checkpoints: Record<string, Row[]> = {};
   for (const a of audit) (checkpoints[a.record_checkpoint ?? '0'] ??= []).push(a);
   const maxCheckpoint = Math.max(0, ...Object.keys(checkpoints).map(Number));
-  const fieldChanges = audit.filter((a) => a.fieldname === target.field).slice(-opts.maxChanges).reverse();
+  // Um update() numa BR after regrava na auditoria as mudanças que ainda estão em "previous": a mesma
+  // mudança aparece de novo no checkpoint seguinte, segundos depois. Essa cópia não é uma mudança nova.
+  const ownAudit = audit.filter((a) => a.fieldname === target.field);
+  const fieldChanges = ownAudit.filter((a, i) => !ownAudit.slice(0, i).some((p) =>
+    p.oldvalue === a.oldvalue && p.newvalue === a.newvalue && Number(p.record_checkpoint) < Number(a.record_checkpoint)
+    && Math.abs(toMs(a.sys_created_on ?? '') - toMs(p.sys_created_on ?? '')) <= 2000)).slice(-opts.maxChanges).reverse();
 
   // ---------- rodada 2: rastros por mudança (janelas fundidas) ----------
   const windows = fieldChanges.map((c) => ({ from: shift(c.sys_created_on ?? '', -opts.windowBefore), to: shift(c.sys_created_on ?? '', opts.windowAfter) }));
@@ -88,8 +93,9 @@ export async function investigate(
     !values.length ? Promise.resolve([])
       : refTable ? quiet(refTable, `sys_idIN${values.filter((v) => /^[0-9a-f]{32}$/.test(v)).join(',')}`, ['sys_id', 'name', 'number', 'user_name'], 50)
         .then((rows) => rows.map((r) => ({ value: r.sys_id ?? '', label: r.name || r.number || r.user_name || '' })))
-      : quiet('sys_choice', `nameIN${meta.tables.join(',')}^element=${target.field}^inactive=false`, ['value', 'label', 'language'], 300)
-        .then((rows) => rows.sort((a, b) => (a.language === 'en' ? -1 : 0) - (b.language === 'en' ? -1 : 0))),
+      : quiet('sys_choice', `nameIN${meta.tables.join(',')}^element=${target.field}^inactive=false`, ['name', 'value', 'label', 'language'], 300)
+        // A tabela mais específica ganha (incident.state 2 = In Progress; task.state 2 = Work in Progress); depois o inglês.
+        .then((rows) => rows.sort((a, b) => (meta.tables.indexOf(a.name ?? '') - meta.tables.indexOf(b.name ?? '')) || ((a.language === 'en' ? -1 : 0) - (b.language === 'en' ? -1 : 0)))),
   ]);
   const labels: Record<string, string> = {};
   for (const r of labelRows) if (r.value && r.label && !(r.value in labels)) labels[r.value] = r.label;
@@ -101,13 +107,54 @@ export async function investigate(
   const needsJobScan = fieldChanges.some((c) => !txAll.some((t) => t.sys_created_by === c.user && !/^JOB: /.test(t.url ?? '') && inWindow(t, c, opts)));
 
   const isAssignmentField = target.field === 'assignment_group' || target.field === 'assigned_to';
-  const [jobsByName, scriptActions, uiActions, jobsByScript, assignmentRules] = await Promise.all([
+  // Houve envio de formulário deste registro? Então vale olhar o que roda no navegador (data lookup, client script).
+  const hasSubmit = txAll.some((t) => t.type === 'form' && (t.url ?? '').includes(`sys_uniqueValue=${sysId}`));
+  const [jobsByName, scriptActions, uiActions, jobsByScript, assignmentRules, lookupSets, clientRows] = await Promise.all([
     jobNames.length ? q('sysauto_script', `nameIN${jobNames.join(',')}`, ['sys_id', 'name', 'script'], 50) : Promise.resolve([]),
     eventNames.length ? q('sysevent_script_action', `active=true^event_nameIN${eventNames.join(',')}`, ['sys_id', 'name', 'event_name', 'script'], 50) : Promise.resolve([]),
     uiActionIds.length ? q('sys_ui_action', `sys_idIN${uiActionIds.join(',')}`, ['sys_id', 'name', 'script', 'table'], 20) : Promise.resolve([]),
     needsJobScan ? q('sysauto_script', `scriptLIKE${target.field}^scriptLIKE${target.table}`, ['sys_id', 'name', 'script', 'run_type', 'run_start', 'run_time', 'run_as.user_name', 'active'], 50) : Promise.resolve([]),
     isAssignmentField ? q('sysrule_assignment', `active=true^tableIN${meta.tables.join(',')}`, ['sys_id', 'name', 'table', 'condition', 'group', 'user', 'order'], 50) : Promise.resolve([]),
+    hasSubmit ? quiet('dl_definition_rel_set', `source_table_field=${target.field}^dl_definition.active=true^dl_definition.source_tableIN${meta.tables.join(',')}`, ['dl_definition', 'dl_definition.name', 'dl_definition.run_on_form_change', 'dl_definition.run_on_update', 'dl_definition.matcher_table', 'matcher_table_field'], 20) : Promise.resolve([]),
+    hasSubmit ? quiet('sys_script_client', `tableIN${meta.tables.join(',')}^active=true^scriptLIKE${target.field}`, ['sys_id', 'name', 'type', 'field', 'table', 'script'], 30) : Promise.resolve([]),
   ]);
+
+  // ---------- rodada 4 (só quando precisa): entradas dos data lookups e valores atuais para avaliar condições ----------
+  const lookupIds = unique(lookupSets.map((r) => r.dl_definition ?? '').filter(Boolean));
+  const condFields = unique([
+    ...meta.brField.flatMap((b) => conditionFields(b.filter_condition)),
+    ...meta.brViaSi.flatMap((x) => conditionFields(x.br.filter_condition)),
+    ...assignmentRules.flatMap((r) => conditionFields(r.condition)),
+  ]).filter((f) => f !== target.field && !f.includes('.'));
+  // Linhas da tabela do lookup que produzem os valores gravados (para saber se o lookup PODE ter dado aquele valor).
+  const newValues = unique(fieldChanges.map((c) => c.newvalue ?? '').filter(Boolean));
+  const [lookupMatches, recCond, ...matcherRows] = await Promise.all([
+    lookupIds.length ? quiet('dl_definition_rel_match', `dl_definitionIN${lookupIds.join(',')}`, ['dl_definition', 'source_table_field', 'matcher_table_field', 'exact_match'], 50) : Promise.resolve([]),
+    // Com data lookup, o registro vem inteiro: os campos de entrada só são conhecidos depois desta rodada.
+    condFields.length || lookupIds.length ? quiet(target.table, `sys_id=${sysId}`, lookupIds.length ? [] : condFields, 1) : Promise.resolve([]),
+    ...lookupIds.map((id) => {
+      const r = lookupSets.find((x) => x.dl_definition === id)!;
+      const mt = r['dl_definition.matcher_table'];
+      const col = r.matcher_table_field || target.field;
+      return mt && newValues.length ? quiet(mt, `active=true^${col}IN${newValues.join(',')}`, [], 50) : Promise.resolve(null);
+    }),
+  ]);
+  const dataLookups = lookupIds.map((id, i) => {
+    const r = lookupSets.find((x) => x.dl_definition === id)!;
+    const rows = matcherRows[i] ?? null;
+    return {
+      name: r['dl_definition.name'] || 'Data lookup', sysId: id,
+      runOnForm: r['dl_definition.run_on_form_change'] === 'true', runOnUpdate: r['dl_definition.run_on_update'] === 'true',
+      inputs: lookupMatches.filter((m) => m.dl_definition === id).map((m) => m.source_table_field ?? '').filter(Boolean),
+      match: lookupMatches.filter((m) => m.dl_definition === id).map((m) => ({ source: m.source_table_field ?? '', matcher: m.matcher_table_field || m.source_table_field || '', exact: m.exact_match === 'true' })),
+      setColumn: r.matcher_table_field || target.field,
+      rows,
+    };
+  });
+  const clientScripts = clientRows.filter((c) => new RegExp(`setValue\\(\\s*['"]${target.field}['"]`).test(c.script ?? ''));
+  // Campo ausente na resposta (sem acesso ao campo, ou inexistente) fica de fora: condição vira "não avaliada", nunca falsa.
+  const recFields = unique([...condFields, ...dataLookups.flatMap((d) => d.match.map((m) => m.source))]).filter((f) => f && f !== target.field);
+  const record: Record<string, string> = recCond[0] ? Object.fromEntries(recFields.filter((f) => f in recCond[0]!).map((f) => [f, recCond[0]![f] ?? ''])) : {};
 
   // ---------- assinaturas e pontuação ----------
   // Transações de job (síncronas com a escrita) são atribuídas à mudança mais próxima no tempo,
@@ -137,10 +184,12 @@ export async function investigate(
       uiActions,
       jobsByScript,
       assignmentRules,
+      clientScripts,
+      dataLookups,
     };
     const ctx: ChangeContext = {
       table: target.table, field: target.field, sysId, audit: c, at, user: c.user ?? '',
-      checkpoint: Number(c.record_checkpoint ?? 0), checkpoints, meta, traces, opts,
+      checkpoint: Number(c.record_checkpoint ?? 0), checkpoints, meta, traces, opts, record,
     };
     const notes: string[] = [];
     const ageSec = (Date.now() - toMs(at)) / 1000;
@@ -149,9 +198,11 @@ export async function investigate(
       if (keep && ageSec > keep) notes.push(`traces_expired:${t}`);
     }
     const evidence = scoreAll(runSignatures(ctx));
+    const trace = buildTrace(ctx, evidence[0]);
     return {
       at, oldValue: c.oldvalue ?? '', newValue: c.newvalue ?? '', user: c.user ?? '', checkpoint: ctx.checkpoint,
-      evidence, notes, trace: buildTrace(ctx, evidence[0]),
+      evidence, notes, trace,
+      ...((trace as { omitted?: number }).omitted ? { traceOmitted: (trace as { omitted?: number }).omitted } : {}),
     };
   });
 
@@ -230,28 +281,67 @@ function buildTrace(ctx: ChangeContext, top: Change['evidence'][number] | undefi
     const url = t.url ?? '';
     const at = t.sys_created_on ?? '';
     const user = t.sys_created_by ?? '';
-    if (url.startsWith('JOB: ASYNC: ')) { const n = url.slice(12).trim(); items.push({ at, kind: 'async', label: n, user, source: 'syslog_transaction', cause: !!name && name === n }); continue; }
-    if (url.startsWith('JOB: ')) { const n = url.slice(5).trim(); items.push({ at, kind: 'job', label: n, user, source: 'syslog_transaction', cause: !!name && name === n }); continue; }
-    if (url.includes('/sys.scripts.do')) { items.push({ at, kind: 'background_script', label: 'Scripts - Background', user, source: 'syslog_transaction', cause: top?.type === 'background_script' }); continue; }
+    const ref = t.sys_id ? { table: 'syslog_transaction', sysId: t.sys_id } : undefined;
+    const base = { at, user, source: 'syslog_transaction', ...(ref ? { ref } : {}) };
+    if (url.startsWith('JOB: ASYNC: ')) { const n = url.slice(12).trim(); items.push({ ...base, kind: 'async', label: n, cause: !!name && name === n }); continue; }
+    if (url.startsWith('JOB: ')) { const n = url.slice(5).trim(); items.push({ ...base, kind: 'job', label: n, cause: !!name && name === n }); continue; }
+    if (url.includes('/sys.scripts.do')) { items.push({ ...base, kind: 'background_script', label: 'Scripts - Background', cause: top?.type === 'background_script' }); continue; }
     if (!url.includes(ctx.sysId)) continue;
     const action = url.match(/sys_action=([0-9a-f]{32})/)?.[1];
     if (action) {
       const ua = ctx.traces.uiActions.find((u) => u.sys_id === action);
-      items.push({ at, kind: 'ui_action', label: ua?.name ?? action, user, source: 'syslog_transaction', cause: top?.type === 'ui_action' && top.artifact.sysId === action });
+      items.push({ ...base, kind: 'ui_action', label: ua?.name ?? action, cause: top?.type === 'ui_action' && top.artifact.sysId === action });
       continue;
     }
-    if (url.includes('/api/')) { items.push({ at, kind: 'api', label: url.split('?')[0]?.slice(0, 80) ?? url, user, source: 'syslog_transaction' }); continue; }
+    if (url.includes('/api/')) { items.push({ ...base, kind: 'api', label: url.split('?')[0]?.slice(0, 80) ?? url }); continue; }
+    // Só envios de formulário contam; o recarregamento da página depois de salvar (GET ?sys_id=) não.
+    if (!url.includes('sys_uniqueValue=')) continue;
     const sent = new URLSearchParams(url.split('?')[1] ?? '').get(`${ctx.table}.${ctx.field}`);
-    const formCause = !!top && ['user_action', 'br_before', 'server_change', 'assignment_rule'].includes(top.type);
-    items.push({ at, kind: 'form', label: url.split('?')[0] ?? url, user, source: 'syslog_transaction', ...(sent !== null ? { sent } : {}), cause: formCause && user === ctx.user });
+    const formCause = !!top && ['user_action', 'br_before', 'server_change', 'assignment_rule', 'data_lookup', 'client_script'].includes(top.type);
+    items.push({ ...base, kind: 'form', label: url.split('?')[0] ?? url, ...(sent !== null ? { sent } : {}), cause: formCause && sent !== null });
   }
-  for (const e of ctx.traces.events) items.push({ at: e.processed ?? e.sys_created_on ?? '', kind: 'event', label: e.name ?? '', source: 'sysevent', cause: top?.type === 'script_action' });
-  for (const f of ctx.traces.flows) items.push({ at: f.sys_created_on ?? '', kind: 'flow', label: f.name ?? '', source: 'sys_flow_context', cause: top?.type === 'flow' && name === f.name });
-  for (const w of ctx.traces.workflows) items.push({ at: w.started ?? '', kind: 'workflow', label: w['workflow_version.name'] ?? '', source: 'wf_context', cause: top?.type === 'workflow' });
-  items.push({ at: ctx.at, kind: 'change', label: '', user: ctx.user, source: 'sys_audit' });
-  const rank = (k: TraceItem['kind']) => (k === 'change' ? 1 : 0);
-  return items.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : rank(a.kind) - rank(b.kind)));
+  const sref = (table: string, sysId?: string) => (sysId ? { ref: { table, sysId } } : {});
+  // Eventos de infraestrutura (indexação, motor de notificação) não explicam mudança de campo: ficam fora, e repetidos no mesmo segundo viram um só.
+  const seenEv = new Set<string>();
+  const events = ctx.traces.events.filter((e) => {
+    const key = `${e.name}|${(e.processed ?? '').slice(0, 19)}`;
+    if (/^(text_index|notification_engine\.|glide\.)/.test(e.name ?? '') || seenEv.has(key)) return false;
+    seenEv.add(key); return true;
+  });
+  for (const e of events) items.push({ at: e.processed ?? e.sys_created_on ?? '', kind: 'event', label: e.name ?? '', source: 'sysevent', cause: top?.type === 'script_action', ...sref('sysevent', e.sys_id) });
+  for (const f of ctx.traces.flows) items.push({ at: f.sys_created_on ?? '', kind: 'flow', label: f.name ?? '', source: 'sys_flow_context', cause: top?.type === 'flow' && name === f.name, ...sref('sys_flow_context', f.sys_id) });
+  for (const w of ctx.traces.workflows) items.push({ at: w.started ?? '', kind: 'workflow', label: w['workflow_version.name'] ?? '', source: 'wf_context', cause: top?.type === 'workflow', ...sref('wf_context', w.sys_id) });
+
+  // Registro inteiro: as outras gravações auditadas do registro na mesma janela, agrupadas por checkpoint.
+  const from = shift(ctx.at, -ctx.opts.windowBefore);
+  const to = shift(ctx.at, ctx.opts.windowAfter);
+  const auditRef = (cp: number) => ({ table: 'sys_audit', query: `documentkey=${ctx.sysId}^record_checkpoint=${cp}` });
+  const writes = (rows: Row[]) => rows.filter((r) => r.fieldname !== ctx.field).map((r) => ({ field: r.fieldname ?? '', oldValue: r.oldvalue ?? '', newValue: r.newvalue ?? '' }));
+  for (const [cpKey, rows] of Object.entries(ctx.checkpoints)) {
+    const cp = Number(cpKey);
+    if (cp === ctx.checkpoint) continue;
+    const at = rows[0]?.sys_created_on ?? '';
+    if (!between(at, from, to)) continue;
+    const fields = writes(rows);
+    if (fields.length) items.push({ at, kind: 'write', label: '', user: rows[0]?.user ?? '', source: 'sys_audit', fields, checkpoint: cp, ref: auditRef(cp) });
+  }
+  const same = writes(ctx.checkpoints[String(ctx.checkpoint)] ?? []);
+  items.push({ at: ctx.at, kind: 'change', label: '', user: ctx.user, source: 'sys_audit', ref: auditRef(ctx.checkpoint), ...(same.length ? { fields: same } : {}) });
+  // O syslog_transaction registra a transação quando ela TERMINA; um job que gravou às 01:37:01 aparece às 01:37:02.
+  // A causa que terminou até 3 s depois da mudança é posta antes dela, mantendo o horário real.
+  const sortAt = (t: TraceItem) => (t.cause && t.source === 'syslog_transaction' && t.at > ctx.at && toMs(t.at) - toMs(ctx.at) <= 3000 ? ctx.at : t.at);
+  const rank = (t: TraceItem) => (t.kind === 'change' || t.kind === 'write' ? 1 : 0) - (t.cause ? 0.5 : 0);
+  const sorted = items.sort((a, b) => { const x = sortAt(a), y = sortAt(b); return x < y ? -1 : x > y ? 1 : rank(a) - rank(b); });
+  // Registro muito movimentado: fica com os passos mais próximos da mudança, sempre incluindo causa e a própria mudança.
+  if (sorted.length <= TRACE_MAX) return sorted;
+  const dist = (t: TraceItem) => (t.kind === 'change' || t.cause ? -1 : Math.abs(toMs(t.at) - toMs(ctx.at)));
+  const keep = new Set([...sorted].sort((a, b) => dist(a) - dist(b)).slice(0, TRACE_MAX));
+  const kept = sorted.filter((t) => keep.has(t));
+  (kept as TraceItem[] & { omitted?: number }).omitted = sorted.length - kept.length;
+  return kept;
 }
+
+const TRACE_MAX = 14;
 
 function unique<T>(xs: T[]): T[] {
   return [...new Set(xs)];

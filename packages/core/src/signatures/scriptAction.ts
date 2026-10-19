@@ -8,11 +8,12 @@ export const scriptAction: Signature = (ctx) => {
   for (const sa of ctx.traces.scriptActions) {
     const ev = ctx.traces.events.find((e) => e.name === sa.event_name);
     if (!ev) continue;
-    const facts = [
-      fact('trace_names_artifact', 'sysevent', `evento "${sa.event_name}" processado às ${ev.processed}`),
-    ];
-    if (refsField(sa.script, ctx.field)) facts.push(fact('references_field', 'sysevent_script_action', `o script referencia "${ctx.field}"`));
-    out.push(evidence('script_action', { name: sa.name ?? '?', sysId: sa.sys_id, table: 'sysevent_script_action' }, facts));
+    // Script actions genéricas (métricas, "visto por") disparam em toda atualização: sem citar o campo, não nomeiam a causa.
+    const cites = refsField(sa.script, ctx.field);
+    const facts = cites
+      ? [fact('trace_names_artifact', 'sysevent', `evento "${sa.event_name}" processado às ${ev.processed}`), fact('references_field', 'sysevent_script_action', `o script referencia "${ctx.field}"`)]
+      : [fact('execution_in_window', 'sysevent', `evento "${sa.event_name}" processado às ${ev.processed}`)];
+    out.push(evidence('script_action', { name: sa.name ?? '?', sysId: sa.sys_id, table: 'sysevent_script_action' }, facts, cites ? [] : ['o script não cita o campo; provavelmente roda em toda atualização']));
   }
   return out;
 };

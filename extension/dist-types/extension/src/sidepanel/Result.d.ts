@@ -4,6 +4,12 @@
  * Princípio: a resposta primeiro, em linguagem de gente; o detalhe técnico continua lá, um clique abaixo.
  */
 import type { AccessReport, Investigation } from '@trail/core';
+/** Link para o passo na instância: o registro pelo sys_id ou a lista já filtrada. */
+export declare function refLink(origin: string, ref: {
+    table: string;
+    sysId?: string;
+    query?: string;
+}): string;
 export declare function humanField(f: string): string;
 export declare function Result({ r, origin, access, toast }: {
     r: Investigation;

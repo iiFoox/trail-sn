@@ -29,6 +29,18 @@ export interface Traces {
   jobsByScript: Row[];
   /** Regras de atribuição ativas da hierarquia (só para assignment_group / assigned_to). */
   assignmentRules: Row[];
+  /** Client scripts ativos da hierarquia que citam o campo (só carregados quando houve formulário). */
+  clientScripts: Row[];
+  /** Data lookups ativos que definem o campo, com os campos de entrada. */
+  dataLookups: {
+    name: string; sysId: string; runOnForm: boolean; runOnUpdate: boolean; inputs: string[];
+    /** Campos de entrada: no registro (source) e na tabela do lookup (matcher); exact=false aceita coluna vazia como curinga. */
+    match?: { source: string; matcher: string; exact: boolean }[];
+    /** Coluna da tabela do lookup que define o campo investigado. */
+    setColumn?: string;
+    /** Linhas ativas da tabela do lookup cujo valor definido é um dos valores gravados; null = não consultado. */
+    rows?: Row[] | null;
+  }[];
 }
 
 export interface ChangeContext {
@@ -45,6 +57,8 @@ export interface ChangeContext {
   meta: TableMeta;
   traces: Traces;
   opts: InvestigationOptions;
+  /** Valores atuais do registro para os campos citados nas condições das BRs candidatas. */
+  record: Record<string, string>;
 }
 
 /** Uma assinatura recebe os dados carregados e devolve evidências. Nunca faz chamada própria. */

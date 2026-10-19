@@ -56,6 +56,8 @@ export const typeGlyph: Record<EvidenceType, preact.JSX.Element> = {
   user_action: Glyph.user,
   server_change: Glyph.server,
   assignment_rule: Glyph.group,
+  data_lookup: P('M4 5h16v14H4zM4 10h16M9 10v9'),
+  client_script: P('M8 9l-4 3 4 3M16 9l4 3-4 3M13 6l-2 12'),
   unknown_background: Glyph.question,
 };
 

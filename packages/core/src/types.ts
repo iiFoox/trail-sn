@@ -52,6 +52,8 @@ export type EvidenceType =
   | 'user_action'
   | 'server_change'
   | 'assignment_rule'
+  | 'data_lookup'
+  | 'client_script'
   | 'unknown_background';
 
 /** Fato verificável que soma pontos. `kind` indexa o peso em scoring.ts. */
@@ -68,6 +70,10 @@ export type FactKind =
   | 'job_schedule_matches'
   | 'no_user_transaction'
   | 'condition_true'
+  | 'condition_false'
+  | 'client_side_possible'
+  | 'sets_same_value'
+  | 'sets_other_value'
   | 'tie_with_same_type';
 
 export interface Fact {
@@ -96,7 +102,10 @@ export interface Evidence {
 }
 
 /** Um passo do que aconteceu no registro perto da mudança, para a aba Rastro. */
-export type TraceKind = 'form' | 'ui_action' | 'async' | 'job' | 'api' | 'background_script' | 'event' | 'flow' | 'workflow' | 'change';
+export type TraceKind = 'form' | 'ui_action' | 'async' | 'job' | 'api' | 'background_script' | 'event' | 'flow' | 'workflow' | 'change' | 'write';
+
+/** Um campo gravado numa mesma atualização (checkpoint). */
+export interface FieldWrite { field: string; oldValue: string; newValue: string }
 
 export interface TraceItem {
   /** UTC, "YYYY-MM-DD HH:mm:ss". */
@@ -111,6 +120,12 @@ export interface TraceItem {
   sent?: string;
   /** Marca o passo ligado à causa mais provável. */
   cause?: boolean;
+  /** Registro de origem na instância, para abrir o passo no ServiceNow. */
+  ref?: { table: string; sysId?: string; query?: string };
+  /** 'change' e 'write': outros campos gravados na mesma atualização. */
+  fields?: FieldWrite[];
+  /** 'write': checkpoint da atualização. */
+  checkpoint?: number;
 }
 
 export interface Change {
@@ -125,6 +140,8 @@ export interface Change {
   notes: string[];
   /** O que rodou no registro de windowBefore a windowAfter segundos em volta da mudança, em ordem. */
   trace: TraceItem[];
+  /** Passos da janela que ficaram fora do rastro por excesso (registros muito movimentados). */
+  traceOmitted?: number;
 }
 
 export interface UnauditedUpdates {

@@ -17,6 +17,10 @@ export const WEIGHTS: Record<FactKind, number> = {
   job_schedule_matches: 30,
   no_user_transaction: 10,
   condition_true: 15,
+  condition_false: -40,
+  client_side_possible: -30,
+  sets_same_value: 15,
+  sets_other_value: -40,
   tie_with_same_type: -15,
 };
 

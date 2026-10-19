@@ -22,12 +22,15 @@ const NAMED_TRACES = [asyncBusinessRule, scheduledJobWithTransaction, scriptActi
  */
 export function runSignatures(ctx: ChangeContext): Evidence[] {
   const out = NAMED_TRACES.flatMap((s) => s(ctx));
+  // Só um rastro que nomeia o artefato encerra a busca; sinais fracos (ex.: script action genérica) não.
+  const strong = out.some((e) => e.facts.some((f) => f.kind === 'trace_names_artifact' || f.kind === 'trace_identifies_mechanism'));
   const anyUserTx = ctx.traces.transactions.some((t) => t.sys_created_by === ctx.user && !/^JOB: /.test(t.url ?? ''));
-  if (!out.length && !anyUserTx) {
+  const anySubmit = ctx.traces.transactions.some((t) => t.type === 'form' && (t.url ?? '').includes(`sys_uniqueValue=${ctx.sysId}`));
+  if (!strong && !anyUserTx && !anySubmit) {
     out.push(...scheduledJobWithoutTransaction(ctx));
     if (!out.length) out.push(...unknownBackground(ctx));
     return out;
   }
-  if (!out.length) out.push(...sameTransaction(ctx));
+  if (!strong) out.push(...sameTransaction(ctx));
   return out;
 }

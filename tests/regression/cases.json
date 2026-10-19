@@ -98,29 +98,249 @@
   {
     "id": "F1-ASSIGN",
     "table": "incident",
-    "number": "<preencher após pdi-setup-fase1.js>",
+    "number": "INC0010012",
     "field": "assignment_group",
     "expectedType": "assignment_rule",
-    "minGrade": "probable",
-    "pending": true
+    "minGrade": "probable"
   },
   {
-    "id": "F1-SEQ-1",
+    "id": "F1-SEQ-async",
     "table": "incident",
-    "number": "<preencher>",
+    "number": "INC0010013",
     "field": "impact",
     "expectedType": "br_async",
-    "minGrade": "confirmed",
-    "pending": true
+    "expectedName": "[PT] F1 async",
+    "minGrade": "probable"
+  },
+  {
+    "id": "F1-SEQ-before",
+    "table": "incident",
+    "number": "INC0010013",
+    "field": "impact",
+    "changeIndex": 1,
+    "expectedType": "br_before",
+    "expectedName": "[PT] F1 before",
+    "minGrade": "confirmed"
   },
   {
     "id": "F1-MANY",
     "table": "incident",
-    "number": "<preencher>",
+    "number": "INC0010014",
     "field": "state",
-    "expectedType": "background_script",
+    "expectedType": "user_action",
+    "minGrade": "candidate",
+    "maxMs": 3000
+  },
+  {
+    "id": "F1-REST",
+    "table": "incident",
+    "number": "INC0010015",
+    "field": "urgency",
+    "expectedType": "user_action",
+    "minGrade": "candidate"
+  },
+  {
+    "id": "F1-LOOKUP",
+    "table": "incident",
+    "number": "INC0010016",
+    "field": "priority",
+    "expectedType": "data_lookup",
+    "minGrade": "probable"
+  },
+  {
+    "id": "F1-CLIENT",
+    "table": "incident",
+    "number": "INC0010017",
+    "field": "urgency",
+    "expectedType": "client_script",
+    "minGrade": "probable"
+  },
+  {
+    "id": "F1-OTHER",
+    "table": "problem",
+    "number": "PRB0040001",
+    "field": "impact",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F1 problem",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F2-USER-contact",
+    "table": "incident",
+    "number": "INC0010018",
+    "field": "contact_type",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F2-USER-desc",
+    "table": "incident",
+    "number": "INC0010018",
+    "field": "description",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F2-USER-urg",
+    "table": "incident",
+    "number": "INC0010018",
+    "field": "urgency",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F2-CLIENT-desc",
+    "table": "incident",
+    "number": "INC0010019",
+    "field": "description",
+    "expectedType": "client_script",
     "minGrade": "probable",
-    "pending": true
+    "expectedName": "[PT] F2 client"
+  },
+  {
+    "id": "F2-CLIENT-imp",
+    "table": "incident",
+    "number": "INC0010019",
+    "field": "impact",
+    "expectedType": "client_script",
+    "minGrade": "probable",
+    "expectedName": "[PT] F2 client"
+  },
+  {
+    "id": "F2-CLIENT-contact",
+    "table": "incident",
+    "number": "INC0010019",
+    "field": "contact_type",
+    "expectedType": "user_action",
+    "minGrade": "probable"
+  },
+  {
+    "id": "F2-BEFORE-desc",
+    "table": "incident",
+    "number": "INC0010020",
+    "field": "description",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F2 before"
+  },
+  {
+    "id": "F2-BEFORE-urg",
+    "table": "incident",
+    "number": "INC0010020",
+    "field": "urgency",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F2 before"
+  },
+  {
+    "id": "F2-BEFORE-contact",
+    "table": "incident",
+    "number": "INC0010020",
+    "field": "contact_type",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F2-AFTER-desc",
+    "table": "incident",
+    "number": "INC0010021",
+    "field": "description",
+    "expectedType": "br_after",
+    "minGrade": "probable",
+    "expectedName": "[PT] F2 after"
+  },
+  {
+    "id": "F2-AFTER-urg",
+    "table": "incident",
+    "number": "INC0010021",
+    "field": "urgency",
+    "expectedType": "br_after",
+    "minGrade": "probable",
+    "expectedName": "[PT] F2 after"
+  },
+  {
+    "id": "F2-AFTER-contact",
+    "table": "incident",
+    "number": "INC0010021",
+    "field": "contact_type",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F2-ASYNC-desc",
+    "table": "incident",
+    "number": "INC0010022",
+    "field": "description",
+    "expectedType": "br_async",
+    "minGrade": "probable",
+    "expectedName": "[PT] F2 async"
+  },
+  {
+    "id": "F2-ASYNC-urg",
+    "table": "incident",
+    "number": "INC0010022",
+    "field": "urgency",
+    "expectedType": "br_async",
+    "minGrade": "probable",
+    "expectedName": "[PT] F2 async"
+  },
+  {
+    "id": "F2-ASYNC-contact",
+    "table": "incident",
+    "number": "INC0010022",
+    "field": "contact_type",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F2-REST-desc",
+    "table": "incident",
+    "number": "INC0010023",
+    "field": "description",
+    "expectedType": "user_action",
+    "minGrade": "candidate"
+  },
+  {
+    "id": "F2-REST-contact",
+    "table": "incident",
+    "number": "INC0010023",
+    "field": "contact_type",
+    "expectedType": "user_action",
+    "minGrade": "candidate"
+  },
+  {
+    "id": "F2-REST-urg",
+    "table": "incident",
+    "number": "INC0010023",
+    "field": "urgency",
+    "expectedType": "user_action",
+    "minGrade": "candidate"
+  },
+  {
+    "id": "F2-MIXED-contact",
+    "table": "incident",
+    "number": "INC0010024",
+    "field": "contact_type",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F2-MIXED-desc",
+    "table": "incident",
+    "number": "INC0010024",
+    "field": "description",
+    "expectedType": "client_script",
+    "minGrade": "probable",
+    "expectedName": "[PT] F2 client"
+  },
+  {
+    "id": "F2-MIXED-urg",
+    "table": "incident",
+    "number": "INC0010024",
+    "field": "urgency",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F2 mixed"
   },
   {
     "id": "F1-IMPORT",

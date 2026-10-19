@@ -97,6 +97,11 @@ declare const dict: {
             warnUnaudited: string[];
             warnExpired: string;
             traceIntro: string;
+            otherWrite: string;
+            sameWrite: string;
+            moreFields: string;
+            seeInSn: string;
+            openAllTx: string;
             traceEmpty: string;
             cause: string;
             notChecked: string;
@@ -107,6 +112,7 @@ declare const dict: {
             by: string;
             checkpoint: string;
             srcName: Record<string, string>;
+            omitted: string;
             whyThis: string;
             nProofs: string;
             whyNotOther: string;
@@ -233,6 +239,11 @@ declare const dict: {
             warnUnaudited: string[];
             warnExpired: string;
             traceIntro: string;
+            otherWrite: string;
+            sameWrite: string;
+            moreFields: string;
+            seeInSn: string;
+            openAllTx: string;
             traceEmpty: string;
             cause: string;
             notChecked: string;
@@ -243,6 +254,7 @@ declare const dict: {
             by: string;
             checkpoint: string;
             srcName: Record<string, string>;
+            omitted: string;
             whyThis: string;
             nProofs: string;
             whyNotOther: string;

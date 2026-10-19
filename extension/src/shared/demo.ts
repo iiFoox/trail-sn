@@ -245,19 +245,21 @@ const STORIES: Record<string, FieldStory> = {
 export const DEMO_FIELDS = Object.keys(STORIES);
 
 // ---------- o que rodou no registro em volta de cada mudança (aba Rastro) ----------
-const form = (at: string, user: string, sent?: string, cause = true): TraceItem => ({ at, kind: 'form', label: '/incident.do', user, source: 'syslog_transaction', ...(sent !== undefined ? { sent } : {}), cause });
+let txSeq = 0;
+const txRef = () => ({ table: 'syslog_transaction', sysId: `f0e1d2c3b4a5968778695a4b3c2d1e${String(++txSeq).padStart(2, '0')}` });
+const form = (at: string, user: string, sent?: string, cause = true): TraceItem => ({ at, kind: 'form', label: '/incident.do', user, source: 'syslog_transaction', ref: txRef(), ...(sent !== undefined ? { sent } : {}), cause });
 const TRACES: Record<string, TraceItem[]> = {
-  'state:3': [form('2026-10-18 01:37:01', 'admin', '2', false), { at: '2026-10-18 01:37:02', kind: 'async', label: '[PERICIA-TESTE] Resolve incidente por palavra-chave', user: 'system', source: 'syslog_transaction', cause: true }],
+  'state:3': [form('2026-10-18 01:37:01', 'admin', '2', false), { at: '2026-10-18 01:37:02', kind: 'async', ref: txRef(), label: '[PERICIA-TESTE] Resolve incidente por palavra-chave', user: 'system', source: 'syslog_transaction', cause: true }],
   'state:2': [form('2026-10-17 14:02:10', 'pericia.itil', '2')],
   'impact:6': [form('2026-10-18 02:10:33', 'pericia.itil', '3')],
   'urgency:7': [form('2026-10-18 02:12:05', 'admin', '2')],
   'priority:7': [form('2026-10-18 02:12:05', 'admin')],
   'priority:6': [form('2026-10-18 02:10:33', 'pericia.itil')],
   'category:10': [form('2026-10-18 02:16:40', 'admin', undefined, false)],
-  'contact_type:8': [form('2026-10-18 02:14:06', 'admin', undefined, false), { at: '2026-10-18 02:14:07', kind: 'event', label: 'pt.contato', source: 'sysevent', cause: true }],
-  'severity:11': [{ at: '2026-10-18 02:19:59', kind: 'job', label: '[PT] C5 job ajusta severidade', user: 'system', source: 'syslog_transaction', cause: true }],
-  'severity:4': [{ at: '2026-10-18 02:05:11', kind: 'background_script', label: 'Scripts - Background', user: 'admin', source: 'syslog_transaction', cause: true }],
-  'description:12': [{ at: '2026-10-18 02:25:31', kind: 'ui_action', label: '[PT] C8 Marcar perícia', user: 'admin', source: 'syslog_transaction', cause: true }],
+  'contact_type:8': [form('2026-10-18 02:14:06', 'admin', undefined, false), { at: '2026-10-18 02:14:07', kind: 'event', label: 'pt.contato', source: 'sysevent', cause: true, ref: { table: 'sysevent', sysId: 'e1f2a3b4c5d6e7f8091a2b3c4d5e6f70' } }],
+  'severity:11': [{ at: '2026-10-18 02:19:59', kind: 'job', ref: txRef(), label: '[PT] C5 job ajusta severidade', user: 'system', source: 'syslog_transaction', cause: true }],
+  'severity:4': [{ at: '2026-10-18 02:05:11', kind: 'background_script', ref: txRef(), label: 'Scripts - Background', user: 'admin', source: 'syslog_transaction', cause: true }],
+  'description:12': [{ at: '2026-10-18 02:25:31', kind: 'ui_action', ref: txRef(), label: '[PT] C8 Marcar perícia', user: 'admin', source: 'syslog_transaction', cause: true }],
   'assignment_group:13': [form('2026-10-18 02:30:12', 'admin', '')],
   'assigned_to:14': [form('2026-10-18 02:31:50', 'admin', ID.howard)],
   'cmdb_ci:9': [form('2026-10-18 02:16:40', 'admin', ID.printer)],
@@ -274,9 +276,22 @@ const LABELS: Record<string, Record<string, string>> = {
   cmdb_ci: { [ID.printer]: 'PRN-3A-01' }, caller_id: { [ID.beth]: 'Beth Anglin' },
 };
 
+/** Outros campos gravados na mesma atualização (o rastro mostra o registro inteiro). */
+const SAME_WRITE: Record<string, { field: string; oldValue: string; newValue: string }[]> = {
+  'state:3': [{ field: 'close_code', oldValue: '', newValue: 'Solved (Permanently)' }, { field: 'close_notes', oldValue: '', newValue: 'Resolvido automaticamente: palavra-chave "reiniciada"' }],
+  'impact:6': [{ field: 'priority', oldValue: '5', newValue: '3' }],
+  'priority:6': [{ field: 'impact', oldValue: '3', newValue: '1' }],
+  'priority:7': [{ field: 'urgency', oldValue: '3', newValue: '2' }],
+  'urgency:7': [{ field: 'priority', oldValue: '3', newValue: '2' }],
+  'category:10': [{ field: 'subcategory', oldValue: '', newValue: 'wireless' }],
+  'severity:11': [{ field: 'work_notes', oldValue: '', newValue: 'Severidade ajustada pelo job de revisão' }],
+};
+
 function withTrace(field: string, c: DemoChange): Change {
   const before = TRACES[`${field}:${c.checkpoint}`] ?? [];
-  return { ...c, trace: [...before, { at: c.at, kind: 'change', label: '', user: c.user, source: 'sys_audit' }] };
+  const fields = SAME_WRITE[`${field}:${c.checkpoint}`];
+  const ref = { table: 'sys_audit', query: `documentkey=${SYS_ID}^record_checkpoint=${c.checkpoint}` };
+  return { ...c, trace: [...before, { at: c.at, kind: 'change', label: '', user: c.user, source: 'sys_audit', ref, ...(fields ? { fields } : {}) }] };
 }
 
 const access: AccessReport = {
@@ -304,9 +319,12 @@ export function demoState(field = 'state'): TabState {
 
 /** Rótulo do destino de um link, para o aviso "na extensão, isto abriria...". */
 export function describeLink(href: string): string {
+  const list = href.match(/\/([a-z0-9_]+)_list\.do\?sysparm_query=/);
+  if (list) return list[1] === 'sys_audit' ? 'a auditoria dessa gravação' : list[1] === 'syslog_transaction' ? 'a lista dessas transações' : 'a lista filtrada';
   const m = href.match(/\/([a-z0-9_]+)\.do\?sys_id=/);
   const table = m?.[1] ?? '';
   const map: Record<string, string> = {
+    syslog_transaction: 'essa transação', sysevent: 'esse evento', sys_flow_context: 'esse flow', wf_context: 'esse workflow',
     incident: 'o registro', sys_script: 'a business rule', sys_script_include: 'o script include', sysevent_script_action: 'a script action',
     sysauto_script: 'o job agendado', sys_ui_action: 'a UI action', sysrule_assignment: 'a regra de atribuição', dl_u_priority: 'o data lookup',
   };
