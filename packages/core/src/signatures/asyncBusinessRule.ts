@@ -1,5 +1,6 @@
 import { fact } from '../scoring';
 import { refsField } from '../util';
+import { scriptFacts } from './scriptFacts';
 import { evidence, type Signature } from './context';
 
 /**
@@ -19,7 +20,7 @@ export const asyncBusinessRule: Signature = (ctx) => {
       fact('references_table', 'sys_script', `BR da tabela ${br.collection}`),
     ];
     if (refsField(br.script, ctx.field) || refsField(br.template, ctx.field)) {
-      facts.push(fact('references_field', 'sys_script', `o script ou template referencia "${ctx.field}"`));
+      facts.push(fact('references_field', 'sys_script', `o script ou template referencia "${ctx.field}"`), ...scriptFacts(ctx, br.script, 'sys_script', { mode: 'trigger', template: br.template, condition: br.condition }));
     }
     out.push(evidence('br_async', { name: br.name ?? name, sysId: br.sys_id, table: 'sys_script' }, facts));
   }

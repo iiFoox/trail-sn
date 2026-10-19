@@ -523,4 +523,69 @@ describe('Rastro e rótulos', () => {
     expect(e.facts.some((f) => f.kind === 'integration_user')).toBe(true);
     expect(e.grade).toBe('confirmed');
   });
+
+  it('concorrência: duas BRs before no mesmo campo, vence a de order maior; a outra vira "sobrescrita"', async () => {
+    const s = scenario();
+    br(s, 'PT ordem 100', 'before', "if (current.contact_type.changes()) current.impact = 2;", 'incident', '100');
+    br(s, 'PT ordem 300', 'before', "if (current.contact_type.changes()) current.impact = 1;", 'incident', '300');
+    audit(s, 'contact_type', 'phone', 'email', T0, 'admin', 1);
+    audit(s, 'impact', '3', '1', T0, 'admin', 1);
+    formTx(s, T0, 'admin', { contact_type: 'email', impact: '3' });
+    const ev = (await run(s, 'impact')).changes[0]!.evidence;
+    expect(ev[0]!.artifact.name).toBe('PT ordem 300');
+    expect(ev[0]!.grade).toBe('confirmed');
+    const low = ev.find((e) => e.artifact.name === 'PT ordem 100')!;
+    expect(low.gaps.some((g) => g.includes('gravou depois'))).toBe(true);
+  });
+
+  it('concorrência: BR que só LÊ o campo não é suspeita dele', async () => {
+    const s = scenario();
+    br(s, 'PT reage ao canal', 'before', "if (current.contact_type.changes()) current.urgency = 1;");
+    audit(s, 'contact_type', 'phone', 'email', T0, 'admin', 1);
+    tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
+    const e = top(await run(s, 'contact_type'));
+    expect(e.type).toBe('user_action');
+    expect(e.grade).toBe('confirmed');
+  });
+
+  it('concorrência: guarda no script falsa (if no short_description) derruba a regra', async () => {
+    const s = scenario();
+    (s.record as Record<string, string>).short_description = 'Impressora sem rede';
+    br(s, 'PT guarda falsa', 'before', "if (current.short_description.indexOf('[OUTRO]') == 0) current.impact = 1;");
+    br(s, 'PT guarda certa', 'before', "if (current.short_description.indexOf('Impressora') == 0) current.impact = 1;");
+    audit(s, 'impact', '3', '1', T0, 'admin', 1);
+    formTx(s, T0, 'admin', { impact: '3' });
+    const ev = (await run(s, 'impact')).changes[0]!.evidence;
+    expect(ev[0]!.artifact.name).toBe('PT guarda certa');
+    expect(ev.find((e) => e.artifact.name === 'PT guarda falsa')!.facts.some((f) => f.kind === 'condition_false')).toBe(true);
+  });
+
+  it('cascata: BR after com update() dispara BR before que grava outro campo na gravação aninhada', async () => {
+    const s = scenario();
+    br(s, 'PT cascata A', 'after', "if (current.contact_type.changes() && current.description != 'A') { current.description = 'A'; current.update(); }");
+    br(s, 'PT cascata B', 'before', "if (current.description.changes() && current.description == 'A') current.impact = 1;");
+    audit(s, 'contact_type', 'phone', 'email', T0, 'admin', 1);
+    audit(s, 'description', 'x', 'A', T0, 'admin', 2);
+    audit(s, 'impact', '3', '1', T0, 'admin', 2);
+    formTx(s, T0, 'admin', { contact_type: 'email' });
+    const imp = top(await run(s, 'impact'));
+    expect(imp.artifact.name).toBe('PT cascata B');
+    expect(imp.grade).toBe('confirmed');
+    expect(imp.gaps.some((g) => g.includes('PT cascata A'))).toBe(true);
+    const desc = top(await run(s, 'description'));
+    expect(desc.artifact.name).toBe('PT cascata A');
+  });
+
+  it('valor calculado: description = short_description + " calc"', async () => {
+    const s = scenario();
+    (s.record as Record<string, string>).short_description = 'Impressora sem rede';
+    br(s, 'PT calculo', 'before', "if (current.contact_type.changes()) current.description = current.short_description + ' calc';");
+    br(s, 'PT literal', 'before', "if (current.contact_type.changes()) current.description = 'outra';");
+    audit(s, 'contact_type', 'phone', 'email', T0, 'admin', 1);
+    audit(s, 'description', 'x', 'Impressora sem rede calc', T0, 'admin', 1);
+    formTx(s, T0, 'admin', { contact_type: 'email', description: 'x' });
+    const e = top(await run(s, 'description'));
+    expect(e.artifact.name).toBe('PT calculo');
+    expect(e.facts.some((f) => f.kind === 'sets_same_value')).toBe(true);
+  });
 });

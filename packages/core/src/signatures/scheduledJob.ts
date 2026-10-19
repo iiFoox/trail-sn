@@ -1,5 +1,6 @@
 import { fact } from '../scoring';
 import { refsField, timeOfDayDiffMs, toMs } from '../util';
+import { scriptFacts } from './scriptFacts';
 import { evidence, isSystemUser, type Signature } from './context';
 
 /** Job agendado com transação "JOB: <nome>" na janela (C5b). */
@@ -10,7 +11,7 @@ export const scheduledJobWithTransaction: Signature = (ctx) => {
     const tx = jobTx.find((t) => (t.url ?? '').slice(5).trim() === job.name);
     if (!tx) continue;
     const facts = [fact('trace_names_artifact', 'syslog_transaction', `transação JOB "${job.name}" às ${tx.sys_created_on}`)];
-    if (refsField(job.script, ctx.field)) facts.push(fact('references_field', 'sysauto_script', `o script referencia "${ctx.field}"`));
+    if (refsField(job.script, ctx.field)) facts.push(fact('references_field', 'sysauto_script', `o script referencia "${ctx.field}"`), ...scriptFacts(ctx, job.script, 'sysauto_script', { mode: 'trigger' }));
     if ((job.script ?? '').includes(ctx.table)) facts.push(fact('references_table', 'sysauto_script', `o script cita "${ctx.table}"`));
     out.push(evidence('scheduled_job', { name: job.name ?? '?', sysId: job.sys_id, table: 'sysauto_script' }, facts));
   }

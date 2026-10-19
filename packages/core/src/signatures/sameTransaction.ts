@@ -1,5 +1,7 @@
 import { fact } from '../scoring';
-import { assignedLiterals, evalCondition, refsField, toMs } from '../util';
+import { evalCondition, refsField, toMs } from '../util';
+import { writesOf } from '../scriptEval';
+import { reactsFacts, resolveOrder, scriptFacts } from './scriptFacts';
 import { evidence, type ChangeContext, type Signature } from './context';
 import type { Evidence, Fact, Row } from '../types';
 
@@ -28,9 +30,9 @@ export const sameTransaction: Signature = (ctx) => {
 };
 
 /** Fato de condição: verdadeira soma, falsa derruba. Avaliada com os valores atuais, nunca com o próprio campo. */
-function conditionFacts(ctx: ChangeContext, cond: string | undefined, source: string): Fact[] {
+function conditionFacts(ctx: ChangeContext, cond: string | undefined, source: string, fieldValue?: string): Fact[] {
   // O próprio campo é avaliado com o valor de ANTES da mudança: é o que a regra viu quando rodou.
-  const r = evalCondition(cond, { ...ctx.record, [ctx.field]: ctx.audit.oldvalue ?? '' }, '');
+  const r = evalCondition(cond, { ...ctx.record, [ctx.field]: fieldValue ?? ctx.audit.oldvalue ?? '' }, '');
   if (r === true) return [fact('condition_true', source, 'a condição da regra vale para este registro (valores atuais)')];
   if (r === false) return [fact('condition_false', source, 'a condição da regra não vale para este registro (valores atuais)')];
   return [];
@@ -53,15 +55,38 @@ function lookupFits(ctx: ChangeContext, d: Lookup): boolean | undefined {
   }));
 }
 
-/** O script grava um valor literal no campo? Igual ao gravado soma; todos diferentes derruba. */
-function valueFacts(ctx: ChangeContext, script: string | undefined, source: string): Fact[] {
-  const vals = assignedLiterals(script, ctx.field);
-  if (!vals) return [];
-  const nv = ctx.audit.newvalue ?? '';
-  return vals.includes(nv)
-    ? [fact('sets_same_value', source, `o código grava "${nv}" neste campo`)]
-    : [fact('sets_other_value', source, `o código grava ${vals.map((v) => `"${v}"`).join(', ')}, não "${nv}"`)];
+/** Fatos do script de uma BR: grava o campo? com que valor? as condições (filtro, Condition e ifs) valem? */
+function brScriptFacts(ctx: ChangeContext, b: Row, mode: 'save' | 'trigger', cond: Fact[], fieldValue?: string): Fact[] {
+  return scriptFacts(ctx, b.script, 'sys_script', { mode, template: b.template, condition: b.condition, hasCondition: cond.length > 0, fieldValue });
 }
+
+/** Quem fez a gravação aninhada: BRs after que chamam update() e gravam um campo que mudou neste checkpoint. */
+function nestedBy(ctx: ChangeContext): Row | undefined {
+  const others = (ctx.checkpoints[String(ctx.checkpoint)] ?? []).map((r) => r.fieldname ?? '').filter((f) => f && f !== ctx.field);
+  return ctx.meta.businessRules.find((b) => (b.when === 'after' || isAsync(b.when)) && /\.update\(\s*\)/.test(b.script ?? '')
+    && others.some((f) => (writesOf(b.script, f)?.writes.length ?? 0) > 0));
+}
+
+/** BRs before que podem ter gravado o campo numa gravação feita por automação (update() de outra regra, script action, job). */
+function nestedBefores(ctx: ChangeContext, base: () => Fact[]): { e: Evidence; row: Row }[] {
+  const by = nestedBy(ctx);
+  return ctx.meta.brField.filter((b) => b.when === 'before').map((b) => {
+    const cond = conditionFacts(ctx, brCondition(b), 'sys_script');
+    const facts = [...base(), ...cond, ...brScriptFacts(ctx, b, 'save', cond), ...reactsFacts(ctx, [b.script, b.condition], 'sys_script')];
+    const gaps = [by ? `rodou dentro da gravação feita por "${by.name}" (update() numa regra after)` : 'rodou dentro de uma gravação feita por automação'];
+    return { e: evidence('br_before', { name: b.name ?? '?', sysId: b.sys_id, table: 'sys_script' }, facts, gaps), row: b };
+  });
+}
+
+/** Mudança numa gravação de fundo (script action, job, evento): as BRs before rodam ali também. */
+export const backgroundBefores = (ctx: ChangeContext): Evidence[] => {
+  const evs = nestedBefores(ctx, () => [
+    fact('references_field', 'sys_script', `referencia "${ctx.field}"`),
+    fact('references_table', 'sys_script', `BR da hierarquia de ${ctx.table}`),
+  ]);
+  resolveOrder(evs);
+  return evs.map((x) => x.e);
+};
 
 function brCondition(b: Row): string | undefined {
   return b.filter_condition || undefined;
@@ -76,8 +101,13 @@ function chainedUpdate(ctx: ChangeContext): Evidence[] {
   ];
   for (const b of ctx.meta.brField.filter((b) => b.when === 'after' || isAsync(b.when))) {
     const gaps = isAsync(b.when) ? ['BR assíncrona rápida: não deixou transação de job; a ligação vem do código e do horário'] : [];
-    out.push(evidence(isAsync(b.when) ? 'br_async' : 'br_after', { name: b.name ?? '?', sysId: b.sys_id, table: 'sys_script' }, [...base(), ...conditionFacts(ctx, brCondition(b), 'sys_script'), ...valueFacts(ctx, b.script, 'sys_script')], gaps));
+    const cond = conditionFacts(ctx, brCondition(b), 'sys_script');
+    out.push(evidence(isAsync(b.when) ? 'br_async' : 'br_after', { name: b.name ?? '?', sysId: b.sys_id, table: 'sys_script' }, [...base(), ...cond, ...brScriptFacts(ctx, b, 'trigger', cond)], gaps));
   }
+  // A gravação aninhada (update() de uma regra after) roda as BRs before de novo.
+  const befores = nestedBefores(ctx, base);
+  resolveOrder(befores);
+  out.push(...befores.map((x) => x.e));
   for (const x of ctx.meta.brViaSi.filter((x) => x.br.when === 'after' || x.br.when === 'before' || isAsync(x.br.when))) {
     out.push(evidence('br_via_script_include', { name: `${x.br.name} → ${x.si.name}`, sysId: x.si.sys_id, table: 'sys_script_include' }, [...base(), ...conditionFacts(ctx, brCondition(x.br), 'sys_script')]));
   }
@@ -103,23 +133,29 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
   let verdict: 'user' | 'server' | null = null;
   let formAt = '';
   let formUser = ctx.user;
+  let sentValue: string | undefined;
   for (const t of formSubmits(ctx)) {
     const p = new URLSearchParams((t.url ?? '').split('?')[1] ?? '');
     const sent = p.get(`${ctx.table}.${ctx.field}`);
     if (sent === null) continue;
     verdict = sent === (ctx.audit.newvalue ?? '') ? 'user' : 'server';
+    sentValue = sent;
     formAt = t.sys_created_on ?? '';
     formUser = t.sys_created_by ?? ctx.user;
     break;
   }
 
   const befores = ctx.meta.brField.filter((b) => b.when === 'before');
-  const brFacts = (b: Row) => [
-    fact('references_field', 'sys_script', `referencia "${ctx.field}"`),
-    fact('references_table', 'sys_script', `BR da tabela ${b.collection}`),
-    ...conditionFacts(ctx, brCondition(b), 'sys_script'),
-    ...valueFacts(ctx, b.script, 'sys_script'),
-  ];
+  const brFacts = (b: Row) => {
+    const cond = conditionFacts(ctx, brCondition(b), 'sys_script', sentValue);
+    return [
+      fact('references_field', 'sys_script', `referencia "${ctx.field}"`),
+      fact('references_table', 'sys_script', `BR da tabela ${b.collection}`),
+      ...cond,
+      ...brScriptFacts(ctx, b, 'save', cond, sentValue),
+      ...reactsFacts(ctx, [b.script, b.condition], 'sys_script'),
+    ];
+  };
   const changedTogether = sameWriteFields(ctx);
 
   // Data lookups que definem o campo, quando uma das entradas mudou na mesma gravação.
@@ -147,11 +183,11 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
     for (const cs of ctx.traces.clientScripts) {
       const trigger = cs.field ?? '';
       const triggered = cs.type === 'onChange' && changedTogether.includes(trigger);
-      const facts = [fact('references_field', 'sys_script_client', `o client script altera "${ctx.field}"`), fact('references_table', 'sys_script_client', `client script da tabela ${cs.table}`), ...valueFacts(ctx, cs.script, 'sys_script_client')];
+      const facts = [fact('references_field', 'sys_script_client', `o client script altera "${ctx.field}"`), fact('references_table', 'sys_script_client', `client script da tabela ${cs.table}`), ...scriptFacts(ctx, cs.script, 'sys_script_client', { trigger: cs.type === 'onChange' ? trigger : undefined, hasCondition: triggered })];
       if (triggered) facts.push(fact('trace_identifies_mechanism', 'sys_audit', `${trigger} mudou na mesma gravação e dispara o script`), fact('condition_true', 'sys_script_client', 'onChange do campo que mudou'));
       clientSide.push(evidence('client_script', { name: cs.name ?? '?', sysId: cs.sys_id, table: 'sys_script_client' }, facts, ['o navegador não registra se a pessoa digitou ou se o script preencheu']));
     }
-    const strongClient = clientSide.some((e) => e.facts.some((f) => f.kind === 'trace_identifies_mechanism') && !e.facts.some((f) => f.kind === 'condition_false' || f.kind === 'sets_other_value'));
+    const strongClient = clientSide.some((e) => e.facts.some((f) => f.kind === 'trace_identifies_mechanism') && !e.facts.some((f) => f.kind === 'condition_false' || f.kind === 'sets_other_value' || f.kind === 'reads_only'));
     out.push(evidence('user_action', { name: formUser }, [
       fact('form_value_equals', 'syslog_transaction', 'o formulário enviou exatamente o novo valor'),
       fact('execution_in_window', 'syslog_transaction', `salvo às ${formAt}`),
@@ -164,7 +200,9 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
       fact('form_value_differs', 'syslog_transaction', 'o formulário enviou outro valor; o servidor alterou ao salvar'),
       fact('execution_in_window', 'syslog_transaction', `salvo às ${formAt} por ${formUser}`),
     ];
-    for (const b of befores) out.push(evidence('br_before', { name: b.name ?? '?', sysId: b.sys_id, table: 'sys_script' }, [...formFacts(), ...brFacts(b)]));
+    const bs = befores.map((b) => ({ e: evidence('br_before', { name: b.name ?? '?', sysId: b.sys_id, table: 'sys_script' }, [...formFacts(), ...brFacts(b)]), row: b }));
+    resolveOrder(bs);
+    out.push(...bs.map((x) => x.e));
     for (const d of lookups.filter((d) => d.runOnUpdate)) out.push(evidence('data_lookup', { name: d.name, sysId: d.sysId, table: 'dl_definition' }, [...formFacts(), ...lookupFacts(d)]));
     for (const rule of ctx.traces.assignmentRules) {
       const target = rule.group || rule.user;
@@ -181,7 +219,10 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
     const gap = ['sem envio de formulário para comparar o valor enviado'];
     // Sem o valor enviado, gravar o mesmo valor não prova nada (a pessoa pode ter mandado igual); só o valor diferente descarta.
     const server: Evidence[] = [];
-    for (const b of befores) server.push(evidence('br_before', { name: b.name ?? '?', sysId: b.sys_id, table: 'sys_script' }, brFacts(b).filter((f) => f.kind !== 'sets_same_value'), gap));
+    const bs = befores.map((b) => ({ e: evidence('br_before', { name: b.name ?? '?', sysId: b.sys_id, table: 'sys_script' }, brFacts(b), gap), row: b }));
+    resolveOrder(bs);
+    for (const x of bs) x.e.facts = x.e.facts.filter((f) => f.kind !== 'sets_same_value');
+    server.push(...bs.map((x) => x.e));
     // Data lookups e regras de atribuição também rodam no servidor quando a gravação vem pela API.
     for (const d of lookups.filter((d) => d.runOnUpdate)) server.push(evidence('data_lookup', { name: d.name, sysId: d.sysId, table: 'dl_definition' }, lookupFacts(d), gap));
     for (const rule of ctx.traces.assignmentRules) {
@@ -192,7 +233,7 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
     }
     out.push(...server);
     // Concorrentes de verdade: automações que podem ter gravado este valor (sem condição falsa e sem gravar outro valor).
-    const rivals = server.filter((e) => !e.facts.some((f) => f.kind === 'condition_false' || f.kind === 'sets_other_value'));
+    const rivals = server.filter((e) => !e.facts.some((f) => f.kind === 'condition_false' || f.kind === 'sets_other_value' || f.kind === 'reads_only'));
     const u = userTx[0];
     if (u) {
       const url = u.url ?? '';

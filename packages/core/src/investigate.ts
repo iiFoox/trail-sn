@@ -1,5 +1,6 @@
 import type { QueryRequest, RestClient } from './client/RestClient';
 import { scoreAll } from './scoring';
+import { fieldsRead } from './scriptEval';
 import { runSignatures, type ChangeContext, type TableMeta, type Traces } from './signatures';
 import {
   DEFAULT_OPTIONS,
@@ -137,7 +138,11 @@ export async function investigate(
     ...meta.brField.flatMap((b) => conditionFields(b.filter_condition)),
     ...meta.brViaSi.flatMap((x) => conditionFields(x.br.filter_condition)),
     ...assignmentRules.flatMap((r) => conditionFields(r.condition)),
-  ]).filter((f) => f !== target.field && !f.includes('.'));
+    // Campos que os scripts candidatos leem (if, condição em script, valor calculado): avaliados com o valor da gravação.
+    ...meta.brField.flatMap((b) => [...fieldsRead(b.script), ...fieldsRead(b.condition)]),
+    ...meta.brViaSi.flatMap((x) => fieldsRead(x.br.condition)),
+    ...clientRows.flatMap((c) => fieldsRead(c.script)),
+  ]).filter((f) => f !== target.field && !f.includes('.')).slice(0, 40);
   // Linhas da tabela do lookup que produzem os valores gravados (para saber se o lookup PODE ter dado aquele valor).
   const newValues = unique(fieldChanges.map((c) => c.newvalue ?? '').filter(Boolean));
   const [lookupMatches, recCond, ...matcherRows] = await Promise.all([

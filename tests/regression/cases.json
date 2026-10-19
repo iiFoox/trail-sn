@@ -367,5 +367,136 @@
     "expectedType": "import_set",
     "expectedName": "Notification",
     "minGrade": "confirmed"
+  },
+  {
+    "id": "F5-ORDER",
+    "table": "incident",
+    "number": "INC0010026",
+    "field": "impact",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F5 ordem 300"
+  },
+  {
+    "id": "F5-ORDERCOND",
+    "table": "incident",
+    "number": "INC0010027",
+    "field": "urgency",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F5 cond 100"
+  },
+  {
+    "id": "F5-CASCADE-desc",
+    "table": "incident",
+    "number": "INC0010028",
+    "field": "description",
+    "expectedType": "br_after",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F5 cascata A"
+  },
+  {
+    "id": "F5-CASCADE-imp",
+    "table": "incident",
+    "number": "INC0010028",
+    "field": "impact",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F5 cascata B"
+  },
+  {
+    "id": "F5-EVENT-sev",
+    "table": "incident",
+    "number": "INC0010029",
+    "field": "severity",
+    "expectedType": "script_action",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F5 script action"
+  },
+  {
+    "id": "F5-EVENT-notify",
+    "table": "incident",
+    "number": "INC0010029",
+    "field": "notify",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F5 evento before"
+  },
+  {
+    "id": "F5-EVENT-contact",
+    "table": "incident",
+    "number": "INC0010029",
+    "field": "contact_type",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F5-CLIENT2-imp",
+    "table": "incident",
+    "number": "INC0010030",
+    "field": "impact",
+    "expectedType": "client_script",
+    "minGrade": "probable",
+    "expectedName": "[PT] F5 client A"
+  },
+  {
+    "id": "F5-CLIENT2-urg",
+    "table": "incident",
+    "number": "INC0010030",
+    "field": "urgency",
+    "expectedType": "client_script",
+    "minGrade": "probable",
+    "expectedName": "[PT] F5 client B"
+  },
+  {
+    "id": "F5-CLIENT2-contact",
+    "table": "incident",
+    "number": "INC0010030",
+    "field": "contact_type",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F5-RESTBR-urg",
+    "table": "incident",
+    "number": "INC0010031",
+    "field": "urgency",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F5 rest before"
+  },
+  {
+    "id": "F5-RESTBR-contact",
+    "table": "incident",
+    "number": "INC0010031",
+    "field": "contact_type",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F5-CALC",
+    "table": "incident",
+    "number": "INC0010032",
+    "field": "description",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F5 calculo"
+  },
+  {
+    "id": "F5-LOOKUPBR",
+    "table": "incident",
+    "number": "INC0010033",
+    "field": "priority",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] F5 prioridade"
+  },
+  {
+    "id": "F5-LOOKUPBR-imp",
+    "table": "incident",
+    "number": "INC0010033",
+    "field": "impact",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
   }
 ]

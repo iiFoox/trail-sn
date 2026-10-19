@@ -4,7 +4,7 @@ import { backgroundScript } from './backgroundScript';
 import type { ChangeContext } from './context';
 import { flow, workflow } from './flowAndWorkflow';
 import { importSet } from './importSet';
-import { sameTransaction } from './sameTransaction';
+import { backgroundBefores, sameTransaction } from './sameTransaction';
 import { scheduledJobWithTransaction, scheduledJobWithoutTransaction } from './scheduledJob';
 import { scriptAction } from './scriptAction';
 import { uiAction } from './uiAction';
@@ -25,13 +25,15 @@ export function runSignatures(ctx: ChangeContext): Evidence[] {
   const out = NAMED_TRACES.flatMap((s) => s(ctx));
   // Só um rastro que nomeia o artefato encerra a busca; sinais fracos (ex.: script action genérica) não.
   // Rastro forte só conta se nada o desmente (passo do flow que não grava o campo, valor diferente, condição falsa).
-  const ruledOut = (e: Evidence) => e.facts.some((f) => f.kind === 'no_step_writes_field' || f.kind === 'sets_other_value' || f.kind === 'condition_false');
+  const ruledOut = (e: Evidence) => e.facts.some((f) => f.kind === 'no_step_writes_field' || f.kind === 'sets_other_value' || f.kind === 'condition_false' || f.kind === 'reads_only');
   const strong = out.some((e) => !ruledOut(e) && e.facts.some((f) => f.kind === 'trace_names_artifact' || f.kind === 'trace_identifies_mechanism'));
   const anyUserTx = ctx.traces.transactions.some((t) => t.sys_created_by === ctx.user && !/^JOB: /.test(t.url ?? ''));
   const anySubmit = ctx.traces.transactions.some((t) => t.type === 'form' && (t.url ?? '').includes(`sys_uniqueValue=${ctx.sysId}`));
   if (!strong && !anyUserTx && !anySubmit) {
     out.push(...scheduledJobWithoutTransaction(ctx));
-    if (!out.length) out.push(...unknownBackground(ctx));
+    // A gravação de fundo (script action, job, evento) também roda as BRs before: elas podem ter gravado este campo.
+    out.push(...backgroundBefores(ctx));
+    if (!out.some((e) => !ruledOut(e))) out.push(...unknownBackground(ctx));
     return out;
   }
   if (!strong) out.push(...sameTransaction(ctx));
