@@ -1,0 +1,27 @@
+{
+  "name": "trail-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Trail: perícia de registros para ServiceNow. Extensão de navegador, somente leitura.",
+  "license": "MIT",
+  "workspaces": [
+    "packages/core",
+    "extension"
+  ],
+  "scripts": {
+    "build": "npm run build -w @trail/core && npm run build -w trail-extension",
+    "dev": "npm run dev -w trail-extension",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -b",
+    "regression": "node --import tsx tests/regression/run.mts"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.270",
+    "@types/node": "^22.0.0",
+    "playwright": "^1.56.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
