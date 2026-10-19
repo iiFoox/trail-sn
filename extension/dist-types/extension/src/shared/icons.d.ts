@@ -1,0 +1,22 @@
+import type { EvidenceType } from '@trail/core';
+export declare const TrailMark: () => import("preact").JSX.Element;
+export declare const Glyph: {
+    rule: import("preact").JSX.Element;
+    async: import("preact").JSX.Element;
+    include: import("preact").JSX.Element;
+    event: import("preact").JSX.Element;
+    click: import("preact").JSX.Element;
+    clock: import("preact").JSX.Element;
+    flow: import("preact").JSX.Element;
+    terminal: import("preact").JSX.Element;
+    user: import("preact").JSX.Element;
+    server: import("preact").JSX.Element;
+    question: import("preact").JSX.Element;
+    group: import("preact").JSX.Element;
+    search: import("preact").JSX.Element;
+    shield: import("preact").JSX.Element;
+    refresh: import("preact").JSX.Element;
+    plug: import("preact").JSX.Element;
+};
+export declare const typeGlyph: Record<EvidenceType, preact.JSX.Element>;
+export declare const EmptyIllustration: () => import("preact").JSX.Element;

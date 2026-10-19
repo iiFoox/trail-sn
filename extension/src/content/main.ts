@@ -74,15 +74,18 @@ function decorateForm(): void {
 function makeIcon(field: string): HTMLElement {
   const host = document.createElement('span');
   host.className = 'trail-host';
-  host.style.cssText = 'display:inline-block;margin-left:4px;vertical-align:middle;line-height:0;';
+  host.style.cssText = 'display:inline-block;margin-left:5px;vertical-align:middle;line-height:0;';
   const root = host.attachShadow({ mode: 'open' });
   root.innerHTML = `
     <style>
-      button{all:unset;cursor:pointer;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
-             color:#6b7280;opacity:.55;font:600 10px/1 system-ui,sans-serif;border:1px solid currentColor}
-      button:hover{opacity:1;color:#2563eb}
+      button{all:unset;cursor:pointer;width:16px;height:16px;border-radius:50%;display:inline-grid;place-items:center;
+             color:#6e7984;background:transparent;border:1px solid #c3cbd3;transition:all .12s ease;opacity:.7}
+      button:hover,button:focus-visible{opacity:1;color:#fff;background:#1f8476;border-color:#1f8476;box-shadow:0 0 0 3px rgba(31,132,118,.18)}
+      svg{width:10px;height:10px;display:block}
     </style>
-    <button type="button" title="${strings.whyChanged} (${field})" aria-label="${strings.whyChanged}">?</button>`;
+    <button type="button" title="${strings.whyChanged} · ${field}" aria-label="${strings.whyChanged} (${field})">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18c3-7 6-7 9 0s6 7 8-7"/><circle cx="21" cy="5" r="2" fill="currentColor" stroke="none"/></svg>
+    </button>`;
   root.querySelector('button')!.addEventListener('click', (ev) => {
     ev.preventDefault();
     ev.stopPropagation();
