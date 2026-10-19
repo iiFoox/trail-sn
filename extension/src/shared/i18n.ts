@@ -1,9 +1,23 @@
 import type { EvidenceType, Grade } from '@trail/core';
 
-type Lang = 'pt' | 'en';
+import type { Lang } from './prefs';
 
 const dict = {
   pt: {
+    prefsTitle: 'Aparência e idioma',
+    theme: 'Tema',
+    themeDark: 'Escuro',
+    themeLight: 'Claro',
+    themeSystem: 'Seguir o sistema',
+    language: 'Idioma',
+    panelMode: 'Abrir o painel em',
+    panelSide: 'Painel lateral do navegador',
+    panelWindow: 'Janela separada',
+    panelModeHint: 'A janela separada funciona igual no Chrome e no Edge e pode ficar em outro monitor.',
+    toggleTheme: 'Alternar tema claro/escuro',
+    detach: 'Abrir em janela separada',
+    demoLink: 'Na extensão, este link abre {what} na sua instância.',
+    demoBadge: 'demo',
     whyChanged: 'Por que mudou?',
     errorTitle: 'A investigação falhou',
     emptyTitle: 'Nenhuma investigação nesta aba',
@@ -78,6 +92,20 @@ const dict = {
     } as Record<EvidenceType, string>,
   },
   en: {
+    prefsTitle: 'Appearance and language',
+    theme: 'Theme',
+    themeDark: 'Dark',
+    themeLight: 'Light',
+    themeSystem: 'Follow system',
+    language: 'Language',
+    panelMode: 'Open the panel in',
+    panelSide: 'Browser side panel',
+    panelWindow: 'Separate window',
+    panelModeHint: 'The separate window works the same in Chrome and Edge and can live on another monitor.',
+    toggleTheme: 'Toggle light/dark theme',
+    detach: 'Open in a separate window',
+    demoLink: 'In the extension, this link opens {what} on your instance.',
+    demoBadge: 'demo',
     whyChanged: 'Why did it change?',
     errorTitle: 'Investigation failed',
     emptyTitle: 'No investigation in this tab',
@@ -160,7 +188,8 @@ export function detectLang(): Lang {
   return l.startsWith('pt') ? 'pt' : 'en';
 }
 
-export function t(lang: Lang = detectLang()): Strings {
+/** Português é o padrão; as páginas passam getPrefs().lang. */
+export function t(lang: Lang = 'pt'): Strings {
   return dict[lang];
 }
 

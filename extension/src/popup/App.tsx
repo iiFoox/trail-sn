@@ -1,21 +1,25 @@
 import type { AccessReport } from '@trail/core';
 import { useEffect, useState } from 'preact/hooks';
+import { DEMO_ORIGIN } from '../shared/demo';
 import { t } from '../shared/i18n';
+import { applyTheme, getPrefs, resolvedTheme, savePrefs } from '../shared/prefs';
 import { Glyph, TrailMark } from '../shared/icons';
 import { isEnabled, looksLikeServiceNow } from '../shared/instances';
 import { send, type ProbeResult } from '../shared/messages';
 
-const s = t();
+const s = t(getPrefs().lang);
 const isDemo = new URLSearchParams(location.search).has('demo');
 
 export function App() {
-  const [origin, setOrigin] = useState<string>(isDemo ? 'https://dev457034.service-now.com' : '');
+  const [origin, setOrigin] = useState<string>(isDemo ? DEMO_ORIGIN : '');
   const [isSn, setIsSn] = useState(isDemo);
   const [enabled, setEnabled] = useState(isDemo);
   const [probe, setProbe] = useState<ProbeResult>();
   const [probing, setProbing] = useState(false);
   const [access, setAccess] = useState<AccessReport>();
   const [err, setErr] = useState<string>();
+  const [theme, setTheme] = useState(resolvedTheme(getPrefs().theme));
+  const flipTheme = () => { const next = theme === 'dark' ? 'light' : 'dark'; setTheme(next); applyTheme(next); if (!isDemo) void savePrefs({ theme: next }); };
 
   useEffect(() => {
     if (isDemo) return;
@@ -53,6 +57,7 @@ export function App() {
       <header class="topbar">
         <div class="brand"><span class="mark"><TrailMark /></span>Trail</div>
         {enabled && <span class="dot" />}
+        <div class="actions"><button class="icon-btn" title={s.toggleTheme} aria-label={s.toggleTheme} onClick={flipTheme}>{theme === 'dark' ? Glyph.sun : Glyph.moon}</button></div>
       </header>
       <main class="wrap">
         <div class="card">
@@ -70,8 +75,9 @@ export function App() {
         </div>
 
         <div class="row" style="margin-top:10px">
-          <button class="btn grow" onClick={() => send({ type: 'open-panel' })}>{Glyph.search} {s.openPanel}</button>
-          <button class="btn" onClick={() => chrome.runtime.openOptionsPage()}>{s.options}</button>
+          <button class="btn grow" onClick={() => send({ type: 'open-panel', mode: 'side' })}>{Glyph.search} {s.openPanel}</button>
+          <button class="btn" title={s.detach} aria-label={s.detach} onClick={() => send({ type: 'open-panel', mode: 'window' })}>{Glyph.detach}</button>
+          <button class="btn" title={s.options} aria-label={s.options} onClick={() => chrome.runtime.openOptionsPage()}>{Glyph.gear}</button>
         </div>
 
         {enabled && (

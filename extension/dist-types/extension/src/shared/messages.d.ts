@@ -19,6 +19,7 @@ export type Message = {
     token?: string;
 } | {
     type: 'open-panel';
+    mode?: import('./prefs').PanelMode;
 } | {
     type: 'probe-auth';
     origin: string;

@@ -5,9 +5,29 @@
  */
 import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, type AccessReport, type MetaCache, type TableMeta } from '@trail/core';
 import { addInstance, listInstances, removeInstance } from '../shared/instances';
+import { loadPrefs, type PanelMode } from '../shared/prefs';
 import { storageKey, type Message, type PageContext, type ProbeResult, type TabState } from '../shared/messages';
 
 const session = chrome.storage.session;
+
+// ---------- abrir o painel: lateral ou janela separada ----------
+const WINDOW_KEY = 'panelWindow';
+async function openWindow(): Promise<void> {
+  const o = await session.get(WINDOW_KEY);
+  const id = o[WINDOW_KEY] as number | undefined;
+  if (typeof id === 'number') {
+    try { await chrome.windows.update(id, { focused: true }); return; } catch { /* foi fechada */ }
+  }
+  const w = await chrome.windows.create({ url: chrome.runtime.getURL('src/sidepanel/index.html?window=1'), type: 'popup', width: 440, height: 860, focused: true });
+  if (w?.id !== undefined) await session.set({ [WINDOW_KEY]: w.id });
+}
+async function openPanel(tabId: number | undefined, mode?: PanelMode): Promise<void> {
+  const m = mode ?? (await loadPrefs()).panelMode;
+  if (m === 'window') return openWindow();
+  // Abrir o painel lateral precisa de gesto do usuário; clique no ícone, no popup ou no menu contam.
+  if (tabId !== undefined) await chrome.sidePanel.open({ tabId }).catch(() => { /* já aberto ou sem gesto */ });
+}
+chrome.windows.onRemoved.addListener((id) => void session.get(WINDOW_KEY).then((o) => { if (o[WINDOW_KEY] === id) void session.remove(WINDOW_KEY); }));
 
 // ---------- estado por aba ----------
 async function getTab(tabId: number): Promise<TabState> {
@@ -87,7 +107,7 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 chrome.runtime.onStartup.addListener(() => void syncRegistrations());
 chrome.contextMenus.onClicked.addListener((_info, tab) => {
-  if (tab?.id) void chrome.sidePanel.open({ tabId: tab.id });
+  void openPanel(tab?.id);
 });
 
 // ---------- probe de autenticação ----------
@@ -192,14 +212,12 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
       case 'investigate': {
         const id = tabId ?? (await activeTabId());
         if (id === undefined) return;
-        // Abrir o painel precisa de gesto do usuário; o clique no ícone conta.
-        await chrome.sidePanel.open({ tabId: id }).catch(() => { /* já aberto ou sem gesto */ });
+        await openPanel(id);
         await runInvestigation(id, msg.origin, msg.target, msg.token);
         return;
       }
       case 'open-panel': {
-        const id = tabId ?? (await activeTabId());
-        if (id !== undefined) await chrome.sidePanel.open({ tabId: id });
+        await openPanel(tabId ?? (await activeTabId()), msg.mode);
         return;
       }
       case 'probe-auth':

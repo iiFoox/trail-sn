@@ -1,7 +1,21 @@
 import type { EvidenceType, Grade } from '@trail/core';
-type Lang = 'pt' | 'en';
+import type { Lang } from './prefs';
 declare const dict: {
     pt: {
+        prefsTitle: string;
+        theme: string;
+        themeDark: string;
+        themeLight: string;
+        themeSystem: string;
+        language: string;
+        panelMode: string;
+        panelSide: string;
+        panelWindow: string;
+        panelModeHint: string;
+        toggleTheme: string;
+        detach: string;
+        demoLink: string;
+        demoBadge: string;
         whyChanged: string;
         errorTitle: string;
         emptyTitle: string;
@@ -61,6 +75,20 @@ declare const dict: {
         type: Record<EvidenceType, string>;
     };
     en: {
+        prefsTitle: string;
+        theme: string;
+        themeDark: string;
+        themeLight: string;
+        themeSystem: string;
+        language: string;
+        panelMode: string;
+        panelSide: string;
+        panelWindow: string;
+        panelModeHint: string;
+        toggleTheme: string;
+        detach: string;
+        demoLink: string;
+        demoBadge: string;
         whyChanged: string;
         errorTitle: string;
         emptyTitle: string;
@@ -122,6 +150,7 @@ declare const dict: {
 };
 export type Strings = typeof dict.pt;
 export declare function detectLang(): Lang;
+/** Português é o padrão; as páginas passam getPrefs().lang. */
 export declare function t(lang?: Lang): Strings;
 export declare function fmt(s: string, vars: Record<string, string | number>): string;
 export {};

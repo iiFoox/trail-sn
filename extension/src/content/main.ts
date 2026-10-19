@@ -6,10 +6,13 @@
  *
  * Convivência com o SN Utils: prefixo trail- em tudo, shadowRoot próprio, ícone depois dos badges.
  */
-import { detectLang, t } from '../shared/i18n';
+import { t } from '../shared/i18n';
+import { loadPrefs } from '../shared/prefs';
 import type { PageContext } from '../shared/messages';
 
-const strings = t(detectLang());
+// Português até a preferência chegar do storage; os ícones criados depois já saem no idioma escolhido.
+let strings = t('pt');
+void loadPrefs().then((p) => { strings = t(p.lang); }).catch(() => undefined);
 const origin = location.origin;
 
 let ctx: PageContext = { origin, surface: 'unknown', ...contextFromUrl(location.href) };

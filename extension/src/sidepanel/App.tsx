@@ -1,23 +1,65 @@
 import type { AccessReport, Change, Evidence, Investigation } from '@trail/core';
 import { useEffect, useMemo, useState } from 'preact/hooks';
-import { demoState } from '../shared/demo';
+import { demoState, describeLink } from '../shared/demo';
 import { fmt, t } from '../shared/i18n';
+import { applyTheme, getPrefs, resolvedTheme, savePrefs } from '../shared/prefs';
 import { EmptyIllustration, Glyph, TrailMark, typeGlyph } from '../shared/icons';
 import { recordLink } from '../shared/instances';
 import { send, storageKey, type TabState } from '../shared/messages';
 
-const s = t();
-const isDemo = new URLSearchParams(location.search).has('demo');
+const s = t(getPrefs().lang);
+const params = new URLSearchParams(location.search);
+const isDemo = params.has('demo');
+/** Aberto como janela separada (chrome.windows), não como painel lateral. */
+const isWindow = params.has('window');
 
+/** A aba que o painel acompanha. Na janela separada, a aba ativa da última janela normal focada. */
 async function currentTab(): Promise<chrome.tabs.Tab | undefined> {
+  if (isWindow) {
+    try {
+      const w = await chrome.windows.getLastFocused({ windowTypes: ['normal'], populate: true });
+      return w.tabs?.find((x) => x.active);
+    } catch { return undefined; }
+  }
   const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
   return tab;
 }
 
+function ThemeToggle() {
+  const [theme, setTheme] = useState(resolvedTheme(getPrefs().theme));
+  const flip = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next); applyTheme(next);
+    if (!isDemo) void savePrefs({ theme: next });
+  };
+  return <button class="icon-btn" title={s.toggleTheme} aria-label={s.toggleTheme} onClick={flip}>{theme === 'dark' ? Glyph.sun : Glyph.moon}</button>;
+}
+
 export function App() {
   const [tabId, setTabId] = useState<number>();
-  const [state, setState] = useState<TabState | undefined>(isDemo ? demoState() : undefined);
+  const [state, setState] = useState<TabState | undefined>(isDemo ? demoState(params.get('field') ?? 'state') : undefined);
   const [fallbackOrigin, setFallbackOrigin] = useState<string>();
+  const [toast, setToast] = useState<string>();
+
+  // Demonstração: a página que hospeda o painel troca o campo; links não saem do site.
+  useEffect(() => {
+    if (!isDemo) return;
+    const onMsg = (e: MessageEvent) => {
+      const d = e.data as { type?: string; field?: string } | null;
+      if (d?.type === 'trail-demo' && d.field) { scrollTo(0, 0); setState({ ...demoState(d.field), status: 'running' }); setTimeout(() => setState(demoState(d.field)), 650); }
+    };
+    let timer: number | undefined;
+    const onClick = (e: MouseEvent) => {
+      const a = (e.target as Element | null)?.closest?.('a');
+      if (!a) return;
+      e.preventDefault();
+      setToast(fmt(s.demoLink, { what: describeLink(a.getAttribute('href') ?? '') }));
+      window.clearTimeout(timer); timer = window.setTimeout(() => setToast(undefined), 3200);
+    };
+    addEventListener('message', onMsg);
+    document.addEventListener('click', onClick, true);
+    return () => { removeEventListener('message', onMsg); document.removeEventListener('click', onClick, true); };
+  }, []);
 
   useEffect(() => {
     if (isDemo) return;
@@ -37,7 +79,13 @@ export function App() {
     chrome.storage.onChanged.addListener(onChange);
     const onTab = () => void currentTab().then((tab) => { if (tab?.id !== undefined && tab.id !== tabId) location.reload(); });
     chrome.tabs.onActivated.addListener(onTab);
-    return () => { chrome.storage.onChanged.removeListener(onChange); chrome.tabs.onActivated.removeListener(onTab); };
+    // Na janela separada, trocar de janela do navegador também troca a aba acompanhada.
+    const onFocus = (id: number) => { if (isWindow && id !== chrome.windows.WINDOW_ID_NONE) onTab(); };
+    chrome.windows?.onFocusChanged.addListener(onFocus);
+    return () => {
+      chrome.storage.onChanged.removeListener(onChange); chrome.tabs.onActivated.removeListener(onTab);
+      chrome.windows?.onFocusChanged.removeListener(onFocus);
+    };
   }, []);
 
   const origin = state?.ctx?.origin ?? fallbackOrigin;
@@ -49,12 +97,22 @@ export function App() {
         <div class="brand"><span class="mark"><TrailMark /></span>Trail</div>
         {origin && <span class="host" title={origin}>{origin.replace(/^https?:\/\//, '')}</span>}
         {level && <span class={`dot ${level === 'full' ? '' : level}`} title={level} />}
+        <div class="actions">
+          {isDemo && <span class="demo-badge">{s.demoBadge}</span>}
+          <ThemeToggle />
+          {!isWindow && (
+            <button class="icon-btn" title={s.detach} aria-label={s.detach} onClick={() => {
+              if (isDemo) { setToast(s.panelModeHint); return; }
+              void send({ type: 'open-panel', mode: 'window' }).then(() => window.close());
+            }}>{Glyph.detach}</button>
+          )}
+        </div>
       </header>
       <main class="wrap">
         {state?.access && <AccessNotice report={state.access} />}
         {state?.status === 'running' && <Loading />}
         {state?.status === 'error' && <div class="notice bad"><div class="title">{s.errorTitle}</div>{state.error}</div>}
-        {state?.result && origin && <Result r={state.result} origin={origin} />}
+        {state?.result && origin && state.status !== 'running' && <Result r={state.result} origin={origin} />}
         {!state?.result && state?.status !== 'running' && (
           <div class="empty">
             <EmptyIllustration />
@@ -63,7 +121,9 @@ export function App() {
           </div>
         )}
       </main>
-      <ManualDrawer origin={origin} table={state?.ctx?.table ?? state?.result?.target.table} sysId={state?.ctx?.sysId ?? state?.result?.target.sysId} field={state?.result?.target.field} tabId={tabId} open={!state?.result} />
+      <ManualDrawer origin={origin} table={state?.ctx?.table ?? state?.result?.target.table} sysId={state?.ctx?.sysId ?? state?.result?.target.sysId} field={state?.result?.target.field} tabId={tabId} open={!state?.result}
+        onDemo={(f) => { setState({ ...demoState(f), status: 'running' }); setTimeout(() => setState(demoState(f)), 650); }} />
+      {toast && <div class="toast" role="status">{toast}</div>}
     </>
   );
 }
@@ -89,12 +149,13 @@ function AccessNotice({ report }: { report: AccessReport }) {
   );
 }
 
-function ManualDrawer({ origin, table, sysId, field, tabId, open }: { origin?: string; table?: string; sysId?: string; field?: string; tabId?: number; open: boolean }) {
+function ManualDrawer({ origin, table, sysId, field, tabId, open, onDemo }: { origin?: string; table?: string; sysId?: string; field?: string; tabId?: number; open: boolean; onDemo: (field: string) => void }) {
   const [tbl, setTbl] = useState(table ?? 'incident');
   const [rec, setRec] = useState(sysId ?? '');
   const [fld, setFld] = useState(field ?? 'state');
   useEffect(() => { if (table) setTbl(table); if (sysId) setRec(sysId); if (field) setFld(field); }, [table, sysId, field]);
   const go = async () => {
+    if (isDemo) { onDemo(fld); return; }
     if (!origin || tabId === undefined) return;
     const target = /^[0-9a-f]{32}$/.test(rec) ? { table: tbl, sysId: rec, field: fld } : { table: tbl, number: rec, field: fld };
     await send({ type: 'investigate', origin, target });
@@ -109,7 +170,7 @@ function ManualDrawer({ origin, table, sysId, field, tabId, open }: { origin?: s
         </div>
         <div class="field"><label>{s.record}</label><input value={rec} placeholder="INC0010001" onInput={(e) => setRec((e.target as HTMLInputElement).value.trim())} /></div>
         <div class="row">
-          <button class="btn primary" onClick={go} disabled={isDemo || !origin || !tbl || !rec || !fld}>{Glyph.search} {s.investigate}</button>
+          <button class="btn primary" onClick={go} disabled={!isDemo && (!origin || !tbl || !rec || !fld)}>{Glyph.search} {s.investigate}</button>
           {!origin && <span class="muted small">{s.notServiceNow}</span>}
         </div>
       </div>
@@ -176,7 +237,7 @@ function initials(user: string): string {
 
 function localTime(utc: string): string {
   const d = new Date(utc.replace(' ', 'T') + 'Z');
-  return isNaN(d.getTime()) ? utc : d.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'medium' });
+  return isNaN(d.getTime()) ? utc : d.toLocaleString(getPrefs().lang === 'en' ? 'en-US' : 'pt-BR', { dateStyle: 'short', timeStyle: 'medium' });
 }
 
 function ChangeView({ c, origin }: { c: Change; origin: string }) {

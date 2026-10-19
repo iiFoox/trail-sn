@@ -1,62 +1,276 @@
-import type { AccessReport, Investigation } from '@trail/core';
+import type { AccessReport, Change, Evidence, Investigation, StaticSuspects } from '@trail/core';
 import type { TabState } from './messages';
 
-/** Dados de exemplo para pré-visualizar o painel sem instância (sidepanel/index.html?demo=1). */
-export function demoState(): TabState {
-  const sysId = 'ad7bbecdc3c413101cbdb8e1b40131f3';
-  const result: Investigation = {
-    target: { table: 'incident', sysId, field: 'state', display: 'INC0010001' },
-    tables: ['incident', 'task'],
+/**
+ * Dados de demonstração do painel (sidepanel/index.html?demo=1&field=<campo>).
+ *
+ * Um único incidente, INC0010001, com uma história coerente: 14 atualizações (sys_mod_count 14),
+ * 13 delas auditadas. Cada mecanismo reproduz um caso que rodou de verdade na PDI de testes
+ * (BR async, BR before, script include, script action, script de fundo, job, UI action...).
+ * A instância é fictícia de propósito: o site não pode depender de uma PDI que expira.
+ */
+export const DEMO_ORIGIN = 'https://sua-instancia.service-now.com';
+const SYS_ID = 'ad7bbecdc3c413101cbdb8e1b40131f3';
+
+const ID = {
+  brAsync: 'a1b2c3d4e5f60718293a4b5c6d7e8f90',
+  brAutoclose: 'b1b2c3d4e5f60718293a4b5c6d7e8f90',
+  brImpact: 'c7d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5',
+  brC3: 'd2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7',
+  si: 'c1b2c3d4e5f60718293a4b5c6d7e8f90',
+  scriptAction: 'e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8',
+  job: 'f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9',
+  uiAction: 'a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0',
+  rule: 'b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1',
+  lookup: 'c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3',
+  // valores de campos de referência, como o sys_audit os guarda
+  beth: '46d44a23a9fe19810012d100cca80666',
+  network: '287ebd7da9fe198100f92cc8d1d2154e',
+  howard: '5137153cc611227c000bbd1bd8cd2005',
+  printer: '0c4b1a5e1b2f2010a1b2c3d4e5f6a7b8',
+};
+
+const T0 = '2026-07-02 09:15:40'; // inserção, por integração; rastros já expiraram
+const expired = ['traces_expired:syslog_transaction', 'traces_expired:sysevent'];
+
+function creation(value: string): Change {
+  return { at: T0, oldValue: '', newValue: value, user: 'system', checkpoint: 1, notes: expired, evidence: [] };
+}
+
+function userForm(user: string, at: string, sent: string): Evidence {
+  return {
+    type: 'user_action', grade: 'confirmed', score: 80, artifact: { name: user }, gaps: [], facts: [
+      { kind: 'form_value_equals', source: 'syslog_transaction', detail: `o formulário enviou exatamente "${sent}"`, points: 50 },
+      { kind: 'execution_in_window', source: 'syslog_transaction', detail: `salvo às ${at.slice(11)}`, points: 20 },
+      { kind: 'user_matches', source: 'syslog_transaction', detail: `por ${user}`, points: 10 },
+    ],
+  };
+}
+
+const noSuspects: StaticSuspects = { businessRules: [], viaScriptInclude: [], scriptIncludes: [] };
+
+interface FieldStory { changes: Change[]; suspects?: StaticSuspects; ms: number; calls: number }
+
+const STORIES: Record<string, FieldStory> = {
+  state: {
+    ms: 1840, calls: 11,
+    suspects: {
+      businessRules: [
+        { name: '[PERICIA-TESTE] Resolve incidente por palavra-chave', sysId: ID.brAsync, when: 'async', order: '100', table: 'incident' },
+        { name: 'Incident autoclose', sysId: ID.brAutoclose, when: 'before', order: '100', table: 'incident' },
+      ],
+      viaScriptInclude: [], scriptIncludes: [],
+    },
     changes: [
       {
         at: '2026-10-18 01:37:02', oldValue: '2', newValue: '6', user: 'admin', checkpoint: 3, notes: [],
         evidence: [
-          { type: 'br_async', grade: 'confirmed', score: 80, artifact: { name: '[PERICIA-TESTE] Resolve incidente por palavra-chave', sysId: 'a1b2c3d4e5f60718293a4b5c6d7e8f90', table: 'sys_script' }, gaps: [], facts: [
+          { type: 'br_async', grade: 'confirmed', score: 80, artifact: { name: '[PERICIA-TESTE] Resolve incidente por palavra-chave', sysId: ID.brAsync, table: 'sys_script' }, gaps: [], facts: [
             { kind: 'trace_names_artifact', source: 'syslog_transaction', detail: 'job ASYNC "[PERICIA-TESTE] Resolve incidente por pa" às 01:37:02', points: 50 },
             { kind: 'references_field', source: 'sys_script', detail: 'o script referencia "state"', points: 20 },
             { kind: 'references_table', source: 'sys_script', detail: 'BR da tabela incident', points: 10 },
           ] },
-          { type: 'user_action', grade: 'candidate', score: 30, artifact: { name: 'admin' }, gaps: ['sem transação de formulário visível para comparar o valor enviado'], facts: [
+          { type: 'user_action', grade: 'candidate', score: 30, artifact: { name: 'admin' }, gaps: ['o formulário salvo às 01:37:01 não enviou o campo state'], facts: [
             { kind: 'execution_in_window', source: 'syslog_transaction', detail: 'form /incident.do às 01:37:01', points: 20 },
             { kind: 'user_matches', source: 'syslog_transaction', detail: 'por admin', points: 10 },
           ] },
         ],
       },
+      { at: '2026-10-17 14:02:11', oldValue: '1', newValue: '2', user: 'pericia.itil', checkpoint: 2, notes: [], evidence: [userForm('pericia.itil', '2026-10-17 14:02:11', '2')] },
+      creation('1'),
+    ],
+  },
+  impact: {
+    ms: 2060, calls: 11,
+    suspects: { businessRules: [{ name: '[PT] C2 before define impacto', sysId: ID.brImpact, when: 'before', order: '100', table: 'incident' }], viaScriptInclude: [], scriptIncludes: [] },
+    changes: [
       {
-        at: '2026-10-17 14:02:11', oldValue: '1', newValue: '2', user: 'pericia.itil', checkpoint: 2, notes: [],
+        at: '2026-10-18 02:10:33', oldValue: '3', newValue: '1', user: 'pericia.itil', checkpoint: 6, notes: [],
         evidence: [
-          { type: 'user_action', grade: 'confirmed', score: 80, artifact: { name: 'pericia.itil' }, gaps: [], facts: [
-            { kind: 'form_value_equals', source: 'syslog_transaction', detail: 'o formulário enviou exatamente o novo valor', points: 50 },
-            { kind: 'execution_in_window', source: 'syslog_transaction', detail: 'salvo às 14:02:11', points: 20 },
-            { kind: 'user_matches', source: 'syslog_transaction', detail: 'por pericia.itil', points: 10 },
+          { type: 'br_before', grade: 'confirmed', score: 80, artifact: { name: '[PT] C2 before define impacto', sysId: ID.brImpact, table: 'sys_script' }, gaps: [], facts: [
+            { kind: 'form_value_differs', source: 'syslog_transaction', detail: 'o formulário enviou "3", o gravado foi "1": o servidor alterou ao salvar', points: 30 },
+            { kind: 'execution_in_window', source: 'syslog_transaction', detail: 'salvo às 02:10:33', points: 20 },
+            { kind: 'references_field', source: 'sys_script', detail: 'o script referencia "impact"', points: 20 },
+            { kind: 'references_table', source: 'sys_script', detail: 'BR before da tabela incident', points: 10 },
+          ] },
+        ],
+      },
+      creation('3'),
+    ],
+  },
+  urgency: {
+    ms: 1886, calls: 11,
+    changes: [
+      { at: '2026-10-18 02:12:05', oldValue: '3', newValue: '2', user: 'admin', checkpoint: 7, notes: [], evidence: [userForm('admin', '2026-10-18 02:12:05', '2')] },
+      creation('3'),
+    ],
+  },
+  priority: {
+    ms: 2110, calls: 11,
+    changes: [
+      {
+        at: '2026-10-18 02:12:05', oldValue: '3', newValue: '2', user: 'admin', checkpoint: 7, notes: [],
+        evidence: [
+          { type: 'server_change', grade: 'probable', score: 50, artifact: { name: 'Priority Lookup (data lookup)', sysId: ID.lookup, table: 'dl_u_priority' }, gaps: ['data lookups não deixam rastro próprio; o mecanismo é inferido'], facts: [
+            { kind: 'execution_in_window', source: 'syslog_transaction', detail: 'formulário salvo às 02:12:05, sem enviar priority', points: 20 },
+            { kind: 'trace_identifies_mechanism', source: 'dl_definition', detail: 'regra de lookup ativa: impact + urgency → priority', points: 20 },
+            { kind: 'references_table', source: 'dl_definition', detail: 'lookup da tabela incident', points: 10 },
           ] },
         ],
       },
       {
-        at: '2026-07-02 09:15:40', oldValue: '', newValue: '1', user: 'system', checkpoint: 1, notes: ['traces_expired:syslog_transaction', 'traces_expired:sysevent'],
+        at: '2026-10-18 02:10:33', oldValue: '5', newValue: '3', user: 'pericia.itil', checkpoint: 6, notes: [],
         evidence: [
-          { type: 'unknown_background', grade: 'candidate', score: 10, artifact: { name: '(desconhecido)' }, gaps: ['verificar jobs, integrações MID e importações do horário'], facts: [
-            { kind: 'no_user_transaction', source: 'syslog_transaction', detail: 'nenhuma transação do usuário na janela', points: 10 },
+          { type: 'server_change', grade: 'probable', score: 50, artifact: { name: 'Priority Lookup (data lookup)', sysId: ID.lookup, table: 'dl_u_priority' }, gaps: ['data lookups não deixam rastro próprio; o mecanismo é inferido'], facts: [
+            { kind: 'execution_in_window', source: 'syslog_transaction', detail: 'formulário salvo às 02:10:33, sem enviar priority', points: 20 },
+            { kind: 'trace_identifies_mechanism', source: 'dl_definition', detail: 'regra de lookup ativa: impact + urgency → priority', points: 20 },
+            { kind: 'references_table', source: 'dl_definition', detail: 'lookup da tabela incident', points: 10 },
+          ] },
+        ],
+      },
+      creation('5'),
+    ],
+  },
+  category: {
+    ms: 2028, calls: 11,
+    suspects: { businessRules: [], viaScriptInclude: [{ businessRule: '[PT] C3 after chama script include', scriptInclude: 'PericiaTesteUtil', scriptIncludeSysId: ID.si }], scriptIncludes: [{ name: 'PericiaTesteUtil', sysId: ID.si }] },
+    changes: [
+      {
+        at: '2026-10-18 02:16:40', oldValue: 'inquiry', newValue: 'network', user: 'admin', checkpoint: 10, notes: [],
+        evidence: [
+          { type: 'br_via_script_include', grade: 'probable', score: 50, artifact: { name: '[PT] C3 after chama script include → PericiaTesteUtil', sysId: ID.si, table: 'sys_script_include' }, gaps: ['o rastro não nomeia a BR; a ligação BR → script include vem do código'], facts: [
+            { kind: 'new_checkpoint_same_second', source: 'sys_audit', detail: 'checkpoint 10 gravado no mesmo segundo do checkpoint 9, sem job nem evento', points: 20 },
+            { kind: 'references_field', source: 'sys_script_include', detail: 'PericiaTesteUtil referencia "category"', points: 20 },
+            { kind: 'references_table', source: 'sys_script', detail: 'BR after da tabela incident chama o script include', points: 10 },
+          ] },
+          { type: 'user_action', grade: 'candidate', score: 30, artifact: { name: 'admin' }, gaps: ['o formulário salvo às 02:16:40 não enviou category'], facts: [
+            { kind: 'execution_in_window', source: 'syslog_transaction', detail: 'form /incident.do às 02:16:40', points: 20 },
+            { kind: 'user_matches', source: 'syslog_transaction', detail: 'por admin', points: 10 },
+          ] },
+        ],
+      },
+      creation('inquiry'),
+    ],
+  },
+  contact_type: {
+    ms: 2254, calls: 12,
+    changes: [
+      {
+        at: '2026-10-18 02:14:07', oldValue: 'phone', newValue: 'email', user: 'admin', checkpoint: 8, notes: [],
+        evidence: [
+          { type: 'script_action', grade: 'confirmed', score: 70, artifact: { name: '[PT] C4 script action', sysId: ID.scriptAction, table: 'sysevent_script_action' }, gaps: [], facts: [
+            { kind: 'trace_names_artifact', source: 'sysevent', detail: 'evento pt.contato do registro processado às 02:14:07', points: 50 },
+            { kind: 'references_field', source: 'sysevent_script_action', detail: 'o script referencia "contact_type"', points: 20 },
+          ] },
+        ],
+      },
+      creation('phone'),
+    ],
+  },
+  severity: {
+    ms: 2361, calls: 12,
+    changes: [
+      {
+        at: '2026-10-18 02:20:00', oldValue: '2', newValue: '1', user: 'system', checkpoint: 11, notes: [],
+        evidence: [
+          { type: 'scheduled_job', grade: 'confirmed', score: 70, artifact: { name: '[PT] C5 job ajusta severidade', sysId: ID.job, table: 'sysauto_script' }, gaps: [], facts: [
+            { kind: 'trace_names_artifact', source: 'syslog_transaction', detail: 'transação "JOB: [PT] C5 job ajusta severidade" às 02:19:59', points: 50 },
+            { kind: 'references_field', source: 'sysauto_script', detail: 'o script referencia "severity"', points: 20 },
+          ] },
+        ],
+      },
+      {
+        at: '2026-10-18 02:05:12', oldValue: '3', newValue: '2', user: 'admin', checkpoint: 4, notes: [],
+        evidence: [
+          { type: 'background_script', grade: 'probable', score: 50, artifact: { name: 'Scripts - Background (admin)' }, gaps: ['o código executado em Scripts - Background não fica registrado'], facts: [
+            { kind: 'trace_identifies_mechanism', source: 'syslog_transaction', detail: 'transação /sys.scripts.do às 02:05:12', points: 20 },
+            { kind: 'execution_in_window', source: 'syslog_transaction', detail: 'na janela da mudança', points: 20 },
+            { kind: 'user_matches', source: 'syslog_transaction', detail: 'por admin, o mesmo usuário da auditoria', points: 10 },
+          ] },
+        ],
+      },
+      creation('3'),
+    ],
+  },
+  description: {
+    ms: 1922, calls: 12,
+    changes: [
+      {
+        at: '2026-10-18 02:25:31', oldValue: 'Impressora PRN-3A-01 não responde no ping desde as 08:40. Já reiniciada pelo usuário.', newValue: 'Impressora PRN-3A-01 não responde no ping desde as 08:40. Já reiniciada pelo usuário. [marcado para perícia]', user: 'admin', checkpoint: 12, notes: [],
+        evidence: [
+          { type: 'ui_action', grade: 'confirmed', score: 80, artifact: { name: '[PT] C8 Marcar perícia', sysId: ID.uiAction, table: 'sys_ui_action' }, gaps: [], facts: [
+            { kind: 'trace_names_artifact', source: 'syslog_transaction', detail: 'transação com sys_action do botão "[PT] C8 Marcar perícia" às 02:25:31', points: 50 },
+            { kind: 'references_field', source: 'sys_ui_action', detail: 'o script referencia "description"', points: 20 },
+            { kind: 'references_table', source: 'sys_ui_action', detail: 'UI action da tabela incident', points: 10 },
+          ] },
+        ],
+      },
+      creation('Impressora PRN-3A-01 não responde no ping desde as 08:40. Já reiniciada pelo usuário.'),
+    ],
+  },
+  assignment_group: {
+    ms: 1975, calls: 11,
+    changes: [
+      {
+        at: '2026-10-18 02:30:12', oldValue: '', newValue: ID.network, user: 'admin', checkpoint: 13, notes: [],
+        evidence: [
+          { type: 'assignment_rule', grade: 'probable', score: 60, artifact: { name: 'Network: categoria network', sysId: ID.rule, table: 'sysrule_assignment' }, gaps: ['regras de atribuição não deixam rastro próprio'], facts: [
+            { kind: 'form_value_differs', source: 'syslog_transaction', detail: 'o formulário enviou o grupo vazio, o gravado foi Network', points: 30 },
+            { kind: 'trace_identifies_mechanism', source: 'sysrule_assignment', detail: 'regra ativa: category = network → grupo Network', points: 20 },
+            { kind: 'references_table', source: 'sysrule_assignment', detail: 'regra da tabela incident', points: 10 },
           ] },
         ],
       },
     ],
-    unaudited: { count: 1, lastUpdatedOn: '2026-10-18 02:10:00', lastUpdatedBy: 'admin', clues: ['2026-10-18 02:10:00 other /sys.scripts.do (admin)'] },
-    suspects: {
-      businessRules: [
-        { name: '[PERICIA-TESTE] Resolve incidente por palavra-chave', sysId: 'a1b2c3d4e5f60718293a4b5c6d7e8f90', when: 'async', order: '100', table: 'incident' },
-        { name: 'Incident autoclose', sysId: 'b1b2c3d4e5f60718293a4b5c6d7e8f90', when: 'before', order: '100', table: 'incident' },
-      ],
-      viaScriptInclude: [{ businessRule: '[PT] C3 after chama script include', scriptInclude: 'PericiaTesteUtil', scriptIncludeSysId: 'c1b2c3d4e5f60718293a4b5c6d7e8f90' }],
-      scriptIncludes: [{ name: 'PericiaTesteUtil', sysId: 'c1b2c3d4e5f60718293a4b5c6d7e8f90' }],
-    },
+  },
+  assigned_to: {
+    ms: 1790, calls: 11,
+    changes: [
+      { at: '2026-10-18 02:31:50', oldValue: '', newValue: ID.howard, user: 'admin', checkpoint: 14, notes: [], evidence: [userForm('admin', '2026-10-18 02:31:50', 'Howard Johnson')] },
+    ],
+  },
+  cmdb_ci: {
+    ms: 1702, calls: 11,
+    changes: [
+      { at: '2026-10-18 02:16:40', oldValue: '', newValue: ID.printer, user: 'admin', checkpoint: 9, notes: [], evidence: [userForm('admin', '2026-10-18 02:16:40', 'PRN-3A-01')] },
+    ],
+  },
+  caller_id: { ms: 1488, calls: 9, changes: [creation(ID.beth)] },
+  short_description: { ms: 1512, calls: 9, changes: [creation('Impressora do 3º andar sem rede')] },
+  number: { ms: 1320, calls: 7, changes: [] },
+};
+
+export const DEMO_FIELDS = Object.keys(STORIES);
+
+const access: AccessReport = {
+  level: 'partial', denied: ['sys_flow_context', 'wf_context'], checkedAt: '2026-10-19T12:00:00.000Z',
+  states: { sys_audit: 'ok', syslog_transaction: 'ok', sysevent: 'empty', sysevent_script_action: 'ok', sys_flow_context: 'denied', wf_context: 'denied', sys_script: 'ok', sys_script_include: 'ok', sys_ui_action: 'ok', sysauto_script: 'ok', sys_db_object: 'ok' },
+};
+
+/** Estado do painel para o campo pedido; campo desconhecido cai em state. */
+export function demoState(field = 'state'): TabState {
+  const f = STORIES[field] ? field : 'state';
+  const story = STORIES[f]!;
+  const result: Investigation = {
+    target: { table: 'incident', sysId: SYS_ID, field: f, display: 'INC0010001' },
+    tables: ['incident', 'task'],
+    changes: story.changes,
+    unaudited: { count: 1, lastUpdatedOn: '2026-10-18 02:10:00', lastUpdatedBy: 'admin', clues: ['2026-10-18 02:10:00 /sys.scripts.do (admin)'] },
+    suspects: story.suspects ?? noSuspects,
     access: { sys_audit: 'ok', syslog_transaction: 'ok', sysevent: 'empty', sys_flow_context: 'denied' },
     gaps: ['sys_flow_context: denied'],
-    timing: { totalMs: 1840, calls: 11 },
+    timing: { totalMs: story.ms, calls: story.calls },
   };
-  const access: AccessReport = {
-    level: 'partial', denied: ['sys_flow_context', 'wf_context'], checkedAt: new Date().toISOString(),
-    states: { sys_audit: 'ok', syslog_transaction: 'ok', sysevent: 'empty', sysevent_script_action: 'ok', sys_flow_context: 'denied', wf_context: 'denied', sys_script: 'ok', sys_script_include: 'ok', sys_ui_action: 'ok', sysauto_script: 'ok', sys_db_object: 'ok' },
+  return { tabId: 0, status: 'done', result, access, ctx: { origin: DEMO_ORIGIN, table: 'incident', sysId: SYS_ID, surface: 'ui16' } };
+}
+
+/** Rótulo do destino de um link, para o aviso "na extensão, isto abriria...". */
+export function describeLink(href: string): string {
+  const m = href.match(/\/([a-z0-9_]+)\.do\?sys_id=/);
+  const table = m?.[1] ?? '';
+  const map: Record<string, string> = {
+    incident: 'o registro', sys_script: 'a business rule', sys_script_include: 'o script include', sysevent_script_action: 'a script action',
+    sysauto_script: 'o job agendado', sys_ui_action: 'a UI action', sysrule_assignment: 'a regra de atribuição', dl_u_priority: 'o data lookup',
   };
-  return { tabId: 0, status: 'done', result, access, ctx: { origin: 'https://dev457034.service-now.com', table: 'incident', sysId, surface: 'ui16' } };
+  return map[table] ?? 'o artefato';
 }

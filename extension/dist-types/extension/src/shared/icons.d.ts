@@ -17,6 +17,10 @@ export declare const Glyph: {
     shield: import("preact").JSX.Element;
     refresh: import("preact").JSX.Element;
     plug: import("preact").JSX.Element;
+    moon: import("preact").JSX.Element;
+    sun: import("preact").JSX.Element;
+    detach: import("preact").JSX.Element;
+    gear: import("preact").JSX.Element;
 };
 export declare const typeGlyph: Record<EvidenceType, preact.JSX.Element>;
 export declare const EmptyIllustration: () => import("preact").JSX.Element;
