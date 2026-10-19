@@ -11,7 +11,7 @@ function Line({ o, side }: { o: Op | undefined; side?: 'a' | 'b' }) {
   const body = o.mark && o.mark[1] > o.mark[0]
     ? <>{txt.slice(0, o.mark[0])}<mark>{txt.slice(o.mark[0], o.mark[1])}</mark>{txt.slice(o.mark[1])}</>
     : txt;
-  return <div class={`dl ${o.t}`}><span class="n">{n}</span>{!side && <span class="s">{sign}</span>}<code>{body}</code></div>;
+  return <div class={`dl ${o.t}`} style={o.t !== 'eq' ? `--i:${Math.min((n ?? 0) % 30, 30)}` : undefined}><span class="n">{n}</span>{!side && <span class="s">{sign}</span>}<code>{body}</code></div>;
 }
 
 /** Diferença entre dois textos: unificada (painel estreito) ou lado a lado (janela). */
@@ -49,5 +49,5 @@ function SplitRows({ ops }: { ops: Op[] }) {
     while (i < ops.length && ops[i]!.t === 'add') adds.push(ops[i++]!);
     for (let k = 0; k < Math.max(dels.length, adds.length); k++) rows.push([dels[k], adds[k]]);
   }
-  return <>{rows.map(([l, r]) => <div class="srow"><Line o={l} side="a" /><Line o={r} side="b" /></div>)}</>;
+  return <>{rows.map(([l, r], k) => <div class="srow" style={`--r:${Math.min(k, 40)}`}><Line o={l} side="a" /><Line o={r} side="b" /></div>)}</>;
 }

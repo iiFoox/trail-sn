@@ -466,4 +466,61 @@ describe('Rastro e rótulos', () => {
     expect(e.type).toBe('br_before');
     expect(e.facts.some((f) => f.kind === 'condition_true')).toBe(true);
   });
+  it('flow com vários campos: aponta o passo que grava o campo (valores em gzip)', async () => {
+    const s = scenario();
+    const flowId = id();
+    s.flows.push({ sys_id: id(), name: '[PT] Flow', state: 'COMPLETE', flow: flowId, sys_created_on: T0, sys_updated_on: T0 });
+    audit(s, 'notify', '1', '3', T0, 'system', 2);
+    audit(s, 'urgency', '3', '1', T0, 'system', 2);
+    const json = JSON.stringify([{ name: 'table_name', value: 'incident' }, { name: 'values', value: 'notify=3^urgency=1' }]);
+    const gz = new Uint8Array(await new Response(new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+    const b64 = Buffer.from(gz).toString('base64');
+    const c = build(s);
+    c.rows('sys_hub_action_instance_v2', [{ flow: flowId, order: '1', 'action_type.name': 'Update Record', values: b64 }, { flow: flowId, order: '2', 'action_type.name': 'Log', values: '[]' }]);
+    const r = await investigate(c, { table: 'incident', number: INC.number, field: 'urgency' });
+    const e = r.changes[0]!.evidence[0]!;
+    expect(e.type).toBe('flow');
+    expect(e.grade).toBe('confirmed');
+    expect(e.artifact.name).toContain('passo 1 (Update Record)');
+  });
+
+  it('flow que roda no registro mas nenhum passo grava o campo perde força', async () => {
+    const s = scenario();
+    const flowId = id();
+    s.flows.push({ sys_id: id(), name: '[PT] Flow', state: 'COMPLETE', flow: flowId, sys_created_on: T0, sys_updated_on: T0 });
+    audit(s, 'urgency', '3', '1', T0, 'admin', 1);
+    formTx(s, T0, 'admin', { urgency: '1' });
+    const c = build(s);
+    c.rows('sys_hub_action_instance_v2', [{ flow: flowId, order: '1', 'action_type.name': 'Update Record', values: JSON.stringify([{ name: 'values', value: 'notify=3' }]) }]);
+    const r = await investigate(c, { table: 'incident', number: INC.number, field: 'urgency' });
+    expect(r.changes[0]!.evidence[0]!.type).toBe('user_action');
+  });
+  it('importação: linha de import set transformada no instante, com o campo mapeado', async () => {
+    const s = scenario();
+    audit(s, 'severity', '3', '1', T0, 'admin', 1);
+    tx(s, T0, 'other', '/sys_import.do', 'admin');
+    const map = id();
+    const c = build(s);
+    // Duas linhas do mesmo transform map (criação + atualização) não podem virar empate.
+    c.rows('sys_import_set_row', [
+      { sys_id: id(), sys_target_sys_id: INC.sysId, sys_transform_map: map, 'sys_transform_map.name': '[PT] Importa incidentes', 'sys_import_set.number': 'ISET0010001', sys_import_state: 'updated', sys_updated_on: T0, sys_updated_by: 'admin' },
+      { sys_id: id(), sys_target_sys_id: INC.sysId, sys_transform_map: map, 'sys_transform_map.name': '[PT] Importa incidentes', 'sys_import_set.number': 'ISET0010000', sys_import_state: 'inserted', sys_updated_on: T0, sys_updated_by: 'admin' },
+    ]);
+    c.rows('sys_transform_entry', [{ map, source_field: 'u_severidade', target_field: 'severity' }]);
+    const e = (await investigate(c, { table: 'incident', number: INC.number, field: 'severity' })).changes[0]!.evidence[0]!;
+    expect(e.type).toBe('import_set');
+    expect(e.grade).toBe('confirmed');
+  });
+
+  it('API gravada por conta de integração aparece como integração', async () => {
+    const s = scenario();
+    audit(s, 'description', 'a', 'b', T0, 'svc.integra', 1);
+    tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'svc.integra');
+    const c = build(s);
+    c.rows('sys_user', [{ user_name: 'svc.integra', name: 'Integração ERP', web_service_access_only: 'true' }]);
+    const e = (await investigate(c, { table: 'incident', number: INC.number, field: 'description' })).changes[0]!.evidence[0]!;
+    expect(e.type).toBe('user_action');
+    expect(e.facts.some((f) => f.kind === 'integration_user')).toBe(true);
+    expect(e.grade).toBe('confirmed');
+  });
 });

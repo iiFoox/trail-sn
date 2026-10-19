@@ -1,0 +1,8 @@
+const sharp=require('sharp'),fs=require('fs'),crypto=require('crypto');const d='/home/claude/trail-site/b3/img/';const S='/tmp/claude-0/-home-claude/1355b350-d507-52b2-99e3-d63903bae67d/scratchpad/chunks/';fs.mkdirSync(S,{recursive:true});
+const F='/home/claude/trail/docs/screenshots/';const dark=F+'sidepanel-dark.png';
+(async()=>{const m=await sharp(dark).metadata();const Sx=m.width/536;const crop=(x,y,w,h)=>({left:Math.round(x*Sx),top:Math.round(y*Sx),width:Math.round(w*Sx),height:Math.round(h*Sx)});
+const src={ 'frame-1':[sharp(d+'frame-1.png'),700], 'frame-2':[sharp(d+'frame-2.png'),700], 'panel-top':[sharp(dark).extract(crop(0,0,536,410)),480], 'panel-verdict':[sharp(dark).extract(crop(0,600,536,480)),480], 'panel-full':[sharp(dark).extract({left:0,top:0,width:m.width,height:Math.round(1900*Sx)}),480], 'ui16-form-hot':[sharp(d+'ui16-form-hot.png'),1180], 'popup-dark':[sharp(F+'popup-dark.png'),400], 'options-dark':[sharp(F+'options-dark.png'),900], 'options-light':[sharp(F+'options-light.png'),900]};
+let tot=0;const out={};
+for(const [n,[p,w]] of Object.entries(src)){const buf=await p.png({palette:true,quality:85,compressionLevel:9}).toBuffer();fs.writeFileSync(d+n+'.png',buf);tot+=buf.length;const b64=buf.toString('base64');out[n]={size:buf.length,sha:crypto.createHash('sha1').update(buf).digest('hex'),chunks:[]};
+ const CH=8000;for(let i=0,k=0;i<b64.length;i+=CH,k++){const c=b64.slice(i,i+CH);fs.writeFileSync(`${S}${n}.${k}.txt`,c);out[n].chunks.push({k,sha:crypto.createHash('sha1').update(c).digest('hex'),len:c.length});}}
+fs.writeFileSync(S+'manifest.json',JSON.stringify(out,null,1));console.log(tot,Object.fromEntries(Object.entries(out).map(([k,v])=>[k,[v.size,v.chunks.length]])));})();

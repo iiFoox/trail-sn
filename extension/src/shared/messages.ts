@@ -14,6 +14,7 @@ export interface PageContext {
 export type Message =
   | { type: 'context'; ctx: PageContext }
   | { type: 'investigate'; origin: string; target: Target; token?: string; mode?: import('./prefs').PanelMode }
+  | { type: 'toggle-icons' }
   | { type: 'timeline'; origin: string; target: { table: string; sysId: string } }
   | { type: 'open-panel'; mode?: import('./prefs').PanelMode }
   | { type: 'probe-auth'; origin: string }

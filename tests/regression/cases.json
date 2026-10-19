@@ -78,7 +78,8 @@
     "number": "INC0010011",
     "field": "notify",
     "expectedType": "flow",
-    "minGrade": "probable"
+    "minGrade": "probable",
+    "expectedName": "passo 1"
   },
   {
     "id": "C8",
@@ -359,12 +360,12 @@
     "minGrade": "confirmed"
   },
   {
-    "id": "F1-IMPORT",
+    "id": "F4-IMPORT",
     "table": "incident",
-    "number": "<preencher>",
+    "number": "INC0010025",
     "field": "severity",
-    "expectedType": "unknown_background",
-    "minGrade": "candidate",
-    "pending": true
+    "expectedType": "import_set",
+    "expectedName": "Notification",
+    "minGrade": "confirmed"
   }
 ]

@@ -34,6 +34,14 @@ chrome.storage?.onChanged.addListener((ch, area) => {
   if (window === window.top) notice(fmt(after.showIcons ? strings.iconsShown : strings.iconsHidden, { key: KEY_HINT }));
 });
 
+// Atalho dentro da própria página: funciona mesmo quando o navegador não registrou o comando da extensão
+// (no Edge, Alt+Shift+T pode ficar sem atribuir se outra extensão ou o próprio navegador já usa).
+document.addEventListener('keydown', (e) => {
+  if (!e.altKey || !e.shiftKey || e.ctrlKey || e.metaKey || e.code !== 'KeyT') return;
+  e.preventDefault();
+  chrome.runtime.sendMessage({ type: 'toggle-icons' }).catch(() => undefined);
+}, true);
+
 // ---------- aviso discreto no canto da página (só no quadro de cima) ----------
 function notice(text: string, title?: string, sticky = false): void {
   document.getElementById('trail-notice')?.remove();

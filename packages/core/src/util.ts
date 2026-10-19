@@ -118,3 +118,32 @@ export function assignedLiterals(script: string | undefined, field: string): str
   const vals = [...script.matchAll(litAssign)].map((m) => m[2] ?? m[3] ?? '');
   return vals.length === total ? vals : undefined;
 }
+
+/**
+ * Valores de uma ação de flow (sys_hub_action_instance_v2.values): JSON puro ou JSON em gzip+base64 ("H4sI...").
+ * Devolve a lista de parâmetros, ou undefined se não der para ler.
+ */
+export async function decodeFlowValues(raw: string | undefined): Promise<{ name?: string; value?: string }[] | undefined> {
+  if (!raw) return undefined;
+  try {
+    let text = raw.trim();
+    if (!text.startsWith('[') && !text.startsWith('{')) {
+      const bin = atob(text);
+      const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+      text = await new Response(stream).text();
+    }
+    const v = JSON.parse(text) as unknown;
+    return Array.isArray(v) ? (v as { name?: string; value?: string }[]) : undefined;
+  } catch { return undefined; }
+}
+
+/** "notify=3^urgency=1" → { notify: '3', urgency: '1' } (campos que a ação de flow grava). */
+export function parseFieldValues(q: string | undefined): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const part of (q ?? '').split('^')) {
+    const i = part.indexOf('=');
+    if (i > 0 && part !== 'EQ') out[part.slice(0, i)] = part.slice(i + 1);
+  }
+  return out;
+}

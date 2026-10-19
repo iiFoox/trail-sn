@@ -25,7 +25,7 @@ export function App() {
   useEffect(() => {
     if (isDemo) return;
     void loadPrefs().then((p) => setIcons(p.showIcons));
-    void chrome.commands?.getAll().then((c) => { const k = c.find((x) => x.name === 'toggle-icons')?.shortcut; if (k) setShortcut(k); }).catch(() => undefined);
+    void chrome.commands?.getAll().then((c) => { const k = c.find((x) => x.name === 'toggle-icons')?.shortcut; setShortcut(k || 'Alt+Shift+T'); }).catch(() => undefined);
     void (async () => {
       const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
       if (tab?.id !== undefined) setTabId(tab.id);

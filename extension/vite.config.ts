@@ -22,6 +22,7 @@ export default defineConfig({
         sidepanel: resolve(__dirname, 'src/sidepanel/index.html'),
         options: resolve(__dirname, 'src/options/index.html'),
         diff: resolve(__dirname, 'src/diff/index.html'),
+        report: resolve(__dirname, 'src/report/index.html'),
         background: resolve(__dirname, 'src/background/index.ts'),
       },
       output: {

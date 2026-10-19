@@ -10,6 +10,9 @@ import { parts, plural, refLink } from './Result';
 const P = t(getPrefs().lang).p;
 const isDemo = new URLSearchParams(location.search).has('demo');
 const PAGE = 12;
+type Group = 'all' | 'people' | 'api' | 'auto';
+/** Agrupa as vias em três filtros que fazem sentido para quem investiga: pessoas, API e automação. */
+const GROUP: Record<string, Group> = { form: 'people', ui_action: 'people', created: 'people', api: 'api', async: 'auto', job: 'auto', chained: 'auto', background: 'auto', system: 'auto', expired: 'auto', unknown: 'auto' };
 
 const viaIcon: Record<string, preact.JSX.Element> = {
   form: Glyph.user, api: Glyph.plug, ui_action: Glyph.click, async: Glyph.async, job: Glyph.clock, background: Glyph.terminal,
@@ -27,6 +30,9 @@ export function RecordTimeline({ origin, table, sysId, onField }: { origin: stri
   const [data, setData] = useState<TL>();
   const [err, setErr] = useState<string>();
   const [shown, setShown] = useState(PAGE);
+  const [via, setVia] = useState<Group>('all');
+  const [who, setWho] = useState('');
+  const [q, setQ] = useState('');
 
   useEffect(() => {
     setData(undefined); setErr(undefined); setShown(PAGE);
@@ -41,27 +47,46 @@ export function RecordTimeline({ origin, table, sysId, onField }: { origin: stri
   if (!data) return <div class="card"><div class="row"><span class="spin" /> <span class="muted">{P.tlLoading}</span></div><div class="skeleton" /><div class="skeleton" style="width:70%" /></div>;
   if (!data.saves.length) return <div class="muted small">{P.tlEmpty}</div>;
 
-  const saves = data.saves.slice(0, shown);
+  const users = [...new Set(data.saves.map((x) => x.user))].sort();
+  const needle = q.trim().toLowerCase();
+  const filtered = data.saves
+    .filter((x) => via === 'all' || GROUP[x.via] === via)
+    .filter((x) => !who || x.user === who)
+    .map((x) => (needle ? { ...x, fields: x.fields.filter((f) => `${f.label} ${f.field} ${f.oldDisplay} ${f.newDisplay}`.toLowerCase().includes(needle)) } : x))
+    .filter((x) => x.fields.length > 0);
+  const saves = filtered.slice(0, shown);
+  const count = (g: Group) => data.saves.filter((x) => g === 'all' || GROUP[x.via] === g).length;
   return (
     <div class="stack">
       <div class="muted small">{P.tlIntro} <b>{plural(P.tlSaves, data.saves.length)}</b>.</div>
+      <div class="tlf">
+        <div class="chips" role="group">
+          {(['all', 'people', 'api', 'auto'] as Group[]).map((g) => count(g) > 0 || g === 'all' ? <button aria-pressed={via === g} onClick={() => { setVia(g); setShown(PAGE); }}>{P.tlGroup[g]}<i>{count(g)}</i></button> : null)}
+        </div>
+        <div class="row2">
+          <input type="search" placeholder={P.tlSearch} value={q} onInput={(e) => { setQ((e.target as HTMLInputElement).value); setShown(PAGE); }} />
+          {users.length > 1 && <select value={who} onChange={(e) => { setWho((e.target as HTMLSelectElement).value); setShown(PAGE); }}><option value="">{P.tlAllUsers}</option>{users.map((u) => <option value={u}>{u}</option>)}</select>}
+        </div>
+        {(via !== 'all' || who || needle) && <div class="muted small">{fmt(P.tlShowing, { n: filtered.length, total: data.saves.length })} <button class="link" onClick={() => { setVia('all'); setWho(''); setQ(''); }}>{P.tlClear}</button></div>}
+      </div>
+      {!filtered.length && <div class="muted small">{P.tlNone}</div>}
       <ol class="rtl">
-        {saves.map((sv) => <Save sv={sv} origin={origin} sysId={data.target.sysId} onField={onField} />)}
+        {saves.map((sv, i) => <Save i={i % PAGE} sv={sv} origin={origin} sysId={data.target.sysId} onField={onField} />)}
       </ol>
-      {data.saves.length > shown && <button class="btn sm" onClick={() => setShown(shown + PAGE)}>{fmt(P.tlMore, { n: Math.min(PAGE, data.saves.length - shown) })}</button>}
+      {filtered.length > shown && <button class="btn sm" onClick={() => setShown(shown + PAGE)}>{fmt(P.tlMore, { n: Math.min(PAGE, filtered.length - shown) })}</button>}
       {data.truncated && <div class="muted small">{P.tlTruncated}</div>}
       <div class="muted small" style="text-align:center">{fmt(t(getPrefs().lang).timing, { calls: data.timing.calls, ms: data.timing.totalMs })}</div>
     </div>
   );
 }
 
-function Save({ sv, origin, sysId, onField }: { sv: TimelineSave; origin: string; sysId: string; onField: (field: string) => void }) {
+function Save({ i, sv, origin, sysId, onField }: { i: number; sv: TimelineSave; origin: string; sysId: string; onField: (field: string) => void }) {
   const p = parts(sv.at);
   const audit = refLink(origin, { table: 'sys_audit', query: `documentkey=${sysId}^record_checkpoint=${sv.checkpoint}` });
   const fields = sv.fields.filter((f) => !f.journal);
   const notes = sv.fields.filter((f) => f.journal);
   return (
-    <li class={`via-${sv.via}`}>
+    <li class={`via-${sv.via}`} style={`--i:${i}`}>
       <div class="hd">
         <span class="ti" title={P.viaHint[sv.via]}>{viaIcon[sv.via]}</span>
         <div class="grow">

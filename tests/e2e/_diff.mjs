@@ -1,0 +1,18 @@
+import { chromium } from 'playwright';
+import { createServer } from 'node:http';
+import { readFileSync, existsSync } from 'node:fs';
+import { join, extname } from 'node:path';
+const root = '/home/claude/trail-site', S = '/tmp/claude-0/-home-claude/1355b350-d507-52b2-99e3-d63903bae67d/scratchpad/';
+const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css' };
+const srv = createServer((req, res) => { const p = join(root, req.url.split('?')[0]); if (!existsSync(p)) { res.writeHead(404); return res.end(); } res.writeHead(200, { 'content-type': mime[extname(p)] }); res.end(readFileSync(p)); }).listen(4486);
+const b = await chromium.launch({ channel: 'chromium' });
+const page = await b.newPage({ viewport: { width: 400, height: 760 }, deviceScaleFactor: 2 });
+const errs=[]; page.on('pageerror', (e) => errs.push(e.message));
+await page.goto(`http://localhost:4486/demo/panel.html?theme=dark&lang=pt&field=description`); await page.waitForTimeout(900);
+await page.screenshot({ path: `${S}d1.png` });
+await page.click('.dsum'); await page.waitForTimeout(300);
+await page.screenshot({ path: `${S}d2.png` });
+const p2 = await b.newPage({ viewport: { width: 380, height: 640 }, deviceScaleFactor: 2 });
+await p2.goto(`http://localhost:4486/demo/popup.html?theme=dark&lang=pt`); await p2.waitForTimeout(700);
+await p2.screenshot({ path: `${S}pop.png` });
+console.log(JSON.stringify(errs)); await b.close(); srv.close();

@@ -203,6 +203,8 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
         fact('user_matches', 'syslog_transaction', `por ${ctx.user}`),
       ];
       let gaps: string[];
+      const who = ctx.traces.users?.[ctx.user];
+      if (api && who?.integration) facts.push(fact('integration_user', 'sys_user', `${who.name} é uma conta de integração (só API)`));
       if (onRecord && !rivals.length) {
         facts.push(fact('api_write_on_record', 'syslog_transaction', `${ctx.user} gravou este registro pela API no mesmo instante`));
         facts.push(fact('no_competing_automation', 'sys_script', server.length ? 'as regras que citam o campo não se aplicam a este registro' : 'nenhuma automação ativa grava este campo'));

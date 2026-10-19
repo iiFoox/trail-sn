@@ -32,6 +32,15 @@ export interface Traces {
   /** Client scripts ativos da hierarquia que citam o campo (só carregados quando houve formulário). */
   clientScripts: Row[];
   /** Data lookups ativos que definem o campo, com os campos de entrada. */
+  /** Passos dos flows que rodaram no registro (definição): o que cada um grava. */
+  /** Linhas de import set transformadas neste registro perto da mudança. */
+  importRows?: Row[];
+  /** Mapeamentos do transform map para o campo investigado (sys_transform_entry). */
+  transformEntries?: Row[];
+  transformMapsLoaded?: boolean;
+  /** Usuários da auditoria: nome e se é conta de integração (só API / integração interna). */
+  users?: Record<string, { name: string; integration: boolean }>;
+  flowSteps?: { flow: string; order: string; action: string; table: string; writes: Record<string, string> }[];
   dataLookups: {
     name: string; sysId: string; runOnForm: boolean; runOnUpdate: boolean; inputs: string[];
     /** Campos de entrada: no registro (source) e na tabela do lookup (matcher); exact=false aceita coluna vazia como curinga. */

@@ -19,6 +19,8 @@ export type Message = {
     token?: string;
     mode?: import('./prefs').PanelMode;
 } | {
+    type: 'toggle-icons';
+} | {
     type: 'timeline';
     origin: string;
     target: {

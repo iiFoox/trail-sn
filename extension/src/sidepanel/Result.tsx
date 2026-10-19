@@ -11,6 +11,7 @@ import { recordLink } from '../shared/instances';
 import { send } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
 import { RecordTimeline } from './Timeline';
+import { fullReport, savePdf } from './export';
 import { diffLines, looksLong } from '../shared/diff';
 import { DiffView, type DiffLabels } from '../shared/DiffView';
 
@@ -55,12 +56,12 @@ export function parts(utc: string): { date: string; time: string; full: string; 
   return { date, time, full: sec, rel: diff === 0 ? P.today : diff === 1 ? P.yesterday : '' };
 }
 
-function when(utc: string): string {
+export function when(utc: string): string {
   const p = parts(utc);
   return fmt(P.at, { date: p.date, time: p.time }) + (p.rel ? ` · ${p.rel}` : '');
 }
 
-function valueLabel(r: Investigation, v: string): string {
+export function valueLabel(r: Investigation, v: string): string {
   if (!v) return P.empty;
   const l = r.labels?.[v] ?? v;
   return l.length > 70 ? l.slice(0, 67) + '…' : l;
@@ -72,14 +73,15 @@ export const plural = (forms: string[], n: number) => fmt(forms[n === 1 ? 0 : 1]
 const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
 
 /** O motor escreve horários em UTC; o painel mostra tudo no fuso de quem lê. */
-function localizeTimes(text: string, dayUtc: string): string {
-  return text.replace(/(\d{4}-\d{2}-\d{2} )?\b(\d{2}:\d{2}:\d{2})\b/g, (m, d: string | undefined, h: string) => {
+export function localizeTimes(text: string, dayUtc: string): string {
+  const out = text.replace(/(\d{4}-\d{2}-\d{2} )?\b(\d{2}:\d{2}:\d{2})\b/g, (m, d: string | undefined, h: string) => {
     if (d) { const p = parts(d + h); return `${p.date} ${p.full}`; }
     return dayUtc ? parts(`${dayUtc} ${h}`).full : m;
   });
+  return out.charAt(0).toUpperCase() + out.slice(1); // todo texto exibido começa com maiúscula
 }
 
-function factText(kind: string, field: string): string {
+export function factText(kind: string, field: string): string {
   return fmt(P.fact[kind] ?? kind, { field });
 }
 
@@ -87,7 +89,7 @@ function factText(kind: string, field: string): string {
 export function Result({ r, origin, access, toast, onField }: { r: Investigation; origin: string; access?: AccessReport; toast: (m: string) => void; onField: (field: string) => void }) {
   const [tab, setTab] = useState<Tab>(() => tabFor(r.changes[0]));
   const [histMode, setHistMode] = useState<'field' | 'record'>(forcedHist);
-  const [diffOpen, setDiffOpen] = useState(false);
+  const [diffOpen, setDiffOpen] = useState<false | { x: number; y: number }>(false);
   const [sel, setSel] = useState(0);
   useEffect(() => { setSel(0); setTab(tabFor(r.changes[0])); }, [r.target.field, r.target.sysId]);
   // No site, os textos ao lado do painel trocam a aba (só em demonstração).
@@ -122,17 +124,18 @@ export function Result({ r, origin, access, toast, onField }: { r: Investigation
           <span class="fld">{field}</span>
           {c ? (
             c.oldValue && c.oldValue.length > 40 && c.newValue.startsWith(c.oldValue) && !c.newValue.slice(c.oldValue.length).includes('\n') ? <span class="added" title={c.newValue}>{P.added} <b>“{c.newValue.slice(c.oldValue.length).trim()}”</b></span>
-            : c.oldValue && looksLong(c.oldValue, c.newValue) ? <DiffSummary oldText={c.oldValue} newText={c.newValue} onOpen={() => setDiffOpen(true)} />
+            : c.oldValue && looksLong(c.oldValue, c.newValue) ? <DiffSummary oldText={c.oldValue} newText={c.newValue} onOpen={(x, y) => setDiffOpen({ x, y })} />
             : c.oldValue || c.checkpoint > 1 ? <><span class="old" title={c.oldValue}>{valueLabel(r, c.oldValue)}</span><span class="arr">→</span><span class="new" title={c.newValue}>{valueLabel(r, c.newValue)}</span></>
               : <><span class="muted small">{P.createdAs}</span><span class="new" title={c.newValue}>{valueLabel(r, c.newValue)}</span></>
           ) : <span class="muted small">{s.noChanges}</span>}
         </div>
         {c && <div class="when2">{when(c.at)}</div>}
       </div>
-      {c && diffOpen && <DiffOverlay title={`${r.target.display} · ${field}`} sub={when(c.at)} oldText={c.oldValue} newText={c.newValue} onClose={() => setDiffOpen(false)} />}
+      {c && diffOpen && <DiffOverlay at={diffOpen} title={`${r.target.display} · ${field}`} sub={when(c.at)} oldText={c.oldValue} newText={c.newValue} onClose={() => setDiffOpen(false)} />}
 
       {c && (
-        <div class="seg-tabs" role="tablist">
+        <div class="seg-tabs" role="tablist" style={`--x:${TABS.indexOf(tab)}`}>
+          <span class="ind" aria-hidden="true" />
           {([['answer', P.tabAnswer, 0], ['trace', P.tabTrace, c.trace?.length ?? 0], ['proof', P.tabProof, c.evidence[0]?.facts.length ?? 0], ['history', P.tabHistory, r.changes.length + (r.unaudited ? 1 : 0)]] as [Tab, string, number][]).map(([k, label, n]) => (
             <button role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>
               {label}{k !== 'answer' && n > 0 && <i>{n}</i>}{k === 'proof' && (denied.length > 0 || r.unaudited || expired) && <span class="wdot" />}
@@ -142,7 +145,8 @@ export function Result({ r, origin, access, toast, onField }: { r: Investigation
       )}
 
       {!c && <History r={r} origin={origin} sel={-1} onPick={() => undefined} />}
-      {c && tab === 'answer' && <Answer r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} goProof={() => setTab('proof')} copy={copy} />}
+      <div class="tabpane" key={`${tab}-${sel}-${r.target.field}`}>
+      {c && tab === 'answer' && <Answer r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} goProof={() => setTab('proof')} copy={copy} toastFn={toast} />}
       {c && tab === 'trace' && <Trace r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} />}
       {c && tab === 'proof' && <Proof r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} access={access} copy={copy} />}
       {c && tab === 'history' && (
@@ -157,16 +161,17 @@ export function Result({ r, origin, access, toast, onField }: { r: Investigation
         </>
       )}
 
+      </div>
       <div class="footer">
         <span>{fmt(s.timing, { calls: r.timing.calls, ms: r.timing.totalMs })}</span>
-        <button class="btn ghost sm" onClick={() => send({ type: 'clear-cache', origin })}>{Glyph.refresh} {s.reloadMeta}</button>
+        <button class="btn ghost sm" title={s.reloadHint} onClick={() => { void send({ type: 'clear-cache', origin }).then(() => { toast(s.reloaded); onField(r.target.field); }); }}>{Glyph.refresh} {s.reloadMeta}</button>
       </div>
     </div>
   );
 }
 
 // ---------- Resposta ----------
-function Answer({ r, c, origin, field, denied, expired, goProof, copy }: { r: Investigation; c: Change; origin: string; field: string; denied: string[]; expired: boolean; goProof: () => void; copy: (t: string) => void }) {
+function Answer({ r, c, origin, field, denied, expired, goProof, copy, toastFn }: { r: Investigation; c: Change; origin: string; field: string; denied: string[]; expired: boolean; goProof: () => void; copy: (t: string) => void; toastFn: (m: string) => void }) {
   const top = c.evidence[0];
   const alt = c.evidence[1];
   const warns = [
@@ -188,7 +193,7 @@ function Answer({ r, c, origin, field, denied, expired, goProof, copy }: { r: In
           <div class="who">
             <span class="ic">{typeGlyph[top.type]}</span>
             <div class="grow">
-              <div class="k">{P.whoChanged} · {top.type === 'user_action' && top.facts.some((f) => /\/api\//.test(f.detail)) ? (P.kind as Record<string, string>).user_api : P.kind[top.type]}</div>
+              <div class="k">{P.whoChanged} · {top.type === 'user_action' && top.facts.some((f) => f.kind === 'integration_user') ? (P.kind as Record<string, string>).user_integration : top.type === 'user_action' && top.facts.some((f) => /\/api\//.test(f.detail)) ? (P.kind as Record<string, string>).user_api : P.kind[top.type]}</div>
               <div class="nm">{top.artifact.name}</div>
               <div class="tech">{s.type[top.type]}</div>
             </div>
@@ -206,6 +211,10 @@ function Answer({ r, c, origin, field, denied, expired, goProof, copy }: { r: In
         {link && <a class="btn primary big" href={link} target="_blank" rel="noreferrer">{Glyph.open} {fmt(P.openArtifact, { what: P.what[top?.artifact.table ?? ''] ?? s.openInStudio })}</a>}
         <button class="btn big" onClick={() => copy(summary())}>{Glyph.copy} {P.copySummary}</button>
       </div>
+      <div class="export">
+        <button class="link" onClick={() => copy(fullReport(r, c, origin))}>{Glyph.copy} {P.copyFull}</button>
+        <button class="link" onClick={() => void savePdf(r, r.changes.indexOf(c), origin, () => toastFn(P.demoPdf))}>{Glyph.open} {P.savePdf}</button>
+      </div>
       {alt && (
         <button class="alt" onClick={goProof}>
           <span class="ic sm">{typeGlyph[alt.type]}</span>
@@ -221,7 +230,7 @@ function Answer({ r, c, origin, field, denied, expired, goProof, copy }: { r: In
 }
 
 // ---------- Rastro ----------
-function traceTitle(r: Investigation, c: Change, it: TraceItem, field: string): string {
+export function traceTitle(r: Investigation, c: Change, it: TraceItem, field: string): string {
   return fmt(P.tr[it.kind] ?? it.kind, { user: it.user ?? '', label: it.label, field, old: valueLabel(r, c.oldValue), new: valueLabel(r, c.newValue) });
 }
 
@@ -246,12 +255,12 @@ function Trace({ r, c, origin, field, denied, expired }: { r: Investigation; c: 
         <a class="btn sm openall" href={refLink(origin, { table: 'syslog_transaction', query: `sys_idIN${txIds.join(',')}` })} target="_blank" rel="noreferrer">{Glyph.open} {fmt(P.openAllTx, { n: txIds.length })}</a>
       )}
       <ol class="tl">
-        {items.map((it) => {
+        {items.map((it, idx) => {
           const p = parts(it.at);
           const isChange = it.kind === 'change';
           const isWrite = it.kind === 'write';
           return (
-            <li class={`${it.cause ? 'key' : ''} ${isChange ? 'res' : ''} ${isWrite ? 'other' : ''}`}>
+            <li class={`${it.cause ? 'key' : ''} ${isChange ? 'res' : ''} ${isWrite ? 'other' : ''}`} style={`--i:${idx}`}>
               <div class="t"><b>{p.full}</b>{it.cause ? <span class="tag">{P.cause}</span> : it.user ? <span class="muted">{it.user}</span> : null}</div>
               <div class="x"><span class="ti">{isWrite ? Glyph.rule : traceIcon[it.kind]}</span>{isWrite ? P.otherWrite : traceTitle(r, c, it, field)}</div>
               {(it.kind === 'async' || it.kind === 'job') && <div class="sub2">{it.label}</div>}
@@ -288,7 +297,7 @@ function Proof({ r, c, origin, field, denied, expired, access, copy }: { r: Inve
       {top && (
         <div class="box">
           <h4>{P.whyThis}<span>{fmt(P.nProofs, { n: top.facts.length })}</span></h4>
-          {top.facts.map((f) => <FactRow kind={f.kind} detail={localizeTimes(f.detail, c.at.slice(0, 10))} source={f.source} field={field} ok={f.points >= 0} />)}
+          {top.facts.map((f, i) => <FactRow i={i} kind={f.kind} detail={localizeTimes(f.detail, c.at.slice(0, 10))} source={f.source} field={field} ok={f.points >= 0} />)}
           {top.gaps.map((g) => <div class="li"><span class="ck w">!</span><span class="grow">{localizeTimes(g, c.at.slice(0, 10))}</span></div>)}
         </div>
       )}
@@ -323,9 +332,9 @@ function Proof({ r, c, origin, field, denied, expired, access, copy }: { r: Inve
   );
 }
 
-function FactRow({ kind, detail, source, field, ok }: { kind: string; detail: string; source: string; field: string; ok: boolean }) {
+function FactRow({ kind, detail, source, field, ok, i = 0 }: { kind: string; detail: string; source: string; field: string; ok: boolean; i?: number }) {
   return (
-    <div class="li">
+    <div class="li fact" style={`--i:${i}`}>
       <span class={`ck ${ok ? '' : 'x'}`}>{ok ? Glyph.check : '–'}</span>
       <div class="grow">{factText(kind, field)}<div class="det">{detail}</div></div>
       <span class="srcp">{P.srcName[source] ?? source}</span>
@@ -388,11 +397,11 @@ function History({ r, origin, sel, onPick }: { r: Investigation; origin: string;
           const top = c.evidence[0];
           const expired = c.notes.some((n) => n.startsWith('traces_expired'));
           return (
-            <button class={`h ${i === sel ? 'on' : ''}`} onClick={() => onPick(i)}>
+            <button class={`h ${i === sel ? 'on' : ''}`} style={`--i:${i}`} onClick={() => onPick(i)}>
               <div class="dt">{p.date}<small>{p.time}</small></div>
               <div class="c">{c.oldValue || c.checkpoint > 1 ? <>{valueLabel(r, c.oldValue)} → <b>{valueLabel(r, c.newValue)}</b></> : <>{P.createdAs} <b>{valueLabel(r, c.newValue)}</b></>}
                 <small>{top ? `${top.type === 'user_action' ? top.artifact.name : P.kind[top.type].split(' · ')[0]}` : expired ? P.warnExpired : c.user}</small></div>
-              <span class={`g ${top?.grade ?? 'none'}`}>{top ? P.certainty[top.grade].toLowerCase() : P.noTrace}</span>
+              <span class={`g ${top?.grade ?? 'none'}`}>{top ? P.certainty[top.grade] : P.noTrace}</span>
             </button>
           );
         })}
@@ -415,11 +424,11 @@ function History({ r, origin, sel, onPick }: { r: Investigation; origin: string;
 const diffLabels = (): DiffLabels => ({ onlyChanges: P.diffOnly, whole: P.diffWhole, same: P.diffSame, added: P.diffAdded, removed: P.diffRemoved, before: P.diffBefore, after: P.diffAfter });
 
 /** Valor longo (script, descrição): em vez do texto inteiro, quantas linhas mudaram e a primeira delas. */
-function DiffSummary({ oldText, newText, onOpen }: { oldText: string; newText: string; onOpen: () => void }) {
+function DiffSummary({ oldText, newText, onOpen }: { oldText: string; newText: string; onOpen: (x: number, y: number) => void }) {
   const d = useMemo(() => diffLines(oldText, newText), [oldText, newText]);
   const first = d.ops.find((o) => o.t !== 'eq');
   return (
-    <button class="dsum" onClick={onOpen}>
+    <button class="dsum" onClick={(e) => onOpen(e.clientX, e.clientY)}>
       <span class="stat"><b class="add">+{d.added}</b> <b class="del">−{d.removed}</b> {P.diffLines}</span>
       {first && <code class={first.t}>{first.t === 'add' ? '+ ' : '− '}{first.text.trim().slice(0, 90) || ' '}</code>}
       <span class="go">{Glyph.open} {P.diffOpen}</span>
@@ -428,8 +437,10 @@ function DiffSummary({ oldText, newText, onOpen }: { oldText: string; newText: s
 }
 
 /** Diferença em tela cheia dentro do painel, com opção de abrir lado a lado numa janela larga. */
-function DiffOverlay({ title, sub, oldText, newText, onClose }: { title: string; sub: string; oldText: string; newText: string; onClose: () => void }) {
-  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); }; addEventListener('keydown', k); return () => removeEventListener('keydown', k); }, []);
+function DiffOverlay({ at, title, sub, oldText, newText, onClose }: { at: { x: number; y: number }; title: string; sub: string; oldText: string; newText: string; onClose: () => void }) {
+  const [closing, setClosing] = useState(false);
+  const close = () => { setClosing(true); setTimeout(onClose, 220); };
+  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); }; addEventListener('keydown', k); return () => removeEventListener('keydown', k); }, []);
   const sideBySide = async () => {
     if (isDemo) return;
     const key = `diff:${Date.now()}`;
@@ -437,11 +448,11 @@ function DiffOverlay({ title, sub, oldText, newText, onClose }: { title: string;
     await chrome.windows.create({ url: chrome.runtime.getURL(`src/diff/index.html?k=${encodeURIComponent(key)}`), type: 'popup', width: 1200, height: 860 });
   };
   return (
-    <div class="overlay" role="dialog" aria-label={title}>
+    <div class={`overlay ${closing ? 'closing' : ''}`} role="dialog" aria-label={title} style={`--ox:${at.x}px;--oy:${at.y}px`}>
       <div class="ohead">
         <div class="grow"><b>{title}</b><div class="muted small">{sub}</div></div>
         {!isDemo && <button class="btn sm" onClick={sideBySide}>{Glyph.detach} {P.diffSide}</button>}
-        <button class="icon-btn" aria-label={P.close} title={P.close} onClick={onClose}>✕</button>
+        <button class="icon-btn" aria-label={P.close} title={P.close} onClick={close}>✕</button>
       </div>
       <DiffView oldText={oldText} newText={newText} labels={diffLabels()} />
     </div>

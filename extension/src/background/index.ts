@@ -130,10 +130,14 @@ chrome.permissions.onAdded.addListener((p) => {
 });
 
 // Atalho (Alt+Shift+T): liga e desliga os ícones nos campos em todas as abas; o content script escuta a mudança.
-chrome.commands?.onCommand.addListener((cmd) => {
-  if (cmd !== 'toggle-icons') return;
+// O mesmo atalho chega pelo comando da extensão e pela página; se os dois dispararem juntos, conta uma vez só.
+let lastToggle = 0;
+function toggleIcons(): void {
+  if (Date.now() - lastToggle < 500) return;
+  lastToggle = Date.now();
   void loadPrefs().then((p) => chrome.storage.sync.set({ [PREFS_KEY]: { ...p, showIcons: !p.showIcons } }));
-});
+}
+chrome.commands?.onCommand.addListener((cmd) => { if (cmd === 'toggle-icons') toggleIcons(); });
 
 chrome.runtime.onInstalled.addListener(() => {
   void syncRegistrations();
@@ -243,6 +247,9 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
         await setTab({ ...(await getTab(tabId)), tabId, ctx: safeCtx });
         return;
       }
+      case 'toggle-icons':
+        toggleIcons();
+        return true;
       case 'timeline':
         return recordTimeline(makeClient(msg.origin), msg.target);
       case 'investigate': {

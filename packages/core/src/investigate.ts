@@ -13,6 +13,7 @@ import {
   type TraceItem,
 } from './types';
 import { isSaveButton } from './signatures/uiAction';
+import { decodeFlowValues, parseFieldValues } from './util';
 import { conditionFields, mergeWindows, refsField, shift, toMs, withTimeout } from './util';
 
 /** Cache de metadados por tabela (hierarquia, BRs, script includes). A extensão guarda em chrome.storage.session. */
@@ -86,10 +87,11 @@ export async function investigate(
   const merged = mergeWindows(windows);
   const values = unique(fieldChanges.flatMap((c) => [c.oldvalue ?? '', c.newvalue ?? '']).filter(Boolean));
   const refTable = dict.find((d) => d.internal_type === 'reference' && d.reference)?.reference;
-  const [txAll, evAll, flowsAll, wfAll, labelRows] = await Promise.all([
+  const changeUsers = unique(fieldChanges.map((c) => c.user ?? '').filter(Boolean));
+  const [txAll, evAll, flowsAll, wfAll, labelRows, importRows, userRows] = await Promise.all([
     Promise.all(merged.map((w) => q('syslog_transaction', `sys_created_on>=${w.from}^sys_created_on<=${w.to}^ORDERBYsys_created_on`, ['sys_id', 'sys_created_on', 'type', 'url', 'sys_created_by'], 200))).then((r) => r.flat()),
     Promise.all(merged.map((w) => q('sysevent', `instance=${sysId}^processed>=${shift(w.from, -1)}^processed<=${shift(w.to, 1)}`, ['sys_id', 'name', 'processed', 'sys_created_on'], 50))).then((r) => r.flat()),
-    fieldChanges.length ? q('sys_flow_context', `source_record=${sysId}`, ['sys_id', 'name', 'state', 'sys_created_on', 'sys_updated_on'], 50) : Promise.resolve([]),
+    fieldChanges.length ? q('sys_flow_context', `source_record=${sysId}`, ['sys_id', 'name', 'state', 'flow', 'sys_created_on', 'sys_updated_on'], 50) : Promise.resolve([]),
     fieldChanges.length ? q('wf_context', `id=${sysId}`, ['sys_id', 'workflow_version.name', 'state', 'started', 'ended'], 50) : Promise.resolve([]),
     !values.length ? Promise.resolve([])
       : refTable ? quiet(refTable, `sys_idIN${values.filter((v) => /^[0-9a-f]{32}$/.test(v)).join(',')}`, ['sys_id', 'name', 'number', 'user_name'], 50)
@@ -97,6 +99,10 @@ export async function investigate(
       : quiet('sys_choice', `nameIN${meta.tables.join(',')}^element=${target.field}^inactive=false`, ['name', 'value', 'label', 'language'], 300)
         // A tabela mais específica ganha (incident.state 2 = In Progress; task.state 2 = Work in Progress); depois o inglês.
         .then((rows) => rows.sort((a, b) => (meta.tables.indexOf(a.name ?? '') - meta.tables.indexOf(b.name ?? '')) || ((a.language === 'en' ? -1 : 0) - (b.language === 'en' ? -1 : 0)))),
+    // Importação: linhas de import set que gravaram neste registro (a tabela base devolve todas as tabelas de staging).
+    fieldChanges.length ? quiet('sys_import_set_row', `sys_target_sys_id=${sysId}^ORDERBYDESCsys_updated_on`, ['sys_id', 'sys_import_set', 'sys_import_set.number', 'sys_transform_map', 'sys_transform_map.name', 'sys_import_state', 'sys_updated_on', 'sys_updated_by'], 30) : Promise.resolve([]),
+    // Quem gravou: usuário só de API ou de integração interna é uma integração, não uma pessoa.
+    changeUsers.length ? quiet('sys_user', `user_nameIN${changeUsers.join(',')}`, ['user_name', 'name', 'web_service_access_only', 'internal_integration_user'], 20) : Promise.resolve([]),
   ]);
   const labels: Record<string, string> = {};
   for (const r of labelRows) if (r.value && r.label && !(r.value in labels)) labels[r.value] = r.label;
@@ -108,7 +114,9 @@ export async function investigate(
   const needsJobScan = fieldChanges.some((c) => !txAll.some((t) => t.sys_created_by === c.user && !/^JOB: /.test(t.url ?? '') && inWindow(t, c, opts)));
 
   const isAssignmentField = target.field === 'assignment_group' || target.field === 'assigned_to';
-  const [jobsByName, scriptActions, uiActions, jobsByScript, assignmentRules, lookupSets, clientRows, uiActionSuspects] = await Promise.all([
+  const flowIds = unique(flowsAll.map((f) => f.flow ?? '').filter(Boolean));
+  const mapIds = unique(importRows.map((r) => r.sys_transform_map ?? '').filter(Boolean));
+  const [jobsByName, scriptActions, uiActions, jobsByScript, assignmentRules, lookupSets, clientRows, uiActionSuspects, flowActionRows, transformEntries] = await Promise.all([
     jobNames.length ? q('sysauto_script', `nameIN${jobNames.join(',')}`, ['sys_id', 'name', 'script'], 50) : Promise.resolve([]),
     eventNames.length ? q('sysevent_script_action', `active=true^event_nameIN${eventNames.join(',')}`, ['sys_id', 'name', 'event_name', 'script'], 50) : Promise.resolve([]),
     uiActionIds.length ? q('sys_ui_action', `sys_idIN${uiActionIds.join(',')}`, ['sys_id', 'name', 'script', 'table', 'action_name'], 20) : Promise.resolve([]),
@@ -118,6 +126,9 @@ export async function investigate(
     quiet('sys_script_client', `tableIN${meta.tables.join(',')}^active=true^scriptLIKE${target.field}`, ['sys_id', 'name', 'type', 'field', 'table', 'script'], 30),
     // Só para a lista de "outras regras": UI actions da hierarquia que citam o campo.
     quiet('sys_ui_action', `tableIN${meta.tables.join(',')}^active=true^scriptLIKE${target.field}`, ['sys_id', 'name', 'table', 'script'], 30),
+    // Passos dos flows que rodaram no registro: dizem qual ação grava o campo.
+    flowIds.length ? quiet('sys_hub_action_instance_v2', `flowIN${flowIds.join(',')}^ORDERBYorder`, ['flow', 'order', 'comment', 'values', 'action_type.name'], 100) : Promise.resolve([]),
+    mapIds.length ? quiet('sys_transform_entry', `mapIN${mapIds.join(',')}^target_field=${target.field}`, ['map', 'source_field', 'target_field'], 30) : Promise.resolve([]),
   ]);
 
   // ---------- rodada 4 (só quando precisa): entradas dos data lookups e valores atuais para avaliar condições ----------
@@ -152,6 +163,11 @@ export async function investigate(
       rows,
     };
   });
+  const flowSteps = await Promise.all(flowActionRows.map(async (a) => {
+    const params = (await decodeFlowValues(a.values)) ?? [];
+    const pick = (n: string) => params.find((p) => p.name === n)?.value ?? '';
+    return { flow: a.flow ?? '', order: a.order ?? '', action: a['action_type.name'] || a.comment || 'Ação', table: pick('table_name'), writes: parseFieldValues(pick('values') || pick('fields')) };
+  }));
   const clientScripts = clientRows.filter((c) => new RegExp(`setValue\\(\\s*['"]${target.field}['"]`).test(c.script ?? ''));
   // Campo ausente na resposta (sem acesso ao campo, ou inexistente) fica de fora: condição vira "não avaliada", nunca falsa.
   const recFields = unique([...condFields, ...dataLookups.flatMap((d) => d.match.map((m) => m.source))]).filter((f) => f && f !== target.field);
@@ -197,6 +213,11 @@ export async function investigate(
       assignmentRules,
       clientScripts,
       dataLookups,
+      flowSteps,
+      importRows: importRows.filter((r) => Math.abs(toMs(r.sys_updated_on ?? '') - toMs(at)) <= 30_000),
+      transformEntries,
+      transformMapsLoaded: mapIds.length > 0,
+      users: Object.fromEntries(userRows.map((u) => [u.user_name ?? '', { name: u.name || u.user_name || '', integration: u.web_service_access_only === 'true' || u.internal_integration_user === 'true' }])),
     };
     const ctx: ChangeContext = {
       table: target.table, field: target.field, sysId, audit: c, at, user: c.user ?? '',

@@ -1,0 +1,12 @@
+import { chromium } from 'playwright';
+import { createServer } from 'node:http';
+import { readFileSync, existsSync } from 'node:fs';
+import { join, extname } from 'node:path';
+const root = '/home/claude/trail-site';
+const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css' };
+const srv = createServer((req, res) => { const p = join(root, req.url.split('?')[0]); if (!existsSync(p)) { res.writeHead(404); return res.end(); } res.writeHead(200, { 'content-type': mime[extname(p)] }); res.end(readFileSync(p)); }).listen(4483);
+const b = await chromium.launch({ channel: 'chromium' });
+const page = await b.newPage({ viewport: { width: 400, height: 1700 }, deviceScaleFactor: 1 });
+await page.goto('http://localhost:4483/demo/panel.html?theme=dark'); await page.waitForTimeout(1200);
+await page.screenshot({ path: '/tmp/claude-0/-home-claude/1355b350-d507-52b2-99e3-d63903bae67d/scratchpad/panel-now.png', fullPage: true });
+await b.close(); srv.close();

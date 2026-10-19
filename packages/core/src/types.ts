@@ -54,6 +54,7 @@ export type EvidenceType =
   | 'assignment_rule'
   | 'data_lookup'
   | 'client_script'
+  | 'import_set'
   | 'unknown_background';
 
 /** Fato verificável que soma pontos. `kind` indexa o peso em scoring.ts. */
@@ -76,6 +77,8 @@ export type FactKind =
   | 'sets_other_value'
   | 'api_write_on_record'
   | 'no_competing_automation'
+  | 'no_step_writes_field'
+  | 'integration_user'
   | 'tie_with_same_type';
 
 export interface Fact {

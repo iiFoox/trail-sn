@@ -23,6 +23,8 @@ export const WEIGHTS: Record<FactKind, number> = {
   sets_other_value: -40,
   api_write_on_record: 30,
   no_competing_automation: 15,
+  no_step_writes_field: -40,
+  integration_user: 10,
   tie_with_same_type: -15,
 };
 
