@@ -235,6 +235,9 @@ function ManualDrawer({ origin, table, sysId, field, tabId, open, onDemo }: { or
   const [rec, setRec] = useState(sysId ?? '');
   const [fld, setFld] = useState(field ?? 'state');
   useEffect(() => { if (table) setTbl(table); if (sysId) setRec(sysId); if (field) setFld(field); }, [table, sysId, field]);
+  // Aberto/fechado sob controle: a pessoa fecha pelo X (ou pelo título) e reabre pelo título.
+  const [isOpen, setOpen] = useState(open);
+  useEffect(() => setOpen(open), [open]);
   const go = async () => {
     if (isDemo) { onDemo(fld); return; }
     if (!origin || tabId === undefined) return;
@@ -242,8 +245,10 @@ function ManualDrawer({ origin, table, sysId, field, tabId, open, onDemo }: { or
     await send({ type: 'investigate', origin, target });
   };
   return (
-    <details class="drawer" open={open}>
-      <summary>{Glyph.search} {s.manualTitle}</summary>
+    <details class="drawer" open={isOpen} onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}>
+      <summary>{Glyph.search} {s.manualTitle}
+        {isOpen && <button class="drawer-x" aria-label={s.p.close} title={s.p.close} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); }}>✕</button>}
+      </summary>
       <div class="body">
         <div class="grid2">
           <div class="field"><label>{s.table}</label><input value={tbl} onInput={(e) => setTbl((e.target as HTMLInputElement).value.trim())} /></div>
