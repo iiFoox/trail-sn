@@ -74,6 +74,8 @@ export type FactKind =
   | 'client_side_possible'
   | 'sets_same_value'
   | 'sets_other_value'
+  | 'api_write_on_record'
+  | 'no_competing_automation'
   | 'tie_with_same_type';
 
 export interface Fact {

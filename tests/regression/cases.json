@@ -298,7 +298,7 @@
     "number": "INC0010023",
     "field": "description",
     "expectedType": "user_action",
-    "minGrade": "candidate"
+    "minGrade": "confirmed"
   },
   {
     "id": "F2-REST-contact",
@@ -306,7 +306,7 @@
     "number": "INC0010023",
     "field": "contact_type",
     "expectedType": "user_action",
-    "minGrade": "candidate"
+    "minGrade": "confirmed"
   },
   {
     "id": "F2-REST-urg",
@@ -314,7 +314,7 @@
     "number": "INC0010023",
     "field": "urgency",
     "expectedType": "user_action",
-    "minGrade": "candidate"
+    "minGrade": "confirmed"
   },
   {
     "id": "F2-MIXED-contact",
@@ -341,6 +341,22 @@
     "expectedType": "br_before",
     "minGrade": "confirmed",
     "expectedName": "[PT] F2 mixed"
+  },
+  {
+    "id": "F3-SAVE",
+    "table": "incident",
+    "number": "INC0010024",
+    "field": "short_description",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F3-SCRIPT",
+    "table": "sys_ui_action",
+    "sysId": "38c073d7465762820116c37c3353540f",
+    "field": "script",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
   },
   {
     "id": "F1-IMPORT",

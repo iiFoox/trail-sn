@@ -171,6 +171,16 @@ export async function investigate(
     });
     nearestChange.set(t.sys_id ?? `${t.sys_created_on}|${t.url}`, best);
   }
+  // Valores do registro como estavam naquela gravação: o valor atual, voltado para trás pela auditoria
+  // (a primeira mudança posterior de cada campo guarda, no oldvalue, o valor que valia na hora).
+  const recordAt = (cp: number): Record<string, string> => {
+    const out = { ...record };
+    for (const f of Object.keys(out)) {
+      const later = audit.find((a) => a.fieldname === f && Number(a.record_checkpoint ?? 0) > cp);
+      if (later) out[f] = later.oldvalue ?? '';
+    }
+    return out;
+  };
   const changes: Change[] = fieldChanges.map((c, index) => {
     const at = c.sys_created_on ?? '';
     const from = shift(at, -opts.windowBefore);
@@ -190,7 +200,7 @@ export async function investigate(
     };
     const ctx: ChangeContext = {
       table: target.table, field: target.field, sysId, audit: c, at, user: c.user ?? '',
-      checkpoint: Number(c.record_checkpoint ?? 0), checkpoints, meta, traces, opts, record,
+      checkpoint: Number(c.record_checkpoint ?? 0), checkpoints, meta, traces, opts, record: recordAt(Number(c.record_checkpoint ?? 0)),
     };
     const notes: string[] = [];
     const ageSec = (Date.now() - toMs(at)) / 1000;

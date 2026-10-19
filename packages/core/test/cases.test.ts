@@ -434,4 +434,36 @@ describe('Rastro e rótulos', () => {
     expect(e.grade).toBe('confirmed');
     expect(r.changes[0]!.trace.find((t) => t.kind === 'form')?.label).toBe('Save');
   });
+  it('gravação pela API sem automação concorrente: ação da pessoa com certeza alta', async () => {
+    const s = scenario();
+    s.record.short_description = '[PT] F2-REST';
+    br(s, 'PT before outra', 'before', "current.description = 'F2 before';");
+    s.brs[0]!.filter_condition = 'short_descriptionSTARTSWITH[PT] F2-BEFORE^EQ';
+    audit(s, 'description', 'inicial', 'F2 rest', T0, 'admin', 1);
+    tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
+    const e = top(await run(s, 'description'));
+    expect(e.type).toBe('user_action');
+    expect(e.grade).toBe('confirmed');
+  });
+
+  it('gravação pela API com BR que pode ter gravado o mesmo valor: continua incerto', async () => {
+    const s = scenario();
+    br(s, 'PT before impacto', 'before', 'current.impact = 1;');
+    audit(s, 'impact', '3', '1', T0, 'admin', 1);
+    tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
+    const ev = (await run(s, 'impact')).changes[0]!.evidence;
+    expect(ev.find((e) => e.type === 'user_action')!.grade).toBe('candidate');
+  });
+  it('condição avaliada com os valores da época, não com os de hoje', async () => {
+    const s = scenario();
+    s.record.short_description = 'texto novo';
+    br(s, 'PT before mixed', 'before', 'current.urgency = 1;');
+    s.brs[0]!.filter_condition = 'short_descriptionSTARTSWITH[PT] F2-MIXED^EQ';
+    audit(s, 'urgency', '3', '1', T0, 'admin', 1);
+    formTx(s, T0, 'admin', { urgency: '3' });
+    audit(s, 'short_description', '[PT] F2-MIXED', 'texto novo', shiftStr(T0, 600), 'admin', 2);
+    const e = top(await run(s, 'urgency'));
+    expect(e.type).toBe('br_before');
+    expect(e.facts.some((f) => f.kind === 'condition_true')).toBe(true);
+  });
 });

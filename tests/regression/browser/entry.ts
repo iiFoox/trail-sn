@@ -35,7 +35,7 @@ export async function runRegression(list: any[] = cases as any[]): Promise<unkno
     const t0 = performance.now();
     let detail = '', ok = false, calls = 0;
     try {
-      const r = await investigate(client, { table: c.table, number: c.number, field: c.field });
+      const r = await investigate(client, c.sysId ? { table: c.table, sysId: c.sysId, field: c.field } : { table: c.table, number: c.number, field: c.field });
       calls = r.timing.calls;
       if (c.expectUnaudited) { ok = !!r.unaudited; detail = r.unaudited ? `${r.unaudited.count} sem auditoria` : 'nada detectado'; }
       else {

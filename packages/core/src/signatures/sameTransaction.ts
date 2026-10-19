@@ -180,14 +180,39 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
   } else {
     const gap = ['sem envio de formulário para comparar o valor enviado'];
     // Sem o valor enviado, gravar o mesmo valor não prova nada (a pessoa pode ter mandado igual); só o valor diferente descarta.
-    for (const b of befores) out.push(evidence('br_before', { name: b.name ?? '?', sysId: b.sys_id, table: 'sys_script' }, brFacts(b).filter((f) => f.kind !== 'sets_same_value'), gap));
+    const server: Evidence[] = [];
+    for (const b of befores) server.push(evidence('br_before', { name: b.name ?? '?', sysId: b.sys_id, table: 'sys_script' }, brFacts(b).filter((f) => f.kind !== 'sets_same_value'), gap));
+    // Data lookups e regras de atribuição também rodam no servidor quando a gravação vem pela API.
+    for (const d of lookups.filter((d) => d.runOnUpdate)) server.push(evidence('data_lookup', { name: d.name, sysId: d.sysId, table: 'dl_definition' }, lookupFacts(d), gap));
+    for (const rule of ctx.traces.assignmentRules) {
+      const facts = [fact('references_table', 'sysrule_assignment', `regra da tabela ${rule.table}`), ...conditionFacts(ctx, rule.condition, 'sysrule_assignment')];
+      const target = rule.group || rule.user;
+      if (target && target !== (ctx.audit.newvalue ?? '')) facts.push(fact('sets_other_value', 'sysrule_assignment', 'a regra atribui outro valor'));
+      server.push(evidence('assignment_rule', { name: rule.name ?? '?', sysId: rule.sys_id, table: 'sysrule_assignment' }, facts, gap));
+    }
+    out.push(...server);
+    // Concorrentes de verdade: automações que podem ter gravado este valor (sem condição falsa e sem gravar outro valor).
+    const rivals = server.filter((e) => !e.facts.some((f) => f.kind === 'condition_false' || f.kind === 'sets_other_value'));
     const u = userTx[0];
     if (u) {
-      const api = /\/api\//.test(u.url ?? '');
-      out.push(evidence('user_action', { name: ctx.user }, [
-        fact('execution_in_window', 'syslog_transaction', `${u.type} ${(u.url ?? '').split('?')[0]} às ${u.sys_created_on}`),
+      const url = u.url ?? '';
+      const api = /\/api\//.test(url);
+      const onRecord = api && url.includes(ctx.sysId) && Math.abs(toMs(u.sys_created_on ?? '') - toMs(ctx.at)) <= 2000;
+      const facts = [
+        fact('execution_in_window', 'syslog_transaction', `${u.type} ${url.split('?')[0]} às ${u.sys_created_on}`),
         fact('user_matches', 'syslog_transaction', `por ${ctx.user}`),
-      ], api ? ['gravação pela API: o corpo da requisição não fica registrado, então o valor enviado não pode ser conferido'] : gap));
+      ];
+      let gaps: string[];
+      if (onRecord && !rivals.length) {
+        facts.push(fact('api_write_on_record', 'syslog_transaction', `${ctx.user} gravou este registro pela API no mesmo instante`));
+        facts.push(fact('no_competing_automation', 'sys_script', server.length ? 'as regras que citam o campo não se aplicam a este registro' : 'nenhuma automação ativa grava este campo'));
+        gaps = ['o corpo da requisição não fica registrado; a conclusão vem de não haver outra automação capaz de gravar este valor'];
+      } else if (api) {
+        gaps = [rivals.length
+          ? `gravação pela API e ${rivals.length === 1 ? 'uma automação do servidor também pode' : `${rivals.length} automações do servidor também podem`} ter gravado este campo; o corpo da requisição não fica registrado`
+          : 'gravação pela API: o corpo da requisição não fica registrado, então o valor enviado não pode ser conferido'];
+      } else gaps = gap;
+      out.push(evidence('user_action', { name: ctx.user }, facts, gaps));
     }
   }
   return out;

@@ -6,6 +6,7 @@ import { applyTheme, getPrefs, resolvedTheme, savePrefs } from '../shared/prefs'
 import { EmptyIllustration, Glyph, TrailMark } from '../shared/icons';
 import { Result } from './Result';
 import { send, storageKey, type TabState } from '../shared/messages';
+import { isEnabled, looksLikeServiceNow } from '../shared/instances';
 
 const s = t(getPrefs().lang);
 const params = new URLSearchParams(location.search);
@@ -74,32 +75,82 @@ export function App() {
     return () => { removeEventListener('message', onMsg); document.removeEventListener('click', onClick, true); };
   }, []);
 
+  // Acompanha a aba: troca de análise só quando a outra aba já tem uma (ou começa uma agora).
+  // Abrir um link do painel, a janela lado a lado ou uma aba qualquer não apaga o que está na tela.
+  const tracked = useRef<number>();
+  const shown = useRef<TabState>();
+  shown.current = state;
+  const active = useRef<number>();
   useEffect(() => {
     if (isDemo) return;
-    let key = '';
-    void currentTab().then(async (tab) => {
+    let myWindow: number | undefined;
+    const follow = (id: number, st: TabState | undefined, url?: string) => {
+      tracked.current = id; setTabId(id); setState(st);
+      try { if (url) setFallbackOrigin(new URL(url).origin); } catch { /* chrome:// */ }
+    };
+    void (async () => {
+      if (!isWindow) myWindow = (await chrome.windows.getCurrent().catch(() => undefined))?.id;
+      const tab = await currentTab();
       if (!tab?.id) return;
-      setTabId(tab.id);
-      try { if (tab.url) setFallbackOrigin(new URL(tab.url).origin); } catch { /* chrome:// etc. */ }
-      key = storageKey.tab(tab.id);
-      const o = await chrome.storage.session.get(key);
-      setState(o[key] as TabState | undefined);
-    });
+      active.current = tab.id;
+      const key = storageKey.tab(tab.id);
+      follow(tab.id, (await chrome.storage.session.get(key))[key] as TabState | undefined, tab.url);
+      void refreshConnected(tab.url);
+    })();
     const onChange = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
-      const ch = changes[key];
-      if (area === 'session' && key && ch) setState(ch.newValue as TabState | undefined);
+      if (area !== 'session') return;
+      for (const [k, ch] of Object.entries(changes)) {
+        const m = k.match(/^tab:(\d+)$/);
+        if (!m) continue;
+        const id = Number(m[1]);
+        const st = ch.newValue as TabState | undefined;
+        if (id === tracked.current) setState(st);
+        else if (id === active.current && st?.status === 'running') { tracked.current = id; setTabId(id); setState(st); }
+      }
     };
     chrome.storage.onChanged.addListener(onChange);
-    const onTab = () => void currentTab().then((tab) => { if (tab?.id !== undefined && tab.id !== tabId) location.reload(); });
-    chrome.tabs.onActivated.addListener(onTab);
-    // Na janela separada, trocar de janela do navegador também troca a aba acompanhada.
-    const onFocus = (id: number) => { if (isWindow && id !== chrome.windows.WINDOW_ID_NONE) onTab(); };
+    const consider = async (tab: chrome.tabs.Tab | undefined) => {
+      if (!tab?.id) return;
+      active.current = tab.id;
+      void refreshConnected(tab.url);
+      const key = storageKey.tab(tab.id);
+      const st = (await chrome.storage.session.get(key))[key] as TabState | undefined;
+      if (st?.result || st?.status === 'running') follow(tab.id, st, tab.url);
+      else if (!tracked.current || !shown.current?.result) follow(tab.id, st, tab.url);
+    };
+    const onActivated = (info: chrome.tabs.TabActiveInfo) => {
+      if (!isWindow && myWindow !== undefined && info.windowId !== myWindow) return; // outra janela (ex.: lado a lado)
+      void chrome.tabs.get(info.tabId).then(consider).catch(() => undefined);
+    };
+    chrome.tabs.onActivated.addListener(onActivated);
+    // Na janela separada, trocar de janela do navegador também pode trocar a aba acompanhada.
+    const onFocus = (id: number) => { if (isWindow && id !== chrome.windows.WINDOW_ID_NONE) void currentTab().then(consider); };
     chrome.windows?.onFocusChanged.addListener(onFocus);
+    const onUpdated = (id: number, info: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) => { if (id === active.current && info.status === 'complete') void refreshConnected(tab.url); };
+    chrome.tabs.onUpdated.addListener(onUpdated);
     return () => {
-      chrome.storage.onChanged.removeListener(onChange); chrome.tabs.onActivated.removeListener(onTab);
-      chrome.windows?.onFocusChanged.removeListener(onFocus);
+      chrome.storage.onChanged.removeListener(onChange); chrome.tabs.onActivated.removeListener(onActivated);
+      chrome.windows?.onFocusChanged.removeListener(onFocus); chrome.tabs.onUpdated.removeListener(onUpdated);
     };
   }, []);
+
+  // Instância da aba ativa ainda não conectada: o painel oferece conectar, em vez de ficar vazio.
+  const [needsConnect, setNeedsConnect] = useState<string>();
+  async function refreshConnected(url?: string) {
+    if (!url || !looksLikeServiceNow(url)) { setNeedsConnect(undefined); return; }
+    try {
+      const o = new URL(url).origin;
+      setNeedsConnect((await isEnabled(o)) ? undefined : o);
+    } catch { setNeedsConnect(undefined); }
+  }
+  const connect = async () => {
+    if (!needsConnect) return;
+    const ok = await chrome.permissions.request({ origins: [`${needsConnect}/*`] });
+    if (!ok) { showToast(s.permissionDenied); return; }
+    await send({ type: 'activate', origin: needsConnect });
+    setNeedsConnect(undefined);
+    showToast(s.connected);
+  };
 
   const origin = state?.ctx?.origin ?? fallbackOrigin;
   const level = state?.access?.level;
@@ -122,11 +173,18 @@ export function App() {
         </div>
       </header>
       <main class="wrap">
+        {needsConnect && !state?.result && (
+          <div class="card connect">
+            <div class="title">{s.connectTitle}</div>
+            <p class="muted small">{s.connectHint}</p>
+            <button class="btn primary big full" onClick={connect}>{Glyph.plug} {s.activate}</button>
+          </div>
+        )}
         {state?.access && !state.result && <AccessNotice report={state.access} />}
         {state?.status === 'running' && <Loading />}
         {state?.status === 'error' && <div class="notice bad"><div class="title">{s.errorTitle}</div>{state.error}</div>}
         {state?.result && origin && state.status !== 'running' && <Result r={state.result} origin={origin} access={state.access} toast={(m) => showToast(m)} onField={investigateField} />}
-        {!state?.result && state?.status !== 'running' && (
+        {!needsConnect && !state?.result && state?.status !== 'running' && (
           <div class="empty">
             <EmptyIllustration />
             <div class="title">{s.emptyTitle}</div>

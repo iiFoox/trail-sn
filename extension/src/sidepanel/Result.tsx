@@ -188,7 +188,7 @@ function Answer({ r, c, origin, field, denied, expired, goProof, copy }: { r: In
           <div class="who">
             <span class="ic">{typeGlyph[top.type]}</span>
             <div class="grow">
-              <div class="k">{P.whoChanged} · {P.kind[top.type]}</div>
+              <div class="k">{P.whoChanged} · {top.type === 'user_action' && top.facts.some((f) => /\/api\//.test(f.detail)) ? (P.kind as Record<string, string>).user_api : P.kind[top.type]}</div>
               <div class="nm">{top.artifact.name}</div>
               <div class="tech">{s.type[top.type]}</div>
             </div>

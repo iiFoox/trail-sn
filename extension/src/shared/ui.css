@@ -456,3 +456,10 @@ b.add { color: #3ecf8e; } b.del { color: #ef5b6b; }
 .srow > .dl code { white-space: pre-wrap; overflow-wrap: anywhere; }
 .wrap.wide { max-width: none; padding: 0; height: calc(100vh - 56px); display: flex; flex-direction: column; }
 .diff.uni .dl { min-width: 0; } .diff.uni .dl code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.seg-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.seg-tabs button { min-width: 0; white-space: nowrap; }
+.hist-switch { display: grid; grid-template-columns: 1fr 1fr; width: 100%; box-sizing: border-box; border-radius: 12px; }
+.hist-switch button { display: flex; justify-content: center; align-items: center; text-align: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 9px; padding: 7px 8px; font-size: 12.5px; }
+.card.connect { display: flex; flex-direction: column; gap: 10px; }
+.card.connect p { margin: 0; line-height: 1.5; }
+body { overflow-x: hidden; }
