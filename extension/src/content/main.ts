@@ -25,7 +25,7 @@ function applyIcons(on: boolean): void {
   showIcons = on;
   for (const h of hosts) { if (!h.isConnected) hosts.delete(h); else h.style.display = on ? 'inline-block' : 'none'; }
 }
-chrome.storage?.onChanged.addListener((ch, area) => {
+chrome.storage?.onChanged?.addListener((ch, area) => {
   if (area !== 'sync' || !ch[PREFS_KEY]) return;
   const before = normalize(ch[PREFS_KEY].oldValue as Partial<Prefs> | undefined);
   const after = normalize(ch[PREFS_KEY].newValue as Partial<Prefs> | undefined);
@@ -232,7 +232,7 @@ mo.observe(document.documentElement, { childList: true, subtree: true });
 decorateForm();
 
 // Janela "lado a lado" pedida pelo painel: desenhada só no quadro de cima, por cima da página inteira.
-chrome.runtime?.onMessage.addListener((m: { type?: string } & Partial<DiffWindowRequest>, _s, reply) => {
+chrome.runtime?.onMessage?.addListener((m: { type?: string } & Partial<DiffWindowRequest>, _s, reply) => {
   if (m?.type !== 'diff-window' || window !== window.top || !m.key) return;
   openDiffWindow(m as DiffWindowRequest);
   reply({ ok: true });
