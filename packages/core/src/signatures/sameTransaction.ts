@@ -80,9 +80,13 @@ function nestedBefores(ctx: ChangeContext, base: () => Fact[]): { e: Evidence; r
 
 /** Mudança numa gravação de fundo (script action, job, evento): as BRs before rodam ali também. */
 export const backgroundBefores = (ctx: ChangeContext): Evidence[] => {
+  // Sem nenhum rastro de execução no instante (transação, evento, flow), a ligação é só o código: não passa de baixa.
+  const t = ctx.traces;
+  const traceless = !t.transactions.length && !t.events.length && !t.flows.length && !t.workflows.length;
   const evs = nestedBefores(ctx, () => [
     fact('references_field', 'sys_script', `referencia "${ctx.field}"`),
     fact('references_table', 'sys_script', `BR da hierarquia de ${ctx.table}`),
+    ...(traceless ? [fact('no_trace', 'syslog_transaction', 'nenhum registro de execução no instante da mudança (pode ter expirado)')] : []),
   ]);
   resolveOrder(evs);
   return evs.map((x) => x.e);

@@ -8,6 +8,13 @@ import { DiffView } from '../shared/DiffView';
 
 bootPage();
 const P = t(getPrefs().lang).p;
+// Dentro da janela estilo Mac (iframe na página do ServiceNow): sem cabeçalho, ocupando tudo; Esc avisa a janela.
+const embed = new URLSearchParams(location.search).has('embed');
+if (embed) {
+  document.documentElement.classList.add('embed');
+  addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Escape') parent.postMessage({ type: 'trail-diff-esc' }, '*'); });
+  parent.postMessage({ type: 'trail-diff-ready' }, '*');
+}
 type Payload = { title: string; sub: string; oldText: string; newText: string };
 
 /** Janela larga com a diferença lado a lado; o painel deixa o conteúdo na sessão e passa a chave pela URL. */
@@ -19,7 +26,7 @@ function DiffPage() {
   }, []);
   return (
     <>
-      <header class="topbar"><div class="brand"><span class="mark"><TrailMark /></span>Trail</div>{d && <span class="host">{d.title} · {d.sub}</span>}</header>
+      {!embed && <header class="topbar"><div class="brand"><span class="mark"><TrailMark /></span>Trail</div>{d && <span class="host">{d.title} · {d.sub}</span>}</header>}
       <main class="wrap wide">
         {d ? <DiffView split oldText={d.oldText} newText={d.newText} labels={{ onlyChanges: P.diffOnly, whole: P.diffWhole, same: P.diffSame, added: P.diffAdded, removed: P.diffRemoved, before: P.diffBefore, after: P.diffAfter }} /> : <div class="muted">…</div>}
       </main>

@@ -5,6 +5,7 @@ import { fmt, t } from '../shared/i18n';
 import { applyTheme, getPrefs, resolvedTheme, savePrefs } from '../shared/prefs';
 import { EmptyIllustration, Glyph, TrailMark } from '../shared/icons';
 import { Result } from './Result';
+import { setTrackedTab } from '../shared/tabRef';
 import { send, storageKey, type TabState } from '../shared/messages';
 import { isEnabled, looksLikeServiceNow } from '../shared/instances';
 
@@ -85,7 +86,7 @@ export function App() {
     if (isDemo) return;
     let myWindow: number | undefined;
     const follow = (id: number, st: TabState | undefined, url?: string) => {
-      tracked.current = id; setTabId(id); setState(st);
+      tracked.current = id; setTabId(id); setTrackedTab(id); setState(st);
       try { if (url) setFallbackOrigin(new URL(url).origin); } catch { /* chrome:// */ }
     };
     void (async () => {
@@ -105,7 +106,7 @@ export function App() {
         const id = Number(m[1]);
         const st = ch.newValue as TabState | undefined;
         if (id === tracked.current) setState(st);
-        else if (id === active.current && st?.status === 'running') { tracked.current = id; setTabId(id); setState(st); }
+        else if (id === active.current && st?.status === 'running') { tracked.current = id; setTabId(id); setTrackedTab(id); setState(st); }
       }
     };
     chrome.storage.onChanged.addListener(onChange);

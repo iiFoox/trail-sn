@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Trail",
   "short_name": "Trail",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "__MSG_description__",
   "default_locale": "pt_BR",
   "icons": {
@@ -38,6 +38,15 @@
     {
       "resources": [
         "page.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    },
+    {
+      "resources": [
+        "src/diff/index.html",
+        "assets/*"
       ],
       "matches": [
         "<all_urls>"

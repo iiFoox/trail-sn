@@ -1,0 +1,130 @@
+[
+  {
+    "id": "B1",
+    "number": "INC0010034",
+    "field": "impact",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F6 Ajuste impacto por canal",
+    "why": "Pessoa mudou contact_type no form; BR before order 100 grava impact=2. A BR order 200 '[PT] F6 Impacto equipamento crítico' tem return antecipado (category != hardware)."
+  },
+  {
+    "id": "B2",
+    "number": "INC0010035",
+    "field": "urgency",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "why": "Pessoa mudou urgency no form. '[PT] F6 Auditoria de urgência' só lê/loga urgency; '[PT] F6 Urgência cliente VIP' tem condição caller_id.vip falsa."
+  },
+  {
+    "id": "B3",
+    "number": "INC0010036",
+    "field": "description",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F6 Monta descrição padrão",
+    "why": "Valor calculado: '[canal] ' + short_description + ' - ' + caller. Decoy '[PT] F6 Limpa descrição' (order 300) tem condição description.nil() falsa no momento em que roda."
+  },
+  {
+    "id": "B4",
+    "number": "INC0010036",
+    "field": "contact_type",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "why": "Pessoa mudou contact_type phone->email no form."
+  },
+  {
+    "id": "B5",
+    "number": "INC0010037",
+    "field": "impact",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F6 Revisão de impacto software",
+    "why": "Pessoa mudou category para software; client script '[PT] F6 Sugere impacto por categoria' pôs impact=2 no form, mas a BR before sobrescreveu para 1."
+  },
+  {
+    "id": "B6",
+    "number": "INC0010037",
+    "field": "priority",
+    "expectedType": "data_lookup",
+    "expectedName": "Priority Lookup",
+    "why": "Priority 4->3 recalculada pelo Priority Lookup depois que a BR before gravou impact=1."
+  },
+  {
+    "id": "B7",
+    "number": "INC0010038",
+    "field": "urgency",
+    "expectedType": "client_script",
+    "expectedName": "[PT] F6 Urgência por canal",
+    "why": "Pessoa mudou contact_type; client script onChange pôs urgency=2 no form antes do submit. Decoy '[PT] F6 Urgência atendimento presencial' só para contact_type=walk-in."
+  },
+  {
+    "id": "B8",
+    "number": "INC0010039",
+    "field": "urgency",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F6 Normaliza urgência integração",
+    "why": "REST PATCH enviou urgency=2 + contact_type=email; BR before sobrescreveu urgency=1."
+  },
+  {
+    "id": "B9",
+    "number": "INC0010039",
+    "field": "impact",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "why": "REST PATCH (admin) enviou impact=2; '[PT] F6 Impacto padrão integração' só lê previous.impact e loga."
+  },
+  {
+    "id": "B10",
+    "number": "INC0010040",
+    "field": "urgency",
+    "expectedType": "br_after",
+    "expectedName": "[PT] F6 Sincroniza canal",
+    "why": "Pessoa mudou contact_type; BR after grava urgency=2 e chama current.update() (update aninhado, checkpoint 2)."
+  },
+  {
+    "id": "B11",
+    "number": "INC0010040",
+    "field": "severity",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F6 Severidade por urgência",
+    "why": "No update aninhado disparado pela BR after, a BR before reage a urgency.changes() e grava severity=2."
+  },
+  {
+    "id": "B12",
+    "number": "INC0010041",
+    "field": "severity",
+    "expectedType": "script_action",
+    "expectedName": "[PT] F6 Reclassifica severidade",
+    "why": "BR after '[PT] F6 Notifica mudança de canal' dispara evento pt.f6.canal_alterado; script action grava severity=1 (checkpoint 2). Decoy BR before '[PT] F6 Severidade por canal' só para walk-in."
+  },
+  {
+    "id": "B13",
+    "number": "INC0010042",
+    "field": "urgency",
+    "expectedType": "ui_action",
+    "expectedName": "[PT] F6 Escalar atendimento",
+    "why": "Botão de formulário (action_name pt_f6_escalar) grava urgency=1 e current.update()."
+  },
+  {
+    "id": "B14",
+    "number": "INC0010042",
+    "field": "notify",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F6 Notificação de escalonamento",
+    "why": "Na gravação da UI action, a BR before reage a urgency=1 e grava notify=2."
+  },
+  {
+    "id": "B15",
+    "number": "INC0010043",
+    "field": "description",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F6 Complementa descrição de triagem",
+    "why": "Três BRs before: order 50 grava 'Triagem pendente', order 250 concatena ' (revisado por admin)' (último escritor), order 400 tem condição impact==1 falsa."
+  },
+  {
+    "id": "B16",
+    "number": "INC0010044",
+    "field": "urgency",
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] F6 Reprocessa pendências",
+    "why": "sysauto_script run_type once gravou urgency=2 via GlideRecord. Decoy '[PT] F6 Urgência reprocessamento' tem condição isInteractive() falsa no job."
+  }
+]

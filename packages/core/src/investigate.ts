@@ -14,7 +14,7 @@ import {
   type TraceItem,
 } from './types';
 import { isSaveButton } from './signatures/uiAction';
-import { decodeFlowValues, parseFieldValues } from './util';
+import { decodeFlowValues, parseFieldValues, uiActionMatches, uiActionQuery, uiActionRef } from './util';
 import { conditionFields, mergeWindows, refsField, shift, toMs, withTimeout } from './util';
 
 /** Cache de metadados por tabela (hierarquia, BRs, script includes). A extensão guarda em chrome.storage.session. */
@@ -58,7 +58,7 @@ export async function investigate(
   // ---------- rodada 1: registro, auditoria e metadados ----------
   const recQuery = target.sysId ? `sys_id=${target.sysId}` : `number=${target.number ?? ''}`;
   const [recRows, metaOrNull, dict] = await Promise.all([
-    q(target.table, recQuery, ['sys_id', 'number', 'name', 'short_description', 'sys_mod_count', 'sys_updated_on', 'sys_updated_by'], 1, 'record'),
+    q(target.table, recQuery, ['sys_id', 'number', 'name', 'short_description', 'sys_mod_count', 'sys_created_on', 'sys_updated_on', 'sys_updated_by'], 1, 'record'),
     loadMeta(target.table, target.field),
     quiet('sys_dictionary', `element=${target.field}^nameIN${target.table},task,cmdb_ci`, ['name', 'internal_type', 'reference'], 5),
   ]);
@@ -111,7 +111,7 @@ export async function investigate(
   // ---------- rodada 3: artefatos citados pelos rastros ----------
   const jobNames = unique(txAll.filter((t) => /^JOB: /.test(t.url ?? '') && !/^JOB: ASYNC: /.test(t.url ?? '')).map((t) => (t.url ?? '').slice(5).trim()));
   const eventNames = unique(evAll.map((e) => e.name ?? '').filter(Boolean));
-  const uiActionIds = unique(txAll.map((t) => (t.url ?? '').match(/sys_action=([0-9a-f]{32})/)?.[1] ?? '').filter(Boolean));
+  const uiActionIds = unique(txAll.filter((t) => (t.url ?? '').includes(sysId)).map((t) => uiActionRef(t.url) ?? '').filter(Boolean));
   const needsJobScan = fieldChanges.some((c) => !txAll.some((t) => t.sys_created_by === c.user && !/^JOB: /.test(t.url ?? '') && inWindow(t, c, opts)));
 
   const isAssignmentField = target.field === 'assignment_group' || target.field === 'assigned_to';
@@ -120,7 +120,7 @@ export async function investigate(
   const [jobsByName, scriptActions, uiActions, jobsByScript, assignmentRules, lookupSets, clientRows, uiActionSuspects, flowActionRows, transformEntries] = await Promise.all([
     jobNames.length ? q('sysauto_script', `nameIN${jobNames.join(',')}`, ['sys_id', 'name', 'script'], 50) : Promise.resolve([]),
     eventNames.length ? q('sysevent_script_action', `active=true^event_nameIN${eventNames.join(',')}`, ['sys_id', 'name', 'event_name', 'script'], 50) : Promise.resolve([]),
-    uiActionIds.length ? q('sys_ui_action', `sys_idIN${uiActionIds.join(',')}`, ['sys_id', 'name', 'script', 'table', 'action_name'], 20) : Promise.resolve([]),
+    uiActionIds.length ? q('sys_ui_action', uiActionQuery(uiActionIds, meta.tables), ['sys_id', 'name', 'script', 'table', 'action_name'], 20) : Promise.resolve([]),
     needsJobScan ? q('sysauto_script', `scriptLIKE${target.field}^scriptLIKE${target.table}`, ['sys_id', 'name', 'script', 'run_type', 'run_start', 'run_time', 'run_as.user_name', 'active'], 50) : Promise.resolve([]),
     isAssignmentField ? q('sysrule_assignment', `active=true^tableIN${meta.tables.join(',')}`, ['sys_id', 'name', 'table', 'condition', 'group', 'user', 'order'], 50) : Promise.resolve([]),
     quiet('dl_definition_rel_set', `source_table_field=${target.field}^dl_definition.active=true^dl_definition.source_tableIN${meta.tables.join(',')}`, ['dl_definition', 'dl_definition.name', 'dl_definition.run_on_form_change', 'dl_definition.run_on_update', 'dl_definition.matcher_table', 'matcher_table_field'], 20),
@@ -227,6 +227,8 @@ export async function investigate(
     const ctx: ChangeContext = {
       table: target.table, field: target.field, sysId, audit: c, at, user: c.user ?? '',
       checkpoint: Number(c.record_checkpoint ?? 0), checkpoints, meta, traces, opts, record: recordAt(Number(c.record_checkpoint ?? 0)),
+      // Criação do registro (insert) ou atualização: decide quais BRs rodaram (action_insert / action_update).
+      operation: rec.sys_created_on && Math.abs(toMs(rec.sys_created_on) - toMs(at)) <= 2000 ? 'insert' : 'update',
     };
     const notes: string[] = [];
     const ageSec = (Date.now() - toMs(at)) / 1000;
@@ -302,7 +304,7 @@ export async function investigate(
       const o: Row | undefined = (await q('sys_db_object', `name=${cur}`, ['super_class.name'], 1))[0];
       cur = o?.['super_class.name'] || undefined;
     }
-    const businessRules = await q('sys_script', `collectionIN${tables.join(',')}^active=true`, ['sys_id', 'name', 'when', 'order', 'collection', 'script', 'template', 'condition', 'filter_condition'], 500);
+    const businessRules = await q('sys_script', `collectionIN${tables.join(',')}^active=true`, ['sys_id', 'name', 'when', 'order', 'collection', 'script', 'template', 'condition', 'filter_condition', 'action_insert', 'action_update'], 500);
     // Script includes citados pelas BRs (por nome; buscar por conteúdo traz centenas de scripts nativos).
     const siNames = new Set<string>();
     for (const b of businessRules) (b.script ?? '').replace(/new\s+(?:global\.)?([A-Z][A-Za-z0-9_]+)\s*\(/g, (_m, n: string) => { siNames.add(n); return _m; });
@@ -328,10 +330,10 @@ function buildTrace(ctx: ChangeContext, top: Change['evidence'][number] | undefi
     if (url.startsWith('JOB: ')) { const n = url.slice(5).trim(); items.push({ ...base, kind: 'job', label: n, cause: !!name && name === n }); continue; }
     if (url.includes('/sys.scripts.do')) { items.push({ ...base, kind: 'background_script', label: 'Scripts - Background', cause: top?.type === 'background_script' }); continue; }
     if (!url.includes(ctx.sysId)) continue;
-    const action = url.match(/sys_action=([0-9a-f]{32})/)?.[1];
-    const ua = action ? ctx.traces.uiActions.find((u) => u.sys_id === action) : undefined;
+    const action = uiActionRef(url);
+    const ua = action ? ctx.traces.uiActions.find((u) => uiActionMatches(u, action)) : undefined;
     if (action && !isSaveButton(ua)) {
-      items.push({ ...base, kind: 'ui_action', label: ua?.name ?? action, cause: top?.type === 'ui_action' && top.artifact.sysId === action });
+      items.push({ ...base, kind: 'ui_action', label: ua?.name ?? action, cause: top?.type === 'ui_action' && !!ua && top.artifact.sysId === ua.sys_id });
       continue;
     }
     if (url.includes('/api/')) { items.push({ ...base, kind: 'api', label: url.split('?')[0]?.slice(0, 80) ?? url }); continue; }

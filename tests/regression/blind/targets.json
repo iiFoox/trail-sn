@@ -1,0 +1,98 @@
+[
+  {
+    "id": "B1",
+    "table": "incident",
+    "number": "INC0010034",
+    "field": "impact"
+  },
+  {
+    "id": "B2",
+    "table": "incident",
+    "number": "INC0010035",
+    "field": "urgency"
+  },
+  {
+    "id": "B3",
+    "table": "incident",
+    "number": "INC0010036",
+    "field": "description"
+  },
+  {
+    "id": "B4",
+    "table": "incident",
+    "number": "INC0010036",
+    "field": "contact_type"
+  },
+  {
+    "id": "B5",
+    "table": "incident",
+    "number": "INC0010037",
+    "field": "impact"
+  },
+  {
+    "id": "B6",
+    "table": "incident",
+    "number": "INC0010037",
+    "field": "priority"
+  },
+  {
+    "id": "B7",
+    "table": "incident",
+    "number": "INC0010038",
+    "field": "urgency"
+  },
+  {
+    "id": "B8",
+    "table": "incident",
+    "number": "INC0010039",
+    "field": "urgency"
+  },
+  {
+    "id": "B9",
+    "table": "incident",
+    "number": "INC0010039",
+    "field": "impact"
+  },
+  {
+    "id": "B10",
+    "table": "incident",
+    "number": "INC0010040",
+    "field": "urgency"
+  },
+  {
+    "id": "B11",
+    "table": "incident",
+    "number": "INC0010040",
+    "field": "severity"
+  },
+  {
+    "id": "B12",
+    "table": "incident",
+    "number": "INC0010041",
+    "field": "severity"
+  },
+  {
+    "id": "B13",
+    "table": "incident",
+    "number": "INC0010042",
+    "field": "urgency"
+  },
+  {
+    "id": "B14",
+    "table": "incident",
+    "number": "INC0010042",
+    "field": "notify"
+  },
+  {
+    "id": "B15",
+    "table": "incident",
+    "number": "INC0010043",
+    "field": "description"
+  },
+  {
+    "id": "B16",
+    "table": "incident",
+    "number": "INC0010044",
+    "field": "urgency"
+  }
+]

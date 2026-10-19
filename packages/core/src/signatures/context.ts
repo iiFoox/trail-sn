@@ -68,6 +68,8 @@ export interface ChangeContext {
   opts: InvestigationOptions;
   /** Valores atuais do registro para os campos citados nas condições das BRs candidatas. */
   record: Record<string, string>;
+  /** A gravação criou o registro (insert) ou alterou (update). */
+  operation?: 'insert' | 'update';
 }
 
 /** Uma assinatura recebe os dados carregados e devolve evidências. Nunca faz chamada própria. */

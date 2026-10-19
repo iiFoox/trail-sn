@@ -25,6 +25,7 @@ export const WEIGHTS: Record<FactKind, number> = {
   last_writer: 10,
   overwritten_later: -25,
   reacts_to_change: 20,
+  no_trace: -25,
   api_write_on_record: 30,
   no_competing_automation: 15,
   no_step_writes_field: -40,

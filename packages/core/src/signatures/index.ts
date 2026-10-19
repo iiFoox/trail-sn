@@ -21,7 +21,17 @@ const NAMED_TRACES = [asyncBusinessRule, scheduledJobWithTransaction, scriptActi
  *  2. sem transação do usuário na janela: jobs sem transação + processo desconhecido;
  *  3. sem nada: a mudança ocorreu na própria transação (BR after/SI, BR before, usuário).
  */
-export function runSignatures(ctx: ChangeContext): Evidence[] {
+/** BR que roda nesta operação? action_insert / action_update ausentes (cache antigo) contam como sim. */
+const runsOn = (b: { action_insert?: string; action_update?: string }, op: 'insert' | 'update' | undefined) =>
+  !op || (op === 'insert' ? b.action_insert !== 'false' : b.action_update !== 'false');
+
+export function runSignatures(full: ChangeContext): Evidence[] {
+  // Regras que não rodam nesta operação (ex.: só na criação, e a mudança foi uma atualização) saem da disputa.
+  const op = full.operation;
+  const ctx: ChangeContext = { ...full, meta: { ...full.meta,
+    businessRules: full.meta.businessRules.filter((b) => runsOn(b, op)),
+    brField: full.meta.brField.filter((b) => runsOn(b, op)),
+    brViaSi: full.meta.brViaSi.filter((x) => runsOn(x.br, op)) } };
   const out = NAMED_TRACES.flatMap((s) => s(ctx));
   // Só um rastro que nomeia o artefato encerra a busca; sinais fracos (ex.: script action genérica) não.
   // Rastro forte só conta se nada o desmente (passo do flow que não grava o campo, valor diferente, condição falsa).

@@ -278,6 +278,9 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
       case 'clear-cache':
         await clearCache(msg.origin);
         return true;
+      case 'open-diff-popup':
+        await chrome.windows.create({ url: chrome.runtime.getURL(`src/diff/index.html?k=${encodeURIComponent(msg.key)}`), type: 'popup', width: 1200, height: 860 });
+        return true;
     }
   })().then(sendResponse, (e: Error) => sendResponse({ error: e.message }));
   return true;

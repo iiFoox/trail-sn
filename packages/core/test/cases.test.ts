@@ -134,6 +134,20 @@ describe('Fase 0: 12 casos', () => {
     expect(e.grade).toBe('confirmed');
   });
 
+  it('C8b UI action com action_name (sys_action=<nome>, não sys_id) → CONFIRMADO', async () => {
+    const s = scenario();
+    const ua = { sys_id: id(), name: 'PT Escalar', action_name: 'pt_escalar', script: "current.urgency = 1; current.update();", table: 'incident' };
+    s.uiActions.push(ua);
+    br(s, 'PT decoy', 'before', "if (current.contact_type == 'walk-in') current.urgency = 1;");
+    (s.record as Record<string, string>).contact_type = 'phone';
+    audit(s, 'urgency', '3', '1', T0, 'admin', 1);
+    formTx(s, T0, 'admin', { urgency: '3' }, '&sys_action=pt_escalar');
+    const e = top(await run(s, 'urgency'));
+    expect(e.type).toBe('ui_action');
+    expect(e.artifact.name).toBe('PT Escalar');
+    expect(e.grade).toBe('confirmed');
+  });
+
   it('C9 atualização sem auditoria (setWorkflow(false)) é detectada', async () => {
     const s = scenario();
     audit(s, 'impact', '3', '2', T0, 'admin', 1);

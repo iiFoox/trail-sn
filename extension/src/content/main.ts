@@ -9,6 +9,7 @@
 import { fmt, t } from '../shared/i18n';
 import { loadPrefs, normalize, PREFS_KEY, type Prefs } from '../shared/prefs';
 import type { PageContext } from '../shared/messages';
+import { openDiffWindow, type DiffWindowRequest } from './diffWindow';
 (window as unknown as { __trailContent?: boolean }).__trailContent = true; // o worker não injeta de novo onde já está
 
 // Português até a preferência chegar do storage; os ícones criados depois já saem no idioma escolhido.
@@ -229,3 +230,12 @@ const mo = new MutationObserver(() => {
 });
 mo.observe(document.documentElement, { childList: true, subtree: true });
 decorateForm();
+
+// Janela "lado a lado" pedida pelo painel: desenhada só no quadro de cima, por cima da página inteira.
+chrome.runtime?.onMessage.addListener((m: { type?: string } & Partial<DiffWindowRequest>, _s, reply) => {
+  if (m?.type !== 'diff-window' || window !== window.top || !m.key) return;
+  openDiffWindow(m as DiffWindowRequest);
+  reply({ ok: true });
+});
+// Gancho de teste (e2e): o mundo isolado do content script não é visível pela página.
+(window as unknown as { __trailOpenDiff?: typeof openDiffWindow }).__trailOpenDiff = openDiffWindow;

@@ -498,5 +498,146 @@
     "field": "impact",
     "expectedType": "user_action",
     "minGrade": "confirmed"
+  },
+  {
+    "id": "F6-B1",
+    "table": "incident",
+    "number": "INC0010034",
+    "field": "impact",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F6 Ajuste impacto por canal"
+  },
+  {
+    "id": "F6-B2",
+    "table": "incident",
+    "number": "INC0010035",
+    "field": "urgency",
+    "expectedType": "user_action",
+    "minGrade": "probable"
+  },
+  {
+    "id": "F6-B3",
+    "table": "incident",
+    "number": "INC0010036",
+    "field": "description",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F6 Monta descrição padrão"
+  },
+  {
+    "id": "F6-B4",
+    "table": "incident",
+    "number": "INC0010036",
+    "field": "contact_type",
+    "expectedType": "user_action",
+    "minGrade": "probable"
+  },
+  {
+    "id": "F6-B5",
+    "table": "incident",
+    "number": "INC0010037",
+    "field": "impact",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F6 Revisão de impacto software"
+  },
+  {
+    "id": "F6-B6",
+    "table": "incident",
+    "number": "INC0010037",
+    "field": "priority",
+    "expectedType": "data_lookup",
+    "minGrade": "probable",
+    "expectedName": "Priority Lookup"
+  },
+  {
+    "id": "F6-B7",
+    "table": "incident",
+    "number": "INC0010038",
+    "field": "urgency",
+    "expectedType": "client_script",
+    "minGrade": "probable",
+    "expectedName": "[PT] F6 Urgência por canal"
+  },
+  {
+    "id": "F6-B8",
+    "table": "incident",
+    "number": "INC0010039",
+    "field": "urgency",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F6 Normaliza urgência integração"
+  },
+  {
+    "id": "F6-B9",
+    "table": "incident",
+    "number": "INC0010039",
+    "field": "impact",
+    "expectedType": "user_action",
+    "minGrade": "probable"
+  },
+  {
+    "id": "F6-B10",
+    "table": "incident",
+    "number": "INC0010040",
+    "field": "urgency",
+    "expectedType": "br_after",
+    "minGrade": "probable",
+    "expectedName": "[PT] F6 Sincroniza canal"
+  },
+  {
+    "id": "F6-B11",
+    "table": "incident",
+    "number": "INC0010040",
+    "field": "severity",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F6 Severidade por urgência"
+  },
+  {
+    "id": "F6-B12",
+    "table": "incident",
+    "number": "INC0010041",
+    "field": "severity",
+    "expectedType": "script_action",
+    "minGrade": "probable",
+    "expectedName": "[PT] F6 Reclassifica severidade"
+  },
+  {
+    "id": "F6-B13",
+    "table": "incident",
+    "number": "INC0010042",
+    "field": "urgency",
+    "expectedType": "ui_action",
+    "minGrade": "probable",
+    "expectedName": "[PT] F6 Escalar atendimento"
+  },
+  {
+    "id": "F6-B14",
+    "table": "incident",
+    "number": "INC0010042",
+    "field": "notify",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F6 Notificação de escalonamento"
+  },
+  {
+    "id": "F6-B15",
+    "table": "incident",
+    "number": "INC0010043",
+    "field": "description",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F6 Complementa descrição de triagem"
+  },
+  {
+    "id": "F6-B16",
+    "table": "incident",
+    "number": "INC0010044",
+    "field": "urgency",
+    "expectedType": "scheduled_job",
+    "minGrade": "probable",
+    "expectedName": "[PT] F6 Reprocessa pendências"
   }
 ]

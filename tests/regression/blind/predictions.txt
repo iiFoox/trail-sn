@@ -1,0 +1,16 @@
+B1 br_before confirmed 130 "[PT] F6 Ajuste impacto por canal"
+B2 user_action confirmed 80 "admin"
+B3 br_before confirmed 75 "[PT] F6 Monta descrição padrão"
+B4 user_action confirmed 80 "admin"
+B5 br_before confirmed 130 "[PT] F6 Revisão de impacto software"
+B6 data_lookup confirmed 115 "Priority Lookup"
+B7 client_script confirmed 80 "[PT] F6 Urgência por canal"
+B8 br_before probable 65 "[PT] F6 Normaliza urgência integração"
+B9 user_action confirmed 75 "admin"
+B10 br_after confirmed 80 "[PT] F6 Sincroniza canal"
+B11 br_before confirmed 100 "[PT] F6 Severidade por urgência"
+B12 script_action confirmed 85 "[PT] F6 Reclassifica severidade"
+B13 br_before probable 40 "[PT] F6 Notificação de escalonamento" (empate com "[PT] F6 Urgência atendimento presencial" 40)
+B14 br_before probable 65 "[PT] F6 Notificação de escalonamento"
+B15 br_before confirmed 95 "[PT] F6 Complementa descrição de triagem" (2º: "[PT] F6 Texto padrão de triagem" 75)
+B16 scheduled_job confirmed 70 "[PT] F6 Reprocessa pendência..."

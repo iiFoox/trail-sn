@@ -9,7 +9,8 @@ import { fmt, t } from '../shared/i18n';
 import { Glyph, typeGlyph } from '../shared/icons';
 import { recordLink } from '../shared/instances';
 import { send } from '../shared/messages';
-import { getPrefs } from '../shared/prefs';
+import { getPrefs, resolvedTheme } from '../shared/prefs';
+import { trackedTab } from '../shared/tabRef';
 import { RecordTimeline } from './Timeline';
 import { fullReport, savePdf } from './export';
 import { diffLines, looksLong } from '../shared/diff';
@@ -99,6 +100,22 @@ export function Result({ r, origin, access, toast, onField }: { r: Investigation
     addEventListener('message', on);
     return () => removeEventListener('message', on);
   }, []);
+  // Teclado: ← → trocam de aba; ↑ ↓ andam pelas mudanças do campo (na aba Histórico). Esc fecha a diferença (no overlay).
+  useEffect(() => {
+    const on = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (e.altKey || e.ctrlKey || e.metaKey || diffOpen || (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        const i = TABS.indexOf(tab);
+        const n = TABS[(i + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length]!;
+        setTab(n); e.preventDefault();
+      } else if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && tab === 'history' && histMode === 'field' && r.changes.length > 1) {
+        setSel((v) => Math.max(0, Math.min(r.changes.length - 1, v + (e.key === 'ArrowDown' ? 1 : -1)))); e.preventDefault();
+      }
+    };
+    addEventListener('keydown', on);
+    return () => removeEventListener('keydown', on);
+  }, [tab, histMode, diffOpen, r.changes.length]);
   const c: Change | undefined = r.changes[sel];
   const field = humanField(r.target.field);
 
@@ -129,7 +146,7 @@ export function Result({ r, origin, access, toast, onField }: { r: Investigation
               : <><span class="muted small">{P.createdAs}</span><span class="new" title={c.newValue}>{valueLabel(r, c.newValue)}</span></>
           ) : <span class="muted small">{s.noChanges}</span>}
         </div>
-        {c && <div class="when2">{when(c.at)}</div>}
+        {c && <div class="when2">{when(c.at)}{(() => { const d = traceDaysLeft(c); return d !== null ? <span class="expire" title={P.expireHint}>{fmt(d === 0 ? P.expireToday : P.expireIn, { n: d })}</span> : null; })()}</div>}
       </div>
       {c && diffOpen && <DiffOverlay at={diffOpen} title={`${r.target.display} · ${field}`} sub={when(c.at)} oldText={c.oldValue} newText={c.newValue} onClose={() => setDiffOpen(false)} />}
 
@@ -342,12 +359,30 @@ function FactRow({ kind, detail, source, field, ok, i = 0 }: { kind: string; det
   );
 }
 
+/** Retenção padrão das fontes de rastro (sys_auto_flush): o que sustenta a resposta some depois disso. */
+const RETENTION_DAYS: Record<string, number> = { sysevent: 7, sys_flow_context: 14, syslog_transaction: 56 };
+/** Dias até a prova principal desta mudança expirar (só quando faltam menos de 30); null = não se aplica. */
+export function traceDaysLeft(c: Change): number | null {
+  const top = c.evidence[0];
+  if (!top) return null;
+  const days = top.facts.map((f) => RETENTION_DAYS[f.source]).filter((x): x is number => !!x);
+  if (!days.length) return null;
+  const age = (Date.now() - Date.parse(c.at.replace(' ', 'T') + 'Z')) / 864e5;
+  const left = Math.floor(Math.min(...days) - age);
+  return left >= 0 && left < 30 ? left : null;
+}
+
+/** Por que este candidato perdeu, numa frase: o fato que mais pesou contra ele (ou "pontuação menor"). */
+export function lossReason(e: Evidence, field: string): string {
+  const neg = e.facts.filter((f) => f.points < 0).sort((a, b) => a.points - b.points)[0];
+  return neg ? factText(neg.kind, field) : P.weaker;
+}
+
 function Other({ e, origin, field, day }: { e: Evidence; origin: string; field: string; day: string }) {
   const link = e.artifact.sysId && e.artifact.table ? recordLink(origin, e.artifact.table, e.artifact.sysId) : null;
   return (
     <details class="box fold">
-      <summary><h4><span class="grow">{fmt(P.whyNotOther, { name: e.artifact.name })}</span><span class="pill">{P.likelihood[e.grade]}</span></h4></summary>
-      <div class="li"><span class="ck x">–</span><span class="grow">{P.weaker}</span></div>
+      <summary><h4><span class="grow">{fmt(P.whyNotOther, { name: e.artifact.name })}<span class="why">{lossReason(e, field)}</span></span><span class="pill">{P.likelihood[e.grade]}</span></h4></summary>
       {e.gaps.map((g) => <div class="li"><span class="ck x">–</span><span class="grow">{localizeTimes(g, day)}</span></div>)}
       {e.facts.map((f) => <FactRow kind={f.kind} detail={localizeTimes(f.detail, day)} source={f.source} field={field} ok={f.points >= 0} />)}
       {link && <div class="pad"><a href={link} target="_blank" rel="noreferrer">{Glyph.open} {fmt(P.openArtifact, { what: P.what[e.artifact.table ?? ''] ?? s.openInStudio })}</a></div>}
@@ -443,8 +478,13 @@ function DiffOverlay({ at, title, sub, oldText, newText, onClose }: { at: { x: n
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); }; addEventListener('keydown', k); return () => removeEventListener('keydown', k); }, []);
   const sideBySide = async () => {
     if (isDemo) return;
-    const key = `diff:${Date.now()}`;
+    const key = `diff:${Date.now()}:${Math.random().toString(36).slice(2)}`;
     await chrome.storage.session.set({ [key]: { title, sub, oldText, newText } });
+    // Primeiro tenta a janela estilo Mac por cima da página do ServiceNow; sem a página (aba fechada, outra origem), abre uma janela do navegador.
+    const tab = trackedTab();
+    const ok = tab !== undefined && await chrome.tabs.sendMessage(tab, { type: 'diff-window', key, title, sub, theme: resolvedTheme(getPrefs().theme), from: getPrefs().panelMode === 'window' ? 'left' : 'right', labels: { close: P.close, min: P.winMin, max: P.winMax } })
+      .then((r: { ok?: boolean } | undefined) => !!r?.ok).catch(() => false);
+    if (ok) { if (getPrefs().panelMode !== 'window') await chrome.tabs.update(tab!, { active: true }).catch(() => undefined); close(); return; }
     await chrome.windows.create({ url: chrome.runtime.getURL(`src/diff/index.html?k=${encodeURIComponent(key)}`), type: 'popup', width: 1200, height: 860 });
   };
   return (

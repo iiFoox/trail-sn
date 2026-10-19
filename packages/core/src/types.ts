@@ -79,6 +79,7 @@ export type FactKind =
   | 'last_writer'
   | 'overwritten_later'
   | 'reacts_to_change'
+  | 'no_trace'
   | 'api_write_on_record'
   | 'no_competing_automation'
   | 'no_step_writes_field'

@@ -21,7 +21,8 @@ export type Message =
   | { type: 'check-access'; origin: string; force?: boolean }
   | { type: 'activate'; origin: string }
   | { type: 'deactivate'; origin: string }
-  | { type: 'clear-cache'; origin: string };
+  | { type: 'clear-cache'; origin: string }
+  | { type: 'open-diff-popup'; key: string };
 
 export interface ProbeResult {
   origin: string;

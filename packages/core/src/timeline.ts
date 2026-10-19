@@ -1,6 +1,6 @@
 import type { QueryRequest, RestClient } from './client/RestClient';
 import { RecordNotFoundError, type AccessState, type Row, type Target } from './types';
-import { shift, toMs, withTimeout } from './util';
+import { shift, toMs, uiActionMatches, uiActionQuery, uiActionRef, withTimeout } from './util';
 
 /**
  * Linha do tempo do registro inteiro: cada gravação (checkpoint da auditoria) com quem gravou,
@@ -113,8 +113,8 @@ export async function recordTimeline(client: RestClient, target: Omit<Target, 'f
   const tx = (await Promise.all(windows.slice(0, 10).map((w) =>
     q('syslog_transaction', `sys_created_on>=${w.from}^sys_created_on<=${w.to}^ORDERBYsys_created_on`, ['sys_created_on', 'type', 'url', 'sys_created_by'], 200)))).flat();
   const retentionMs = (opts.retentionDays ?? 56) * 864e5;
-  const uiIds = [...new Set(tx.map((t) => (t.url ?? '').match(/sys_action=([0-9a-f]{32})/)?.[1] ?? '').filter(Boolean))];
-  const uiRows = uiIds.length ? await q('sys_ui_action', `sys_idIN${uiIds.join(',')}`, ['sys_id', 'name', 'action_name'], 30) : [];
+  const uiIds = [...new Set(tx.filter((t) => (t.url ?? '').includes(sysId)).map((t) => uiActionRef(t.url) ?? '').filter(Boolean))];
+  const uiRows = uiIds.length ? await q('sys_ui_action', uiActionQuery(uiIds, [target.table]), ['sys_id', 'name', 'action_name'], 30) : [];
 
   // ---------- classificação de cada gravação ----------
   // Cada transação explica uma gravação só: a mais antiga do segundo fica com o formulário/API, as seguintes são encadeadas.
@@ -142,8 +142,8 @@ export async function recordTimeline(client: RestClient, target: Omit<Target, 'f
     const async = jobs.find((t) => (t.url ?? '').startsWith('JOB: ASYNC: '));
     const job = jobs.find((t) => !(t.url ?? '').startsWith('JOB: ASYNC: '));
     if (form) {
-      const action = (form.url ?? '').match(/sys_action=([0-9a-f]{32})/)?.[1];
-      const ua = uiRows.find((u) => u.sys_id === action);
+      const action = uiActionRef(form.url);
+      const ua = uiRows.find((u) => uiActionMatches(u, action));
       via = ua && !/^sysverb_/.test(ua.action_name ?? '') ? 'ui_action' : 'form';
       detail = ua?.name || undefined;
     } else if (api) { via = 'api'; detail = (api.url ?? '').split('?')[0]; }

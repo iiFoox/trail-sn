@@ -609,3 +609,10 @@ ol.tl > li.key { animation: rise .32s cubic-bezier(.2,.8,.2,1) both, inkring 1s 
   *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .trailsvg .draw { stroke-dashoffset: 0; }
 }
+
+/* página de diferença dentro da janela estilo Mac (iframe) */
+html.embed body{margin:0}
+html.embed .wrap.wide{height:100vh}
+/* motivo de cada candidato descartado, visível sem abrir */
+.box.fold summary h4 .why { display: block; font-weight: 400; font-size: 12px; color: var(--fg-2); margin-top: 2px; text-transform: none; letter-spacing: 0; }
+.when2 .expire { margin-left: 8px; font-size: 11px; font-weight: 600; color: var(--warn, #b07a00); background: color-mix(in srgb, var(--warn, #b07a00) 14%, transparent); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }

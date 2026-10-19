@@ -1,3 +1,4 @@
+import type { Row } from './types';
 /** Datas da ServiceNow são "YYYY-MM-DD HH:mm:ss" em UTC. */
 export function toMs(t: string): number {
   return new Date(t.replace(' ', 'T') + 'Z').getTime();
@@ -147,3 +148,27 @@ export function parseFieldValues(q: string | undefined): Record<string, string> 
   }
   return out;
 }
+
+/**
+ * Botão clicado no formulário: o parâmetro sys_action traz o sys_id da UI action ou, quando ela tem
+ * action_name, o próprio action_name (ex.: "resolve_incident"). Os botões de salvar (sysverb_*) ficam de fora.
+ */
+export function uiActionRef(url: string | undefined): string | undefined {
+  const m = (url ?? '').match(/[?&]sys_action=([^&]+)/);
+  if (!m) return undefined;
+  let v = m[1]!;
+  try { v = decodeURIComponent(v); } catch { /* fica como veio */ }
+  return v && !/^sysverb_/.test(v) && v !== 'none' ? v : undefined;
+}
+export const isSysId = (v: string): boolean => /^[0-9a-f]{32}$/.test(v);
+/** Consulta de sys_ui_action para as referências vistas nas transações (sys_id ou action_name). */
+export function uiActionQuery(refs: string[], tables: string[]): string {
+  const ids = refs.filter(isSysId);
+  const names = refs.filter((r) => !isSysId(r) && /^[\w.-]+$/.test(r));
+  const parts: string[] = [];
+  if (ids.length) parts.push(`sys_idIN${ids.join(',')}`);
+  if (names.length) parts.push(`action_nameIN${names.join(',')}^tableIN${[...tables, 'global'].join(',')}`);
+  return parts.join('^NQ');
+}
+/** A UI action corresponde à referência da transação? */
+export const uiActionMatches = (ua: Row | undefined, ref: string | undefined): boolean => !!ua && !!ref && (ua.sys_id === ref || (!isSysId(ref) && ua.action_name === ref));
