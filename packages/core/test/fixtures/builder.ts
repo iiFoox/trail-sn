@@ -29,6 +29,7 @@ export interface Scenario {
   scriptActions: Row[];
   flows: Row[];
   workflows: Row[];
+  assignmentRules?: Row[];
 }
 
 export function scenario(): Scenario {
@@ -85,6 +86,7 @@ export function build(s: Scenario): FakeRestClient {
   c.rows('sys_ui_action', s.uiActions);
   c.rows('sysauto_script', s.jobs);
   c.rows('sys_flow_context', s.flows.map((r) => ({ source_record: INC.sysId, ...r })));
+  c.rows('sysrule_assignment', (s.assignmentRules ?? []).map((r) => ({ active: 'true', ...r })));
   c.rows('wf_context', s.workflows.map((r) => ({ id: INC.sysId, ...r })));
   return c;
 }

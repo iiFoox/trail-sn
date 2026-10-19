@@ -85,20 +85,35 @@ export async function investigate(
   const uiActionIds = unique(txAll.map((t) => (t.url ?? '').match(/sys_action=([0-9a-f]{32})/)?.[1] ?? '').filter(Boolean));
   const needsJobScan = fieldChanges.some((c) => !txAll.some((t) => t.sys_created_by === c.user && !/^JOB: /.test(t.url ?? '') && inWindow(t, c, opts)));
 
-  const [jobsByName, scriptActions, uiActions, jobsByScript] = await Promise.all([
+  const isAssignmentField = target.field === 'assignment_group' || target.field === 'assigned_to';
+  const [jobsByName, scriptActions, uiActions, jobsByScript, assignmentRules] = await Promise.all([
     jobNames.length ? q('sysauto_script', `nameIN${jobNames.join(',')}`, ['sys_id', 'name', 'script'], 50) : Promise.resolve([]),
     eventNames.length ? q('sysevent_script_action', `active=true^event_nameIN${eventNames.join(',')}`, ['sys_id', 'name', 'event_name', 'script'], 50) : Promise.resolve([]),
     uiActionIds.length ? q('sys_ui_action', `sys_idIN${uiActionIds.join(',')}`, ['sys_id', 'name', 'script', 'table'], 20) : Promise.resolve([]),
     needsJobScan ? q('sysauto_script', `scriptLIKE${target.field}^scriptLIKE${target.table}`, ['sys_id', 'name', 'script', 'run_type', 'run_start', 'run_time', 'run_as.user_name', 'active'], 50) : Promise.resolve([]),
+    isAssignmentField ? q('sysrule_assignment', `active=true^tableIN${meta.tables.join(',')}`, ['sys_id', 'name', 'table', 'condition', 'group', 'user', 'order'], 50) : Promise.resolve([]),
   ]);
 
   // ---------- assinaturas e pontuação ----------
-  const changes: Change[] = fieldChanges.map((c) => {
+  // Transações de job (síncronas com a escrita) são atribuídas à mudança mais próxima no tempo,
+  // para que um job logo após a mudança N+1 não seja creditado também à mudança N.
+  const isJobTx = (t: Row) => /^JOB: /.test(t.url ?? '');
+  const nearestChange = new Map<string, number>();
+  for (const t of txAll.filter(isJobTx)) {
+    let best = -1;
+    let bestDist = Infinity;
+    fieldChanges.forEach((c, i) => {
+      const d = Math.abs(toMs(t.sys_created_on ?? '') - toMs(c.sys_created_on ?? ''));
+      if (d < bestDist || (d === bestDist && toMs(c.sys_created_on ?? '') <= toMs(t.sys_created_on ?? ''))) { best = i; bestDist = d; }
+    });
+    nearestChange.set(t.sys_id ?? `${t.sys_created_on}|${t.url}`, best);
+  }
+  const changes: Change[] = fieldChanges.map((c, index) => {
     const at = c.sys_created_on ?? '';
     const from = shift(at, -opts.windowBefore);
     const to = shift(at, opts.windowAfter);
     const traces: Traces = {
-      transactions: txAll.filter((t) => between(t.sys_created_on, from, to)),
+      transactions: txAll.filter((t) => between(t.sys_created_on, from, to) && (!isJobTx(t) || nearestChange.get(t.sys_id ?? `${t.sys_created_on}|${t.url}`) === index)),
       events: evAll.filter((e) => between(e.processed, shift(at, -1), shift(at, 1))),
       scriptActions,
       flows: flowsAll.filter((f) => (f.sys_created_on ?? '') <= shift(at, 2) && (f.sys_updated_on ?? '') >= shift(at, -2)),
@@ -106,14 +121,21 @@ export async function investigate(
       jobsByName,
       uiActions,
       jobsByScript,
+      assignmentRules,
     };
     const ctx: ChangeContext = {
       table: target.table, field: target.field, sysId, audit: c, at, user: c.user ?? '',
       checkpoint: Number(c.record_checkpoint ?? 0), checkpoints, meta, traces, opts,
     };
+    const notes: string[] = [];
+    const ageSec = (Date.now() - toMs(at)) / 1000;
+    for (const t of ['syslog_transaction', 'sysevent'] as const) {
+      const keep = opts.retention?.[t];
+      if (keep && ageSec > keep) notes.push(`traces_expired:${t}`);
+    }
     return {
       at, oldValue: c.oldvalue ?? '', newValue: c.newvalue ?? '', user: c.user ?? '', checkpoint: ctx.checkpoint,
-      evidence: scoreAll(runSignatures(ctx)),
+      evidence: scoreAll(runSignatures(ctx)), notes,
     };
   });
 

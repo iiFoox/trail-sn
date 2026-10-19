@@ -52,3 +52,17 @@ export async function detectAccess(client: RestClient, timeoutMs = 3000): Promis
   const level: AccessLevel = !readable(states.sys_audit) ? 'none' : denied.length ? 'partial' : 'full';
   return { level, states, denied, checkedAt: new Date().toISOString() };
 }
+
+/** Retenção configurada em sys_auto_flush para as tabelas de rastro (só regras sem condição). Negado → vazio. */
+export async function fetchRetention(client: RestClient): Promise<Partial<Record<'syslog_transaction' | 'sysevent', number>>> {
+  const r = await client.query({ table: 'sys_auto_flush', query: 'active=true^tablenameINsyslog_transaction,sysevent', fields: ['tablename', 'age', 'conditions'], limit: 20 });
+  const out: Partial<Record<'syslog_transaction' | 'sysevent', number>> = {};
+  for (const row of r.rows) {
+    if (row.conditions) continue;
+    const t = row.tablename as 'syslog_transaction' | 'sysevent';
+    const age = Number(row.age);
+    if (!age) continue;
+    out[t] = Math.min(out[t] ?? Infinity, age);
+  }
+  return out;
+}

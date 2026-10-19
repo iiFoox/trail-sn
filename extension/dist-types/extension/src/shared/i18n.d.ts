@@ -33,6 +33,7 @@ declare const dict: {
         reloadMeta: string;
         accessFull: string;
         timing: string;
+        tracesExpired: string;
         grade: Record<Grade, string>;
         type: Record<EvidenceType, string>;
     };
@@ -68,6 +69,7 @@ declare const dict: {
         reloadMeta: string;
         accessFull: string;
         timing: string;
+        tracesExpired: string;
         grade: Record<Grade, string>;
         type: Record<EvidenceType, string>;
     };

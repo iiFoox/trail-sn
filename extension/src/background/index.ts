@@ -3,7 +3,7 @@
  * guarda estado em chrome.storage.session e abre o painel. Não toca no DOM.
  * Nenhum estado em memória que importe: o worker pode ser encerrado a qualquer momento.
  */
-import { FetchRestClient, detectAccess, fetchTokenFromHtml, investigate, type AccessReport, type MetaCache, type TableMeta } from '@trail/core';
+import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, type AccessReport, type MetaCache, type TableMeta } from '@trail/core';
 import { addInstance, listInstances, removeInstance } from '../shared/instances';
 import { storageKey, type Message, type PageContext, type ProbeResult, type TabState } from '../shared/messages';
 
@@ -150,14 +150,25 @@ async function checkAccess(origin: string, force = false): Promise<AccessReport>
   return report;
 }
 
+async function retentionFor(origin: string, client: FetchRestClient) {
+  const key = `retention:${origin}`;
+  const o = await session.get(key);
+  if (o[key]) return o[key] as Awaited<ReturnType<typeof fetchRetention>>;
+  const r = await fetchRetention(client).catch(() => ({}));
+  await session.set({ [key]: r });
+  return r;
+}
+
 // ---------- investigação ----------
 async function runInvestigation(tabId: number, origin: string, target: { table: string; sysId?: string; number?: string; field: string }, token?: string): Promise<void> {
   await rememberToken(origin, token);
   const prev = await getTab(tabId);
   await setTab({ ...prev, tabId, status: 'running', startedAt: new Date().toISOString(), result: undefined, error: undefined });
   try {
+    const client = makeClient(origin);
+    const retention = await retentionFor(origin, client);
     const [result, access] = await Promise.all([
-      investigate(makeClient(origin), target, {}, metaCache(origin)),
+      investigate(client, target, { retention }, metaCache(origin)),
       checkAccess(origin),
     ]);
     await setTab({ ...(await getTab(tabId)), status: 'done', result, access });

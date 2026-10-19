@@ -35,6 +35,7 @@ const dict = {
     reloadMeta: 'Recarregar metadados',
     accessFull: 'Acesso completo',
     timing: '{calls} chamadas em {ms} ms',
+    tracesExpired: 'Rastros de execução de {table} já expiraram para esta data; só suspeitos estáticos e auditoria.',
     grade: { confirmed: 'CONFIRMADO', probable: 'PROVÁVEL', candidate: 'CANDIDATO' } as Record<Grade, string>,
     type: {
       br_async: 'BR assíncrona',
@@ -49,6 +50,7 @@ const dict = {
       background_script: 'Script de fundo',
       user_action: 'Ação direta do usuário',
       server_change: 'Alteração no servidor ao salvar',
+      assignment_rule: 'Regra de atribuição',
       unknown_background: 'Processo em segundo plano',
     } as Record<EvidenceType, string>,
   },
@@ -84,6 +86,7 @@ const dict = {
     reloadMeta: 'Reload metadata',
     accessFull: 'Full access',
     timing: '{calls} calls in {ms} ms',
+    tracesExpired: 'Execution traces in {table} have expired for this date; only static suspects and audit remain.',
     grade: { confirmed: 'CONFIRMED', probable: 'PROBABLE', candidate: 'CANDIDATE' } as Record<Grade, string>,
     type: {
       br_async: 'Async business rule',
@@ -98,6 +101,7 @@ const dict = {
       background_script: 'Background script',
       user_action: 'Direct user action',
       server_change: 'Server-side change on save',
+      assignment_rule: 'Assignment rule',
       unknown_background: 'Background process',
     } as Record<EvidenceType, string>,
   },

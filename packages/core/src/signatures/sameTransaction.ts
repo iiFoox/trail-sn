@@ -73,7 +73,17 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
         ...brFacts(b),
       ]));
     }
-    if (!befores.length) {
+    for (const rule of ctx.traces.assignmentRules) {
+      const target = rule.group || rule.user;
+      const facts = [
+        fact('form_value_differs', 'syslog_transaction', 'o formulário enviou outro valor; o servidor alterou ao salvar'),
+        fact('execution_in_window', 'syslog_transaction', `salvo às ${formAt}`),
+        fact('references_table', 'sysrule_assignment', `regra da tabela ${rule.table}`),
+      ];
+      if (target && target === (ctx.audit.newvalue ?? '')) facts.push(fact('references_field', 'sysrule_assignment', 'a regra atribui exatamente o valor gravado'));
+      out.push(evidence('assignment_rule', { name: rule.name ?? '?', sysId: rule.sys_id, table: 'sysrule_assignment' }, facts, ['a condição da regra não foi avaliada contra o registro']));
+    }
+    if (!befores.length && !ctx.traces.assignmentRules.length) {
       out.push(evidence('server_change', { name: 'BR before, data lookup ou regra de atribuição' }, [
         fact('form_value_differs', 'syslog_transaction', 'o formulário enviou outro valor; o servidor alterou ao salvar'),
         fact('execution_in_window', 'syslog_transaction', `salvo às ${formAt}`),

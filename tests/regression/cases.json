@@ -1,14 +1,134 @@
 [
-  { "id": "C1", "table": "incident", "number": "INC0010001", "field": "state", "expectedType": "br_async", "expectedName": "PERICIA-TESTE", "minGrade": "confirmed" },
-  { "id": "C2", "table": "incident", "number": "INC0010002", "field": "impact", "expectedType": "br_before", "minGrade": "candidate" },
-  { "id": "C2-ITIL", "table": "incident", "number": "INC0010009", "field": "impact", "expectedType": "br_before", "minGrade": "candidate" },
-  { "id": "C2-FORM", "table": "incident", "number": "INC0010010", "field": "impact", "expectedType": "br_before", "minGrade": "confirmed" },
-  { "id": "C2-FORM-urg", "table": "incident", "number": "INC0010010", "field": "urgency", "expectedType": "user_action", "minGrade": "confirmed" },
-  { "id": "C3", "table": "incident", "number": "INC0010003", "field": "category", "expectedType": "br_via_script_include", "minGrade": "probable" },
-  { "id": "C4", "table": "incident", "number": "INC0010004", "field": "contact_type", "expectedType": "script_action", "minGrade": "confirmed" },
-  { "id": "C5", "table": "incident", "number": "INC0010005", "field": "severity", "expectedType": "background_script", "minGrade": "probable" },
-  { "id": "C5b", "table": "incident", "number": "INC0010008", "field": "severity", "expectedType": "scheduled_job", "minGrade": "confirmed" },
-  { "id": "C6", "table": "incident", "number": "INC0010011", "field": "notify", "expectedType": "flow", "minGrade": "probable" },
-  { "id": "C8", "table": "incident", "number": "INC0010006", "field": "description", "expectedType": "ui_action", "minGrade": "confirmed" },
-  { "id": "C9", "table": "incident", "number": "INC0010007", "field": "impact", "expectUnaudited": true }
+  {
+    "id": "C1",
+    "table": "incident",
+    "number": "INC0010001",
+    "field": "state",
+    "expectedType": "br_async",
+    "expectedName": "PERICIA-TESTE",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "C2",
+    "table": "incident",
+    "number": "INC0010002",
+    "field": "impact",
+    "expectedType": "br_before",
+    "minGrade": "candidate"
+  },
+  {
+    "id": "C2-ITIL",
+    "table": "incident",
+    "number": "INC0010009",
+    "field": "impact",
+    "expectedType": "br_before",
+    "minGrade": "candidate"
+  },
+  {
+    "id": "C2-FORM",
+    "table": "incident",
+    "number": "INC0010010",
+    "field": "impact",
+    "expectedType": "br_before",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "C2-FORM-urg",
+    "table": "incident",
+    "number": "INC0010010",
+    "field": "urgency",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "C3",
+    "table": "incident",
+    "number": "INC0010003",
+    "field": "category",
+    "expectedType": "br_via_script_include",
+    "minGrade": "probable"
+  },
+  {
+    "id": "C4",
+    "table": "incident",
+    "number": "INC0010004",
+    "field": "contact_type",
+    "expectedType": "script_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "C5",
+    "table": "incident",
+    "number": "INC0010005",
+    "field": "severity",
+    "expectedType": "background_script",
+    "minGrade": "probable"
+  },
+  {
+    "id": "C5b",
+    "table": "incident",
+    "number": "INC0010008",
+    "field": "severity",
+    "expectedType": "scheduled_job",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "C6",
+    "table": "incident",
+    "number": "INC0010011",
+    "field": "notify",
+    "expectedType": "flow",
+    "minGrade": "probable"
+  },
+  {
+    "id": "C8",
+    "table": "incident",
+    "number": "INC0010006",
+    "field": "description",
+    "expectedType": "ui_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "C9",
+    "table": "incident",
+    "number": "INC0010007",
+    "field": "impact",
+    "expectUnaudited": true
+  },
+  {
+    "id": "F1-ASSIGN",
+    "table": "incident",
+    "number": "<preencher após pdi-setup-fase1.js>",
+    "field": "assignment_group",
+    "expectedType": "assignment_rule",
+    "minGrade": "probable",
+    "pending": true
+  },
+  {
+    "id": "F1-SEQ-1",
+    "table": "incident",
+    "number": "<preencher>",
+    "field": "impact",
+    "expectedType": "br_async",
+    "minGrade": "confirmed",
+    "pending": true
+  },
+  {
+    "id": "F1-MANY",
+    "table": "incident",
+    "number": "<preencher>",
+    "field": "state",
+    "expectedType": "background_script",
+    "minGrade": "probable",
+    "pending": true
+  },
+  {
+    "id": "F1-IMPORT",
+    "table": "incident",
+    "number": "<preencher>",
+    "field": "severity",
+    "expectedType": "unknown_background",
+    "minGrade": "candidate",
+    "pending": true
+  }
 ]

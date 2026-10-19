@@ -43,7 +43,7 @@ const results: { id: string; ok: boolean; ms: number; detail: string }[] = [];
 const access = await detectAccess(client);
 console.log(`Acesso: ${access.level}${access.denied.length ? ' (negado: ' + access.denied.join(', ') + ')' : ''}`);
 
-for (const c of cases) {
+for (const c of cases.filter((x) => !(x as { pending?: boolean }).pending)) {
   const t0 = Date.now();
   let detail = '';
   let ok = false;

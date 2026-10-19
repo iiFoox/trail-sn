@@ -146,6 +146,7 @@ function ChangeView({ c, origin }: { c: Change; origin: string }) {
     <div class="change">
       <div><span class="when">{c.at}</span> <span class="muted">UTC · {s.by} {c.user} · cp {c.checkpoint}</span></div>
       <div class="value">"{c.oldValue}" → "{c.newValue}"</div>
+      {c.notes.map((n) => <div class="notice">{fmt(s.tracesExpired, { table: n.split(':')[1] ?? '' })}</div>)}
       {c.evidence.map((e) => <EvidenceView e={e} origin={origin} />)}
     </div>
   );

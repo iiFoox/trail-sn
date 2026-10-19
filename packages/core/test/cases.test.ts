@@ -182,3 +182,42 @@ describe('acesso e lacunas', () => {
     expect(c.log.filter((q) => q.table === 'syslog_transaction').length).toBe(2);
   });
 });
+
+describe('Fase 1: casos novos (fixtures)', () => {
+  it('regra de atribuição nomeada quando o formulário enviou outro grupo', async () => {
+    const s = scenario();
+    s.assignmentRules = [{ sys_id: id(), name: '[PT] Atribui rede', table: 'incident', condition: 'category=network', group: 'grp_rede', user: '', order: '100' }];
+    audit(s, 'assignment_group', '', 'grp_rede', T0, 'admin', 1);
+    formTx(s, T0, 'admin', { assignment_group: '' });
+    const e = top(await run(s, 'assignment_group'));
+    expect(e.type).toBe('assignment_rule');
+    expect(e.grade).toBe('confirmed');
+  });
+
+  it('duas automações em sequência no mesmo campo: cada mudança tem a sua evidência', async () => {
+    const s = scenario();
+    br(s, 'PT Before impact', 'before', 'current.impact = 2;');
+    br(s, 'PT Async impact', 'async', 'current.impact = 1; current.update();');
+    audit(s, 'impact', '3', '2', T0, 'admin', 1);
+    formTx(s, T0, 'admin', { impact: '3' });
+    audit(s, 'impact', '2', '1', shiftStr(T0, 2), 'admin', 2);
+    tx(s, shiftStr(T0, 2), 'other', 'JOB: ASYNC: PT Async impact', 'system');
+    const r = await run(s, 'impact');
+    expect(r.changes.map((c) => c.evidence[0]!.type)).toEqual(['br_async', 'br_before']);
+  });
+
+  it('registro com mais de 50 mudanças: analisa só as últimas maxChanges', async () => {
+    const s = scenario();
+    for (let i = 1; i <= 60; i++) audit(s, 'state', String(i), String(i + 1), shiftStr(T0, i * 60), 'system', i);
+    const r = await run(s, 'state');
+    expect(r.changes.length).toBe(10);
+    expect(r.changes[0]!.checkpoint).toBe(60);
+  });
+
+  it('mudança mais antiga que a retenção ganha aviso de rastros expirados', async () => {
+    const s = scenario();
+    audit(s, 'state', '1', '2', '2020-01-01 00:00:00', 'system', 1);
+    const r = await investigate(build(s), { table: 'incident', number: INC.number, field: 'state' }, { retention: { syslog_transaction: 56 * 86400, sysevent: 7 * 86400 } });
+    expect(r.changes[0]!.notes).toEqual(['traces_expired:syslog_transaction', 'traces_expired:sysevent']);
+  });
+});

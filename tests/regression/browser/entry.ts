@@ -9,7 +9,7 @@ export async function runRegression(): Promise<unknown> {
   const client = new FetchRestClient({ baseUrl: location.origin, getToken: async () => w.g_ck ?? null, concurrency: 6 });
   const access = await detectAccess(client);
   const results = [];
-  for (const c of cases as any[]) {
+  for (const c of (cases as any[]).filter((x) => !x.pending)) {
     const t0 = performance.now();
     let detail = '', ok = false, calls = 0;
     try {

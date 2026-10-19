@@ -25,6 +25,8 @@ export interface InvestigationOptions {
   maxChanges: number;
   /** Tempo máximo por fonte, em ms; estourou vira lacuna, não erro. */
   sourceTimeoutMs: number;
+  /** Retenção (segundos) das tabelas de rastro, de sys_auto_flush; mudanças mais antigas ganham aviso. */
+  retention?: Partial<Record<'syslog_transaction' | 'sysevent', number>>;
 }
 
 export const DEFAULT_OPTIONS: InvestigationOptions = {
@@ -49,6 +51,7 @@ export type EvidenceType =
   | 'background_script'
   | 'user_action'
   | 'server_change'
+  | 'assignment_rule'
   | 'unknown_background';
 
 /** Fato verificável que soma pontos. `kind` indexa o peso em scoring.ts. */
@@ -100,6 +103,8 @@ export interface Change {
   user: string;
   checkpoint: number;
   evidence: Evidence[];
+  /** Avisos sobre esta mudança, ex.: rastros de execução já expirados pela retenção. */
+  notes: string[];
 }
 
 export interface UnauditedUpdates {

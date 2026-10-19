@@ -27,6 +27,8 @@ export interface Traces {
   uiActions: Row[];
   /** Jobs que citam a tabela e o campo (só consultados quando não há transação do usuário). */
   jobsByScript: Row[];
+  /** Regras de atribuição ativas da hierarquia (só para assignment_group / assigned_to). */
+  assignmentRules: Row[];
 }
 
 export interface ChangeContext {
