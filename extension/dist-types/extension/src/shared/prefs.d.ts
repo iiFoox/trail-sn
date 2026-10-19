@@ -14,8 +14,10 @@ export interface Prefs {
     theme: Theme;
     lang: Lang;
     panelMode: PanelMode;
+    showIcons: boolean;
 }
 export declare const DEFAULT_PREFS: Prefs;
+export declare const PREFS_KEY = "trail.prefs";
 export declare function normalize(p: Partial<Prefs> | undefined): Prefs;
 /** Leitura síncrona para páginas da extensão. */
 export declare function getPrefs(): Prefs;

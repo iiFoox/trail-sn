@@ -11,9 +11,17 @@ export declare function refLink(origin: string, ref: {
     query?: string;
 }): string;
 export declare function humanField(f: string): string;
-export declare function Result({ r, origin, access, toast }: {
+export declare function parts(utc: string): {
+    date: string;
+    time: string;
+    full: string;
+    rel: string;
+};
+export declare const plural: (forms: string[], n: number) => string;
+export declare function Result({ r, origin, access, toast, onField }: {
     r: Investigation;
     origin: string;
     access?: AccessReport;
     toast: (m: string) => void;
+    onField: (field: string) => void;
 }): import("preact").JSX.Element;

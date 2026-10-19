@@ -74,7 +74,7 @@ function Save({ sv, origin, sysId, onField }: { sv: TimelineSave; origin: string
         {fields.map((f) => (
           <li><button class="fbtn" onClick={() => onField(f.field)} title={P.tlInvestigate}>
             <b>{f.label}</b>
-            <span class="v"><span class="o">{short(f.oldDisplay, P.tlEmptyValue)}</span> → <span class="n">{short(f.newDisplay, P.tlEmptyValue)}</span></span>
+            <span class="v"><span class={`o ${f.oldDisplay ? "" : "nil"}`}>{short(f.oldDisplay, P.tlEmptyValue)}</span> → <span class="n">{short(f.newDisplay, P.tlEmptyValue)}</span></span>
             <span class="go">{Glyph.chevron}</span>
           </button></li>
         ))}

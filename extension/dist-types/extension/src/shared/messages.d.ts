@@ -19,6 +19,13 @@ export type Message = {
     token?: string;
     mode?: import('./prefs').PanelMode;
 } | {
+    type: 'timeline';
+    origin: string;
+    target: {
+        table: string;
+        sysId: string;
+    };
+} | {
     type: 'open-panel';
     mode?: import('./prefs').PanelMode;
 } | {
@@ -27,6 +34,7 @@ export type Message = {
 } | {
     type: 'check-access';
     origin: string;
+    force?: boolean;
 } | {
     type: 'activate';
     origin: string;

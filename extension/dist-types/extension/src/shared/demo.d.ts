@@ -1,3 +1,4 @@
+import type { Timeline } from '@trail/core';
 import type { TabState } from './messages';
 /**
  * Dados de demonstração do painel (sidepanel/index.html?demo=1&field=<campo>).
@@ -13,3 +14,5 @@ export declare const DEMO_FIELDS: string[];
 export declare function demoState(field?: string): TabState;
 /** Rótulo do destino de um link, para o aviso "na extensão, isto abriria...". */
 export declare function describeLink(href: string): string;
+/** Linha do tempo do registro de demonstração, montada a partir das mesmas histórias. */
+export declare function demoTimeline(): Timeline;

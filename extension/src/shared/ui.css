@@ -463,3 +463,4 @@ b.add { color: #3ecf8e; } b.del { color: #ef5b6b; }
 .card.connect { display: flex; flex-direction: column; gap: 10px; }
 .card.connect p { margin: 0; line-height: 1.5; }
 body { overflow-x: hidden; }
+ul.fl .fbtn .v .o.nil { text-decoration: none; font-style: italic; }
