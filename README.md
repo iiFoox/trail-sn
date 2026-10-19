@@ -16,6 +16,12 @@ Next to each form field, a "?" icon opens the side panel with the field's change
 
 Tipos detectados / Detected types: BR async, BR before, BR after, BR → script include, script action, UI action, scheduled job (with or without transaction), flow, workflow, background script, direct user action, server-side change on save, unknown background process, and **updates without audit** (`setWorkflow(false)`, imports).
 
+## Interface / Interface
+
+![Painel, popup e modo escuro](docs/screenshots/contact.png)
+
+Identidade que lembra o Next Experience sem copiar a marca: topo navy, teal como cor de ação, chips e cards de canto suave, graus com cor (verde, âmbar, cinza), modo escuro. Pré-visualize sem instância: `extension/dist/src/sidepanel/index.html?demo=1` (e `popup/index.html?demo=1`). Screenshots: `npm run shots`.
+
 ## Estrutura / Layout
 
 ```

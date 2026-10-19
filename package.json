@@ -15,7 +15,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc -b",
     "regression": "node --import tsx tests/regression/run.mts",
-    "e2e": "node tests/e2e/smoke.mjs && node tests/e2e/content-ui16.mjs && node tests/e2e/content-workspace.mjs"
+    "e2e": "node tests/e2e/smoke.mjs && node tests/e2e/content-ui16.mjs && node tests/e2e/content-workspace.mjs",
+    "shots": "node tests/e2e/screenshots.mjs light && node tests/e2e/screenshots.mjs dark"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.270",
