@@ -60,8 +60,13 @@ const STORIES: Record<string, FieldStory> = {
       businessRules: [
         { name: '[PERICIA-TESTE] Resolve incidente por palavra-chave', sysId: ID.brAsync, when: 'async', order: '100', table: 'incident' },
         { name: 'Incident autoclose', sysId: ID.brAutoclose, when: 'before', order: '100', table: 'incident' },
+        { name: 'Incident State Change to In Progress', sysId: ID.brImpact, when: 'before', order: '100', table: 'incident' },
+        { name: 'Close interaction from incident', sysId: ID.brAutoclose, when: 'after', order: '100', table: 'incident' },
+        { name: 'task closer', sysId: ID.brAutoclose, when: 'before', order: '900', table: 'task' },
       ],
       viaScriptInclude: [], scriptIncludes: [],
+      clientScripts: [{ name: 'Resolve: exige código de fechamento', sysId: ID.uiAction, type: 'onChange', trigger: 'state', table: 'incident' }],
+      uiActions: [{ name: 'Resolve Incident', sysId: ID.uiAction, table: 'incident' }],
     },
     changes: [
       {

@@ -12,6 +12,7 @@ const isDemo = new URLSearchParams(location.search).has('demo');
 
 export function App() {
   const [origin, setOrigin] = useState<string>(isDemo ? DEMO_ORIGIN : '');
+  const [tabId, setTabId] = useState<number>();
   const [isSn, setIsSn] = useState(isDemo);
   const [enabled, setEnabled] = useState(isDemo);
   const [probe, setProbe] = useState<ProbeResult>();
@@ -25,15 +26,29 @@ export function App() {
     if (isDemo) return;
     void (async () => {
       const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      if (tab?.id !== undefined) setTabId(tab.id);
       if (!tab?.url) return;
       try {
         const o = new URL(tab.url).origin;
         setOrigin(o);
         setIsSn(looksLikeServiceNow(tab.url));
-        setEnabled(await isEnabled(o));
+        const on = await isEnabled(o);
+        // Permissão já concedida mas instância ainda desligada (o popup fechou durante o pedido): liga agora.
+        if (!on && await chrome.permissions.contains({ origins: [`${o}/*`] }).catch(() => false)) {
+          await send({ type: 'activate', origin: o });
+          setEnabled(true);
+        } else setEnabled(on);
       } catch { /* chrome:// */ }
     })();
   }, []);
+
+  // Chamado direto no clique, sem mensagem ao worker: no Edge o gesto do usuário não sobrevive ao vai e vem.
+  const openSide = () => {
+    if (isDemo) return;
+    if (tabId !== undefined) {
+      chrome.sidePanel.open({ tabId }).then(() => window.close(), () => void send({ type: 'open-panel', mode: 'side' }));
+    } else void send({ type: 'open-panel', mode: 'side' });
+  };
 
   const activate = async () => {
     setErr(undefined);
@@ -75,7 +90,7 @@ export function App() {
         </div>
 
         <div class="row" style="margin-top:10px">
-          <button class="btn grow" onClick={() => send({ type: 'open-panel', mode: 'side' })}>{Glyph.search} {s.openPanel}</button>
+          <button class="btn grow" onClick={openSide}>{Glyph.search} {s.openPanel}</button>
           <button class="btn" title={s.detach} aria-label={s.detach} onClick={() => send({ type: 'open-panel', mode: 'window' })}>{Glyph.detach}</button>
           <button class="btn" title={s.options} aria-label={s.options} onClick={() => chrome.runtime.openOptionsPage()}>{Glyph.gear}</button>
         </div>

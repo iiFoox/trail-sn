@@ -135,6 +135,16 @@ declare const dict: {
             noTrace: string;
             otherRules: string;
             otherRulesHint: string;
+            grp: {
+                br: string;
+                si: string;
+                client: string;
+                lookup: string;
+                assign: string;
+                ui: string;
+            };
+            when: Record<string, string>;
+            calledBy: string;
             kind: Record<EvidenceType, string>;
             what: Record<string, string>;
             fact: Record<string, string>;
@@ -277,6 +287,16 @@ declare const dict: {
             noTrace: string;
             otherRules: string;
             otherRulesHint: string;
+            grp: {
+                br: string;
+                si: string;
+                client: string;
+                lookup: string;
+                assign: string;
+                ui: string;
+            };
+            when: Record<string, string>;
+            calledBy: string;
             kind: Record<EvidenceType, string>;
             what: Record<string, string>;
             fact: Record<string, string>;

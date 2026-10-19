@@ -336,7 +336,25 @@ function History({ r, origin, sel, onPick }: { r: Investigation; origin: string;
   const rows: Row[] = r.changes.map((c, i) => ({ at: c.at, i }));
   if (r.unaudited?.lastUpdatedOn) rows.push({ at: r.unaudited.lastUpdatedOn, i: -1 });
   rows.sort((a, b) => (a.at < b.at ? 1 : -1));
-  const suspects = r.suspects.businessRules.length + r.suspects.viaScriptInclude.length;
+  const S = r.suspects;
+  const whenRank: Record<string, number> = { before: 0, after: 1, async: 2, async_always: 2, display: 3 };
+  const brs = [...S.businessRules].sort((a, b) => (whenRank[a.when] ?? 4) - (whenRank[b.when] ?? 4) || Number(a.order) - Number(b.order));
+  const link = (table: string, sysId: string, name: string) => <a href={recordLink(origin, table, sysId)} target="_blank" rel="noreferrer">{name || '—'}</a>;
+  const groups: { key: string; title: string; icon: preact.JSX.Element; rows: preact.JSX.Element[] }[] = [
+    { key: 'br', title: P.grp.br, icon: Glyph.rule, rows: brs.map((b) => (
+      <div class="li"><div class="grow">{link('sys_script', b.sysId, b.name)}<div class="det">{b.table} · {s.order} {b.order}</div></div><span class={`when w-${b.when.startsWith('async') ? 'async' : b.when}`}>{P.when[b.when] ?? b.when}</span></div>)) },
+    { key: 'si', title: P.grp.si, icon: Glyph.include, rows: S.viaScriptInclude.map((x) => (
+      <div class="li"><div class="grow">{link('sys_script_include', x.scriptIncludeSysId, x.scriptInclude)}<div class="det">{fmt(P.calledBy, { br: x.businessRule })}</div></div></div>)) },
+    { key: 'cs', title: P.grp.client, icon: typeGlyph.client_script, rows: (S.clientScripts ?? []).map((c) => (
+      <div class="li"><div class="grow">{link('sys_script_client', c.sysId, c.name)}<div class="det">{c.table} · {c.type}{c.trigger ? ` · ${humanField(c.trigger)}` : ''}</div></div></div>)) },
+    { key: 'dl', title: P.grp.lookup, icon: typeGlyph.data_lookup, rows: (S.dataLookups ?? []).map((d) => (
+      <div class="li"><div class="grow">{link('dl_definition', d.sysId, d.name)}</div></div>)) },
+    { key: 'ar', title: P.grp.assign, icon: Glyph.group, rows: (S.assignmentRules ?? []).map((a) => (
+      <div class="li"><div class="grow">{link('sysrule_assignment', a.sysId, a.name)}<div class="det">{a.table}</div></div></div>)) },
+    { key: 'ua', title: P.grp.ui, icon: Glyph.click, rows: (S.uiActions ?? []).map((u) => (
+      <div class="li"><div class="grow">{link('sys_ui_action', u.sysId, u.name)}<div class="det">{u.table}</div></div></div>)) },
+  ].filter((g) => g.rows.length > 0);
+  const suspects = groups.reduce((n, g) => n + g.rows.length, 0);
   return (
     <div class="stack">
       {r.changes.length > 0 && <div class="muted small">{P.historyIntro}</div>}
@@ -365,11 +383,11 @@ function History({ r, origin, sel, onPick }: { r: Investigation; origin: string;
       <details class="box fold">
         <summary><h4>{fmt(P.otherRules, { field })}<span>{suspects} {Glyph.chevron}</span></h4></summary>
         <div class="muted small pad">{P.otherRulesHint}</div>
-        {r.suspects.businessRules.map((b) => (
-          <div class="li"><span class="ck x">{Glyph.rule}</span><div class="grow"><a href={recordLink(origin, 'sys_script', b.sysId)} target="_blank" rel="noreferrer">{b.name}</a><div class="det">{b.table} · {b.when} · {s.order} {b.order}</div></div></div>
-        ))}
-        {r.suspects.viaScriptInclude.map((x) => (
-          <div class="li"><span class="ck x">{Glyph.include}</span><div class="grow">{x.businessRule} → <a href={recordLink(origin, 'sys_script_include', x.scriptIncludeSysId)} target="_blank" rel="noreferrer">{x.scriptInclude}</a></div></div>
+        {groups.map((g, gi) => (
+          <details class="grp" open={gi === 0 && groups.length <= 2}>
+            <summary><span class="ic sm">{g.icon}</span><b class="grow">{g.title}</b><i>{g.rows.length}</i><span class="chev">{Glyph.chevron}</span></summary>
+            {g.rows}
+          </details>
         ))}
         {suspects === 0 && <div class="li muted">{s.noSuspects}</div>}
       </details>

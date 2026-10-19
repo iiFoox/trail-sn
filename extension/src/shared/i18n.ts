@@ -136,7 +136,10 @@ const dict = {
       attention: 'atenção',
       noTrace: 'sem rastro',
       otherRules: 'Outras regras que mexem em {field}',
-      otherRulesHint: 'Tudo que pode escrever neste campo, mesmo sem rastro nas mudanças acima.',
+      otherRulesHint: 'Tudo que pode escrever neste campo, mesmo sem rastro nas mudanças acima, separado por tipo.',
+      grp: { br: 'Business rules', si: 'Script includes (chamados por BR)', client: 'Client scripts', lookup: 'Data lookups', assign: 'Regras de atribuição', ui: 'UI actions' },
+      when: { before: 'antes de gravar', after: 'depois de gravar', async: 'assíncrona', async_always: 'assíncrona', display: 'ao exibir' } as Record<string, string>,
+      calledBy: 'chamado por {br}',
       kind: {
         br_async: 'Regra automática · roda logo depois de salvar', br_before: 'Regra automática · roda no momento de salvar', br_after: 'Regra automática · roda depois de salvar',
         br_via_script_include: 'Regra automática que chama um script', script_action: 'Ação disparada por um evento', ui_action: 'Botão do formulário', scheduled_job: 'Job agendado',
@@ -309,7 +312,10 @@ const dict = {
       attention: 'attention',
       noTrace: 'no trace',
       otherRules: 'Other rules that touch {field}',
-      otherRulesHint: 'Everything that can write to this field, even without traces in the changes above.',
+      otherRulesHint: 'Everything that can write to this field, even without traces in the changes above, grouped by type.',
+      grp: { br: 'Business rules', si: 'Script includes (called by a BR)', client: 'Client scripts', lookup: 'Data lookups', assign: 'Assignment rules', ui: 'UI actions' },
+      when: { before: 'before save', after: 'after save', async: 'async', async_always: 'async', display: 'on display' } as Record<string, string>,
+      calledBy: 'called by {br}',
       kind: {
         br_async: 'Automatic rule · runs right after save', br_before: 'Automatic rule · runs on save', br_after: 'Automatic rule · runs after save',
         br_via_script_include: 'Automatic rule that calls a script', script_action: 'Action triggered by an event', ui_action: 'Form button', scheduled_job: 'Scheduled job',

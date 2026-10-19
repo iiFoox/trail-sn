@@ -22,6 +22,12 @@ async function openWindow(): Promise<void> {
   if (w?.id !== undefined) await session.set({ [WINDOW_KEY]: w.id });
 }
 async function openPanel(tabId: number | undefined, mode?: PanelMode): Promise<void> {
+  // Com o modo conhecido, sidePanel.open é chamado antes de qualquer await: o Edge descarta o gesto do usuário
+  // assim que a primeira promessa resolve, e o painel lateral deixa de abrir.
+  if (mode === 'side') {
+    if (tabId !== undefined) await chrome.sidePanel.open({ tabId }).catch(() => { /* já aberto ou sem gesto */ });
+    return;
+  }
   const m = mode ?? (await loadPrefs()).panelMode;
   if (m === 'window') return openWindow();
   // Abrir o painel lateral precisa de gesto do usuário; clique no ícone, no popup ou no menu contam.
@@ -101,6 +107,28 @@ async function syncRegistrations(): Promise<void> {
     if (granted) await registerScripts(i.origin).catch(() => { /* já registrado */ });
   }
 }
+/** Liga a instância: guarda, registra os scripts e já injeta nas abas abertas, sem precisar recarregar. */
+async function activateOrigin(origin: string): Promise<void> {
+  await addInstance(origin);
+  await registerScripts(origin);
+  const tabs = await chrome.tabs.query({ url: `${origin}/*` }).catch(() => [] as chrome.tabs.Tab[]);
+  for (const t of tabs) {
+    if (t.id === undefined) continue;
+    const already = await chrome.scripting.executeScript({ target: { tabId: t.id }, func: () => !!(window as unknown as { __trailContent?: boolean }).__trailContent }).catch(() => []);
+    if (already[0]?.result) continue;
+    await chrome.scripting.executeScript({ target: { tabId: t.id, allFrames: true }, files: ['page.js'], world: 'MAIN' }).catch(() => undefined);
+    await chrome.scripting.executeScript({ target: { tabId: t.id, allFrames: true }, files: ['content.js'] }).catch(() => undefined);
+  }
+}
+// O pedido de permissão fecha o popup antes de ele avisar o worker; por isso a ativação acontece aqui,
+// assim que o navegador concede a permissão, e o usuário não precisa clicar em "conectar" de novo.
+chrome.permissions.onAdded.addListener((p) => {
+  for (const o of p.origins ?? []) {
+    const m = o.match(/^(https:\/\/[^/*]+)\/\*$/);
+    if (m?.[1]) void activateOrigin(m[1]);
+  }
+});
+
 chrome.runtime.onInstalled.addListener(() => {
   void syncRegistrations();
   chrome.contextMenus.create({ id: 'trail-open', title: 'Trail', contexts: ['page'] });
@@ -212,7 +240,7 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
       case 'investigate': {
         const id = tabId ?? (await activeTabId());
         if (id === undefined) return;
-        await openPanel(id);
+        await openPanel(id, msg.mode);
         await runInvestigation(id, msg.origin, msg.target, msg.token);
         return;
       }
@@ -225,8 +253,7 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
       case 'check-access':
         return checkAccess(msg.origin, true);
       case 'activate':
-        await addInstance(msg.origin);
-        await registerScripts(msg.origin);
+        await activateOrigin(msg.origin);
         return true;
       case 'deactivate':
         await removeInstance(msg.origin);

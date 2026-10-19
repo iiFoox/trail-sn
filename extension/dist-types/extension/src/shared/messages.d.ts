@@ -17,6 +17,7 @@ export type Message = {
     origin: string;
     target: Target;
     token?: string;
+    mode?: import('./prefs').PanelMode;
 } | {
     type: 'open-panel';
     mode?: import('./prefs').PanelMode;

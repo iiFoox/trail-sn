@@ -9,10 +9,12 @@
 import { t } from '../shared/i18n';
 import { loadPrefs } from '../shared/prefs';
 import type { PageContext } from '../shared/messages';
+(window as unknown as { __trailContent?: boolean }).__trailContent = true; // o worker não injeta de novo onde já está
 
 // Português até a preferência chegar do storage; os ícones criados depois já saem no idioma escolhido.
 let strings = t('pt');
-void loadPrefs().then((p) => { strings = t(p.lang); }).catch(() => undefined);
+let panelMode: 'side' | 'window' | undefined;
+void loadPrefs().then((p) => { strings = t(p.lang); panelMode = p.panelMode; }).catch(() => undefined);
 const origin = location.origin;
 
 let ctx: PageContext = { origin, surface: 'unknown', ...contextFromUrl(location.href) };
@@ -105,6 +107,8 @@ function investigate(field: string): void {
     type: 'investigate',
     origin,
     token: ctx.token,
+    // O modo vai junto para o worker abrir o painel lateral sem esperar nada: o Edge perde o gesto do clique em qualquer await.
+    ...(panelMode ? { mode: panelMode } : {}),
     target: { table: ctx.table, sysId: ctx.sysId, field },
   }).catch(() => { /* noop */ });
 }

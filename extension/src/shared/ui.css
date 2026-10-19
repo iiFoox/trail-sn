@@ -342,3 +342,18 @@ ol.tl li.other .x { font-weight: 600; color: var(--fg-2); }
 .tl .src a.see:hover { text-decoration: underline; }
 .tl .src a.see svg { width: 11px; height: 11px; }
 a.btn.openall { align-self: flex-start; }
+
+/* outras regras, agrupadas por tipo */
+details.grp { border-top: 1px solid var(--line); }
+details.grp > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 10px 14px; font-size: 12.5px; color: var(--fg); }
+details.grp > summary::-webkit-details-marker { display: none; }
+details.grp > summary:hover { background: var(--hover, rgba(127,127,127,.06)); }
+details.grp > summary i { font-style: normal; font: 11px var(--mono); color: var(--muted); background: var(--chip, rgba(127,127,127,.12)); border-radius: 999px; padding: 1px 8px; }
+details.grp > summary .chev { display: inline-flex; color: var(--muted); }
+details.grp > summary .chev svg { width: 14px; height: 14px; transition: transform .15s; }
+details.grp[open] > summary .chev svg { transform: rotate(90deg); }
+details.grp > .li { padding-left: 46px; border-top: 1px dashed var(--line); }
+.when { flex: none; font: 10.5px var(--mono); border-radius: 999px; padding: 2px 8px; border: 1px solid var(--line); color: var(--fg-2); white-space: nowrap; align-self: center; }
+.when.w-before { color: #6aa7ff; border-color: color-mix(in srgb, #6aa7ff 40%, transparent); }
+.when.w-after { color: #c79bff; border-color: color-mix(in srgb, #c79bff 40%, transparent); }
+.when.w-async { color: #f0b45a; border-color: color-mix(in srgb, #f0b45a 40%, transparent); }

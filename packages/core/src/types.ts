@@ -157,6 +157,14 @@ export interface StaticSuspects {
   businessRules: { name: string; sysId: string; when: string; order: string; table: string }[];
   viaScriptInclude: { businessRule: string; scriptInclude: string; scriptIncludeSysId: string }[];
   scriptIncludes: { name: string; sysId: string }[];
+  /** Client scripts que gravam o campo (setValue), da hierarquia de tabelas. */
+  clientScripts?: { name: string; sysId: string; type: string; trigger: string; table: string }[];
+  /** Data lookups que definem o campo. */
+  dataLookups?: { name: string; sysId: string }[];
+  /** Regras de atribuição ativas (só para assignment_group / assigned_to). */
+  assignmentRules?: { name: string; sysId: string; table: string }[];
+  /** UI actions cujo script referencia o campo. */
+  uiActions?: { name: string; sysId: string; table: string }[];
 }
 
 export interface Investigation {

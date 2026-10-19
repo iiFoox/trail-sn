@@ -13,7 +13,7 @@ export interface PageContext {
 
 export type Message =
   | { type: 'context'; ctx: PageContext }
-  | { type: 'investigate'; origin: string; target: Target; token?: string }
+  | { type: 'investigate'; origin: string; target: Target; token?: string; mode?: import('./prefs').PanelMode }
   | { type: 'open-panel'; mode?: import('./prefs').PanelMode }
   | { type: 'probe-auth'; origin: string }
   | { type: 'check-access'; origin: string }

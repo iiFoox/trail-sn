@@ -107,16 +107,16 @@ export async function investigate(
   const needsJobScan = fieldChanges.some((c) => !txAll.some((t) => t.sys_created_by === c.user && !/^JOB: /.test(t.url ?? '') && inWindow(t, c, opts)));
 
   const isAssignmentField = target.field === 'assignment_group' || target.field === 'assigned_to';
-  // Houve envio de formulário deste registro? Então vale olhar o que roda no navegador (data lookup, client script).
-  const hasSubmit = txAll.some((t) => t.type === 'form' && (t.url ?? '').includes(`sys_uniqueValue=${sysId}`));
-  const [jobsByName, scriptActions, uiActions, jobsByScript, assignmentRules, lookupSets, clientRows] = await Promise.all([
+  const [jobsByName, scriptActions, uiActions, jobsByScript, assignmentRules, lookupSets, clientRows, uiActionSuspects] = await Promise.all([
     jobNames.length ? q('sysauto_script', `nameIN${jobNames.join(',')}`, ['sys_id', 'name', 'script'], 50) : Promise.resolve([]),
     eventNames.length ? q('sysevent_script_action', `active=true^event_nameIN${eventNames.join(',')}`, ['sys_id', 'name', 'event_name', 'script'], 50) : Promise.resolve([]),
     uiActionIds.length ? q('sys_ui_action', `sys_idIN${uiActionIds.join(',')}`, ['sys_id', 'name', 'script', 'table'], 20) : Promise.resolve([]),
     needsJobScan ? q('sysauto_script', `scriptLIKE${target.field}^scriptLIKE${target.table}`, ['sys_id', 'name', 'script', 'run_type', 'run_start', 'run_time', 'run_as.user_name', 'active'], 50) : Promise.resolve([]),
     isAssignmentField ? q('sysrule_assignment', `active=true^tableIN${meta.tables.join(',')}`, ['sys_id', 'name', 'table', 'condition', 'group', 'user', 'order'], 50) : Promise.resolve([]),
-    hasSubmit ? quiet('dl_definition_rel_set', `source_table_field=${target.field}^dl_definition.active=true^dl_definition.source_tableIN${meta.tables.join(',')}`, ['dl_definition', 'dl_definition.name', 'dl_definition.run_on_form_change', 'dl_definition.run_on_update', 'dl_definition.matcher_table', 'matcher_table_field'], 20) : Promise.resolve([]),
-    hasSubmit ? quiet('sys_script_client', `tableIN${meta.tables.join(',')}^active=true^scriptLIKE${target.field}`, ['sys_id', 'name', 'type', 'field', 'table', 'script'], 30) : Promise.resolve([]),
+    quiet('dl_definition_rel_set', `source_table_field=${target.field}^dl_definition.active=true^dl_definition.source_tableIN${meta.tables.join(',')}`, ['dl_definition', 'dl_definition.name', 'dl_definition.run_on_form_change', 'dl_definition.run_on_update', 'dl_definition.matcher_table', 'matcher_table_field'], 20),
+    quiet('sys_script_client', `tableIN${meta.tables.join(',')}^active=true^scriptLIKE${target.field}`, ['sys_id', 'name', 'type', 'field', 'table', 'script'], 30),
+    // Só para a lista de "outras regras": UI actions da hierarquia que citam o campo.
+    quiet('sys_ui_action', `tableIN${meta.tables.join(',')}^active=true^scriptLIKE${target.field}`, ['sys_id', 'name', 'table', 'script'], 30),
   ]);
 
   // ---------- rodada 4 (só quando precisa): entradas dos data lookups e valores atuais para avaliar condições ----------
@@ -234,6 +234,10 @@ export async function investigate(
       businessRules: meta.brField.map((b) => ({ name: b.name ?? '', sysId: b.sys_id ?? '', when: b.when ?? '', order: b.order ?? '', table: b.collection ?? '' })),
       viaScriptInclude: meta.brViaSi.map((x) => ({ businessRule: x.br.name ?? '', scriptInclude: x.si.name ?? '', scriptIncludeSysId: x.si.sys_id ?? '' })),
       scriptIncludes: meta.siField.map((s) => ({ name: s.name ?? '', sysId: s.sys_id ?? '' })),
+      clientScripts: clientScripts.map((c) => ({ name: c.name ?? '', sysId: c.sys_id ?? '', type: c.type ?? '', trigger: c.field ?? '', table: c.table ?? '' })),
+      dataLookups: dataLookups.map((d) => ({ name: d.name, sysId: d.sysId })),
+      assignmentRules: assignmentRules.map((r) => ({ name: r.name ?? '', sysId: r.sys_id ?? '', table: r.table ?? '' })),
+      uiActions: uiActionSuspects.filter((u) => refsField(u.script, target.field)).map((u) => ({ name: u.name ?? '', sysId: u.sys_id ?? '', table: u.table ?? '' })),
     },
     access,
     gaps,
