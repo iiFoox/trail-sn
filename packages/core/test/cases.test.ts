@@ -203,7 +203,7 @@ describe('acesso e lacunas', () => {
     audit(s, 'state', '3', '6', shiftStr(T0, 3600), 'admin', 3);
     const c = build(s);
     await investigate(c, { table: 'incident', number: INC.number, field: 'state' });
-    expect(c.log.filter((q) => q.table === 'syslog_transaction').length).toBe(2);
+    expect(c.log.filter((q) => q.table === 'syslog_transaction' && !q.query.startsWith('type=list')).length).toBe(2);
   });
 });
 
@@ -890,5 +890,34 @@ describe('importação por transform map (Fase 13)', () => {
     const e = r.changes[0]!.evidence.find((x) => x.type === 'import_set')!;
     expect(e.facts.some((f) => f.kind === 'no_step_writes_field')).toBe(true);
     expect(e.grade).toBe('candidate');
+  });
+});
+
+describe('lista: atualizar selecionados e edição na célula (Fase 13)', () => {
+  it('"Update Selected" envia o valor para vários registros: a pessoa, pelo formulário de atualização em massa', async () => {
+    const s = scenario();
+    audit(s, 'description', '', 'Atualizado em lote', T0, 'admin', 1);
+    tx(s, T0, 'form', `/incident.do?sys_row=-1&sysparm_checked_items=sys_idINabc,${INC.sysId}&incident.description=Atualizado em lote&sys_action=sysverb_post_update`, 'admin');
+    const r = await run(s, 'description');
+    const e = top(r);
+    expect(e.type).toBe('user_action');
+    expect(e.grade).toBe('confirmed');
+    expect(r.changes[0]!.trace.some((t) => t.label === 'Update Selected (lista)')).toBe(true);
+  });
+  it('abrir o formulário de atualização em massa não é gravação', async () => {
+    const s = scenario();
+    audit(s, 'description', '', 'x', T0, 'admin', 1);
+    tx(s, T0, 'form', `/incident_update.do?sys_action=sysverb_multiple_update&sysparm_multiple=true&sysparm_checked_items=sys_idIN${INC.sysId}`, 'admin');
+    expect(top(await run(s, 'description')).grade).not.toBe('confirmed');
+  });
+  it('edição na célula da lista (sem transação): a pessoa que abriu a lista pouco antes, provável', async () => {
+    const s = scenario();
+    audit(s, 'category', 'inquiry', 'software', T0, 'admin', 1);
+    tx(s, shiftStr(T0, -120), 'list', '/incident_list.do?sysparm_query=active=true', 'admin');
+    const c = build(s);
+    c.rows('sys_user', [{ sys_id: id(), user_name: 'admin', name: 'System Administrator', web_service_access_only: 'false', internal_integration_user: 'false' }]);
+    const e = top(await investigate(c, { table: 'incident', number: INC.number, field: 'category' }));
+    expect(e.type).toBe('user_action');
+    expect(e.grade).toBe('probable');
   });
 });

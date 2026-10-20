@@ -34,6 +34,8 @@ export interface Traces {
   assignmentRules: Row[];
   /** Client scripts ativos da hierarquia que citam o campo (só carregados quando houve formulário). */
   clientScripts: Row[];
+  /** Aberturas da lista da tabela pela pessoa nos 30 min antes da mudança (edição na lista não registra transação). */
+  listViews?: Row[];
   /** UI policies com script (Run scripts) que gravam o campo: uma linha por ramo (`branch` 'true' ou 'false'). */
   uiPolicies?: Row[];
   /** Data lookups ativos que definem o campo, com os campos de entrada. */

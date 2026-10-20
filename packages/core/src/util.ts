@@ -230,10 +230,29 @@ export function batchAt(tx: { url?: string; sys_created_by?: string; sys_created
   return tx.filter((t) => t.sys_created_by === user && isBatchCall(t.url) && Math.abs(Date.parse((t.sys_created_on ?? '').replace(' ', 'T') + 'Z') - t0) <= 3000);
 }
 
-export function isRecordWrite(url: string | undefined, sysId: string): boolean {
+/**
+ * Envio de formulário que grava este registro: o formulário dele (sys_uniqueValue) ou o "Update Selected"/"Update All"
+ * da lista, que envia os valores uma vez para vários registros (sysparm_checked_items=sys_idIN...).
+ */
+export function isFormSubmitFor(url: string | undefined, sysId: string): boolean {
   const u = url ?? '';
   if (!sysId || !u.includes(sysId)) return false;
   if (u.includes(`sys_uniqueValue=${sysId}`)) return true;
+  return isMultiUpdate(u);
+}
+
+/** Atualização de vários registros de uma vez pela lista. */
+export function isMultiUpdate(url: string | undefined): boolean {
+  // O envio vai para <tabela>.do com sys_action=sysverb_post_update; abrir o formulário de atualização (<tabela>_update.do) não grava.
+  // A URL pode vir cortada no fim (sys_action some), então basta o destino <tabela>.do com a lista de registros.
+  const u = url ?? '';
+  return /[?&]sysparm_checked_items=/.test(u) && (/[?&]sys_action=sysverb_post_update(?:&|$)/.test(u) || /^\/[a-z0-9_]+\.do\?/.test(u) && !/_update\.do\?/.test(u));
+}
+
+export function isRecordWrite(url: string | undefined, sysId: string): boolean {
+  const u = url ?? '';
+  if (!sysId || !u.includes(sysId)) return false;
+  if (isFormSubmitFor(u, sysId)) return true;
   if (new RegExp(`/api/now/(?:v\\d+/)?table/[a-z0-9_]+/${sysId}(?:[?/]|$)`).test(u)) return true;
   return isWorkspaceAction(u);
 }

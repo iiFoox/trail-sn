@@ -3070,5 +3070,233 @@
     "expectedName": "pt.trail.integracao",
     "minGrade": "confirmed",
     "changeIndex": 1
+  },
+  {
+    "id": "F13-IMP1-description",
+    "table": "incident",
+    "sd": "[PT] F13-IMP1 Chamado do parceiro (tudo)",
+    "field": "description",
+    "expectedType": "import_set",
+    "expectedName": "[PT] F13 Chamados do parceiro",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F13-IMP1-close_notes",
+    "table": "incident",
+    "sd": "[PT] F13-IMP1 Chamado do parceiro (tudo)",
+    "field": "close_notes",
+    "expectedType": "import_set",
+    "expectedName": "[PT] F13 Chamados do parceiro",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F13-IMP1-correlation_id",
+    "table": "incident",
+    "sd": "[PT] F13-IMP1 Chamado do parceiro (tudo)",
+    "field": "correlation_id",
+    "expectedType": "import_set",
+    "expectedName": "[PT] F13 Chamados do parceiro",
+    "minGrade": "probable"
+  },
+  {
+    "id": "F13-IMP1-correlation_display",
+    "table": "incident",
+    "sd": "[PT] F13-IMP1 Chamado do parceiro (tudo)",
+    "field": "correlation_display",
+    "expectedType": "import_set",
+    "expectedName": "[PT] F13 Chamados do parceiro",
+    "minGrade": "probable"
+  },
+  {
+    "id": "F13-IMP1-category",
+    "table": "incident",
+    "sd": "[PT] F13-IMP1 Chamado do parceiro (tudo)",
+    "field": "category",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F13 Hardware do parceiro vira rede",
+    "minGrade": "probable"
+  },
+  {
+    "id": "F13-IMP1-urgency",
+    "table": "incident",
+    "sd": "[PT] F13-IMP1 Chamado do parceiro (tudo)",
+    "field": "urgency",
+    "expectedType": "br_after",
+    "expectedName": "[PT] F13 Urgência do parceiro",
+    "minGrade": "probable"
+  },
+  {
+    "id": "F13-IMP2-description-2",
+    "table": "incident",
+    "sd": "[PT] F13-IMP2 Chamado do parceiro (duas cargas)",
+    "field": "description",
+    "expectedType": "import_set",
+    "expectedName": "[PT] F13 Chamados do parceiro",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "F13-IMP2-description-1",
+    "table": "incident",
+    "sd": "[PT] F13-IMP2 Chamado do parceiro (duas cargas)",
+    "field": "description",
+    "expectedType": "import_set",
+    "expectedName": "[PT] F13 Chamados do parceiro",
+    "minGrade": "confirmed",
+    "changeIndex": 1
+  },
+  {
+    "id": "F13-IMP2-correlation_id-2",
+    "table": "incident",
+    "sd": "[PT] F13-IMP2 Chamado do parceiro (duas cargas)",
+    "field": "correlation_id",
+    "expectedType": "import_set",
+    "expectedName": "[PT] F13 Chamados do parceiro",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F13-IMP2-category",
+    "table": "incident",
+    "sd": "[PT] F13-IMP2 Chamado do parceiro (duas cargas)",
+    "field": "category",
+    "expectedType": "import_set",
+    "expectedName": "[PT] F13 Chamados do parceiro",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F13-IMP3-impact",
+    "table": "incident",
+    "sd": "[PT] F13-IMP3 Chamado do parceiro e ajuste manual",
+    "field": "impact",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F13-IMP3-description",
+    "table": "incident",
+    "sd": "[PT] F13-IMP3 Chamado do parceiro e ajuste manual",
+    "field": "description",
+    "expectedType": "import_set",
+    "expectedName": "[PT] F13 Chamados do parceiro",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F13-UIP1-description",
+    "table": "incident",
+    "sd": "[PT] F13-UIP1 Política de rede",
+    "field": "description",
+    "expectedType": "ui_policy",
+    "expectedName": "[PT] F13 Rede pede verificação de DNS",
+    "minGrade": "probable"
+  },
+  {
+    "id": "F13-UIP1-close_notes",
+    "table": "incident",
+    "sd": "[PT] F13-UIP1 Política de rede",
+    "field": "close_notes",
+    "expectedType": "ui_policy",
+    "expectedName": "[PT] F13 Fora de rede limpa a nota",
+    "minGrade": "probable"
+  },
+  {
+    "id": "F13-UIP1-category",
+    "table": "incident",
+    "sd": "[PT] F13-UIP1 Política de rede",
+    "field": "category",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "probable"
+  },
+  {
+    "id": "F13-UIP2-close_notes",
+    "table": "incident",
+    "sd": "[PT] F13-UIP2 Política reversa",
+    "field": "close_notes",
+    "expectedType": "ui_policy",
+    "expectedName": "[PT] F13 Fora de rede limpa a nota",
+    "minGrade": "probable"
+  },
+  {
+    "id": "F13-UIP2-category",
+    "table": "incident",
+    "sd": "[PT] F13-UIP2 Política reversa",
+    "field": "category",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "probable"
+  },
+  {
+    "id": "F13-UIP3-description",
+    "table": "incident",
+    "sd": "[PT] F13-UIP3 Política só obrigatória",
+    "field": "description",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "probable"
+  },
+  {
+    "id": "F13-UIP3-close_notes",
+    "table": "incident",
+    "sd": "[PT] F13-UIP3 Política só obrigatória",
+    "field": "close_notes",
+    "expectedType": "ui_policy",
+    "expectedName": "[PT] F13 Fora de rede limpa a nota",
+    "minGrade": "probable"
+  },
+  {
+    "id": "F13-DP1-close_notes",
+    "table": "incident",
+    "sd": "[PT] F13-DP1 Política de dados",
+    "field": "close_notes",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F13-LIST1-category",
+    "table": "incident",
+    "sd": "[PT] F13-LIST1 Edição na lista",
+    "field": "category",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "probable"
+  },
+  {
+    "id": "F13-LIST2-description",
+    "table": "incident",
+    "sd": "[PT] F13-LIST2 Atualizar selecionados",
+    "field": "description",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F13-LIST2-urgency",
+    "table": "incident",
+    "sd": "[PT] F13-LIST2 Atualizar selecionados",
+    "field": "urgency",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F13-LIST3-description",
+    "table": "incident",
+    "sd": "[PT] F13-LIST3 Atualizar selecionados",
+    "field": "description",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F13-LIST3-urgency",
+    "table": "incident",
+    "sd": "[PT] F13-LIST3 Atualizar selecionados",
+    "field": "urgency",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed"
   }
 ]

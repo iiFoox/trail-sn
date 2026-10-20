@@ -2,7 +2,7 @@ import { fact } from '../scoring';
 import { evalCondition, refsField, toMs, batchAt } from '../util';
 import { evalExpr, scriptVerdict, writesOf } from '../scriptEval';
 import { envFor, reactsFacts, resolveOrder, scriptFacts, UNKNOWN_VALUE } from './scriptFacts';
-import { conditionFields as conditionFieldsOf, isRecordWrite, parseFieldValues, sameVal, uiActionMatches, uiActionRef } from '../util';
+import { conditionFields as conditionFieldsOf, isFormSubmitFor, isRecordWrite, parseFieldValues, sameVal, uiActionMatches, uiActionRef } from '../util';
 import { isSaveButton } from './uiAction';
 import { evidence, isSystemUser, type ChangeContext, type Signature } from './context';
 import type { Evidence, Fact, Row } from '../types';
@@ -25,7 +25,7 @@ export const sameTransaction: Signature = (ctx) => {
   const close = ctx.checkpoint > 1 && !!prevAt && Math.abs(toMs(prevAt) - toMs(ctx.at)) <= 2000;
   // Duas ou mais transações do usuário neste registro entre as duas gravações = gravações separadas (ex.: REST em rajada), não cadeia.
   // Só conta escritas (envio de formulário ou REST no registro), não recargas da página.
-  const isWrite = (u: string) => u.includes(`sys_uniqueValue=${ctx.sysId}`) || u.includes(`/api/now/table/${ctx.table}/${ctx.sysId}`);
+  const isWrite = (u: string) => isFormSubmitFor(u, ctx.sysId) || u.includes(`/api/now/table/${ctx.table}/${ctx.sysId}`);
   const userWrites = close ? ctx.traces.transactions.filter((t) => t.sys_created_by === ctx.user && isWrite(t.url ?? '')
     && toMs(t.sys_created_on ?? '') >= toMs(prevAt) - 1000 && toMs(t.sys_created_on ?? '') <= toMs(ctx.at) + 1000).length : 0;
   return close && userWrites < 2 ? chainedUpdate(ctx) : userTransaction(ctx);
@@ -105,6 +105,34 @@ function nestedBefores(ctx: ChangeContext, base: () => Fact[]): { e: Evidence; r
     return { e: evidence('br_before', { name: b.name ?? '?', sysId: b.sys_id, table: 'sys_script' }, facts, gaps), row: b };
   });
 }
+
+/** Gravação por lote da Batch API (a URL não cita o registro): a pessoa ou integração do lote no mesmo instante. */
+export const batchWrite = (ctx: ChangeContext, explained: boolean): Evidence[] => {
+  const b = batchAt(ctx.traces.transactions, ctx.user, ctx.at).filter((t) => toMs(t.sys_created_on ?? '') - toMs(ctx.at) >= -2000 && toMs(t.sys_created_on ?? '') - toMs(ctx.at) <= 3000)[0];
+  if (!b) return [];
+  const who = ctx.traces.users?.[ctx.user];
+  const facts = [fact('execution_in_window', 'syslog_transaction', `lote ${b.url?.split('?')[0]} às ${b.sys_created_on}`), fact('user_matches', 'syslog_transaction', `por ${ctx.user}`)];
+  if (who?.integration) facts.push(fact('integration_user', 'sys_user', `${who.name} é uma conta de integração (só API)`));
+  if (!explained && !ctx.meta.incomplete) facts.push(fact('no_competing_automation', 'sys_script', 'nenhuma automação ativa explica este valor'));
+  return [evidence('user_action', { name: ctx.user }, facts, ['gravação por um lote da Batch API: o lote não registra quais registros alterou, então a ligação com este registro vem do horário e do usuário'])];
+};
+
+/**
+ * Edição direto na lista (célula da lista): o ServiceNow não registra transação para ela. Uma pessoa de verdade
+ * (não system, não integração) que abriu a lista da tabela pouco antes, sem automação que explique, é a pista.
+ */
+export const listEdit = (ctx: ChangeContext, explained: boolean): Evidence[] => {
+  const view = (ctx.traces.listViews ?? [])[0];
+  const who = ctx.traces.users?.[ctx.user];
+  if (!view || isSystemUser(ctx.user) || !who || who.integration) return [];
+  const mins = Math.round((toMs(ctx.at) - toMs(view.sys_created_on ?? '')) / 60000);
+  const facts = [
+    fact('execution_in_window', 'syslog_transaction', `${ctx.user} abriu a lista ${(view.url ?? '').split('?')[0]} às ${view.sys_created_on}${mins > 0 ? ` (${mins} min antes)` : ''}`),
+    fact('user_matches', 'sys_audit', `a auditoria registra ${ctx.user} como autor`),
+  ];
+  if (!explained && !ctx.meta.incomplete) facts.push(fact('no_competing_automation', 'sys_script', 'nenhuma automação ativa explica este valor'));
+  return [evidence('user_action', { name: ctx.user }, facts, ['edição direto na lista: o ServiceNow não registra transação para ela; a ligação vem do autor na auditoria e da lista aberta pouco antes'])];
+};
 
 /** Mudança numa gravação de fundo (script action, job, evento): as BRs before rodam ali também. */
 export const backgroundBefores = (ctx: ChangeContext): Evidence[] => {
@@ -186,7 +214,7 @@ function chainedUpdate(ctx: ChangeContext): Evidence[] {
 
 /** Envios de formulário deste registro na janela; os do próprio usuário da auditoria primeiro. */
 function formSubmits(ctx: ChangeContext): Row[] {
-  const subs = ctx.traces.transactions.filter((t) => t.type === 'form' && (t.url ?? '').includes(`sys_uniqueValue=${ctx.sysId}`));
+  const subs = ctx.traces.transactions.filter((t) => t.type === 'form' && isFormSubmitFor(t.url, ctx.sysId));
   return subs.sort((a, b) => Number(b.sys_created_by === ctx.user) - Number(a.sys_created_by === ctx.user));
 }
 

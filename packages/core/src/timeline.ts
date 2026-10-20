@@ -1,6 +1,6 @@
 import type { QueryRequest, RestClient } from './client/RestClient';
 import { RecordNotFoundError, type AccessState, type Row, type Target } from './types';
-import { isWorkspaceAction, shift, toMs, uiActionMatches, uiActionQuery, uiActionRef, withTimeout } from './util';
+import { isFormSubmitFor, isWorkspaceAction, shift, toMs, uiActionMatches, uiActionQuery, uiActionRef, withTimeout } from './util';
 
 /**
  * Linha do tempo do registro inteiro: cada gravação (checkpoint da auditoria) com quem gravou,
@@ -130,7 +130,7 @@ export async function recordTimeline(client: RestClient, target: Omit<Target, 'f
     const prevAt = byCp.get(cps[i + 1] ?? -1)?.[0]?.sys_created_on;
     const near = (t: Row, before: number, after: number) => { const d = toMs(t.sys_created_on ?? '') - toMs(at); return d >= -before * 1000 && d <= after * 1000; };
     const mine = tx.filter((t) => !used.has(t) && (t.url ?? '').includes(sysId) && near(t, 3, 2));
-    const form = mine.find((t) => (t.url ?? '').includes(`sys_uniqueValue=${sysId}`));
+    const form = mine.find((t) => isFormSubmitFor(t.url, sysId));
     const api = mine.find((t) => /\/api\//.test(t.url ?? ''));
     const jobs = tx.filter((t) => /^JOB: /.test(t.url ?? '') && near(t, 1, 2));
     const scripts = tx.find((t) => (t.url ?? '').includes('/sys.scripts.do') && t.sys_created_by === user && near(t, 3, 2));

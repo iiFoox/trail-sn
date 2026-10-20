@@ -81,7 +81,7 @@ async function f13Setup() {
   await pol('[PT] F13 Rede pede verificação de DNS', S.UIP1, { conditions: 'category=network', run_scripts: 'true',
     script_true: "function onCondition() {\n  g_form.setValue('description', 'Verificar resolução de DNS no site');\n}", script_false: 'function onCondition() {\n}' });
   await pol('[PT] F13 Fora de rede limpa a nota', S.UIP2, { conditions: 'category=network', run_scripts: 'true',
-    script_true: 'function onCondition() {\n}', script_false: "function onCondition() {\n  g_form.setValue('close_notes', 'Fora do escopo de rede');\n}" });
+    script_true: 'function onCondition() {\n}', script_false: "function onCondition() {\n  if (g_form.getValue('short_description').indexOf('[PT] F13-UIP') != 0) return;\n  g_form.setValue('close_notes', 'Fora do escopo de rede');\n}" });
   const p3 = await pol('[PT] F13 Hardware exige descrição', S.UIP3, { conditions: 'category=hardware', run_scripts: 'false' });
   if (!(await find('sys_ui_policy_action', `ui_policy=${p3.sys_id}^field=description`))) await api('POST', 'table/sys_ui_policy_action', { ui_policy: p3.sys_id, table: 'incident', field: 'description', mandatory: 'true', visible: 'ignore', disabled: 'ignore' });
 
@@ -93,7 +93,7 @@ async function f13Setup() {
   // ---------- registros ----------
   const recs = {};
   for (const [k, v] of Object.entries(S)) {
-    const r = (await find('incident', `short_description=${v}`)) ?? await api('POST', 'table/incident', { short_description: v, caller_id: '6816f79cc0a8016401c5a33be04be441', impact: '3', urgency: '3', category: k === 'UIP2' ? 'network' : 'inquiry' });
+    const r = (await find('incident', `short_description=${v}`)) ?? await api('POST', 'table/incident', { short_description: v, caller_id: '6816f79cc0a8016401c5a33be04be441', impact: '3', urgency: '3', category: k === 'UIP2' ? 'network' : 'inquiry', ...(k === 'DP1' ? { close_notes: 'Aberto com nota obrigatória' } : {}) });
     recs[k] = { number: r.number, sys_id: r.sys_id };
   }
   return { map: map.sys_id, recs };

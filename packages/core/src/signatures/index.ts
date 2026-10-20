@@ -2,10 +2,10 @@ import type { Evidence } from '../types';
 import { asyncBusinessRule } from './asyncBusinessRule';
 import { backgroundScript } from './backgroundScript';
 import { isSystemUser, type ChangeContext } from './context';
-import { isRecordWrite, toMs, batchAt } from '../util';
+import { isFormSubmitFor, isRecordWrite, toMs } from '../util';
 import { flow, workflow } from './flowAndWorkflow';
 import { importSet } from './importSet';
-import { backgroundBefores, backgroundChain, sameTransaction } from './sameTransaction';
+import { backgroundBefores, backgroundChain, batchWrite, listEdit, sameTransaction } from './sameTransaction';
 import { scheduledJobWithTransaction, scheduledJobWithoutTransaction } from './scheduledJob';
 import { scriptAction } from './scriptAction';
 import { uiAction } from './uiAction';
@@ -42,14 +42,18 @@ export function runSignatures(full: ChangeContext): Evidence[] {
   const anyUserTx = ctx.traces.transactions.some((t) => t.sys_created_by === ctx.user && !/^JOB: /.test(t.url ?? '') && isRecordWrite(t.url, ctx.sysId))
     // Regras de atribuição e alguns motores gravam como "system" DENTRO da transação de outra pessoa no mesmo registro.
     || (isSystemUser(ctx.user) && ctx.traces.transactions.some((t) => !/^JOB: /.test(t.url ?? '') && isRecordWrite(t.url, ctx.sysId) && Math.abs(toMs(t.sys_created_on ?? '') - toMs(ctx.at)) <= 2000));
-  const anyBatch = batchAt(ctx.traces.transactions, ctx.user, ctx.at).length > 0;
-  const anySubmit = ctx.traces.transactions.some((t) => t.type === 'form' && (t.url ?? '').includes(`sys_uniqueValue=${ctx.sysId}`));
-  if (!strong && !anyUserTx && !anySubmit && !anyBatch) {
+  const anySubmit = ctx.traces.transactions.some((t) => t.type === 'form' && isFormSubmitFor(t.url, ctx.sysId));
+  if (!strong && !anyUserTx && !anySubmit) {
     out.push(...scheduledJobWithoutTransaction(ctx));
     // A gravação de fundo (script action, job, evento) também roda as BRs before: elas podem ter gravado este campo.
     out.push(...backgroundBefores(ctx));
     // Cadeia depois de uma gravação de fundo: BR after/async/SI que reagiu ao que o job ou o evento gravou.
     out.push(...backgroundChain(ctx));
+    // Lote da Batch API da mesma pessoa no instante: a URL não diz o registro (a interface também usa lotes só para ler),
+    // então só ganha força quando nenhuma automação explica a mudança.
+    const explained = out.some((e) => !ruledOut(e) && e.facts.reduce((a, f) => a + f.points, 0) >= 40);
+    const batch = batchWrite(ctx, explained);
+    out.push(...batch, ...(batch.length ? [] : listEdit(ctx, explained)));
     if (!out.some((e) => !ruledOut(e))) out.push(...unknownBackground(ctx));
     return out;
   }

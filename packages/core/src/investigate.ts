@@ -16,7 +16,7 @@ import {
   type TraceItem,
 } from './types';
 import { isSaveButton } from './signatures/uiAction';
-import { decodeFlowValues, isBatchCall, isRecordWrite, isWorkspaceAction, parseFieldValues, uiActionMatches, uiActionQuery, uiActionRef } from './util';
+import { decodeFlowValues, isBatchCall, isFormSubmitFor, isMultiUpdate, isRecordWrite, isWorkspaceAction, parseFieldValues, uiActionMatches, uiActionQuery, uiActionRef } from './util';
 import { conditionFields, mergeWindows, refsField, shift, toMs, withTimeout } from './util';
 
 /** Cache de metadados por tabela (hierarquia, BRs, script includes). A extensão guarda em chrome.storage.session. */
@@ -120,7 +120,7 @@ export async function investigate(
   const isAssignmentField = target.field === 'assignment_group' || target.field === 'assigned_to';
   const flowIds = unique(flowsAll.map((f) => f.flow ?? '').filter(Boolean));
   const mapIds = unique(importRows.map((r) => r.sys_transform_map ?? '').filter(Boolean));
-  const [jobsByName, scriptActions, uiActions, jobsByScript, assignmentRules, lookupSets, clientRows, uiActionSuspects, flowActionRows, transformEntries, transformScripts, policyRows] = await Promise.all([
+  const [jobsByName, scriptActions, uiActions, jobsByScript, assignmentRules, lookupSets, clientRows, uiActionSuspects, flowActionRows, transformEntries, transformScripts, policyRows, listViews] = await Promise.all([
     jobNames.length ? q('sysauto_script', `nameIN${jobNames.join(',')}`, ['sys_id', 'name', 'script'], 50) : Promise.resolve([]),
     eventNames.length ? q('sysevent_script_action', `active=true^event_nameIN${eventNames.join(',')}`, ['sys_id', 'name', 'event_name', 'script'], 50) : Promise.resolve([]),
     uiActionIds.length ? q('sys_ui_action', uiActionQuery(uiActionIds, meta.tables), ['sys_id', 'name', 'script', 'table', 'action_name'], 20) : Promise.resolve([]),
@@ -138,6 +138,9 @@ export async function investigate(
     mapIds.length ? quiet('sys_transform_script', `mapIN${mapIds.join(',')}^active=true^scriptLIKE${target.field}`, ['map', 'when', 'script'], 30).then(async (rows) => [
       ...rows, ...(await quiet('sys_transform_map', `sys_idIN${mapIds.join(',')}^run_script=true^scriptLIKE${target.field}`, ['sys_id', 'script'], 10)).map((m): Row => ({ map: m.sys_id ?? '', when: 'map', script: m.script ?? '' }))]) : Promise.resolve([] as Row[]),
     quiet('sys_ui_policy', `tableIN${meta.tables.join(',')}^active=true^run_scripts=true^script_trueLIKE${target.field}^ORscript_falseLIKE${target.field}`, ['sys_id', 'short_description', 'table', 'conditions', 'script_true', 'script_false', 'ui_type', 'reverse_if_false'], 20),
+    // Edição direto na lista (célula) não registra transação: a última abertura da lista da tabela pela pessoa é a pista.
+    needsJobScan ? quiet('syslog_transaction', `type=list^sys_created_byIN${changeUsers.join(',')}^sys_created_on>=${shift(fieldChanges[fieldChanges.length - 1]?.sys_created_on ?? '', -1800)}^sys_created_on<=${shift(fieldChanges[0]?.sys_created_on ?? '', 5)}^ORDERBYDESCsys_created_on`, ['sys_created_on', 'sys_created_by', 'url', 'type'], 50)
+      .then((rows) => rows.filter((t) => meta.tables.some((tb) => (t.url ?? '').includes(`${tb}_list.do`)))) : Promise.resolve([] as Row[]),
   ]);
 
   // ---------- rodada 4 (só quando precisa): entradas dos data lookups e valores atuais para avaliar condições ----------
@@ -150,7 +153,7 @@ export async function investigate(
     ...meta.brField.flatMap((b) => [...fieldsRead(b.script), ...fieldsRead(b.condition)]),
     ...meta.brViaSi.flatMap((x) => fieldsRead(x.br.condition)),
     ...clientRows.flatMap((c) => fieldsRead(c.script)),
-    ...policyRows.flatMap((p) => conditionFields(p.conditions)),
+    ...policyRows.flatMap((p) => [...conditionFields(p.conditions), ...fieldsRead(p.script_true), ...fieldsRead(p.script_false)]),
   ]).filter((f) => f !== target.field && !f.includes('.')).slice(0, 40);
   // Linhas da tabela do lookup que produzem os valores gravados (para saber se o lookup PODE ter dado aquele valor).
   const newValues = unique(fieldChanges.map((c) => c.newvalue ?? '').filter(Boolean));
@@ -238,6 +241,7 @@ export async function investigate(
       jobsByName,
       uiActions,
       jobsByScript,
+      listViews: listViews.filter((t) => t.sys_created_by === c.user && (t.sys_created_on ?? '') <= shift(at, 2) && (t.sys_created_on ?? '') >= shift(at, -1800)),
       assignmentRules,
       clientScripts,
       uiPolicies,
@@ -391,10 +395,10 @@ function buildTrace(ctx: ChangeContext, top: Change['evidence'][number] | undefi
     }
     if (url.includes('/api/')) { items.push({ ...base, kind: 'api', label: url.split('?')[0]?.slice(0, 80) ?? url }); continue; }
     // Só envios de formulário contam; o recarregamento da página depois de salvar (GET ?sys_id=) não.
-    if (!url.includes('sys_uniqueValue=')) continue;
+    if (!isFormSubmitFor(url, ctx.sysId)) continue;
     const sent = new URLSearchParams(url.split('?')[1] ?? '').get(`${ctx.table}.${ctx.field}`);
     const formCause = !!top && ['user_action', 'br_before', 'server_change', 'assignment_rule', 'data_lookup', 'client_script', 'ui_policy'].includes(top.type);
-    items.push({ ...base, kind: 'form', label: ua?.name ?? url.split('?')[0] ?? url, ...(sent !== null ? { sent } : {}), cause: formCause && sent !== null });
+    items.push({ ...base, kind: 'form', label: isMultiUpdate(url) ? 'Update Selected (lista)' : ua?.name ?? url.split('?')[0] ?? url, ...(sent !== null ? { sent } : {}), cause: formCause && sent !== null });
   }
   const sref = (table: string, sysId?: string) => (sysId ? { ref: { table, sysId } } : {});
   // Eventos de infraestrutura (indexação, motor de notificação) não explicam mudança de campo: ficam fora, e repetidos no mesmo segundo viram um só.
