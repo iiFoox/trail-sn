@@ -92,7 +92,7 @@ export async function investigate(
   const values = unique(fieldChanges.flatMap((c) => [c.oldvalue ?? '', c.newvalue ?? '']).filter(Boolean));
   const refTable = dict.find((d) => d.internal_type === 'reference' && d.reference)?.reference;
   const changeUsers = unique(fieldChanges.map((c) => c.user ?? '').filter(Boolean));
-  const [txAll, evAll, flowsAll, wfAll, labelRows, importRows, userRows] = await Promise.all([
+  const [txAll, evAll, flowsAll, wfAll, labelRows, importRows, userRows, recordedAll] = await Promise.all([
     Promise.all(merged.map((w) => q('syslog_transaction', `sys_created_on>=${w.from}^sys_created_on<=${w.to}^ORDERBYsys_created_on`, ['sys_id', 'sys_created_on', 'type', 'url', 'sys_created_by'], 200))).then((r) => r.flat()),
     Promise.all(merged.map((w) => q('sysevent', `instance=${sysId}^processed>=${shift(w.from, -1)}^processed<=${shift(w.to, 1)}`, ['sys_id', 'name', 'processed', 'sys_created_on'], 50))).then((r) => r.flat()),
     fieldChanges.length ? q('sys_flow_context', `source_record=${sysId}`, ['sys_id', 'name', 'state', 'flow', 'sys_created_on', 'sys_updated_on'], 50) : Promise.resolve([]),
@@ -107,6 +107,7 @@ export async function investigate(
     fieldChanges.length ? quiet('sys_import_set_row', `sys_target_sys_id=${sysId}^ORDERBYDESCsys_updated_on`, ['sys_id', 'sys_class_name', 'sys_import_set', 'sys_import_set.number', 'sys_transform_map', 'sys_transform_map.name', 'sys_import_state', 'sys_updated_on', 'sys_updated_by'], 30) : Promise.resolve([]),
     // Quem gravou: usuário só de API ou de integração interna é uma integração, não uma pessoa.
     changeUsers.length ? quiet('sys_user', `user_nameIN${changeUsers.join(',')}`, ['sys_id', 'user_name', 'name', 'web_service_access_only', 'internal_integration_user'], 20) : Promise.resolve([]),
+    meta.recorder && fieldChanges.length ? quiet(meta.recorder, `u_registro=${sysId}^sys_created_on>=${shift(fieldChanges[fieldChanges.length - 1]?.sys_created_on ?? '', -5)}^ORDERBYsys_created_on`, ['sys_created_on', 'u_campos', 'u_servidor', 'u_usuario', 'u_transacao', 'u_origem'], 200) : Promise.resolve([] as Row[]),
   ]);
   const labels: Record<string, string> = {};
   for (const r of labelRows) if (r.value && r.label && !(r.value in labels)) labels[r.value] = r.label;
@@ -260,6 +261,7 @@ export async function investigate(
       assignmentRules,
       clientScripts,
       uiPolicies,
+      recorded: recordedAll.filter((r) => Math.abs(toMs(r.sys_created_on ?? '') - toMs(at)) <= 5000),
       dataLookups,
       flowSteps,
       importRows: importRows.filter((r) => Math.abs(toMs(r.sys_updated_on ?? '') - toMs(at)) <= 30_000),
@@ -378,7 +380,9 @@ export async function investigate(
     const siNames = new Set<string>();
     for (const b of businessRules) (b.script ?? '').replace(/new\s+(?:global\.)?([A-Z][A-Za-z0-9_]+)\s*\(/g, (_m, n: string) => { siNames.add(n); return _m; });
     const scriptIncludes = siNames.size ? await q('sys_script_include', `active=true^nameIN${[...siNames].join(',')}`, ['sys_id', 'name', 'script'], 200) : [];
-    return { tables, businessRules, scriptIncludes, brField: [], siField: [], brViaSi: [], ...(incomplete ? { incomplete } : {}) };
+    // App do Trail na instância (ou o protótipo da fase 18): tabela com o contexto gravado na hora.
+    const recorder = (await quiet('sys_db_object', 'nameINx_trail_context,u_pt_trail_contexto^ORDERBYDESCname', ['name'], 2))[0]?.name;
+    return { tables, businessRules, scriptIncludes, brField: [], siField: [], brViaSi: [], ...(recorder ? { recorder } : {}), ...(incomplete ? { incomplete } : {}) };
   }
 }
 

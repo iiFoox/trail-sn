@@ -979,3 +979,33 @@ describe('teste às cegas 6: correção', () => {
     expect(e.type).toBe('user_action');
   });
 });
+
+describe('contexto gravado na hora (Fase 18, protótipo da fase 2)', () => {
+  const withRecorded = (s: ReturnType<typeof scenario>, row: Record<string, string>) => {
+    const c = build(s);
+    c.rows('sys_db_object', [{ name: 'incident', 'super_class.name': 'task' }, { name: 'task', 'super_class.name': '' }, { name: 'u_pt_trail_contexto' }]);
+    c.rows('u_pt_trail_contexto', [{ u_registro: INC.sysId, sys_created_on: T0, ...row }]);
+    return c;
+  };
+  it('o servidor mudou o campo: a BR before ganha certeza e a pessoa perde', async () => {
+    const s = scenario();
+    br(s, 'PT urgência pelo impacto', 'before', "if (current.impact == 1) current.urgency = 1;");
+    audit(s, 'urgency', '3', '1', T0, 'admin', 1);
+    audit(s, 'impact', '3', '1', T0, 'admin', 1);
+    tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
+    const r = await investigate(withRecorded(s, { u_campos: 'impact,urgency', u_servidor: 'urgency', u_origem: 'api', u_usuario: 'admin', u_transacao: '/api/now/table/incident' }), { table: 'incident', number: INC.number, field: 'urgency' });
+    const e = top(r);
+    expect(e.type).toBe('br_before');
+    expect(e.facts.some((f) => f.kind === 'recorded_context')).toBe(true);
+    expect(r.changes[0]!.evidence.find((x) => x.type === 'user_action')!.facts.some((f) => f.kind === 'recorded_contradicts')).toBe(true);
+  });
+  it('o campo chegou na requisição: a pessoa, com certeza', async () => {
+    const s = scenario();
+    br(s, 'PT urgência pelo impacto', 'before', "current.urgency = 1;");
+    audit(s, 'urgency', '3', '1', T0, 'admin', 1);
+    tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
+    const e = top(await investigate(withRecorded(s, { u_campos: 'urgency', u_servidor: '', u_origem: 'api', u_usuario: 'admin', u_transacao: '/api/now/table/incident' }), { table: 'incident', number: INC.number, field: 'urgency' }));
+    expect(e.type).toBe('user_action');
+    expect(e.grade).toBe('confirmed');
+  });
+});

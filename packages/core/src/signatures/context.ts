@@ -3,6 +3,8 @@ import type { Evidence, EvidenceType, Artifact, Fact, InvestigationOptions, Row 
 /** Metadados da tabela, carregados uma vez e cacheáveis por instância+tabela. */
 export interface TableMeta {
   tables: string[];
+  /** Tabela onde a instância grava o contexto de cada gravação (app do Trail), se existir. */
+  recorder?: string;
   businessRules: Row[];
   /** BRs cujo script ou template referencia o campo. */
   brField: Row[];
@@ -34,6 +36,8 @@ export interface Traces {
   assignmentRules: Row[];
   /** Client scripts ativos da hierarquia que citam o campo (só carregados quando houve formulário). */
   clientScripts: Row[];
+  /** Contexto gravado na hora pela própria instância (app do Trail / protótipo): linhas desta gravação. */
+  recorded?: Row[];
   /** Aberturas da lista da tabela pela pessoa nos 30 min antes da mudança (edição na lista não registra transação). */
   listViews?: Row[];
   /** UI policies com script (Run scripts) que gravam o campo: uma linha por ramo (`branch` 'true' ou 'false'). */

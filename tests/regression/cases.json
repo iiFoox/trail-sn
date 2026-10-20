@@ -3963,5 +3963,55 @@
     "expectedName": "[PT] F16 Renova validade das políticas",
     "minGrade": "probable",
     "changeIndex": 0
+  },
+  {
+    "id": "F18-B-urgency",
+    "table": "incident",
+    "sysId": "8e1d90b9c3cc93101cbdb8e1b4013190",
+    "field": "urgency",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F18 Urgência pelo impacto",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "F18-B-impact",
+    "table": "incident",
+    "sysId": "8e1d90b9c3cc93101cbdb8e1b4013190",
+    "field": "impact",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "F18-B-priority",
+    "table": "incident",
+    "sysId": "8e1d90b9c3cc93101cbdb8e1b4013190",
+    "field": "priority",
+    "expectedType": "data_lookup",
+    "expectedName": "Priority Lookup",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "F18-A-description",
+    "table": "incident",
+    "sysId": "bd1d90b9c3cc93101cbdb8e1b4013179",
+    "field": "description",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "F18-C-description",
+    "table": "incident",
+    "sysId": "021d90b9c3cc93101cbdb8e1b40131d8",
+    "field": "description",
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] F18 Job que atualiza descrição",
+    "minGrade": "confirmed",
+    "changeIndex": 0
   }
 ]

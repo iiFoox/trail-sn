@@ -86,6 +86,8 @@ export type FactKind =
   | 'no_step_writes_field'
   | 'integration_user'
   | 'not_referenced'
+  | 'recorded_context'
+  | 'recorded_contradicts'
   | 'tie_with_same_type';
 
 export interface Fact {

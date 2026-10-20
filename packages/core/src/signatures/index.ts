@@ -2,6 +2,7 @@ import type { Evidence } from '../types';
 import { asyncBusinessRule } from './asyncBusinessRule';
 import { backgroundScript } from './backgroundScript';
 import { isSystemUser, type ChangeContext } from './context';
+import { fact } from '../scoring';
 import { isFormSubmitFor, isRecordWrite, toMs } from '../util';
 import { flow, workflow } from './flowAndWorkflow';
 import { importSet } from './importSet';
@@ -26,7 +27,41 @@ const NAMED_TRACES = [asyncBusinessRule, scheduledJobWithTransaction, scriptActi
 const runsOn = (b: { action_insert?: string; action_update?: string }, op: 'insert' | 'update' | undefined) =>
   !op || (op === 'insert' ? b.action_insert !== 'false' : b.action_update !== 'false');
 
+/**
+ * Contexto gravado na hora (app do Trail dentro da instância): diz, com certeza, se o campo chegou na requisição
+ * ou foi mudado por uma regra do servidor nesta gravação, e de qual transação ou job veio. Ajusta as evidências.
+ */
+function applyRecorded(ctx: ChangeContext, out: Evidence[]): Evidence[] {
+  const rows = (ctx.traces.recorded ?? []).filter((r) => (r.u_campos ?? '').split(',').includes(ctx.field) && Math.abs(toMs(r.sys_created_on ?? '') - toMs(ctx.at)) <= 2000);
+  const r = rows[0];
+  if (!r) return out;
+  const server = (r.u_servidor ?? '').split(',').includes(ctx.field);
+  const origin = r.u_origem ?? '';
+  const tx = r.u_transacao ?? '';
+  const serverKinds = new Set(['br_before', 'assignment_rule', 'data_lookup', 'br_via_script_include']);
+  const ruled = (e: Evidence) => e.facts.some((f) => ['condition_false', 'sets_other_value', 'reads_only', 'not_referenced', 'no_step_writes_field'].includes(f.kind));
+  for (const e of out) {
+    // Fato positivo só para quem ainda está na disputa; uma regra com condição falsa não ganha pontos por isso.
+    if (ruled(e)) continue;
+    if (server) {
+      if (e.type === 'user_action' || e.type === 'client_script' || e.type === 'ui_policy') e.facts.push(fact('recorded_contradicts', 'trail_context', 'o valor que chegou na requisição era outro: uma regra do servidor mudou o campo ao gravar'));
+      else if (serverKinds.has(e.type)) e.facts.push(fact('recorded_context', 'trail_context', 'o contexto gravado na hora mostra que o servidor mudou o campo nesta gravação'));
+    } else if (origin === 'api' || origin === 'form') {
+      if (e.type === 'user_action' || e.type === 'client_script' || e.type === 'ui_policy') e.facts.push(fact('recorded_context', 'trail_context', `o campo chegou assim na requisição (${origin === 'api' ? 'API' : 'formulário'}, ${r.u_usuario ?? ''})`));
+      else if (serverKinds.has(e.type)) e.facts.push(fact('recorded_contradicts', 'trail_context', 'o campo chegou assim na requisição: nenhuma regra do servidor o mudou'));
+    } else if (origin === 'job') {
+      if (e.type === 'scheduled_job' && tx && e.artifact.name === tx) e.facts.push(fact('recorded_context', 'trail_context', `gravado dentro do job "${tx}"`));
+      else if (e.type === 'user_action') e.facts.push(fact('recorded_contradicts', 'trail_context', `gravado por um processo de fundo (${tx || 'sem sessão interativa'}), não por uma pessoa`));
+    }
+  }
+  return out;
+}
+
 export function runSignatures(full: ChangeContext): Evidence[] {
+  return applyRecorded(full, runSignaturesInner(full));
+}
+
+function runSignaturesInner(full: ChangeContext): Evidence[] {
   // Regras que não rodam nesta operação (ex.: só na criação, e a mudança foi uma atualização) saem da disputa.
   const op = full.operation;
   const ctx: ChangeContext = { ...full, meta: { ...full.meta,
