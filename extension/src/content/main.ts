@@ -95,6 +95,9 @@ function contextFromUrl(href: string): Partial<PageContext> {
     if (m) return { table: m[1], sysId: m[2], surface: 'workspace' };
     m = u.pathname.match(/\/now\/nav\/ui\/classic\/params\/target\/(.+)$/);
     if (m) return { ...contextFromUrl(`${u.origin}/${decodeURIComponent(m[1] ?? '')}`), surface: 'ui16' };
+    // Service Portal / Employee Center: /sp?id=form&table=incident&sys_id=... (também /esc, /csm e outros portais)
+    const pt = u.searchParams.get('table'), ps = u.searchParams.get('sys_id');
+    if (u.searchParams.has('id') && pt && /^[a-z0-9_]+$/.test(pt) && ps && /^[0-9a-f]{32}$/.test(ps) && !/\.do$/.test(u.pathname)) return { table: pt, sysId: ps, surface: 'portal' };
     // UI16: /incident.do?sys_id=...
     m = u.pathname.match(/^\/([a-z0-9_]+)\.do$/);
     const sysId = u.searchParams.get('sys_id') ?? undefined;
@@ -181,6 +184,18 @@ function investigate(field: string): void {
   }).catch(() => { /* noop */ });
 }
 
+// ---------- ícone nos campos do Service Portal / Employee Center (widget de formulário) ----------
+function decoratePortal(): void {
+  if (!ctx.table || !ctx.sysId || ctx.surface !== 'portal') return;
+  for (const span of document.querySelectorAll<HTMLElement>('span[id^="sp_field_label_"]')) {
+    if (decorated.has(span)) continue;
+    const field = span.id.slice('sp_field_label_'.length);
+    if (!/^[a-z0-9_]+$/.test(field)) continue;
+    decorated.add(span);
+    span.after(makeIcon(field));
+  }
+}
+
 // ---------- ícone nas colunas da lista (UI16): investigação em lote ----------
 function listTable(): string | undefined {
   const g = document.querySelector('table.list_table[glide_table], [glide_table]')?.getAttribute('glide_table');
@@ -256,10 +271,12 @@ const mo = new MutationObserver(() => {
   }
   decorateForm();
   decorateList();
+  decoratePortal();
 });
 mo.observe(document.documentElement, { childList: true, subtree: true });
 decorateForm();
 decorateList();
+decoratePortal();
 
 // Janela "lado a lado" pedida pelo painel: desenhada só no quadro de cima, por cima da página inteira.
 chrome.runtime?.onMessage?.addListener((m: { type?: string } & Partial<DiffWindowRequest>, _s, reply) => {

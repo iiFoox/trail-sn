@@ -8,7 +8,7 @@ export interface PageContext {
   /** X-UserToken da sessão, quando a página expõe window.g_ck. */
   token?: string;
   userName?: string;
-  surface: 'ui16' | 'workspace' | 'unknown';
+  surface: 'ui16' | 'workspace' | 'portal' | 'unknown';
 }
 
 export type Message =
