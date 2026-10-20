@@ -3673,5 +3673,25 @@
     "sysId": "68d5d879c38c93101cbdb8e1b4013125",
     "field": "has_breached",
     "expectUnaudited": true
+  },
+  {
+    "id": "F17-PP-0",
+    "table": "incident",
+    "sd": "[PT] F17-PP1 Urgência que vai e volta",
+    "field": "urgency",
+    "expectedType": "br_async",
+    "expectedName": "[PT] F17 Urgência volta para baixa",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "F17-PP-1",
+    "table": "incident",
+    "sd": "[PT] F17-PP1 Urgência que vai e volta",
+    "field": "urgency",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F17 Urgência média ao descrever",
+    "minGrade": "probable",
+    "changeIndex": 1
   }
 ]

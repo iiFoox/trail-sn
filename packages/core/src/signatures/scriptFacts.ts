@@ -110,8 +110,9 @@ export function reactsFacts(ctx: ChangeContext, texts: (string | undefined)[], s
   const rows = ctx.checkpoints[String(ctx.checkpoint)] ?? [];
   const others = new Set(rows.map((r) => r.fieldname ?? '').filter((f) => f && f !== ctx.field));
   for (const t of texts) {
-    for (const m of (t ?? '').matchAll(/current\.([a-z0-9_]+)\.changes(?:To|From)?\(/g)) {
-      if (others.has(m[1]!)) return [fact('reacts_to_change', source, `reage à mudança de "${m[1]}", que mudou nesta mesma gravação`)];
+    for (const m of (t ?? '').matchAll(/current\.([a-z0-9_]+)\.changes(?:To|From)?\(|(?:^|\^)([a-z0-9_]+)(?:VALCHANGES|CHANGESTO|CHANGESFROM)/g)) {
+      const f = m[1] ?? m[2]!;
+      if (others.has(f)) return [fact('reacts_to_change', source, `reage à mudança de "${f}", que mudou nesta mesma gravação`)];
     }
   }
   return [];

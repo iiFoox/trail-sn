@@ -99,7 +99,7 @@ function nestedBefores(ctx: ChangeContext, base: () => Fact[]): { e: Evidence; r
   const imp = importedValue(ctx);
   return ctx.meta.brField.filter((b) => b.when === 'before').map((b) => {
     const cond = conditionFacts(ctx, brCondition(b), 'sys_script', imp?.value);
-    const facts = [...base(), ...cond, ...brScriptFacts(ctx, b, 'save', cond, imp?.value), ...reactsFacts(ctx, [b.script, b.condition], 'sys_script')];
+    const facts = [...base(), ...cond, ...brScriptFacts(ctx, b, 'save', cond, imp?.value), ...reactsFacts(ctx, [b.script, b.condition, b.filter_condition], 'sys_script')];
     // A importação mandou outro valor e esta regra, rodando na gravação, transforma no valor que ficou.
     if (imp && !sameVal(imp.value, ctx.audit.newvalue ?? '') && facts.some((f) => f.kind === 'sets_same_value') && !facts.some((f) => f.kind === 'condition_false'))
       facts.push(fact('trace_identifies_mechanism', 'sys_import_set_row', `a importação (${imp.map}) mandou "${imp.value}" e a regra grava "${ctx.audit.newvalue ?? ''}" ao salvar`));
@@ -207,7 +207,7 @@ function chainedUpdate(ctx: ChangeContext): Evidence[] {
       // A chamada vira uma "gravação" na leitura do script da BR: avalia as condições em volta e o valor passado.
       const pseudo = (x.br.script ?? '').replace(x.arg.call, x.arg.value !== undefined ? `current.${ctx.field} = '${x.arg.value.replace(/'/g, "\\'")}'` : `current.${ctx.field} = __dinamico__`);
       facts[1] = fact('references_field', 'sys_script', `passa "${ctx.field}" para ${x.si.name}`);
-      facts.push(...scriptFacts(ctx, pseudo, 'sys_script', { mode: 'trigger', condition: x.br.condition, hasCondition: cond.length > 0 }), ...reactsFacts(ctx, [x.br.script, x.br.condition], 'sys_script'));
+      facts.push(...scriptFacts(ctx, pseudo, 'sys_script', { mode: 'trigger', condition: x.br.condition, hasCondition: cond.length > 0 }), ...reactsFacts(ctx, [x.br.script, x.br.condition, x.br.filter_condition], 'sys_script'));
     }
     out.push(evidence('br_via_script_include', { name: `${x.br.name} → ${x.si.name}`, sysId: x.si.sys_id, table: 'sys_script_include' }, facts));
   }
@@ -308,7 +308,7 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
       fact('references_table', 'sys_script', `BR da tabela ${b.collection}`),
       ...cond,
       ...brScriptFacts(ctx, b, 'save', cond, fv),
-      ...reactsFacts(ctx, [b.script, b.condition], 'sys_script'),
+      ...reactsFacts(ctx, [b.script, b.condition, b.filter_condition], 'sys_script'),
     ];
   };
   const changedTogether = sameWriteFields(ctx);

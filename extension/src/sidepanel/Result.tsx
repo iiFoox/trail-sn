@@ -210,6 +210,13 @@ function Answer({ r, c, origin, field, denied, expired, goProof, copy, toastFn }
   const pp = r.pingPong;
   return (
     <div class="stack">
+      {denied.length > 0 && (!top || top.grade !== 'confirmed') && denied.some((d) => P.srcImpact[d]) && (
+        <div class="notice">
+          <div class="title">{P.incompleteTitle}</div>
+          <div class="small">{P.incompleteText}</div>
+          {denied.filter((d) => P.srcImpact[d]).map((d) => <div class="small">· {P.srcImpact[d]}.</div>)}
+        </div>
+      )}
       {pp && (
         <div class="notice pp">
           <div class="title">{P.ppTitle}</div>
@@ -345,6 +352,7 @@ function Proof({ r, c, origin, field, denied, expired, access, copy }: { r: Inve
         {denied.length > 0 && (
           <div class="li"><span class="ck w">!</span><div class="grow">
             <b>{cap(fmt(P.deniedItem, { what: denied.map((d) => P.srcName[d] ?? d).join(', ') }))}</b> {P.deniedHint}
+            {denied.filter((d) => P.srcImpact[d]).map((d) => <div class="det">{cap(P.srcImpact[d]!)}.</div>)}
             <div><button class="link" onClick={() => copy(fmt(P.request, { host, tables: denied.join(', ') }))}>{Glyph.copy} {P.copyRequest}</button></div>
           </div></div>
         )}
