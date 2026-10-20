@@ -12,9 +12,12 @@ import type { ChangeContext } from './context';
  *    gravação que a disparou (a anterior): os campos desta gravação ainda tinham o valor antigo, e o que "mudou"
  *    foram os campos da gravação anterior.
  */
+/** Valor do campo desconhecido (ex.: uma BR anterior gravou algo que não dá para calcular). */
+export const UNKNOWN_VALUE = '\u0000?';
+
 export function envFor(ctx: ChangeContext, opts: { mode?: 'save' | 'trigger'; trigger?: string; fieldValue?: string } = {}): Env {
   const rows = ctx.checkpoints[String(ctx.checkpoint)] ?? [];
-  const rec: Record<string, string> = { ...ctx.record };
+  const rec: Record<string, string> = { ...ctx.record, sys_id: ctx.sysId };
   const old: Record<string, string> = { ...ctx.record };
   const changed = new Set<string>();
   const trig = opts.mode === 'trigger';
@@ -30,13 +33,19 @@ export function envFor(ctx: ChangeContext, opts: { mode?: 'save' | 'trigger'; tr
       const f = r.fieldname ?? '';
       if (!f) continue;
       changed.add(f); // a mudança da gravação anterior pode reaparecer neste checkpoint (cópia do update()), mas foi lá que "mudou"
-      if (!rows.some((x) => x.fieldname === f)) old[f] = r.oldvalue ?? '';
+      // A regra viu o registro DEPOIS da gravação anterior. A cópia que o update() aninhado grava neste checkpoint traz
+      // como "antes" o valor de antes da transação inteira, então o valor certo é o novo da gravação anterior.
+      rec[f] = r.newvalue ?? '';
+      old[f] = r.oldvalue ?? '';
     }
   } else changed.add(ctx.field);
+  const prevRow = trig ? (ctx.checkpoints[String(ctx.checkpoint - 1)] ?? []).find((r) => r.fieldname === ctx.field) : undefined;
   // BR before vê o valor que chegou na gravação (o enviado pelo formulário, quando se sabe); senão, o de antes.
-  rec[ctx.field] = opts.fieldValue ?? ctx.audit.oldvalue ?? '';
-  old[ctx.field] = ctx.audit.oldvalue ?? '';
-  const env: Env = { rec, old, changed };
+  rec[ctx.field] = opts.fieldValue ?? (prevRow ? prevRow.newvalue ?? '' : ctx.audit.oldvalue ?? '');
+  old[ctx.field] = prevRow ? prevRow.oldvalue ?? '' : ctx.audit.oldvalue ?? '';
+  if (opts.fieldValue === UNKNOWN_VALUE) delete rec[ctx.field];
+  const u = ctx.traces.users?.[ctx.user];
+  const env: Env = { rec, old, changed, user: { name: ctx.user, ...(u?.sysId ? { sysId: u.sysId } : {}) } };
   if (opts.trigger) { env.newValue = rec[opts.trigger]; env.oldValue = old[opts.trigger]; }
   return env;
 }

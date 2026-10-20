@@ -58,3 +58,14 @@ describe('mesmo valor', () => {
     expect(sameVal('2026-12-01 10:00:00', '2026-12-03 10:00:00')).toBe(false);
   });
 });
+
+
+describe('identidade do registro e da sessão', () => {
+  it('g_form.getUniqueValue(), current.getUniqueValue() e gs.getUserID()', () => {
+    const env = { rec: { sys_id: 'abc' }, old: {}, changed: new Set<string>(), user: { sysId: 'u1', name: 'admin' } };
+    expect(evalExpr("g_form.getUniqueValue() != 'abc'", env)).toBe(false);
+    expect(evalExpr("current.getUniqueValue() == 'abc'", env)).toBe(true);
+    expect(evalExpr("gs.getUserID() == 'u1' && gs.getUserName() == 'admin'", env)).toBe(true);
+    expect(evalExpr("gs.getUserID() == 'u1'", { ...env, user: {} })).toBe(undefined);
+  });
+});

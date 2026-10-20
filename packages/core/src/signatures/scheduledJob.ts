@@ -10,6 +10,9 @@ export const scheduledJobWithTransaction: Signature = (ctx) => {
   for (const job of ctx.traces.jobsByName) {
     const tx = jobTx.find((t) => (t.url ?? '').slice(5).trim() === job.name);
     if (!tx) continue;
+    // Um job que rodou na janela mas nem cita a tabela não mexeu neste registro (achado do teste às cegas: job nativo coincidente).
+    const citesTable = (job.script ?? '').includes(ctx.table) || ctx.meta.tables.some((t) => (job.script ?? '').includes(`'${t}'`));
+    if (!refsField(job.script, ctx.field) && !citesTable) continue;
     const facts = [fact('trace_names_artifact', 'syslog_transaction', `transação JOB "${job.name}" às ${tx.sys_created_on}`)];
     if (refsField(job.script, ctx.field)) facts.push(fact('references_field', 'sysauto_script', `o script referencia "${ctx.field}"`), ...scriptFacts(ctx, job.script, 'sysauto_script', { mode: 'trigger' }));
     if ((job.script ?? '').includes(ctx.table)) facts.push(fact('references_table', 'sysauto_script', `o script cita "${ctx.table}"`));
@@ -36,7 +39,8 @@ export const scheduledJobWithoutTransaction: Signature = (ctx) => {
     if (startMatches || dailyMatches) {
       facts.push(fact('job_schedule_matches', 'sysauto_script', `horário programado (${job.run_start || job.run_time}) coincide com a mudança`));
     }
-    if (runAs && (runAs === ctx.user || isSystemUser(ctx.user))) {
+    // Sem o horário batendo, o "executa como" sozinho não liga o job a esta mudança (achado da varredura de dados nativos).
+    if ((startMatches || dailyMatches) && runAs && (runAs === ctx.user || isSystemUser(ctx.user))) {
       facts.push(fact('user_matches', 'sysauto_script', `executa como "${runAs || 'system'}"`));
     }
     const gaps = startMatches || dailyMatches ? [] : ['horário do job não confirmado'];

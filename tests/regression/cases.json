@@ -1749,5 +1749,281 @@
     "field": "contact_type",
     "expectedType": "user_action",
     "minGrade": "confirmed"
+  },
+  {
+    "id": "F9-B1",
+    "table": "incident",
+    "sysId": "559fa755c34813101cbdb8e1b401317c",
+    "field": "impact",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Impacto para software"
+  },
+  {
+    "id": "F9-B2",
+    "table": "change_request",
+    "sysId": "c29fe755c34813101cbdb8e1b4013175",
+    "field": "assignment_group",
+    "expectedType": "scheduled_job",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Distribui mudanças de infraestrutura"
+  },
+  {
+    "id": "F9-B3",
+    "table": "change_request",
+    "sysId": "c29fe755c34813101cbdb8e1b4013175",
+    "field": "implementation_plan",
+    "expectedType": "br_via_script_include",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Gera plano de implementação"
+  },
+  {
+    "id": "F9-B4",
+    "table": "change_request",
+    "sysId": "429fe755c34813101cbdb8e1b4013151",
+    "field": "impact",
+    "expectedType": "user_action",
+    "minGrade": "probable",
+    "changeIndex": 1,
+    "expectedName": "admin"
+  },
+  {
+    "id": "F9-B5",
+    "table": "change_request",
+    "sysId": "759fe755c34813101cbdb8e1b401312b",
+    "field": "backout_plan",
+    "expectedType": "br_after",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Plano de retorno padrão"
+  },
+  {
+    "id": "F9-B6",
+    "table": "incident",
+    "sysId": "299fa755c34813101cbdb8e1b40131b4",
+    "field": "assignment_group",
+    "expectedType": "assignment_rule",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Impressoras fiscais"
+  },
+  {
+    "id": "F9-B7",
+    "table": "change_request",
+    "sysId": "069fe755c34813101cbdb8e1b401316b",
+    "field": "justification",
+    "expectedType": "script_action",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Justificativa para o CAB"
+  },
+  {
+    "id": "F9-B8",
+    "table": "incident",
+    "sysId": "689f6755c34813101cbdb8e1b401314e",
+    "field": "urgency",
+    "expectedType": "ui_action",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Escalar para N2"
+  },
+  {
+    "id": "F9-B9",
+    "table": "incident",
+    "sysId": "349f6755c34813101cbdb8e1b401319f",
+    "field": "notify",
+    "expectedType": "br_via_script_include",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Aplica política de banco"
+  },
+  {
+    "id": "F9-B10",
+    "table": "change_request",
+    "sysId": "1a9fe755c34813101cbdb8e1b401319c",
+    "field": "test_plan",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "changeIndex": 1,
+    "expectedName": "[PT] F9 Testes por risco"
+  },
+  {
+    "id": "F9-B11",
+    "table": "incident",
+    "sysId": "3c9f6755c34813101cbdb8e1b401316e",
+    "field": "urgency",
+    "expectedType": "client_script",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Sugere urgência pelo impacto"
+  },
+  {
+    "id": "F9-B12",
+    "table": "incident",
+    "sysId": "499f6755c34813101cbdb8e1b40131aa",
+    "field": "description",
+    "expectedType": "br_after",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Registra histórico de rede"
+  },
+  {
+    "id": "F9-B13",
+    "table": "incident",
+    "sysId": "3c9f6755c34813101cbdb8e1b401316e",
+    "field": "description",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Monta resumo de impacto"
+  },
+  {
+    "id": "F9-B14",
+    "table": "change_request",
+    "sysId": "1a9fe755c34813101cbdb8e1b401319c",
+    "field": "test_plan",
+    "expectedType": "br_after",
+    "minGrade": "probable",
+    "changeIndex": 0,
+    "expectedName": "[PT] F9 Revisão final de testes"
+  },
+  {
+    "id": "F9-B15",
+    "table": "incident",
+    "sysId": "a2a07f59c34813101cbdb8e1b40131be",
+    "field": "urgency",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Urgência ramal executivo"
+  },
+  {
+    "id": "F9-B16",
+    "table": "incident",
+    "sysId": "459f6755c34813101cbdb8e1b40131cb",
+    "field": "knowledge",
+    "expectedType": "br_async",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Marca para base de conhecimento"
+  },
+  {
+    "id": "F9-B17",
+    "table": "incident",
+    "sysId": "1c9f2755c34813101cbdb8e1b40131b8",
+    "field": "impact",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Impacto por canal digital"
+  },
+  {
+    "id": "F9-B18",
+    "table": "change_request",
+    "sysId": "429fe755c34813101cbdb8e1b4013151",
+    "field": "impact",
+    "expectedType": "ui_action",
+    "minGrade": "probable",
+    "changeIndex": 0,
+    "expectedName": "[PT] F9 Reclassificar impacto"
+  },
+  {
+    "id": "F9-B19",
+    "table": "incident",
+    "sysId": "e09f6755c34813101cbdb8e1b4013113",
+    "field": "assignment_group",
+    "expectedType": "br_after",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Roteia rede por urgência"
+  },
+  {
+    "id": "F9-B20",
+    "table": "sc_req_item",
+    "sysId": "de9fe755c34813101cbdb8e1b4013165",
+    "field": "assignment_group",
+    "expectedType": "br_async",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Fila de provisionamento"
+  },
+  {
+    "id": "F9-B21",
+    "table": "incident",
+    "sysId": "619fa755c34813101cbdb8e1b40131a0",
+    "field": "assigned_to",
+    "expectedType": "client_script",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Sugere técnico de hardware"
+  },
+  {
+    "id": "F9-B22",
+    "table": "incident",
+    "sysId": "459f6755c34813101cbdb8e1b40131cb",
+    "field": "impact",
+    "expectedType": "scheduled_job",
+    "minGrade": "probable",
+    "changeIndex": 0,
+    "expectedName": "[PT] F9 Reavaliação noturna de impacto"
+  },
+  {
+    "id": "F9-B23",
+    "table": "incident",
+    "sysId": "1c9f2755c34813101cbdb8e1b40131b8",
+    "field": "category",
+    "expectedType": "user_action",
+    "minGrade": "probable",
+    "expectedName": "admin"
+  },
+  {
+    "id": "F9-B24",
+    "table": "change_request",
+    "sysId": "069fe755c34813101cbdb8e1b401316b",
+    "field": "cab_required",
+    "expectedType": "ui_action",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Solicitar aprovação do CAB"
+  },
+  {
+    "id": "F9-B25",
+    "table": "incident",
+    "sysId": "689f6755c34813101cbdb8e1b401314e",
+    "field": "priority",
+    "expectedType": "data_lookup",
+    "minGrade": "probable",
+    "expectedName": "Priority Lookup"
+  },
+  {
+    "id": "F9-B26",
+    "table": "incident",
+    "sysId": "689f6755c34813101cbdb8e1b401314e",
+    "field": "severity",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Severidade por urgência crítica"
+  },
+  {
+    "id": "F9-B27",
+    "table": "incident",
+    "sysId": "349f6755c34813101cbdb8e1b401319f",
+    "field": "assigned_to",
+    "expectedType": "script_action",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Atribui DBA de plantão"
+  },
+  {
+    "id": "F9-B28",
+    "table": "incident",
+    "sysId": "459f6755c34813101cbdb8e1b40131cb",
+    "field": "impact",
+    "expectedType": "user_action",
+    "minGrade": "probable",
+    "changeIndex": 1,
+    "expectedName": "admin"
+  },
+  {
+    "id": "F9-B29",
+    "table": "change_request",
+    "sysId": "b99fe755c34813101cbdb8e1b4013110",
+    "field": "risk",
+    "expectedType": "client_script",
+    "minGrade": "probable",
+    "expectedName": "[PT] F9 Risco sugerido por categoria"
+  },
+  {
+    "id": "F9-B30",
+    "table": "incident",
+    "sysId": "559fa755c34813101cbdb8e1b401317c",
+    "field": "contact_type",
+    "expectedType": "user_action",
+    "minGrade": "probable",
+    "expectedName": "admin"
   }
 ]

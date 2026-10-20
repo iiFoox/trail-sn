@@ -105,7 +105,7 @@ export async function investigate(
     // Importação: linhas de import set que gravaram neste registro (a tabela base devolve todas as tabelas de staging).
     fieldChanges.length ? quiet('sys_import_set_row', `sys_target_sys_id=${sysId}^ORDERBYDESCsys_updated_on`, ['sys_id', 'sys_import_set', 'sys_import_set.number', 'sys_transform_map', 'sys_transform_map.name', 'sys_import_state', 'sys_updated_on', 'sys_updated_by'], 30) : Promise.resolve([]),
     // Quem gravou: usuário só de API ou de integração interna é uma integração, não uma pessoa.
-    changeUsers.length ? quiet('sys_user', `user_nameIN${changeUsers.join(',')}`, ['user_name', 'name', 'web_service_access_only', 'internal_integration_user'], 20) : Promise.resolve([]),
+    changeUsers.length ? quiet('sys_user', `user_nameIN${changeUsers.join(',')}`, ['sys_id', 'user_name', 'name', 'web_service_access_only', 'internal_integration_user'], 20) : Promise.resolve([]),
   ]);
   const labels: Record<string, string> = {};
   for (const r of labelRows) if (r.value && r.label && !(r.value in labels)) labels[r.value] = r.label;
@@ -225,13 +225,14 @@ export async function investigate(
       importRows: importRows.filter((r) => Math.abs(toMs(r.sys_updated_on ?? '') - toMs(at)) <= 30_000),
       transformEntries,
       transformMapsLoaded: mapIds.length > 0,
-      users: Object.fromEntries(userRows.map((u) => [u.user_name ?? '', { name: u.name || u.user_name || '', integration: u.web_service_access_only === 'true' || u.internal_integration_user === 'true' }])),
+      users: Object.fromEntries(userRows.map((u) => [u.user_name ?? '', { sysId: u.sys_id ?? '', name: u.name || u.user_name || '', integration: u.web_service_access_only === 'true' || u.internal_integration_user === 'true' }])),
     };
     const ctx: ChangeContext = {
       table: target.table, field: target.field, sysId, audit: c, at, user: c.user ?? '',
       checkpoint: Number(c.record_checkpoint ?? 0), checkpoints, meta, traces, opts, record: recordAt(Number(c.record_checkpoint ?? 0)),
       // Criação do registro (insert) ou atualização: decide quais BRs rodaram (action_insert / action_update).
-      operation: rec.sys_created_on && Math.abs(toMs(rec.sys_created_on) - toMs(at)) <= 2000 ? 'insert' : 'update',
+      // Um PATCH logo depois da criação ainda é atualização: na criação a auditoria não tem valor anterior.
+      operation: rec.sys_created_on && Math.abs(toMs(rec.sys_created_on) - toMs(at)) <= 2000 && !(c.oldvalue ?? '') ? 'insert' : 'update',
     };
     const notes: string[] = [];
     const ageSec = (Date.now() - toMs(at)) / 1000;

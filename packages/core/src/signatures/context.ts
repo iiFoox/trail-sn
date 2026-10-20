@@ -40,7 +40,7 @@ export interface Traces {
   transformEntries?: Row[];
   transformMapsLoaded?: boolean;
   /** Usuários da auditoria: nome e se é conta de integração (só API / integração interna). */
-  users?: Record<string, { name: string; integration: boolean }>;
+  users?: Record<string, { name: string; integration: boolean; sysId?: string }>;
   flowSteps?: { flow: string; order: string; action: string; table: string; writes: Record<string, string> }[];
   dataLookups: {
     name: string; sysId: string; runOnForm: boolean; runOnUpdate: boolean; inputs: string[];

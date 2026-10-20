@@ -17,6 +17,8 @@ export interface Env {
   changed: Set<string>;
   /** Não se sabe o que mudou (leitura do desenho das regras, fora de uma gravação): changes() vira desconhecido. */
   unknownChanges?: boolean;
+  /** Quem fez a gravação (gs.getUserID() / gs.getUserName()). */
+  user?: { sysId?: string; name?: string };
   /** Client script onChange: valor novo e antigo do campo que disparou. */
   newValue?: string;
   oldValue?: string;
@@ -93,7 +95,8 @@ export function writesOf(script: string | undefined, field: string): WriteScan |
   const blockGuards = new Map<number, Guard[]>(); // posição do `{` -> condições do bloco
   const writes: Write[] = [];
   const vars: WriteScan['vars'] = [];
-  const dynamic = /\bcurrent\s*\[|applyTemplate\s*\(|setValue\(\s*[a-zA-Z_$]/.test(m);
+  // Nome dinâmico só quando GRAVA: current[x] = ..., current[x].setValue(...), setValue(variavel, ...), applyTemplate. Ler current[x].changes() não conta.
+  const dynamic = /\bcurrent\s*\[[^\]]*(?:\[[^\]]*\][^\]]*)*\]\s*(?:=(?!=)|\.setValue\s*\()|applyTemplate\s*\(|setValue\(\s*[a-zA-Z_$]/.test(m);
 
   const guardsAt = (p: number): Guard[] => [
     ...frames.flatMap((fr) => [...fr.guards, ...fr.early]),
@@ -283,12 +286,19 @@ export function evalExpr(expr: string, env: Env): Val {
         if (!call) return { kind: 'field', obj: n.name, name };
         if (name === 'getValue' || name === 'getDisplayValue') return a[0] !== undefined ? value({ kind: 'field', obj: n.name, name: String(a[0]) }) : U;
         if (name === 'isNewRecord') return false;
+        if (name === 'getUniqueValue') return env.rec.sys_id ?? U;
         if (name === 'operation') return 'update';
         if (name === 'changes') return env.unknownChanges ? U : env.changed.size > 0;
         return U;
       }
+      if (n.name === 'gs' && call) {
+        if (name === 'getUserID') return env.user?.sysId || U;
+        if (name === 'getUserName') return env.user?.name || U;
+        return U;
+      }
       if (n.name === 'g_form') {
         if (call && (name === 'getValue' || name === 'getDisplayBox')) { const f = str(a[0]); return f !== undefined && f in env.rec ? env.rec[f]! : U; }
+        if (call && name === 'getUniqueValue') return env.rec.sys_id ?? U;
         return U;
       }
       return U;

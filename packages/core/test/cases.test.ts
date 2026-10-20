@@ -671,3 +671,64 @@ describe('script include genérico e job sem transação', () => {
     expect([e.type, e.grade]).toEqual(['scheduled_job', 'confirmed']);
   });
 });
+
+describe('job sem horário coincidente', () => {
+  it('job que cita o campo e roda como o mesmo usuário, mas em outro horário, fica só como candidato', async () => {
+    const s = scenario();
+    audit(s, 'impact', '3', '1', T0, 'admin', 1);
+    s.jobs.push({ sys_id: id(), name: 'PT job diário', script: "var gr = new GlideRecord('incident'); gr.setValue('impact', '1'); gr.update();", run_type: 'daily', run_time: '1970-01-01 05:00:00', 'run_as.user_name': 'admin', active: 'true' });
+    const r = await run(s, 'impact');
+    const j = r.changes[0]!.evidence.find((e) => e.type === 'scheduled_job')!;
+    expect(j.grade).toBe('candidate');
+  });
+});
+
+describe('achados do teste às cegas 2', () => {
+  it('update() aninhado repete na auditoria o valor de antes da transação: a regra after é avaliada com o valor da gravação anterior', async () => {
+    const s = scenario();
+    br(s, 'PT revisão', 'after', "if (current.risk.changes() && String(current.test_plan).indexOf('(revisado') < 0) { current.test_plan = current.test_plan + ' (revisado)'; current.update(); }");
+    audit(s, 'risk', '3', '2', T0, 'admin', 1);
+    audit(s, 'test_plan', 'inicial', 'Testes', T0, 'admin', 1);
+    audit(s, 'risk', '3', '2', T0, 'admin', 2);
+    audit(s, 'test_plan', 'inicial', 'Testes (revisado)', T0, 'admin', 2);
+    tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
+    const e = top(await run(s, 'test_plan'));
+    expect([e.type, e.artifact.name]).toEqual(['br_after', 'PT revisão']);
+    expect(e.facts.some((f) => f.kind === 'sets_same_value')).toBe(true);
+    expect(e.facts.some((f) => f.kind === 'sets_other_value')).toBe(false);
+  });
+
+  it('PATCH logo depois da criação continua sendo atualização (regra só de update vale)', async () => {
+    const s = scenario();
+    s.record.sys_created_on = shiftStr(T0, -1);
+    br(s, 'PT só update', 'before', "if (current.category.changes()) current.urgency = '1';");
+    audit(s, 'category', 'inquiry', 'network', T0, 'admin', 1);
+    audit(s, 'urgency', '3', '1', T0, 'admin', 1);
+    tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
+    s.brs[0]!.action_insert = 'false';
+    const e = top(await run(s, 'urgency'));
+    expect(e.type).toBe('br_before');
+  });
+
+  it('job nativo que rodou na janela mas não cita a tabela não encerra a busca', async () => {
+    const s = scenario();
+    audit(s, 'contact_type', 'phone', 'self-service', T0, 'admin', 1);
+    tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
+    tx(s, T0, 'other', 'JOB: SN Managed Apps Auto Upgrade', 'system');
+    s.jobs.push({ sys_id: id(), name: 'SN Managed Apps Auto Upgrade', script: 'new sn_appclient.Upgrader().run();', active: 'true' });
+    const e = top(await run(s, 'contact_type'));
+    expect(e.type).toBe('user_action');
+  });
+
+  it('regra que só lê campos por nome dinâmico (current[x].changes()) não vira gravação', async () => {
+    const s = scenario();
+    br(s, 'PT auditoria', 'before', "var c = ['impact','description']; for (var i = 0; i < c.length; i++) if (current[c[i]].changes()) gs.info(c[i]);");
+    br(s, 'PT resumo', 'before', "if (current.impact.changes()) current.description = 'Impacto ' + current.impact.getDisplayValue();");
+    audit(s, 'impact', '3', '1', T0, 'admin', 1);
+    audit(s, 'description', 'x', 'Impacto 1 - High', T0, 'admin', 1);
+    formTx(s, T0, 'admin', { impact: '1', description: 'x' });
+    const r = await run(s, 'description');
+    expect(top(r).artifact.name).toBe('PT resumo');
+    expect(r.changes[0]!.evidence.find((e) => e.artifact.name === 'PT auditoria')!.facts.some((f) => f.kind === 'reads_only')).toBe(true);
+  });
+});

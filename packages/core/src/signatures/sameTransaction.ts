@@ -1,10 +1,10 @@
 import { fact } from '../scoring';
 import { evalCondition, refsField, toMs } from '../util';
 import { evalExpr, scriptVerdict, writesOf } from '../scriptEval';
-import { envFor, reactsFacts, resolveOrder, scriptFacts } from './scriptFacts';
+import { envFor, reactsFacts, resolveOrder, scriptFacts, UNKNOWN_VALUE } from './scriptFacts';
 import { parseFieldValues, sameVal, uiActionMatches, uiActionRef } from '../util';
 import { isSaveButton } from './uiAction';
-import { evidence, type ChangeContext, type Signature } from './context';
+import { evidence, isSystemUser, type ChangeContext, type Signature } from './context';
 import type { Evidence, Fact, Row } from '../types';
 
 /**
@@ -30,6 +30,16 @@ export const sameTransaction: Signature = (ctx) => {
     && toMs(t.sys_created_on ?? '') >= toMs(prevAt) - 1000 && toMs(t.sys_created_on ?? '') <= toMs(ctx.at) + 1000).length : 0;
   return close && userWrites < 2 ? chainedUpdate(ctx) : userTransaction(ctx);
 };
+
+/**
+ * Gravação aninhada numa gravação de fundo (job, script action, evento): a gravação anterior foi no mesmo segundo,
+ * então uma BR after / async / script include pode ter gravado este campo em seguida (cadeia).
+ */
+export function backgroundChain(ctx: ChangeContext): Evidence[] {
+  const prevAt = ctx.checkpoints[String(ctx.checkpoint - 1)]?.[0]?.sys_created_on ?? '';
+  const close = ctx.checkpoint > 1 && !!prevAt && Math.abs(toMs(prevAt) - toMs(ctx.at)) <= 2000;
+  return close ? chainedUpdate(ctx).filter((e) => e.type !== 'br_before') : [];
+}
 
 /** Fato de condição: verdadeira soma, falsa derruba. Avaliada com os valores atuais, nunca com o próprio campo. */
 function conditionFacts(ctx: ChangeContext, cond: string | undefined, source: string, fieldValue?: string): Fact[] {
@@ -167,7 +177,9 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
   });
   const isStrong = (es: Evidence[]) => es.some((e) => e.facts.some((f) => f.kind === 'trace_identifies_mechanism') && !e.facts.some((f) => f.kind === 'condition_false' || f.kind === 'sets_other_value' || f.kind === 'reads_only'));
   const tx = ctx.traces.transactions;
-  const userTx = tx.filter((t) => t.sys_created_by === ctx.user && (t.url ?? '').includes(ctx.sysId));
+  let userTx = tx.filter((t) => t.sys_created_by === ctx.user && (t.url ?? '').includes(ctx.sysId));
+  // Gravado como "system" dentro do salvamento de outra pessoa (regra de atribuição): a transação é a dessa pessoa.
+  if (!userTx.length && isSystemUser(ctx.user)) userTx = tx.filter((t) => !/^JOB: /.test(t.url ?? '') && (t.url ?? '').includes(ctx.sysId) && Math.abs(toMs(t.sys_created_on ?? '') - toMs(ctx.at)) <= 2000);
 
   let verdict: 'user' | 'server' | null = null;
   let formAt = '';
@@ -185,13 +197,31 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
   }
 
   const befores = ctx.meta.brField.filter((b) => b.when === 'before');
+  // As BRs before rodam em ordem crescente na mesma gravação: cada uma vê o valor que a anterior deixou no campo.
+  const seen = new Map<Row, string | undefined>();
+  {
+    let running: string | undefined = sentValue ?? ctx.audit.oldvalue ?? '';
+    for (const b of [...ctx.meta.brField.filter((x) => x.when === 'before')].sort((x, y) => Number(x.order ?? 100) - Number(y.order ?? 100))) {
+      seen.set(b, running);
+      if (conditionFacts(ctx, brCondition(b), 'sys_script', running).some((f) => f.kind === 'condition_false')) continue;
+      const env = envFor(ctx, { mode: 'save', fieldValue: running });
+      if (b.condition?.trim()) { const c = evalExpr(b.condition, env); if (c !== true) { if (c === undefined) running = undefined; continue; } }
+      const tpl = parseFieldValues(b.template);
+      if (ctx.field in tpl) { running = tpl[ctx.field]; continue; }
+      const v = scriptVerdict(b.script, ctx.field, env);
+      if (!v || !v.writes || v.reachable === false) continue;
+      // Grava com certeza um valor conhecido: o próximo vê esse valor; se não dá para saber, o próximo vê "desconhecido".
+      running = v.guardsTrue && !v.dynamic && v.values.length === 1 && v.values[0] !== undefined ? v.values[0] : undefined;
+    }
+  }
   const brFacts = (b: Row) => {
-    const cond = conditionFacts(ctx, brCondition(b), 'sys_script', sentValue);
+    const fv = seen.has(b) ? seen.get(b) ?? UNKNOWN_VALUE : sentValue;
+    const cond = conditionFacts(ctx, brCondition(b), 'sys_script', fv === UNKNOWN_VALUE ? sentValue : fv);
     return [
       fact('references_field', 'sys_script', `referencia "${ctx.field}"`),
       fact('references_table', 'sys_script', `BR da tabela ${b.collection}`),
       ...cond,
-      ...brScriptFacts(ctx, b, 'save', cond, sentValue),
+      ...brScriptFacts(ctx, b, 'save', cond, fv),
       ...reactsFacts(ctx, [b.script, b.condition], 'sys_script'),
     ];
   };
@@ -263,6 +293,9 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
       const facts = [fact('references_table', 'sysrule_assignment', `regra da tabela ${rule.table}`), ...conditionFacts(ctx, rule.condition, 'sysrule_assignment')];
       const target = rule.group || rule.user;
       if (target && target !== (ctx.audit.newvalue ?? '')) facts.push(fact('sets_other_value', 'sysrule_assignment', 'a regra atribui outro valor'));
+      else if (target) facts.push(fact('references_field', 'sysrule_assignment', 'a regra atribui exatamente o valor gravado'));
+      // A regra grava como "system" dentro do salvamento de outra pessoa: a autoria "system" é a marca dela.
+      if (target && target === (ctx.audit.newvalue ?? '') && isSystemUser(ctx.user)) facts.push(fact('trace_identifies_mechanism', 'sys_audit', 'gravado como "system" dentro do salvamento de outra pessoa'));
       server.push(evidence('assignment_rule', { name: rule.name ?? '?', sysId: rule.sys_id, table: 'sysrule_assignment' }, facts, gap));
     }
     out.push(...server);
