@@ -17,6 +17,7 @@ export type Message =
   | { type: 'toggle-icons' }
   | { type: 'timeline'; origin: string; target: { table: string; sysId: string } }
   | { type: 'scan-conflicts'; origin: string; table: string }
+  | { type: 'preview'; origin: string; target: { table: string; sysId: string; field: string; value: string } }
   | { type: 'open-panel'; mode?: import('./prefs').PanelMode }
   | { type: 'probe-auth'; origin: string }
   | { type: 'check-access'; origin: string; force?: boolean }

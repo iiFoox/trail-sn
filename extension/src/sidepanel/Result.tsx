@@ -12,6 +12,7 @@ import { send } from '../shared/messages';
 import { getPrefs, resolvedTheme } from '../shared/prefs';
 import { trackedTab } from '../shared/tabRef';
 import { RecordTimeline } from './Timeline';
+import { WhatIf } from './WhatIf';
 import { fullReport, plainSummary, savePdf } from './export';
 import { diffLines, looksLong } from '../shared/diff';
 import { DiffView, type DiffLabels } from '../shared/DiffView';
@@ -21,8 +22,8 @@ const s = t(lang);
 const P = s.p;
 const WINDOW = { before: 3, after: 15 };
 
-type Tab = 'answer' | 'trace' | 'proof' | 'history';
-const TABS: Tab[] = ['answer', 'trace', 'proof', 'history'];
+type Tab = 'answer' | 'trace' | 'proof' | 'history' | 'whatif';
+const TABS: Tab[] = ['answer', 'trace', 'proof', 'history', 'whatif'];
 const demoParams = new URLSearchParams(location.search);
 const isDemo = demoParams.has('demo');
 const forcedHist: 'field' | 'record' = isDemo && demoParams.get('hist') === 'record' ? 'record' : 'field';
@@ -153,7 +154,7 @@ export function Result({ r, origin, access, toast, onField }: { r: Investigation
       {c && (
         <div class="seg-tabs" role="tablist" style={`--x:${TABS.indexOf(tab)}`}>
           <span class="ind" aria-hidden="true" />
-          {([['answer', P.tabAnswer, 0], ['trace', P.tabTrace, c.trace?.length ?? 0], ['proof', P.tabProof, c.evidence[0]?.facts.length ?? 0], ['history', P.tabHistory, r.changes.length + (r.unaudited ? 1 : 0)]] as [Tab, string, number][]).map(([k, label, n]) => (
+          {([['answer', P.tabAnswer, 0], ['trace', P.tabTrace, c.trace?.length ?? 0], ['proof', P.tabProof, c.evidence[0]?.facts.length ?? 0], ['history', P.tabHistory, r.changes.length + (r.unaudited ? 1 : 0)], ['whatif', P.wiTab, 0]] as [Tab, string, number][]).map(([k, label, n]) => (
             <button role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>
               {label}{k !== 'answer' && n > 0 && <i>{n}</i>}{k === 'proof' && (denied.length > 0 || r.unaudited || expired) && <span class="wdot" />}
             </button>
@@ -166,6 +167,7 @@ export function Result({ r, origin, access, toast, onField }: { r: Investigation
       {c && tab === 'answer' && <Answer r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} goProof={() => setTab('proof')} copy={copy} toastFn={toast} />}
       {c && tab === 'trace' && <Trace r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} />}
       {c && tab === 'proof' && <Proof r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} access={access} copy={copy} />}
+      {c && tab === 'whatif' && <WhatIf r={r} origin={origin} field={field} />}
       {c && tab === 'history' && (
         <>
           <div class="seg2 hist-switch" role="group">
