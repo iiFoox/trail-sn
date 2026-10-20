@@ -44,11 +44,16 @@ export class FakeRestClient implements RestClient {
 
 /**
  * Avaliador mínimo de encoded query para fixtures: suporta =, IN, LIKE, >=, <=,
- * ORDERBY (ignorado) e ^ como AND. Suficiente para as consultas do motor.
+ * ORDERBY (ignorado), ^ como AND e ^OR como OU. Suficiente para as consultas do motor.
  */
 export function filterRows(rows: Row[], query: string): Row[] {
-  const terms = query.split('^').filter((t) => t && !t.startsWith('ORDERBY'));
-  return rows.filter((row) => terms.every((t) => matchTerm(row, t)));
+  // "a^ORb" junta b ao termo anterior como alternativa (a OU b).
+  const groups: string[][] = [];
+  for (const t of query.split('^').filter((t) => t && !t.startsWith('ORDERBY'))) {
+    if (t.startsWith('OR') && groups.length && !/^ORDERBY/.test(t)) groups[groups.length - 1]!.push(t.slice(2));
+    else groups.push([t]);
+  }
+  return rows.filter((row) => groups.every((g) => g.some((t) => matchTerm(row, t))));
 }
 
 function matchTerm(row: Row, term: string): boolean {

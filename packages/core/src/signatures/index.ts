@@ -2,7 +2,7 @@ import type { Evidence } from '../types';
 import { asyncBusinessRule } from './asyncBusinessRule';
 import { backgroundScript } from './backgroundScript';
 import { isSystemUser, type ChangeContext } from './context';
-import { isRecordWrite, toMs } from '../util';
+import { isRecordWrite, toMs, batchAt } from '../util';
 import { flow, workflow } from './flowAndWorkflow';
 import { importSet } from './importSet';
 import { backgroundBefores, backgroundChain, sameTransaction } from './sameTransaction';
@@ -42,8 +42,9 @@ export function runSignatures(full: ChangeContext): Evidence[] {
   const anyUserTx = ctx.traces.transactions.some((t) => t.sys_created_by === ctx.user && !/^JOB: /.test(t.url ?? '') && isRecordWrite(t.url, ctx.sysId))
     // Regras de atribuição e alguns motores gravam como "system" DENTRO da transação de outra pessoa no mesmo registro.
     || (isSystemUser(ctx.user) && ctx.traces.transactions.some((t) => !/^JOB: /.test(t.url ?? '') && isRecordWrite(t.url, ctx.sysId) && Math.abs(toMs(t.sys_created_on ?? '') - toMs(ctx.at)) <= 2000));
+  const anyBatch = batchAt(ctx.traces.transactions, ctx.user, ctx.at).length > 0;
   const anySubmit = ctx.traces.transactions.some((t) => t.type === 'form' && (t.url ?? '').includes(`sys_uniqueValue=${ctx.sysId}`));
-  if (!strong && !anyUserTx && !anySubmit) {
+  if (!strong && !anyUserTx && !anySubmit && !anyBatch) {
     out.push(...scheduledJobWithoutTransaction(ctx));
     // A gravação de fundo (script action, job, evento) também roda as BRs before: elas podem ter gravado este campo.
     out.push(...backgroundBefores(ctx));

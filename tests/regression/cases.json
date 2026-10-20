@@ -2915,5 +2915,160 @@
     "minGrade": "probable",
     "changeIndex": 0,
     "expectedName": "[PT] F11 Reavalia impacto por urgência"
+  },
+  {
+    "id": "I12-01",
+    "table": "incident",
+    "sd": "[PT] I12-01 Chamado aberto pelo monitoramento",
+    "field": "description",
+    "expectedType": "user_action",
+    "expectedName": "pt.trail.integracao",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "I12-02a",
+    "table": "incident",
+    "sd": "[PT] I12-02 Alerta de disco vindo do Zabbix",
+    "field": "close_notes",
+    "expectedType": "br_before",
+    "expectedName": "[PT] I12 Nota de origem externa",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "I12-02b",
+    "table": "incident",
+    "sd": "[PT] I12-02 Alerta de disco vindo do Zabbix",
+    "field": "urgency",
+    "expectedType": "user_action",
+    "expectedName": "pt.trail.integracao",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "I12-03a",
+    "table": "incident",
+    "sd": "[PT] I12-03 Fila de impressão travada (ERP)",
+    "field": "correlation_display",
+    "expectedType": "br_after",
+    "expectedName": "[PT] I12 Referência do ERP",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "I12-03b",
+    "table": "incident",
+    "sd": "[PT] I12-03 Fila de impressão travada (ERP)",
+    "field": "impact",
+    "expectedType": "user_action",
+    "expectedName": "pt.trail.integracao",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "I12-04a",
+    "table": "incident",
+    "sd": "[PT] I12-04 Sincronização de pedidos atrasada",
+    "field": "correlation_id",
+    "expectedType": "br_async",
+    "expectedName": "[PT] I12 Protocolo de sincronização",
+    "minGrade": "probable"
+  },
+  {
+    "id": "I12-04b",
+    "table": "incident",
+    "sd": "[PT] I12-04 Sincronização de pedidos atrasada",
+    "field": "category",
+    "expectedType": "user_action",
+    "expectedName": "pt.trail.integracao",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "I12-05",
+    "table": "incident",
+    "sd": "[PT] I12-05 Falha de link reportada pela operadora",
+    "field": "category",
+    "expectedType": "br_before",
+    "expectedName": "[PT] I12 Categoria da operadora",
+    "minGrade": "probable"
+  },
+  {
+    "id": "I12-06",
+    "table": "incident",
+    "sd": "[PT] I12-06 Ticket espelhado do Jira",
+    "field": "description",
+    "expectedType": "user_action",
+    "expectedName": "pt.trail.integracao",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "I12-07a",
+    "table": "incident",
+    "sd": "[PT] I12-07 Chamado do portal do fornecedor",
+    "field": "description",
+    "expectedType": "user_action",
+    "expectedName": "pt.trail.integracao",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "I12-07b",
+    "table": "incident",
+    "sd": "[PT] I12-07 Chamado do portal do fornecedor",
+    "field": "close_notes",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "I12-08",
+    "table": "incident",
+    "sd": "[PT] I12-08 Lote noturno de chamados",
+    "field": "description",
+    "expectedType": "user_action",
+    "expectedName": "pt.trail.integracao",
+    "minGrade": "probable"
+  },
+  {
+    "id": "I12-09a",
+    "table": "incident",
+    "sd": "[PT] I12-09 Equipamento sem grupo",
+    "field": "assignment_group",
+    "expectedType": "assignment_rule",
+    "expectedName": "[PT] I12 Equipamentos de campo",
+    "minGrade": "probable"
+  },
+  {
+    "id": "I12-09b",
+    "table": "incident",
+    "sd": "[PT] I12-09 Equipamento sem grupo",
+    "field": "category",
+    "expectedType": "user_action",
+    "expectedName": "pt.trail.integracao",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "I12-10",
+    "table": "incident",
+    "sd": "[PT] I12-10 Grupo informado pelo nome",
+    "field": "assignment_group",
+    "expectedType": "user_action",
+    "expectedName": "pt.trail.integracao",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "I12-11a",
+    "table": "incident",
+    "sd": "[PT] I12-11 Duas atualizações seguidas",
+    "field": "description",
+    "expectedType": "user_action",
+    "expectedName": "pt.trail.integracao",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "I12-11b",
+    "table": "incident",
+    "sd": "[PT] I12-11 Duas atualizações seguidas",
+    "field": "description",
+    "expectedType": "user_action",
+    "expectedName": "pt.trail.integracao",
+    "minGrade": "confirmed",
+    "changeIndex": 1
   }
 ]

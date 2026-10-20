@@ -34,6 +34,8 @@ export interface Traces {
   assignmentRules: Row[];
   /** Client scripts ativos da hierarquia que citam o campo (só carregados quando houve formulário). */
   clientScripts: Row[];
+  /** UI policies com script (Run scripts) que gravam o campo: uma linha por ramo (`branch` 'true' ou 'false'). */
+  uiPolicies?: Row[];
   /** Data lookups ativos que definem o campo, com os campos de entrada. */
   /** Passos dos flows que rodaram no registro (definição): o que cada um grava. */
   /** Linhas de import set transformadas neste registro perto da mudança. */
@@ -41,6 +43,10 @@ export interface Traces {
   /** Mapeamentos do transform map para o campo investigado (sys_transform_entry). */
   transformEntries?: Row[];
   transformMapsLoaded?: boolean;
+  /** Scripts do transform map que citam o campo (onBefore etc.; `when: 'map'` = script do próprio mapa). */
+  transformScripts?: Row[];
+  /** Linhas de staging (valores de origem) das importações do registro. */
+  stageRows?: Row[];
   /** Usuários da auditoria: nome e se é conta de integração (só API / integração interna). */
   users?: Record<string, { name: string; integration: boolean; sysId?: string }>;
   flowSteps?: { flow: string; order: string; action: string; table: string; writes: Record<string, string> }[];

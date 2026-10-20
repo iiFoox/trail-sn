@@ -1,4 +1,5 @@
 import { fact } from '../scoring';
+import { sameVal } from '../util';
 import { evidence, type Signature } from './context';
 
 /**
@@ -21,8 +22,25 @@ export const importSet: Signature = (ctx) => {
     const entry = (ctx.traces.transformEntries ?? []).find((e) => e.map === mapId);
     const facts = [fact('trace_names_artifact', 'sys_import_set_row', `linha da importação ${row['sys_import_set.number'] ?? ''} transformada às ${row.sys_updated_on} (${row.sys_import_state ?? ''})`)];
     const gaps: string[] = [];
-    if (entry) facts.push(fact('references_field', 'sys_transform_entry', `o transform map grava "${ctx.field}" a partir de "${entry.source_field ?? ''}"`));
-    else if (ctx.traces.transformMapsLoaded) gaps.push('o transform map não mapeia este campo diretamente; pode ter vindo de um script de transformação');
+    const f = ctx.field;
+    const writesTarget = (sc: string | undefined) => new RegExp(`\\btarget\\.${f}\\s*=[^=]|\\btarget\\.setValue\\(\\s*['"]${f}['"]`).test(sc ?? '');
+    const script = (ctx.traces.transformScripts ?? []).find((t) => t.map === mapId && writesTarget(t.script));
+    if (entry && entry.use_source_script === 'true') {
+      facts.push(fact('references_field', 'sys_transform_entry', `o transform map calcula "${f}" por script`));
+    } else if (entry) {
+      facts.push(fact('references_field', 'sys_transform_entry', `o transform map grava "${f}" a partir de "${entry.source_field ?? ''}"`));
+      const stage = (ctx.traces.stageRows ?? []).find((r) => r.sys_id === row.sys_id);
+      const src = stage && entry.source_field && entry.source_field in stage ? stage[entry.source_field] ?? '' : undefined;
+      const nv = ctx.audit.newvalue ?? '';
+      if (src !== undefined && !script) {
+        if (sameVal(src, nv)) facts.push(fact('sets_same_value', 'sys_import_set_row', `a linha importada trouxe "${src}"`));
+        else facts.push(fact('sets_other_value', 'sys_import_set_row', `a linha importada trouxe "${src}", não "${nv}": algo no servidor mudou o valor ao gravar`));
+      }
+    } else if (script) {
+      facts.push(fact('references_field', 'sys_transform_script', script.when === 'map' ? `o script do transform map grava "${f}"` : `o script ${script.when} do transform map grava "${f}"`));
+    } else if (ctx.traces.transformMapsLoaded) {
+      facts.push(fact('no_step_writes_field', 'sys_transform_entry', `o transform map não grava "${f}" (nem por mapeamento nem por script); outra regra reagiu à importação`));
+    }
     if (row.sys_updated_by === ctx.user) facts.push(fact('user_matches', 'sys_import_set_row', `importação rodada por ${row.sys_updated_by}`));
     return evidence('import_set', { name: mapName, sysId: mapId, table: 'sys_transform_map' }, facts, gaps);
   });

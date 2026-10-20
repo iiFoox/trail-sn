@@ -11,7 +11,7 @@ const isDemo = new URLSearchParams(location.search).has('demo');
 
 const PLAIN: Record<string, string> = {
   user_action: 'form', br_before: 'rule', br_after: 'rule', br_async: 'rule', br_via_script_include: 'rule', script_action: 'rule', assignment_rule: 'rule', data_lookup: 'rule', server_change: 'rule',
-  client_script: 'client', ui_action: 'ui', scheduled_job: 'job', flow: 'flow', workflow: 'flow', import_set: 'import', background_script: 'script', unknown_background: 'unknown',
+  client_script: 'client', ui_policy: 'client', ui_action: 'ui', scheduled_job: 'job', flow: 'flow', workflow: 'flow', import_set: 'import', background_script: 'script', unknown_background: 'unknown',
 };
 
 /** Uma frase sem termos técnicos sobre a mudança, para o usuário final (colar no chamado). */

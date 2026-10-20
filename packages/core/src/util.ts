@@ -219,6 +219,17 @@ export function siCallsWithField(script: string | undefined, field: string): { s
  * Transação que GRAVA neste registro: envio do formulário, Table API no próprio registro ou botão do Workspace.
  * Leituras que só citam o sys_id (listas, auditoria, a própria análise do Trail) não contam.
  */
+/** Chamada da Batch API (/api/now/v1/batch): várias requisições num lote; a URL não diz quais registros gravou. */
+export function isBatchCall(url: string | undefined): boolean {
+  return /\/api\/now\/(?:v\d+\/)?batch(?:[?/]|$)/.test(url ?? '');
+}
+
+/** Lote da Batch API da mesma pessoa no instante da mudança (até 3 s). */
+export function batchAt(tx: { url?: string; sys_created_by?: string; sys_created_on?: string }[], user: string, at: string): typeof tx {
+  const t0 = Date.parse(at.replace(' ', 'T') + 'Z');
+  return tx.filter((t) => t.sys_created_by === user && isBatchCall(t.url) && Math.abs(Date.parse((t.sys_created_on ?? '').replace(' ', 'T') + 'Z') - t0) <= 3000);
+}
+
 export function isRecordWrite(url: string | undefined, sysId: string): boolean {
   const u = url ?? '';
   if (!sysId || !u.includes(sysId)) return false;

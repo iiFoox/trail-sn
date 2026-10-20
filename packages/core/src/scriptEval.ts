@@ -223,6 +223,43 @@ function isObj(n: Node): n is { kind: 'obj'; name: string } { return typeof n ==
 
 /** Avalia uma expressão. `undefined` = não deu para saber (nunca chuta). */
 export function evalExpr(expr: string, env: Env): Val {
+  const v = evalStrict(expr, env);
+  if (v !== U) return v;
+  // Trecho que não sabemos avaliar (ex.: `new TableUtils(...)`, plugins): uma parte certa ainda decide a expressão inteira.
+  // "a && b && c" é falsa se alguma parte for falsa; "a || b" é verdadeira se alguma parte for verdadeira.
+  for (const [op, decisive] of [['&&', false], ['||', true]] as const) {
+    const parts = splitTop(expr, op);
+    if (parts.length < 2) continue;
+    for (const part of parts) { const x = evalExpr(part, env); if (x !== U && truthy(x) === decisive) return decisive; }
+    return U;
+  }
+  return U;
+}
+
+/** Divide no operador de nível mais alto (fora de parênteses e de textos). */
+function splitTop(expr: string, op: '&&' | '||'): string[] {
+  const out: string[] = [];
+  let depth = 0, q = '', start = 0;
+  for (let i = 0; i < expr.length; i++) {
+    const c = expr[i]!;
+    if (q) { if (c === '\\') i++; else if (c === q) q = ''; continue; }
+    if (c === "'" || c === '"') q = c;
+    else if (c === '(' || c === '[' || c === '{') depth++;
+    else if (c === ')' || c === ']' || c === '}') depth--;
+    else if (depth === 0 && expr.startsWith(op, i)) { out.push(expr.slice(start, i)); start = i + 2; i++; }
+  }
+  out.push(expr.slice(start));
+  // Parênteses em volta da expressão inteira: tira e tenta de novo.
+  if (out.length === 1) { const t = expr.trim(); if (t.startsWith('(') && t.endsWith(')') && splitTop(t.slice(1, -1), op).length > 1 && balanced(t.slice(1, -1))) return splitTop(t.slice(1, -1), op); }
+  return out.map((x) => x.trim()).filter(Boolean);
+}
+function balanced(s: string): boolean {
+  let d = 0;
+  for (const c of s) { if (c === '(') d++; else if (c === ')' && --d < 0) return false; }
+  return d === 0;
+}
+
+function evalStrict(expr: string, env: Env): Val {
   const t0 = tokenize(expr);
   if (!t0) return U;
   const toks: Tok[] = t0;

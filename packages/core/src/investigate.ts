@@ -16,7 +16,7 @@ import {
   type TraceItem,
 } from './types';
 import { isSaveButton } from './signatures/uiAction';
-import { decodeFlowValues, isRecordWrite, isWorkspaceAction, parseFieldValues, uiActionMatches, uiActionQuery, uiActionRef } from './util';
+import { decodeFlowValues, isBatchCall, isRecordWrite, isWorkspaceAction, parseFieldValues, uiActionMatches, uiActionQuery, uiActionRef } from './util';
 import { conditionFields, mergeWindows, refsField, shift, toMs, withTimeout } from './util';
 
 /** Cache de metadados por tabela (hierarquia, BRs, script includes). A extensão guarda em chrome.storage.session. */
@@ -103,7 +103,7 @@ export async function investigate(
         // A tabela mais específica ganha (incident.state 2 = In Progress; task.state 2 = Work in Progress); depois o inglês.
         .then((rows) => rows.sort((a, b) => (meta.tables.indexOf(a.name ?? '') - meta.tables.indexOf(b.name ?? '')) || ((a.language === 'en' ? -1 : 0) - (b.language === 'en' ? -1 : 0)))),
     // Importação: linhas de import set que gravaram neste registro (a tabela base devolve todas as tabelas de staging).
-    fieldChanges.length ? quiet('sys_import_set_row', `sys_target_sys_id=${sysId}^ORDERBYDESCsys_updated_on`, ['sys_id', 'sys_import_set', 'sys_import_set.number', 'sys_transform_map', 'sys_transform_map.name', 'sys_import_state', 'sys_updated_on', 'sys_updated_by'], 30) : Promise.resolve([]),
+    fieldChanges.length ? quiet('sys_import_set_row', `sys_target_sys_id=${sysId}^ORDERBYDESCsys_updated_on`, ['sys_id', 'sys_class_name', 'sys_import_set', 'sys_import_set.number', 'sys_transform_map', 'sys_transform_map.name', 'sys_import_state', 'sys_updated_on', 'sys_updated_by'], 30) : Promise.resolve([]),
     // Quem gravou: usuário só de API ou de integração interna é uma integração, não uma pessoa.
     changeUsers.length ? quiet('sys_user', `user_nameIN${changeUsers.join(',')}`, ['sys_id', 'user_name', 'name', 'web_service_access_only', 'internal_integration_user'], 20) : Promise.resolve([]),
   ]);
@@ -120,7 +120,7 @@ export async function investigate(
   const isAssignmentField = target.field === 'assignment_group' || target.field === 'assigned_to';
   const flowIds = unique(flowsAll.map((f) => f.flow ?? '').filter(Boolean));
   const mapIds = unique(importRows.map((r) => r.sys_transform_map ?? '').filter(Boolean));
-  const [jobsByName, scriptActions, uiActions, jobsByScript, assignmentRules, lookupSets, clientRows, uiActionSuspects, flowActionRows, transformEntries] = await Promise.all([
+  const [jobsByName, scriptActions, uiActions, jobsByScript, assignmentRules, lookupSets, clientRows, uiActionSuspects, flowActionRows, transformEntries, transformScripts, policyRows] = await Promise.all([
     jobNames.length ? q('sysauto_script', `nameIN${jobNames.join(',')}`, ['sys_id', 'name', 'script'], 50) : Promise.resolve([]),
     eventNames.length ? q('sysevent_script_action', `active=true^event_nameIN${eventNames.join(',')}`, ['sys_id', 'name', 'event_name', 'script'], 50) : Promise.resolve([]),
     uiActionIds.length ? q('sys_ui_action', uiActionQuery(uiActionIds, meta.tables), ['sys_id', 'name', 'script', 'table', 'action_name'], 20) : Promise.resolve([]),
@@ -132,7 +132,12 @@ export async function investigate(
     quiet('sys_ui_action', `tableIN${meta.tables.join(',')}^active=true^scriptLIKE${target.field}`, ['sys_id', 'name', 'table', 'script'], 30),
     // Passos dos flows que rodaram no registro: dizem qual ação grava o campo.
     flowIds.length ? quiet('sys_hub_action_instance_v2', `flowIN${flowIds.join(',')}^ORDERBYorder`, ['flow', 'order', 'comment', 'values', 'action_type.name'], 100) : Promise.resolve([]),
-    mapIds.length ? quiet('sys_transform_entry', `mapIN${mapIds.join(',')}^target_field=${target.field}`, ['map', 'source_field', 'target_field'], 30) : Promise.resolve([]),
+    mapIds.length ? quiet('sys_transform_entry', `mapIN${mapIds.join(',')}^target_field=${target.field}`, ['map', 'source_field', 'target_field', 'use_source_script', 'source_script'], 30) : Promise.resolve([]),
+    // UI policies com "Run scripts" cujo script cita o campo (rodam no navegador, como client scripts).
+    // Scripts do transform map (onBefore, onAfter...) e o script do próprio mapa que citam o campo.
+    mapIds.length ? quiet('sys_transform_script', `mapIN${mapIds.join(',')}^active=true^scriptLIKE${target.field}`, ['map', 'when', 'script'], 30).then(async (rows) => [
+      ...rows, ...(await quiet('sys_transform_map', `sys_idIN${mapIds.join(',')}^run_script=true^scriptLIKE${target.field}`, ['sys_id', 'script'], 10)).map((m): Row => ({ map: m.sys_id ?? '', when: 'map', script: m.script ?? '' }))]) : Promise.resolve([] as Row[]),
+    quiet('sys_ui_policy', `tableIN${meta.tables.join(',')}^active=true^run_scripts=true^script_trueLIKE${target.field}^ORscript_falseLIKE${target.field}`, ['sys_id', 'short_description', 'table', 'conditions', 'script_true', 'script_false', 'ui_type', 'reverse_if_false'], 20),
   ]);
 
   // ---------- rodada 4 (só quando precisa): entradas dos data lookups e valores atuais para avaliar condições ----------
@@ -145,9 +150,17 @@ export async function investigate(
     ...meta.brField.flatMap((b) => [...fieldsRead(b.script), ...fieldsRead(b.condition)]),
     ...meta.brViaSi.flatMap((x) => fieldsRead(x.br.condition)),
     ...clientRows.flatMap((c) => fieldsRead(c.script)),
+    ...policyRows.flatMap((p) => conditionFields(p.conditions)),
   ]).filter((f) => f !== target.field && !f.includes('.')).slice(0, 40);
   // Linhas da tabela do lookup que produzem os valores gravados (para saber se o lookup PODE ter dado aquele valor).
   const newValues = unique(fieldChanges.map((c) => c.newvalue ?? '').filter(Boolean));
+  // Valores que chegaram na linha de staging (o que a importação mandou para o campo).
+  const stageQueries = unique(importRows.map((r) => r.sys_class_name ?? '').filter((c) => c && c !== 'sys_import_set_row')).map((cls) => {
+    const fields = unique(transformEntries.map((e) => e.source_field ?? '').filter(Boolean));
+    const ids = importRows.filter((r) => r.sys_class_name === cls).map((r) => r.sys_id ?? '');
+    return fields.length ? quiet(cls, `sys_idIN${ids.join(',')}`, ['sys_id', ...fields], 30) : Promise.resolve([] as Row[]);
+  });
+  const stageRowsP = Promise.all(stageQueries).then((r) => r.flat());
   const [lookupMatches, recCond, ...matcherRows] = await Promise.all([
     lookupIds.length ? quiet('dl_definition_rel_match', `dl_definitionIN${lookupIds.join(',')}`, ['dl_definition', 'source_table_field', 'matcher_table_field', 'exact_match'], 50) : Promise.resolve([]),
     // Com data lookup, o registro vem inteiro: os campos de entrada só são conhecidos depois desta rodada.
@@ -177,9 +190,16 @@ export async function investigate(
     return { flow: a.flow ?? '', order: a.order ?? '', action: a['action_type.name'] || a.comment || 'Ação', table: pick('table_name'), writes: parseFieldValues(pick('values') || pick('fields')) };
   }));
   const clientScripts = clientRows.filter((c) => new RegExp(`setValue\\(\\s*['"]${target.field}['"]`).test(c.script ?? ''));
+  const setsField = (sc: string | undefined) => new RegExp(`setValue\\(\\s*['"]${target.field}['"]`).test(sc ?? '');
+  const uiPolicies: Row[] = policyRows.flatMap((p) => [
+    ...(setsField(p.script_true) ? [{ ...p, name: p.short_description ?? '', script: p.script_true ?? '', branch: 'true' }] : []),
+    ...(setsField(p.script_false) && p.reverse_if_false !== 'false' ? [{ ...p, name: p.short_description ?? '', script: p.script_false ?? '', branch: 'false' }] : []),
+  ]);
   // Campo ausente na resposta (sem acesso ao campo, ou inexistente) fica de fora: condição vira "não avaliada", nunca falsa.
   const recFields = unique([...condFields, ...dataLookups.flatMap((d) => d.match.map((m) => m.source))]).filter((f) => f && f !== target.field);
   const record: Record<string, string> = recCond[0] ? Object.fromEntries(recFields.filter((f) => f in recCond[0]!).map((f) => [f, recCond[0]![f] ?? ''])) : {};
+
+  const stageRows = await stageRowsP;
 
   // ---------- assinaturas e pontuação ----------
   // Transações de job (síncronas com a escrita) são atribuídas à mudança mais próxima no tempo,
@@ -220,10 +240,13 @@ export async function investigate(
       jobsByScript,
       assignmentRules,
       clientScripts,
+      uiPolicies,
       dataLookups,
       flowSteps,
       importRows: importRows.filter((r) => Math.abs(toMs(r.sys_updated_on ?? '') - toMs(at)) <= 30_000),
       transformEntries,
+      transformScripts,
+      stageRows,
       transformMapsLoaded: mapIds.length > 0,
       users: Object.fromEntries(userRows.map((u) => [u.user_name ?? '', { sysId: u.sys_id ?? '', name: u.name || u.user_name || '', integration: u.web_service_access_only === 'true' || u.internal_integration_user === 'true' }])),
     };
@@ -350,6 +373,10 @@ function buildTrace(ctx: ChangeContext, top: Change['evidence'][number] | undefi
     if (url.startsWith('JOB: ASYNC: ')) { const n = url.slice(12).trim(); items.push({ ...base, kind: 'async', label: n, cause: !!name && name === n }); continue; }
     if (url.startsWith('JOB: ')) { const n = url.slice(5).trim(); items.push({ ...base, kind: 'job', label: n, cause: !!name && name === n }); continue; }
     if (url.includes('/sys.scripts.do')) { items.push({ ...base, kind: 'background_script', label: 'Scripts - Background', cause: top?.type === 'background_script' }); continue; }
+    if (isBatchCall(url) && user === ctx.user && Math.abs(toMs(at) - toMs(ctx.at)) <= 3000) {
+      items.push({ ...base, kind: 'api', label: 'Batch API ' + (url.split('?')[0] ?? url), cause: top?.type === 'user_action' });
+      continue;
+    }
     if (!url.includes(ctx.sysId)) continue;
     const action = uiActionRef(url);
     const ua = action ? ctx.traces.uiActions.find((u) => uiActionMatches(u, action)) : undefined;
@@ -358,7 +385,7 @@ function buildTrace(ctx: ChangeContext, top: Change['evidence'][number] | undefi
       continue;
     }
     if (isWorkspaceAction(url)) {
-      const wsCause = !!top && ['user_action', 'br_before', 'server_change', 'assignment_rule', 'data_lookup', 'client_script'].includes(top.type) && Math.abs(toMs(at) - toMs(ctx.at)) <= 3000;
+      const wsCause = !!top && ['user_action', 'br_before', 'server_change', 'assignment_rule', 'data_lookup', 'client_script', 'ui_policy'].includes(top.type) && Math.abs(toMs(at) - toMs(ctx.at)) <= 3000;
       items.push({ ...base, kind: 'form', label: 'Workspace', cause: wsCause });
       continue;
     }
@@ -366,7 +393,7 @@ function buildTrace(ctx: ChangeContext, top: Change['evidence'][number] | undefi
     // Só envios de formulário contam; o recarregamento da página depois de salvar (GET ?sys_id=) não.
     if (!url.includes('sys_uniqueValue=')) continue;
     const sent = new URLSearchParams(url.split('?')[1] ?? '').get(`${ctx.table}.${ctx.field}`);
-    const formCause = !!top && ['user_action', 'br_before', 'server_change', 'assignment_rule', 'data_lookup', 'client_script'].includes(top.type);
+    const formCause = !!top && ['user_action', 'br_before', 'server_change', 'assignment_rule', 'data_lookup', 'client_script', 'ui_policy'].includes(top.type);
     items.push({ ...base, kind: 'form', label: ua?.name ?? url.split('?')[0] ?? url, ...(sent !== null ? { sent } : {}), cause: formCause && sent !== null });
   }
   const sref = (table: string, sysId?: string) => (sysId ? { ref: { table, sysId } } : {});

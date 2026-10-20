@@ -770,3 +770,125 @@ describe('URL da transação cortada', () => {
     expect(r.changes[0]!.evidence[0]!.type).toBe('client_script');
   });
 });
+
+describe('conta de integração (Fase 12)', () => {
+  it('gravação pela API: o valor que chegou é desconhecido, então a BR before que troca hardware por rede ainda pode ter gravado', async () => {
+    const s = scenario();
+    s.record.category = 'network';
+    br(s, 'PT categoria da operadora', 'before', "if (gs.getUserName() != 'pt.integ') return;\nif (current.category == 'hardware') current.category = 'network';");
+    audit(s, 'category', 'inquiry', 'network', T0, 'pt.integ', 1);
+    tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'pt.integ');
+    const e = top(await run(s, 'category'));
+    expect(e.type).toBe('br_before');
+    expect(e.facts.some((f) => f.kind === 'condition_false')).toBe(false);
+  });
+
+  it('gravação por lote da Batch API: a pessoa ou integração do lote, provável', async () => {
+    const s = scenario();
+    audit(s, 'description', '', 'Importado no lote', T0, 'pt.integ', 1);
+    tx(s, shiftStr(T0, 1), 'rest', '/api/now/v1/batch', 'pt.integ');
+    const r = await run(s, 'description');
+    const e = top(r);
+    expect(e.type).toBe('user_action');
+    expect(e.artifact.name).toBe('pt.integ');
+    expect(e.grade).toBe('probable');
+    expect(r.changes[0]!.trace.some((t) => t.label.startsWith('Batch API'))).toBe(true);
+  });
+
+  it('lote da Batch API de outra pessoa não conta', async () => {
+    const s = scenario();
+    audit(s, 'description', '', 'Importado no lote', T0, 'pt.integ', 1);
+    tx(s, T0, 'rest', '/api/now/v1/batch', 'outra.pessoa');
+    const e = top(await run(s, 'description'));
+    expect(e.type).not.toBe('user_action');
+  });
+
+  it('condição com trecho que não sabemos avaliar ainda é falsa quando uma parte do && é falsa (BR padrão do incidente filho)', async () => {
+    const s = scenario();
+    const b = br(s, 'Derive State value from Parent Incident', 'before', 'current.close_notes = current.parent_incident.close_notes;');
+    b.condition = "current.parent_incident.changes() && !current.parent_incident.nil() && (!GlidePluginManager.isActive('com.sn_ot_inc_mgmt') || new TableUtils('sn_ot_incident').getAllExtensions().indexOf(current.getTableName()) < 0)";
+    audit(s, 'close_notes', '', 'Conferido', T0, 'admin', 1);
+    tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
+    const e = top(await run(s, 'close_notes'));
+    expect(e.type).toBe('user_action');
+    expect(e.grade).toBe('confirmed');
+  });
+});
+
+describe('UI policy com script (Fase 13)', () => {
+  const policy = (cond: string, branch: 'true' | 'false') => ({ sys_id: id(), short_description: '[PT] política', table: 'incident', active: 'true', run_scripts: 'true', ui_type: '0', reverse_if_false: 'true', conditions: cond,
+    script_true: branch === 'true' ? "function onCondition() {\n  g_form.setValue('description', 'Verificar DNS');\n}" : 'function onCondition() {}',
+    script_false: branch === 'false' ? "function onCondition() {\n  g_form.setValue('description', 'Verificar DNS');\n}" : 'function onCondition() {}' });
+  const base = (category: string) => {
+    const s = scenario();
+    s.record.category = category;
+    audit(s, 'description', '', 'Verificar DNS', T0, 'admin', 2);
+    audit(s, 'category', 'inquiry', category, T0, 'admin', 2);
+    formTx(s, T0, 'admin', { description: 'Verificar DNS', category });
+    return s;
+  };
+  it('a condição passou a valer na gravação e o script grava o valor: a UI policy é a causa', async () => {
+    const c = build(base('network'));
+    c.rows('sys_ui_policy', [policy('category=network^EQ', 'true')]);
+    const e = top(await investigate(c, { table: 'incident', number: INC.number, field: 'description' }));
+    expect(e.type).toBe('ui_policy');
+    expect(atLeast(e.grade, 'probable')).toBe(true);
+  });
+  it('ramo "senão": a condição deixou de valer e o script do senão grava', async () => {
+    const c = build(base('software'));
+    c.rows('sys_ui_policy', [policy('category=network^EQ', 'false')]);
+    expect(top(await investigate(c, { table: 'incident', number: INC.number, field: 'description' })).type).toBe('ui_policy');
+  });
+  it('condição que não vale: a pessoa digitou', async () => {
+    const c = build(base('software'));
+    c.rows('sys_ui_policy', [policy('category=network^EQ', 'true')]);
+    expect(top(await investigate(c, { table: 'incident', number: INC.number, field: 'description' })).type).toBe('user_action');
+  });
+});
+
+describe('importação por transform map (Fase 13)', () => {
+  const MAP = 'map1', ROW = 'row1';
+  const imp = (s: ReturnType<typeof scenario>, entries: Record<string, string>[], stage: Record<string, string>, scripts: Record<string, string>[] = []) => {
+    tx(s, T0, 'rest', '/api/now/import/u_stage', 'admin');
+    const c = build(s);
+    c.rows('sys_import_set_row', [{ sys_id: ROW, sys_class_name: 'u_stage', sys_target_sys_id: INC.sysId, sys_import_set: 'is1', 'sys_import_set.number': 'ISET001', sys_transform_map: MAP, 'sys_transform_map.name': 'PT mapa', sys_import_state: 'updated', sys_updated_on: T0, sys_updated_by: 'admin' }]);
+    c.rows('sys_transform_entry', entries.map((e) => ({ map: MAP, ...e })));
+    c.rows('sys_transform_script', scripts.map((e) => ({ map: MAP, active: 'true', ...e })));
+    c.rows('sys_transform_map', [{ sys_id: MAP, run_script: 'false', script: '' }]);
+    c.rows('u_stage', [{ sys_id: ROW, ...stage }]);
+    return c;
+  };
+  const go = async (c: ReturnType<typeof build>, field: string) => investigate(c, { table: 'incident', number: INC.number, field });
+
+  it('mapeamento direto e a linha trouxe o valor: importação, certeza alta', async () => {
+    const s = scenario();
+    audit(s, 'description', '', 'Falha no roteador', T0, 'admin', 1);
+    const e = top(await go(imp(s, [{ source_field: 'u_descricao', target_field: 'description' }], { u_descricao: 'Falha no roteador' }), 'description'));
+    expect(e.type).toBe('import_set');
+    expect(e.grade).toBe('confirmed');
+  });
+  it('a linha trouxe hardware e ficou rede: a BR before da gravação é a causa', async () => {
+    const s = scenario();
+    s.record.category = 'network';
+    br(s, 'PT hardware vira rede', 'before', "if (current.category == 'hardware') current.category = 'network';");
+    audit(s, 'category', 'inquiry', 'network', T0, 'admin', 1);
+    const e = top(await go(imp(s, [{ source_field: 'u_categoria', target_field: 'category' }], { u_categoria: 'hardware' }), 'category'));
+    expect(e.type).toBe('br_before');
+    expect(e.grade).toBe('confirmed');
+  });
+  it('script onBefore do transform map grava o campo: importação', async () => {
+    const s = scenario();
+    audit(s, 'correlation_id', '', 'PARC-44', T0, 'admin', 1);
+    const e = top(await go(imp(s, [], {}, [{ when: 'onBefore', script: "target.correlation_id = 'PARC-' + source.u_codigo;" }]), 'correlation_id'));
+    expect(e.type).toBe('import_set');
+    expect(atLeast(e.grade, 'probable')).toBe(true);
+  });
+  it('o transform map não grava o campo: a importação não é a causa', async () => {
+    const s = scenario();
+    audit(s, 'urgency', '3', '2', T0, 'admin', 1);
+    const r = await go(imp(s, [], {}), 'urgency');
+    const e = r.changes[0]!.evidence.find((x) => x.type === 'import_set')!;
+    expect(e.facts.some((f) => f.kind === 'no_step_writes_field')).toBe(true);
+    expect(e.grade).toBe('candidate');
+  });
+});

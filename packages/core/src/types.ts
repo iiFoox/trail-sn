@@ -54,6 +54,7 @@ export type EvidenceType =
   | 'assignment_rule'
   | 'data_lookup'
   | 'client_script'
+  | 'ui_policy'
   | 'import_set'
   | 'unknown_background';
 

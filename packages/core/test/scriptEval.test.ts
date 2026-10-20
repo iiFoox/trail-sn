@@ -76,3 +76,19 @@ describe('campo HTML', () => {
     expect(sameVal('outra coisa', '<p>Possível falha DNS</p>')).toBe(false);
   });
 });
+
+describe('avaliação parcial', () => {
+  const env = { rec: { a: '1', b: '' }, old: {}, changed: new Set<string>() };
+  it('&& com uma parte falsa é falso mesmo com trecho desconhecido', () => {
+    expect(evalExpr("current.a == '2' && new Foo().bar(current.getTableName()) < 0", env)).toBe(false);
+  });
+  it('|| com uma parte verdadeira é verdadeiro', () => {
+    expect(evalExpr("current.a == '1' || new Foo().bar()", env)).toBe(true);
+  });
+  it('sem parte decisiva continua desconhecido', () => {
+    expect(evalExpr("current.a == '1' && new Foo().bar()", env)).toBeUndefined();
+  });
+  it('texto com && dentro de aspas não é dividido', () => {
+    expect(evalExpr("current.a == 'x && y' && new Foo()", env)).toBe(false);
+  });
+});

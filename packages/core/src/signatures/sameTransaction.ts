@@ -1,5 +1,5 @@
 import { fact } from '../scoring';
-import { evalCondition, refsField, toMs } from '../util';
+import { evalCondition, refsField, toMs, batchAt } from '../util';
 import { evalExpr, scriptVerdict, writesOf } from '../scriptEval';
 import { envFor, reactsFacts, resolveOrder, scriptFacts, UNKNOWN_VALUE } from './scriptFacts';
 import { conditionFields as conditionFieldsOf, isRecordWrite, parseFieldValues, sameVal, uiActionMatches, uiActionRef } from '../util';
@@ -80,12 +80,28 @@ function nestedBy(ctx: ChangeContext): Row | undefined {
 }
 
 /** BRs before que podem ter gravado o campo numa gravação feita por automação (update() de outra regra, script action, job). */
+/** Valor que uma importação mandou para o campo nesta gravação (linha de staging + mapeamento direto), se houver. */
+function importedValue(ctx: ChangeContext): { value: string; map: string } | undefined {
+  const at = toMs(ctx.at);
+  const rows = (ctx.traces.importRows ?? []).filter((r) => Math.abs(toMs(r.sys_updated_on ?? '') - at) <= 3000);
+  for (const r of rows) {
+    const entry = (ctx.traces.transformEntries ?? []).find((e) => e.map === r.sys_transform_map && e.use_source_script !== 'true' && e.source_field);
+    const stage = (ctx.traces.stageRows ?? []).find((x) => x.sys_id === r.sys_id);
+    if (entry && stage && entry.source_field! in stage) return { value: stage[entry.source_field!] ?? '', map: r['sys_transform_map.name'] || 'transform map' };
+  }
+  return undefined;
+}
+
 function nestedBefores(ctx: ChangeContext, base: () => Fact[]): { e: Evidence; row: Row }[] {
   const by = nestedBy(ctx);
+  const imp = importedValue(ctx);
   return ctx.meta.brField.filter((b) => b.when === 'before').map((b) => {
-    const cond = conditionFacts(ctx, brCondition(b), 'sys_script');
-    const facts = [...base(), ...cond, ...brScriptFacts(ctx, b, 'save', cond), ...reactsFacts(ctx, [b.script, b.condition], 'sys_script')];
-    const gaps = [by ? `rodou dentro da gravação feita por "${by.name}" (update() numa regra after)` : 'rodou dentro de uma gravação feita por automação'];
+    const cond = conditionFacts(ctx, brCondition(b), 'sys_script', imp?.value);
+    const facts = [...base(), ...cond, ...brScriptFacts(ctx, b, 'save', cond, imp?.value), ...reactsFacts(ctx, [b.script, b.condition], 'sys_script')];
+    // A importação mandou outro valor e esta regra, rodando na gravação, transforma no valor que ficou.
+    if (imp && !sameVal(imp.value, ctx.audit.newvalue ?? '') && facts.some((f) => f.kind === 'sets_same_value') && !facts.some((f) => f.kind === 'condition_false'))
+      facts.push(fact('trace_identifies_mechanism', 'sys_import_set_row', `a importação (${imp.map}) mandou "${imp.value}" e a regra grava "${ctx.audit.newvalue ?? ''}" ao salvar`));
+    const gaps = [imp ? `rodou dentro da gravação feita pela importação (${imp.map})` : by ? `rodou dentro da gravação feita por "${by.name}" (update() numa regra after)` : 'rodou dentro de uma gravação feita por automação'];
     return { e: evidence('br_before', { name: b.name ?? '?', sysId: b.sys_id, table: 'sys_script' }, facts, gaps), row: b };
   });
 }
@@ -189,11 +205,29 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
     if (triggered) facts.push(fact('trace_identifies_mechanism', 'sys_audit', `${trigger} mudou na mesma gravação e dispara o script`), fact('condition_true', 'sys_script_client', 'onChange do campo que mudou'));
     return evidence('client_script', { name: cs.name ?? '?', sysId: cs.sys_id, table: 'sys_script_client' }, facts, ['o navegador não registra se a pessoa digitou ou se o script preencheu']);
   });
+  // UI policy com script: roda no navegador quando a condição muda (e ao carregar). O ramo "true" roda com a condição
+  // verdadeira; o "false" (reverse if false), com ela falsa. Um campo da condição que mudou nesta gravação é o gatilho.
+  const policyEvidence = (rows: Row[]): Evidence[] => rows.map((p) => {
+    const cond = conditionFacts(ctx, p.conditions, 'sys_ui_policy');
+    const holds = cond.some((f) => f.kind === 'condition_true') ? true : cond.some((f) => f.kind === 'condition_false') ? false : undefined;
+    const want = p.branch !== 'false';
+    const facts = [fact('references_field', 'sys_ui_policy', `o script da UI policy altera "${ctx.field}"`), fact('references_table', 'sys_ui_policy', `UI policy da tabela ${p.table}`)];
+    if (holds !== undefined) facts.push(holds === want
+      ? fact('condition_true', 'sys_ui_policy', want ? 'a condição da UI policy vale para este registro' : 'a condição da UI policy não vale para este registro, e o script do "senão" roda')
+      : fact('condition_false', 'sys_ui_policy', want ? 'a condição da UI policy não vale para este registro' : 'a condição da UI policy vale, então o script do "senão" não roda'));
+    const trig = conditionFieldsOf(p.conditions).filter((f) => f !== ctx.field && changedTogether.includes(f));
+    if (trig.length && holds === want) facts.push(fact('trace_identifies_mechanism', 'sys_audit', `${trig.join(', ')} mudou na mesma gravação e a UI policy reage`));
+    facts.push(...scriptFacts(ctx, p.script, 'sys_ui_policy', { hasCondition: true }).filter((f) => f.kind !== 'condition_true'));
+    return evidence('ui_policy', { name: p.name ?? '?', sysId: p.sys_id, table: 'sys_ui_policy' }, facts, ['o navegador não registra se a pessoa digitou ou se a UI policy preencheu']);
+  });
   const isStrong = (es: Evidence[]) => es.some((e) => e.facts.some((f) => f.kind === 'trace_identifies_mechanism') && !e.facts.some((f) => f.kind === 'condition_false' || f.kind === 'sets_other_value' || f.kind === 'reads_only'));
   const tx = ctx.traces.transactions;
   let userTx = tx.filter((t) => t.sys_created_by === ctx.user && isRecordWrite(t.url, ctx.sysId));
   // Gravado como "system" dentro do salvamento de outra pessoa (regra de atribuição): a transação é a dessa pessoa.
   if (!userTx.length && isSystemUser(ctx.user)) userTx = tx.filter((t) => !/^JOB: /.test(t.url ?? '') && isRecordWrite(t.url, ctx.sysId) && Math.abs(toMs(t.sys_created_on ?? '') - toMs(ctx.at)) <= 2000);
+  // Batch API: a URL não cita o registro; um lote da mesma pessoa no mesmo instante é a melhor pista de quem gravou.
+  const viaBatch = !userTx.length && batchAt(tx, ctx.user, ctx.at).length > 0;
+  if (viaBatch) userTx = batchAt(tx, ctx.user, ctx.at);
 
   let verdict: 'user' | 'server' | null = null;
   let formAt = '';
@@ -219,7 +253,10 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
   // As BRs before rodam em ordem crescente na mesma gravação: cada uma vê o valor que a anterior deixou no campo.
   const seen = new Map<Row, string | undefined>();
   {
-    let running: string | undefined = sentValue ?? ctx.audit.oldvalue ?? '';
+    // Gravação pela API ou pelo Workspace sem formulário clássico: o corpo não fica registrado, então o valor que chegou
+    // neste campo é desconhecido (pode ter vindo na requisição). Só o formulário clássico mostra o valor enviado.
+    const blind = sentValue === undefined && userTx.some((t) => /\/api\//.test(t.url ?? '') && Math.abs(toMs(t.sys_created_on ?? '') - toMs(ctx.at)) <= 3000);
+    let running: string | undefined = blind ? undefined : sentValue ?? ctx.audit.oldvalue ?? '';
     for (const b of [...ctx.meta.brField.filter((x) => x.when === 'before')].sort((x, y) => Number(x.order ?? 100) - Number(y.order ?? 100))) {
       seen.set(b, running);
       if (conditionFacts(ctx, brCondition(b), 'sys_script', running).some((f) => f.kind === 'condition_false')) continue;
@@ -270,6 +307,7 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
     }
     // Client scripts "Mobile / Service Portal" (ui_type 1) não rodam no formulário clássico.
     clientSide.push(...clientEvidence(ctx.traces.clientScripts.filter((c) => c.ui_type !== '1')));
+    clientSide.push(...policyEvidence((ctx.traces.uiPolicies ?? []).filter((p) => p.ui_type !== '1')));
     const strongClient = isStrong(clientSide);
     out.push(evidence('user_action', { name: formUser }, [
       fact('form_value_equals', 'syslog_transaction', 'o formulário enviou exatamente o novo valor'),
@@ -323,7 +361,7 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
     // Salvamento pelo Workspace: o botão Salvar roda como /api/now/ui/ui_action/<id>?sysparm_sys_id=<registro>.
     // Os valores enviados não ficam na URL; client scripts "All" (ui_type 10) rodam no Workspace e podem ter preenchido o campo.
     const ws = userTx.find((t) => /\/api\/now\/ui\/ui_action\/[0-9a-f]{32}/.test(t.url ?? '') && Math.abs(toMs(t.sys_created_on ?? '') - toMs(ctx.at)) <= 3000);
-    const wsClient = ws ? clientEvidence(ctx.traces.clientScripts.filter((c) => c.ui_type === '10')) : [];
+    const wsClient = ws ? [...clientEvidence(ctx.traces.clientScripts.filter((c) => c.ui_type === '10')), ...policyEvidence((ctx.traces.uiPolicies ?? []).filter((p) => p.ui_type === '10'))] : [];
     if (wsClient.length) { out.push(...wsClient); rivals.push(...wsClient.filter((e) => isStrong([e]))); }
     // Botão do Workspace com script próprio que cita o campo: quem grava é o botão (assinatura uiAction), não o "Salvar".
     const wsUa = ws ? ctx.traces.uiActions.find((x) => uiActionMatches(x, uiActionRef(ws.url))) : undefined;
@@ -351,6 +389,9 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
         facts.push(fact('api_write_on_record', 'syslog_transaction', `${ctx.user} gravou este registro pela API no mesmo instante`));
         facts.push(fact('no_competing_automation', 'sys_script', server.length ? 'as regras que citam o campo não se aplicam a este registro' : 'nenhuma automação ativa grava este campo'));
         gaps = ['o corpo da requisição não fica registrado; a conclusão vem de não haver outra automação capaz de gravar este valor'];
+      } else if (viaBatch && !rivals.length && !ctx.meta.incomplete) {
+        facts.push(fact('no_competing_automation', 'sys_script', server.length ? 'as regras que citam o campo não se aplicam a este registro' : 'nenhuma automação ativa grava este campo'));
+        gaps = ['gravação por um lote da Batch API: o lote não registra quais registros alterou, então a ligação com este registro vem do horário e do usuário'];
       } else if (api) {
         gaps = [rivals.length
           ? `gravação pela API e ${rivals.length === 1 ? 'uma automação do servidor também pode' : `${rivals.length} automações do servidor também podem`} ter gravado este campo; o corpo da requisição não fica registrado`
