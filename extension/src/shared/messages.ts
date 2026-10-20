@@ -18,6 +18,7 @@ export type Message =
   | { type: 'timeline'; origin: string; target: { table: string; sysId: string } }
   | { type: 'scan-conflicts'; origin: string; table: string }
   | { type: 'batch'; origin: string; table: string; field: string; sysIds: string[]; token?: string; mode?: import('./prefs').PanelMode }
+  | { type: 'field-map'; origin: string; table: string; field: string }
   | { type: 'preview'; origin: string; target: { table: string; sysId: string; field: string; value: string } }
   | { type: 'open-panel'; mode?: import('./prefs').PanelMode }
   | { type: 'probe-auth'; origin: string }

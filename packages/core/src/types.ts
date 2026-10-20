@@ -191,6 +191,8 @@ export interface Investigation {
   gaps: string[];
   /** Regras ativas que gravam este campo com valores diferentes e podem rodar juntas. */
   conflicts?: import('./conflicts').RuleConflict[];
+  /** Duas automações trocando o valor do campo entre si. */
+  pingPong?: import('./pingpong').PingPong;
   timing: { totalMs: number; calls: number };
 }
 

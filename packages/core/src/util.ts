@@ -271,3 +271,27 @@ export function isRecordWrite(url: string | undefined, sysId: string): boolean {
   if (new RegExp(`/api/now/(?:v\\d+/)?table/[a-z0-9_]+/${sysId}(?:[?/]|$)`).test(u)) return true;
   return isWorkspaceAction(u);
 }
+
+/** Encoded query em texto curto: "category=network^urgencyVALCHANGES^EQ" → "category = network e urgency muda". */
+export function humanQuery(q: string | undefined, lang: 'pt' | 'en' = 'pt'): string {
+  if (!q) return '';
+  const pt = lang === 'pt';
+  const ops: [RegExp, (f: string, v: string) => string][] = [
+    [/^([a-z0-9_.]+)VALCHANGES$/, (f) => `${f} ${pt ? 'muda' : 'changes'}`],
+    [/^([a-z0-9_.]+)CHANGESTO(.*)$/, (f, v) => `${f} ${pt ? 'muda para' : 'changes to'} ${v}`],
+    [/^([a-z0-9_.]+)CHANGESFROM(.*)$/, (f, v) => `${f} ${pt ? 'deixa de ser' : 'changes from'} ${v}`],
+    [/^([a-z0-9_.]+)ISEMPTY$/, (f) => `${f} ${pt ? 'vazio' : 'empty'}`],
+    [/^([a-z0-9_.]+)ISNOTEMPTY$/, (f) => `${f} ${pt ? 'preenchido' : 'not empty'}`],
+    [/^([a-z0-9_.]+)STARTSWITH(.*)$/, (f, v) => `${f} ${pt ? 'começa com' : 'starts with'} "${v}"`],
+    [/^([a-z0-9_.]+)NOTLIKE(.*)$/, (f, v) => `${f} ${pt ? 'não contém' : 'does not contain'} "${v}"`],
+    [/^([a-z0-9_.]+)LIKE(.*)$/, (f, v) => `${f} ${pt ? 'contém' : 'contains'} "${v}"`],
+    [/^([a-z0-9_.]+)NOT IN(.*)$/, (f, v) => `${f} ${pt ? 'fora de' : 'not in'} ${v}`],
+    [/^([a-z0-9_.]+)IN(.*)$/, (f, v) => `${f} ${pt ? 'em' : 'in'} ${v}`],
+    [/^([a-z0-9_.]+)!=(.*)$/, (f, v) => `${f} ≠ ${v}`],
+    [/^([a-z0-9_.]+)=(.*)$/, (f, v) => `${f} = ${v}`],
+  ];
+  const term = (t: string) => { for (const [re, fn] of ops) { const m = t.match(re); if (m) return fn(m[1]!, m[2] ?? ''); } return t; };
+  return q.split('^NQ').map((block) => block.split('^').filter((t) => t && t !== 'EQ' && !t.startsWith('ORDERBY'))
+    .map((t, i) => (t.startsWith('OR') && i > 0 ? `${pt ? 'ou' : 'or'} ${term(t.slice(2))}` : term(t)))
+    .reduce((acc, t) => (!acc ? t : /^(ou|or) /.test(t) ? `${acc} ${t}` : `${acc} ${pt ? 'e' : 'and'} ${t}`), '')).join(pt ? '; ou ' : '; or ');
+}

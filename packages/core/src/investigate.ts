@@ -1,4 +1,5 @@
 import { findConflicts } from './conflicts';
+import { detectPingPong } from './pingpong';
 import type { QueryRequest, RestClient } from './client/RestClient';
 import { scoreAll } from './scoring';
 import { fieldsRead, writesOf } from './scriptEval';
@@ -331,6 +332,7 @@ export async function investigate(
     access,
     gaps,
     conflicts: findConflicts(target.field, meta.brField, clientRows, { ...record, sys_id: sysId }),
+    ...(() => { const pp = detectPingPong(changes); return pp ? { pingPong: pp } : {}; })(),
     timing: { totalMs: Date.now() - started, calls: client.calls - callsBefore },
   };
 

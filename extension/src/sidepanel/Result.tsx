@@ -13,6 +13,7 @@ import { getPrefs, resolvedTheme } from '../shared/prefs';
 import { trackedTab } from '../shared/tabRef';
 import { RecordTimeline } from './Timeline';
 import { WhatIf } from './WhatIf';
+import { FieldMapBox } from './FieldMap';
 import { fullReport, plainSummary, savePdf } from './export';
 import { diffLines, looksLong } from '../shared/diff';
 import { DiffView, type DiffLabels } from '../shared/DiffView';
@@ -206,8 +207,15 @@ function Answer({ r, c, origin, field, denied, expired, goProof, copy, toastFn }
   });
   const link = top?.artifact.sysId && top.artifact.table ? recordLink(origin, top.artifact.table, top.artifact.sysId) : null;
   const best = top ? [...top.facts].sort((a, b) => b.points - a.points)[0] : undefined;
+  const pp = r.pingPong;
   return (
     <div class="stack">
+      {pp && (
+        <div class="notice pp">
+          <div class="title">{P.ppTitle}</div>
+          <div class="small">{fmt(P.ppText, { a: pp.actors[0], b: pp.actors[1], va: valueLabel(r, pp.values[0]), vb: valueLabel(r, pp.values[1]), n: pp.flips, from: when(pp.from), to: when(pp.to) })}</div>
+        </div>
+      )}
       {top ? (
         <>
           <div class="who">
@@ -329,6 +337,7 @@ function Proof({ r, c, origin, field, denied, expired, access, copy }: { r: Inve
       )}
       {others.map((e) => <Other e={e} origin={origin} field={field} day={c.at.slice(0, 10)} />)}
       {(r.conflicts?.length ?? 0) > 0 && <Conflicts r={r} origin={origin} />}
+      <FieldMapBox r={r} origin={origin} field={field} />
       <TableScan r={r} origin={origin} />
       <div class="box">
         <h4 class={missingCount ? 'warnh' : ''}>{P.missing}</h4>
