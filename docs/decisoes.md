@@ -4,7 +4,7 @@ Registro curto das decisões tomadas durante a implementação, com a evidência
 
 ## 1. `g_ck` é obrigatório; o service worker obtém o token sozinho
 
-**Teste** (PDI dev457034, 2026-10-18 23:40 BRT, aba logada como admin), `GET /api/now/table/sys_properties?sysparm_limit=1` via `fetch`:
+**Teste** (PDI de testes, 2026-10-18 23:40 BRT, aba logada como admin), `GET /api/now/table/sys_properties?sysparm_limit=1` via `fetch`:
 
 | Cenário | Status |
 | --- | --- |
@@ -42,7 +42,7 @@ Na PDI, a frio e sem cache: mediana 2,05 s, 11–12 chamadas por investigação 
 
 "Trail" é provisório. O código não depende do nome fora de `manifest.json`, `_locales/` e dos títulos das páginas; trocar depois custa minutos.
 
-## 8. Retenção dos rastros (PDI dev457034, `sys_auto_flush`, 2026-10-19)
+## 8. Retenção dos rastros (PDI de testes, `sys_auto_flush`, 2026-10-19)
 
 | Tabela | Retenção | Condição |
 | --- | --- | --- |

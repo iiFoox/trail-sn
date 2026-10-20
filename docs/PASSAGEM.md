@@ -1,6 +1,6 @@
 # Trail: passagem do projeto
 
-Estado em 20/10/2026, versão **0.12.0**. Documento para quem continua o projeto, seja outra sessão do Claude, outro agente ou outra pessoa. Leia este arquivo inteiro antes de mexer em qualquer coisa.
+Estado em 20/10/2026, versão **0.12.1**. Documento para quem continua o projeto, seja outra sessão do Claude, outro agente ou outra pessoa. Leia este arquivo inteiro antes de mexer em qualquer coisa.
 
 ---
 
@@ -20,14 +20,14 @@ packages/core/              motor (TypeScript puro, sem navegador; roda em Node 
   src/scoring.ts            pesos dos fatos (FactKind) e faixas de certeza (confirmed / probable / candidate)
   src/preview.ts            "E se eu mudar?": simula o que roda se o campo for para outro valor (só leitura)
   src/batch.ts              lote (mesmo campo em vários registros) e registro inteiro (vários campos), CSV
-  src/timeline.ts           linha do tempo do registro inteiro e comparação entre duas gravações
+  src/timeline.ts           linha do tempo do registro inteiro e comparação entre dois momentos
   src/fieldMap.ts           mapa de automações que podem gravar um campo
   src/pingpong.ts           duas automações trocando o valor entre si
-  src/display.ts            nomes do formulário: rótulo do campo, texto do choice, nome do registro referenciado
+  src/display.ts            nomes do formulário: rótulo do campo (sys_documentation + sys_dictionary), texto do choice, nome do registro referenciado
   src/conflicts.ts          regras que gravam o mesmo campo com valores diferentes
   src/access.ts             detector de acesso (completo / parcial / sem acesso)
   src/client/               RestClient (interface), FetchRestClient, FakeRestClient (testes)
-  test/                     126 testes unitários (vitest)
+  test/                     131 testes unitários do motor (vitest; 133 no total com extension/test)
 extension/                  MV3 (Preact + Vite)
   public/manifest.json      versão, permissões (host só opcional, por instância)
   src/background/           service worker: roda o motor, guarda estado por aba em chrome.storage.session, abre o painel
@@ -37,41 +37,42 @@ extension/                  MV3 (Preact + Vite)
   src/page/                 mundo MAIN: lê g_ck e o contexto do formulário
   src/sidepanel/            o painel: App, Result (5 abas), Batch, Timeline, WhatIf, FieldMap, Val (valor com link)
   src/options/              opções (tema, idioma, onde abrir o painel, ícones)
-  src/shared/               i18n (pt e en; toda chave nova nas DUAS línguas), ui.css (tokens), prefs, mensagens
+  src/shared/               i18n (pt e en; toda chave nova nas DUAS línguas), ui.css (tokens), demo, prefs, mensagens
+  test/                     2 testes unitários de diff
+site/                       site de apresentação com o painel em modo demonstração (sincronizado por tests/e2e/_sync-site.sh)
 tests/e2e/                  Playwright com a extensão carregada num Chromium (fixtures offline, sem instância)
-tests/regression/           bateria contra o PDI: cases.json (441 casos), scripts de montagem, testes cegos
+tests/regression/           bateria contra o PDI de testes: cases.json (441 casos), scripts de montagem, testes cegos
   browser/                  bundle IIFE (TrailRegression) para rodar a bateria dentro de uma aba logada
   results/                  relatórios das rodadas (fora do git, no .gitignore)
 docs/                       decisões, papel de leitura mínimo, fase 2 (app escopado), loja do Edge, esta passagem
 ```
 
-O site de apresentação fica fora do repositório, em `trail-site/` (veja a seção 8).
-
 ## 3. Como compilar e testar
 
 ```bash
 npm install
+npx playwright install chromium
 npm run typecheck          # tsc -b
-npm test                   # 126 testes unitários
+npm test                   # 133 testes unitários (131 do motor + 2 da extensão)
 npm run build              # core + extensão → extension/dist
 npm run e2e                # 7 scripts: smoke, UI16, lista, portal, workspace, preferências/janela, painel flutuante
 ```
 
-- **Carregar no navegador:** abra `edge://extensions`, ligue o modo de desenvolvedor, clique em "Carregar sem compactação" e escolha `extension/dist`.
+- **Carregar no navegador:** abra `edge://extensions` (ou `chrome://extensions`), ligue o modo de desenvolvedor, clique em "Carregar sem compactação" e escolha `extension/dist`.
 - **Zip para a loja ou para o usuário:** é a pasta `extension/dist` sem os arquivos `.map`.
 - **Ver o painel sem instância (modo demonstração):**
-  - `src/sidepanel/index.html?demo=1`
+  - `src/sidepanel/index.html?demo=1` (na gaveta "Investigar", funciona tanto "Um campo" quanto "O registro inteiro")
   - `&batch=1` mostra o lote.
   - `&batch=rec` mostra o registro inteiro; `&batch=rec&wait=1` mostra a análise em andamento.
   - `&tab=whatif` abre na aba "E se?".
 - **Prints:** os scripts `tests/e2e/_*.mjs` são de rascunho e geram imagens (ex.: `node tests/e2e/_batch.mjs <pasta> dark rec`).
 
-### Bateria no PDI
+### Bateria no PDI de testes
 
-A forma usada até agora é rodar a bateria dentro de uma aba já logada no PDI. Assim nenhuma senha passa pelo código.
+A forma usada até agora é rodar a bateria dentro de uma aba já logada no PDI de testes. Assim nenhuma senha passa pelo código.
 
 1. Compile o bundle: `npx vite build -c tests/regression/browser/vite.config.ts`. A saída é `tests/regression/browser/dist/regression.js`.
-2. Injete o bundle numa aba logada do PDI.
+2. Injete o bundle numa aba logada do PDI de testes.
 3. No console, rode:
    - `await TrailRegression.runRegression()` para todos os casos;
    - `TrailRegression.runOne({table, number, field})` para um caso só.
@@ -84,11 +85,26 @@ A alternativa em Node com usuário e senha (`npm run regression`) existe, mas **
 |---|---|
 | Bateria do PDI | **441/441** na 0.11.0 (mediana de 2,3 s e 23 chamadas por investigação) |
 | Testes cegos | blind5: 35/35. blind6: 27/27 alvos válidos (8 excluídos porque os campos não estão no formulário) |
-| Unitários | 126 passando |
+| Unitários | 133 passando (131 do motor + 2 da extensão) |
 | e2e | 7 de 7 passando |
-| Fase 2 (app escopado) | Protótipo funcionando no PDI (fase 18, 5/5 com certeza alta). Desenho em `docs/fase2-app-escopado.md` |
+| Fase 2 (app escopado) | Protótipo funcionando no PDI de testes (fase 18, 5/5 com certeza alta). Desenho em `docs/fase2-app-escopado.md` |
 
-### O que entrou na 0.12.0 (este último pacote)
+### O que entrou na 0.12.1
+
+- **Rótulos por `sys_documentation` em paralelo à auditoria:**
+  - Quando uma tabela filha muda o rótulo de um campo herdado da tabela pai (ou há rótulo por idioma), `sys_documentation` tem prioridade sobre `sys_dictionary.column_label`.
+  - A consulta a `sys_documentation` roda em paralelo à leitura da auditoria / dicionário em `investigate`, `preview` e `timeline`.
+- **Comparador da linha do tempo ("O que mudou entre dois momentos"):**
+  - O botão antes chamado "Comparar duas gravações" virou **"O que mudou entre dois momentos"** (en: *"What changed between two moments"*).
+  - Ao entrar no modo, aparece uma frase curta de explicação visível ("Escolha dois momentos na linha do tempo e veja só o que ficou diferente no registro entre eles."), todos os textos `cmp*` foram revisados para linguagem simples coerente com "momentos", e clicar no cabeçalho de qualquer momento seleciona o ponto.
+- **Registro inteiro no modo demonstração:**
+  - Na gaveta **"Investigar"**, escolher **"O registro inteiro"** em `?demo=1` fecha a gaveta e leva ao `demoRecord` (o mesmo de `&batch=rec`), exibindo a animação de andamento antes do resultado final, sem chamar a rede. Clicar numa mudança da lista abre a análise de demonstração daquele campo.
+- **Site dentro do repositório (`site/`):**
+  - O site de apresentação passou a morar em `site/` dentro do repositório e é sincronizado com os bundles compilados da extensão por `tests/e2e/_sync-site.sh`.
+- **Repositório público e higiene do git:**
+  - `extension/dist-types/` ignorado no `.gitignore` (fora do git) e `.gitattributes` garantindo finais de linha `LF`.
+
+### O que entrou na 0.12.0
 
 - **Painel flutuante na página como padrão** (`content/floatPanel.ts`):
   - Abre sempre do tamanho do painel lateral: 420 px de largura, altura toda, encostado na direita.
@@ -113,34 +129,26 @@ A alternativa em Node com usuário e senha (`npm run regression`) existe, mas **
 
 ## 5. O que falta ou o que fazer em seguida
 
-1. **Rodar a bateria completa no PDI com a 0.12.0.**
-   - A 0.12 só acrescentou consultas de rótulo (não mexeu na pontuação), mas precisa confirmar os 441/441.
-   - Vale olhar o número de chamadas: o `resolveDisplay` acrescenta de 2 a 3 por investigação.
-2. **Testar o painel flutuante no Edge real com o PDI**, com a extensão 0.12.0 carregada:
+1. **Confirmar a bateria completa (441/441) no PDI de testes com a 0.12.1.**
+   - A 0.12 acrescentou consultas de rótulo (`resolveDisplay` / `sys_documentation`), sem mexer na pontuação, mas convém registrar a rodada completa e a mediana de chamadas.
+2. **Testar o painel flutuante no Edge real com o PDI de testes**, com a extensão carregada:
    - UI16 (`/now/nav/ui/classic/...` e `incident.do`), Workspace e portal;
    - se a política de segurança da instância bloqueia o iframe (quando bloqueia, o painel cai para a janela separada);
    - arrastar por cima do formulário;
    - recarregar a página.
-3. **Rótulos por tabela:** hoje vêm de `sys_dictionary.column_label`. O certo, quando a tabela filha muda o rótulo, é `sys_documentation` (por tabela e idioma).
-4. **Site:**
-   - O `b3/index.html` local foi atualizado (441/441, 6 testes cegos, 125 testes), mas a publicação na Vercel não aconteceu.
-   - A última publicação é `dpl_9wxm1qboSkW6nZmi6SSijksxF7y4`.
-   - As 7 imagens novas do site também não foram publicadas (nenhuma página as usa ainda).
-5. **Comparador da linha do tempo** ("Comparar duas gravações"): o usuário não entendeu para que serve. A ideia é renomear para "O que mudou entre dois momentos" ou explicar melhor.
-6. **Modo demonstração da gaveta "registro inteiro":** hoje a demonstração só cobre um campo.
-7. **Fase 2 (app escopado `x_trail`):** os próximos passos estão em `docs/fase2-app-escopado.md`.
-8. **Publicação na Edge Add-ons:** o material está em `docs/loja-edge.md` e `docs/store/`. **O envio e o aceite dos termos são ação do dono, não do agente.**
+3. **Fase 2 (app escopado `x_trail`):** os próximos passos estão em `docs/fase2-app-escopado.md`.
+4. **Publicação na Edge Add-ons:** o material está em `docs/loja-edge.md` e `docs/store/`. **O envio e o aceite dos termos são ação do dono, não do agente.**
 
-## 6. PDI e itens criados nele
+## 6. PDI de testes e itens criados nele
 
-- **Instância:** `https://dev457034.service-now.com`. Os testes rodaram no Edge do dono, numa aba logada, pela extensão Claude in Chrome.
+- **Instância:** o PDI de testes. Os testes rodaram no Edge do dono, numa aba logada, pela extensão Claude in Chrome.
 - **Regra para itens de teste:**
   - todo item de teste leva o prefixo **[PT]** e fica restrito aos próprios registros (filtros por `short_description` que começa com "[PT] ...");
   - nunca alterar nem apagar registros que não foram criados pelos testes.
 
-Itens criados e ainda presentes no PDI:
+Itens criados e ainda presentes no PDI de testes:
 
-- Usuário `pt.trail.integracao`. Foi criado sem senha e hoje é só de web service. O dono autorizou a criação.
+- Conta de integração de teste: criada sem senha e restrita a web service, com autorização do dono.
 - **Fase 13:**
   - UI policies (a reversa está restrita aos registros de teste);
   - transform map e tabela de staging `u_pt_f13_import`;
@@ -156,10 +164,10 @@ Os scripts de montagem estão em `tests/regression/pdi-setup-*.js` e `tests/regr
 
 ## 7. Regras combinadas com o dono (valem para todos os agentes)
 
-- **Nada deste projeto pode afetar outros projetos dele:** nem repositórios (por exemplo `painel-rh`), nem o projeto `paineis-difal` da Vercel, nem tarefas agendadas.
+- **Nada deste projeto pode afetar outros projetos dele:** nem outros repositórios (por exemplo `painel-rh`), nem outros projetos da Vercel (por exemplo `paineis-difal` ou `estudio-ia-ensaios`), nem tarefas agendadas.
 - **Não criar tarefas agendadas.**
 - **Nunca digitar senhas.**
-- **Não mudar propriedades do sistema da instância.** Por exemplo, a leitura de e-mail recebido continua desligada no PDI; por isso o caso de e-mail recebido não foi testado.
+- **Não mudar propriedades do sistema da instância.** Por exemplo, a leitura de e-mail recebido continua desligada no PDI de testes; por isso o caso de e-mail recebido não foi testado.
 - **Itens de teste no PDI:** só com o prefixo [PT] e restritos aos próprios registros (seção 6).
 - **Não publicar o e-mail do dono em lugar nenhum** (site, repositório, loja).
 - **Envio para a loja do Edge e aceite de termos:** só o dono faz.
@@ -169,22 +177,18 @@ Os scripts de montagem estão em `tests/regression/pdi-setup-*.js` e `tests/regr
 
 ## 8. Site e Vercel
 
-- **Projeto:** `trail-site` (`prj_5seQRBjqOaICOR3y4m6IDV1Mb0HC`), endereço `trail-site-lime.vercel.app`, página principal `/b3/`.
-- **Arquivos:** a pasta `trail-site/` vai neste pacote. Ela não é um repositório git.
-- **Painel embutido:** o site mostra o painel em modo demonstração. Os arquivos da extensão compilada são copiados para o site por `tests/e2e/_sync-site.sh`.
+- **Arquivos no repositório:** o site fica na pasta `site/` na raiz do repositório (página principal em `site/b3/`).
+- **Painel embutido:** o site mostra o painel em modo demonstração. Os arquivos da extensão compilada são copiados para `site/` por `tests/e2e/_sync-site.sh` e verificados por `tests/e2e/_site-demo.mjs`.
+- **Projeto na Vercel:** `trail-sn` (`prj_tHmuUpt91BSX0C89iUfAmgIAAtGN`), diretório raiz `site/`, sem build e sem proteção de login. Endereço: https://trail-sn.vercel.app/b3/. Depois de mudar o painel, rode `bash tests/e2e/_sync-site.sh` e faça o push. O projeto antigo `trail-site` não é mais atualizado.
 
-## 9. Git
+## 9. Git e GitHub
 
-- **Até agora só houve commits locais:** 41, todos na `master`. O dono tinha pedido para não usar o GitHub ainda. Ao passar para o repositório remoto, ele decide o nome e a visibilidade.
-- **Como subir:**
-  ```bash
-  git clone trail.bundle trail        # o pacote traz o histórico inteiro num git bundle
-  cd trail
-  git remote set-url origin <url-do-repositorio>
-  git push -u origin master
-  ```
+- **Repositório remoto (público):** `https://github.com/iiFoox/trail-sn`, branch `master`.
+- **Fluxo normal:** não usa mais `trail.bundle`; o histórico completo está publicado diretamente no repositório remoto do GitHub (`origin`).
+- **Padronização de linha:** `.gitattributes` força `LF` nos arquivos de texto do repositório.
 - **Fora do git (veja o `.gitignore`):**
-  - `tests/regression/results/`: os relatórios das rodadas no PDI vão à parte, no pacote;
+  - `extension/dist/` e `extension/dist-types/`;
+  - `tests/regression/results/`: relatórios das rodadas no PDI de testes;
   - `tests/regression/.env`.
 
 ## 10. Dicas para vários agentes trabalhando juntos
@@ -196,5 +200,5 @@ Os scripts de montagem estão em `tests/regression/pdi-setup-*.js` e `tests/regr
   - a bateria (`tests/regression`).
 - **`i18n.ts` e `ui.css` são compartilhados e dão conflito fácil:** acrescente no fim do bloco certo e evite reordenar.
 - **Mudou o tipo `Investigation`?** Rode `npx tsc -b`: o painel, o export e a bateria dependem dele.
-- **Antes de entregar:** `npm run typecheck && npm test && npm run build && npm run e2e`.
-- **Mudanças no motor que afetam a pontuação:** rode também a bateria no PDI e registre o resultado em `tests/regression/results/`.
+- **Antes de entregar:** `npm run typecheck && npm test && npm run build && npm run e2e` (e `bash tests/e2e/_sync-site.sh` se mudar o painel que aparece no site).
+- **Mudanças no motor que afetam a pontuação:** rode também a bateria no PDI de testes e registre o resultado em `tests/regression/results/`.
