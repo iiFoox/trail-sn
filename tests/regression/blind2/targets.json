@@ -1,0 +1,218 @@
+[
+  {
+    "id": "B1",
+    "table": "incident",
+    "sysId": "559fa755c34813101cbdb8e1b401317c",
+    "number": "INC0010106",
+    "field": "impact"
+  },
+  {
+    "id": "B2",
+    "table": "change_request",
+    "sysId": "c29fe755c34813101cbdb8e1b4013175",
+    "number": "CHG0030060",
+    "field": "assignment_group"
+  },
+  {
+    "id": "B3",
+    "table": "change_request",
+    "sysId": "c29fe755c34813101cbdb8e1b4013175",
+    "number": "CHG0030060",
+    "field": "implementation_plan"
+  },
+  {
+    "id": "B4",
+    "table": "change_request",
+    "sysId": "429fe755c34813101cbdb8e1b4013151",
+    "number": "CHG0030059",
+    "field": "impact",
+    "changeIndex": 1
+  },
+  {
+    "id": "B5",
+    "table": "change_request",
+    "sysId": "759fe755c34813101cbdb8e1b401312b",
+    "number": "CHG0030057",
+    "field": "backout_plan"
+  },
+  {
+    "id": "B6",
+    "table": "incident",
+    "sysId": "299fa755c34813101cbdb8e1b40131b4",
+    "number": "INC0010108",
+    "field": "assignment_group"
+  },
+  {
+    "id": "B7",
+    "table": "change_request",
+    "sysId": "069fe755c34813101cbdb8e1b401316b",
+    "number": "CHG0030058",
+    "field": "justification"
+  },
+  {
+    "id": "B8",
+    "table": "incident",
+    "sysId": "689f6755c34813101cbdb8e1b401314e",
+    "number": "INC0010101",
+    "field": "urgency"
+  },
+  {
+    "id": "B9",
+    "table": "incident",
+    "sysId": "349f6755c34813101cbdb8e1b401319f",
+    "number": "INC0010103",
+    "field": "notify"
+  },
+  {
+    "id": "B10",
+    "table": "change_request",
+    "sysId": "1a9fe755c34813101cbdb8e1b401319c",
+    "number": "CHG0030061",
+    "field": "test_plan",
+    "changeIndex": 1
+  },
+  {
+    "id": "B11",
+    "table": "incident",
+    "sysId": "3c9f6755c34813101cbdb8e1b401316e",
+    "number": "INC0010102",
+    "field": "urgency"
+  },
+  {
+    "id": "B12",
+    "table": "incident",
+    "sysId": "499f6755c34813101cbdb8e1b40131aa",
+    "number": "INC0010105",
+    "field": "description"
+  },
+  {
+    "id": "B13",
+    "table": "incident",
+    "sysId": "3c9f6755c34813101cbdb8e1b401316e",
+    "number": "INC0010102",
+    "field": "description"
+  },
+  {
+    "id": "B14",
+    "table": "change_request",
+    "sysId": "1a9fe755c34813101cbdb8e1b401319c",
+    "number": "CHG0030061",
+    "field": "test_plan",
+    "changeIndex": 0
+  },
+  {
+    "id": "B15",
+    "table": "incident",
+    "sysId": "a2a07f59c34813101cbdb8e1b40131be",
+    "number": "INC0010109",
+    "field": "urgency"
+  },
+  {
+    "id": "B16",
+    "table": "incident",
+    "sysId": "459f6755c34813101cbdb8e1b40131cb",
+    "number": "INC0010104",
+    "field": "knowledge"
+  },
+  {
+    "id": "B17",
+    "table": "incident",
+    "sysId": "1c9f2755c34813101cbdb8e1b40131b8",
+    "number": "INC0010099",
+    "field": "impact"
+  },
+  {
+    "id": "B18",
+    "table": "change_request",
+    "sysId": "429fe755c34813101cbdb8e1b4013151",
+    "number": "CHG0030059",
+    "field": "impact",
+    "changeIndex": 0
+  },
+  {
+    "id": "B19",
+    "table": "incident",
+    "sysId": "e09f6755c34813101cbdb8e1b4013113",
+    "number": "INC0010100",
+    "field": "assignment_group"
+  },
+  {
+    "id": "B20",
+    "table": "sc_req_item",
+    "sysId": "de9fe755c34813101cbdb8e1b4013165",
+    "number": "RITM0010008",
+    "field": "assignment_group"
+  },
+  {
+    "id": "B21",
+    "table": "incident",
+    "sysId": "619fa755c34813101cbdb8e1b40131a0",
+    "number": "INC0010107",
+    "field": "assigned_to"
+  },
+  {
+    "id": "B22",
+    "table": "incident",
+    "sysId": "459f6755c34813101cbdb8e1b40131cb",
+    "number": "INC0010104",
+    "field": "impact",
+    "changeIndex": 0
+  },
+  {
+    "id": "B23",
+    "table": "incident",
+    "sysId": "1c9f2755c34813101cbdb8e1b40131b8",
+    "number": "INC0010099",
+    "field": "category"
+  },
+  {
+    "id": "B24",
+    "table": "change_request",
+    "sysId": "069fe755c34813101cbdb8e1b401316b",
+    "number": "CHG0030058",
+    "field": "cab_required"
+  },
+  {
+    "id": "B25",
+    "table": "incident",
+    "sysId": "689f6755c34813101cbdb8e1b401314e",
+    "number": "INC0010101",
+    "field": "priority"
+  },
+  {
+    "id": "B26",
+    "table": "incident",
+    "sysId": "689f6755c34813101cbdb8e1b401314e",
+    "number": "INC0010101",
+    "field": "severity"
+  },
+  {
+    "id": "B27",
+    "table": "incident",
+    "sysId": "349f6755c34813101cbdb8e1b401319f",
+    "number": "INC0010103",
+    "field": "assigned_to"
+  },
+  {
+    "id": "B28",
+    "table": "incident",
+    "sysId": "459f6755c34813101cbdb8e1b40131cb",
+    "number": "INC0010104",
+    "field": "impact",
+    "changeIndex": 1
+  },
+  {
+    "id": "B29",
+    "table": "change_request",
+    "sysId": "b99fe755c34813101cbdb8e1b4013110",
+    "number": "CHG0030056",
+    "field": "risk"
+  },
+  {
+    "id": "B30",
+    "table": "incident",
+    "sysId": "559fa755c34813101cbdb8e1b401317c",
+    "number": "INC0010106",
+    "field": "contact_type"
+  }
+]

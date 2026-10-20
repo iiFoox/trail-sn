@@ -28,6 +28,10 @@ export type Message = {
         sysId: string;
     };
 } | {
+    type: 'scan-conflicts';
+    origin: string;
+    table: string;
+} | {
     type: 'open-panel';
     mode?: import('./prefs').PanelMode;
 } | {

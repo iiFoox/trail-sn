@@ -36,6 +36,8 @@ export async function runRegression(list: any[] = cases as any[]): Promise<unkno
     const t0 = performance.now();
     let detail = '', ok = false, calls = 0;
     try {
+      // Casos gerados: o registro vem pelo short_description (sys_id muda a cada montagem).
+      if (c.sd && !c.sysId) c.sysId = (await client.query({ table: c.table, query: `short_description=${c.sd}`, fields: ['sys_id'], limit: 1 })).rows[0]?.sys_id;
       const r = await investigate(client, c.sysId ? { table: c.table, sysId: c.sysId, field: c.field } : { table: c.table, number: c.number, field: c.field });
       calls = r.timing.calls;
       if (c.expectUnaudited) { ok = !!r.unaudited; detail = r.unaudited ? `${r.unaudited.count} sem auditoria` : 'nada detectado'; }

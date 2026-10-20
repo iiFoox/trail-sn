@@ -3,7 +3,7 @@
  * guarda estado em chrome.storage.session e abre o painel. Não toca no DOM.
  * Nenhum estado em memória que importe: o worker pode ser encerrado a qualquer momento.
  */
-import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, recordTimeline, type AccessReport, type MetaCache, type TableMeta } from '@trail/core';
+import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, recordTimeline, scanTableConflicts, type AccessReport, type MetaCache, type TableMeta } from '@trail/core';
 import { addInstance, listInstances, removeInstance } from '../shared/instances';
 import { loadPrefs, PREFS_KEY, type PanelMode } from '../shared/prefs';
 import { storageKey, type Message, type PageContext, type ProbeResult, type TabState } from '../shared/messages';
@@ -252,6 +252,8 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
         return true;
       case 'timeline':
         return recordTimeline(makeClient(msg.origin), msg.target);
+      case 'scan-conflicts':
+        return scanTableConflicts(makeClient(msg.origin), msg.table);
       case 'investigate': {
         const id = tabId ?? (await activeTabId());
         if (id === undefined) return;

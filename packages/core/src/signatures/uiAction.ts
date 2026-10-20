@@ -1,5 +1,5 @@
 import { fact } from '../scoring';
-import { refsField, uiActionMatches, uiActionRef } from '../util';
+import { isWorkspaceAction, refsField, uiActionMatches, uiActionRef } from '../util';
 import { scriptFacts } from './scriptFacts';
 import { evidence, type Signature } from './context';
 import type { Row } from '../types';
@@ -13,8 +13,8 @@ export function isSaveButton(ua: Row | undefined): boolean {
 export const uiAction: Signature = (ctx) => {
   const out = [];
   for (const t of ctx.traces.transactions) {
-    if (t.type !== 'form') continue;
     const url = t.url ?? '';
+    if (t.type !== 'form' && !isWorkspaceAction(url)) continue;
     if (!url.includes(ctx.sysId)) continue;
     const ref = uiActionRef(url);
     if (!ref) continue;

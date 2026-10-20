@@ -154,6 +154,9 @@ export function parseFieldValues(q: string | undefined): Record<string, string> 
  * action_name, o próprio action_name (ex.: "resolve_incident"). Os botões de salvar (sysverb_*) ficam de fora.
  */
 export function uiActionRef(url: string | undefined): string | undefined {
+  // Workspace: o botão roda como /api/now/ui/ui_action/<sys_id>?sysparm_table=...&sysparm_sys_id=...
+  const ws = (url ?? '').match(/\/api\/now\/ui\/ui_action\/([0-9a-f]{32})/);
+  if (ws) return ws[1];
   const m = (url ?? '').match(/[?&]sys_action=([^&]+)/);
   if (!m) return undefined;
   let v = m[1]!;
@@ -183,4 +186,25 @@ export function sameVal(a: string | undefined, b: string | undefined): boolean {
   if (DT.test(a) && DT.test(b)) { const d = Math.abs(toMs(a) - toMs(b)); return d <= 14 * 3600e3 && d % (15 * 60e3) === 0; }
   const x = BOOL[a], y = BOOL[b];
   return x !== undefined && y !== undefined && x === y && (a.length > 1 || b.length > 1);
+}
+
+/** Transação de um botão do Workspace (inclui o Salvar). */
+export const isWorkspaceAction = (url: string | undefined): boolean => /\/api\/now\/ui\/ui_action\/[0-9a-f]{32}/.test(url ?? '');
+
+/**
+ * Chamadas `new SI(...).metodo(..., 'campo', valor)` em que o nome do campo vai como texto.
+ * Devolve o SI, o trecho da chamada e o valor literal logo depois do nome do campo, se houver.
+ */
+export function siCallsWithField(script: string | undefined, field: string): { si: string; call: string; value?: string }[] {
+  const out: { si: string; call: string; value?: string }[] = [];
+  const f = escapeRegExp(field);
+  const re = /new\s+(?:global\.)?([A-Za-z_]\w*)\s*\([^()]*\)\s*\.\s*\w+\s*\(((?:[^()]|\([^()]*\))*)\)/g;
+  for (const m of (script ?? '').matchAll(re)) {
+    const args = m[2] ?? '';
+    const a = args.match(new RegExp(String.raw`(['"])${f}\1\s*(?:,\s*(?:(['"])((?:(?!\2).)*)\2|(-?\d+(?:\.\d+)?)))?`));
+    if (!a) continue;
+    const value = a[3] ?? a[4];
+    out.push({ si: m[1]!, call: m[0], ...(value !== undefined ? { value } : {}) });
+  }
+  return out;
 }

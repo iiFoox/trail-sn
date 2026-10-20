@@ -3,7 +3,7 @@
  * O cartão do topo (registro, campo, de → para, quando) fica fixo em todas.
  * Princípio: a resposta primeiro, em linguagem de gente; o detalhe técnico continua lá, um clique abaixo.
  */
-import type { AccessReport, Change, Evidence, Grade, Investigation, TraceItem } from '@trail/core';
+import type { TableConflictScan, AccessReport, Change, Evidence, Grade, Investigation, TraceItem } from '@trail/core';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { fmt, t } from '../shared/i18n';
 import { Glyph, typeGlyph } from '../shared/icons';
@@ -254,7 +254,8 @@ function Answer({ r, c, origin, field, denied, expired, goProof, copy, toastFn }
 
 // ---------- Rastro ----------
 export function traceTitle(r: Investigation, c: Change, it: TraceItem, field: string): string {
-  return fmt(P.tr[it.kind] ?? it.kind, { user: it.user ?? '', label: it.label, field, old: valueLabel(r, c.oldValue), new: valueLabel(r, c.newValue) });
+  const key = it.kind === 'form' && it.label === 'Workspace' ? 'formWs' : it.kind;
+  return fmt((P.tr as Record<string, string>)[key] ?? it.kind, { user: it.user ?? '', label: it.label, field, old: valueLabel(r, c.oldValue), new: valueLabel(r, c.newValue) });
 }
 
 const traceIcon: Record<string, preact.JSX.Element> = {
@@ -326,6 +327,7 @@ function Proof({ r, c, origin, field, denied, expired, access, copy }: { r: Inve
       )}
       {others.map((e) => <Other e={e} origin={origin} field={field} day={c.at.slice(0, 10)} />)}
       {(r.conflicts?.length ?? 0) > 0 && <Conflicts r={r} origin={origin} />}
+      <TableScan r={r} origin={origin} />
       <div class="box">
         <h4 class={missingCount ? 'warnh' : ''}>{P.missing}</h4>
         {!missingCount && <div class="li"><span class="ck">{Glyph.check}</span><span class="grow">{P.nothingMissing}</span></div>}
@@ -358,9 +360,10 @@ function Proof({ r, c, origin, field, denied, expired, access, copy }: { r: Inve
 
 /** Regras ativas que gravam este campo com valores diferentes e podem rodar juntas. */
 export function conflictLines(r: Investigation): { a: string; b: string; win: string; overlap: string; aLink?: string; bLink?: string }[] {
-  const rule = (x: NonNullable<Investigation['conflicts']>[number]['a']) => fmt(P.cfRule, { name: x.name, kind: s.type[x.kind] ?? x.kind, order: x.kind === 'br_before' ? fmt(P.cfOrder, { n: x.order }) : '', value: valueLabel(r, x.values[0] ?? '') || P.tlEmptyValue });
+  // Rótulos de valor só valem para o campo investigado (na varredura da tabela os campos são outros).
+  const rule = (x: NonNullable<Investigation['conflicts']>[number]['a'], field: string) => { const v = x.values[0] ?? ''; return fmt(P.cfRule, { name: x.name, kind: s.type[x.kind] ?? x.kind, order: x.kind === 'br_before' ? fmt(P.cfOrder, { n: x.order }) : '', value: (field === r.target.field ? valueLabel(r, v) : v) || P.tlEmptyValue }); };
   return (r.conflicts ?? []).map((k) => ({
-    a: rule(k.a), b: rule(k.b), overlap: P.cfOverlap[k.overlap] ?? k.overlap,
+    a: rule(k.a, k.field), b: rule(k.b, k.field), overlap: P.cfOverlap[k.overlap] ?? k.overlap,
     win: k.winner ? fmt(P.cfWins, { name: (k.winner === 'a' ? k.a : k.b).name, why: P.cfWhy[k.why ?? ''] ?? '' }) : P.cfNoWinner,
   }));
 }
@@ -379,6 +382,55 @@ function Conflicts({ r, origin }: { r: Investigation; origin: string }) {
       ))}
     </div>
   );
+}
+
+/** Varredura de conflitos de todos os campos da tabela, sob demanda. */
+function TableScan({ r, origin }: { r: Investigation; origin: string }) {
+  const [st, setSt] = useState<'idle' | 'run' | 'done' | 'err'>('idle');
+  const [res, setRes] = useState<TableConflictScan>();
+  const [err, setErr] = useState('');
+  const table = r.target.table;
+  const run = async () => {
+    setSt('run');
+    try {
+      const out = isDemo ? demoScan(r) : await send<TableConflictScan & { error?: string }>({ type: 'scan-conflicts', origin, table });
+      if (isDemo) await new Promise((x) => setTimeout(x, 600));
+      if ((out as { error?: string }).error) throw new Error((out as { error?: string }).error);
+      setRes(out); setSt('done');
+    } catch (e) { setErr((e as Error).message); setSt('err'); }
+  };
+  const lines = res ? conflictLines({ ...r, conflicts: res.conflicts }) : [];
+  return (
+    <div class="box scan">
+      <h4>{fmt(P.scTitle, { table })}{res && <span>{res.conflicts.length}</span>}</h4>
+      {st === 'idle' && <div class="li"><span class="grow muted small">{P.scHint}</span><button class="btn sm" onClick={run}>{Glyph.search} {P.scRun}</button></div>}
+      {st === 'run' && <div class="li"><span class="spin" /><span class="grow muted small">{P.scRunning}</span></div>}
+      {st === 'err' && <div class="li"><span class="ck w">!</span><span class="grow">{err}</span></div>}
+      {st === 'done' && res && <>
+        <div class="li"><span class="grow muted small">{fmt(P.scSummary, { rules: res.rules, cs: res.clientScripts, fields: res.fields, ms: res.timing.totalMs })}</span></div>
+        {!res.conflicts.length && <div class="li"><span class="ck">{Glyph.check}</span><span class="grow">{P.scNone}</span></div>}
+        {res.conflicts.map((k, i) => (
+          <div class="li"><span class="ck w">!</span><div class="grow">
+            <div class="fld"><b>{humanField(k.field)}</b> <code>{k.field}</code></div>
+            <div><a href={recordLink(origin, k.a.kind === 'client_script' ? 'sys_script_client' : 'sys_script', k.a.sysId)} target="_blank" rel="noreferrer">{lines[i]!.a}</a></div>
+            <div><a href={recordLink(origin, k.b.kind === 'client_script' ? 'sys_script_client' : 'sys_script', k.b.sysId)} target="_blank" rel="noreferrer">{lines[i]!.b}</a></div>
+            <div class="det">{lines[i]!.overlap} · {lines[i]!.win}</div>
+          </div></div>
+        ))}
+      </>}
+    </div>
+  );
+}
+
+function demoScan(r: Investigation): TableConflictScan {
+  const rule = (kind: 'br_before' | 'client_script', name: string, order: number, v: string) => ({ kind, name, sysId: name, table: r.target.table, order, values: [v] });
+  return {
+    table: r.target.table, tables: r.tables, rules: 214, clientScripts: 38, fields: 61, timing: { totalMs: 840, calls: 4 },
+    conflicts: [
+      { field: 'impact', overlap: 'always', winner: 'b', why: 'higher_order', a: rule('br_before', 'Impacto padrão', 100, '3'), b: rule('br_before', 'Impacto VIP', 400, '1') },
+      { field: 'urgency', overlap: 'possible', winner: 'a', why: 'server_after_client', a: rule('br_before', 'Urgência por categoria', 100, '2'), b: rule('client_script', 'Sugere urgência', 0, '1') },
+    ],
+  };
 }
 
 function FactRow({ kind, detail, source, field, ok, i = 0 }: { kind: string; detail: string; source: string; field: string; ok: boolean; i?: number }) {

@@ -42,3 +42,24 @@ describe('regras conflitantes: escopos que se excluem', () => {
     expect(findConflicts('impact', [a, b], [], {}).map((k) => k.overlap)).toEqual(['possible']);
   });
 });
+
+import { FakeRestClient } from '../src/client/FakeRestClient';
+import { scanTableConflicts, writtenFields } from '../src/conflicts';
+describe('varredura de conflitos da tabela', () => {
+  it('acha os campos gravados e lista só os conflitos reais da hierarquia', async () => {
+    expect(writtenFields("current.impact = 1; g_form.setValue('urgency', '2'); current.x == 3", 'state=6^EQ').sort()).toEqual(['impact', 'state', 'urgency']);
+    const c = new FakeRestClient()
+      .respond('sys_db_object', (r) => (r.query === 'name=incident' ? [{ 'super_class.name': 'task' }] : [{}]))
+      .respond('sys_script', () => [
+        br('A', 'before', '100', "current.impact = '1';"),
+        br('B', 'before', '200', "current.impact = '2';", { collection: 'task' }),
+        br('C', 'before', '100', "current.urgency = '1';", { filter_condition: 'category=network' }),
+        br('D', 'before', '200', "current.urgency = '2';", { filter_condition: 'category=software' }),
+        br('E', 'before', '100', 'current.state = current.u;'),
+      ])
+      .respond('sys_script_client', () => []);
+    const s = await scanTableConflicts(c, 'incident');
+    expect(s.tables).toEqual(['incident', 'task']);
+    expect(s.conflicts.map((k) => [k.field, k.a.name, k.b.name, k.overlap, k.winner])).toEqual([['impact', 'A', 'B', 'always', 'b']]);
+  });
+});

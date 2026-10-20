@@ -124,6 +124,12 @@ declare const dict: {
             cfNoWinner: string;
             cfWhy: Record<string, string>;
             cfOverlap: Record<string, string>;
+            scTitle: string;
+            scHint: string;
+            scRun: string;
+            scRunning: string;
+            scSummary: string;
+            scNone: string;
             plainTitle: string;
             plainHint: string;
             plainCopy: string;
@@ -424,6 +430,12 @@ declare const dict: {
             cfNoWinner: string;
             cfWhy: Record<string, string>;
             cfOverlap: Record<string, string>;
+            scTitle: string;
+            scHint: string;
+            scRun: string;
+            scRunning: string;
+            scSummary: string;
+            scNone: string;
             plainTitle: string;
             plainHint: string;
             plainCopy: string;

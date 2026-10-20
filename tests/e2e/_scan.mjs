@@ -1,0 +1,16 @@
+import { chromium } from 'playwright';
+import { createServer } from 'node:http';
+import { readFileSync, existsSync } from 'node:fs';
+import { join, extname } from 'node:path';
+const root = '/home/claude/trail-site', S = '/tmp/claude-0/-home-claude/1355b350-d507-52b2-99e3-d63903bae67d/scratchpad/';
+const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css' };
+const srv = createServer((req, res) => { const p = join(root, req.url.split('?')[0]); if (!existsSync(p)) { res.writeHead(404); return res.end(); } res.writeHead(200, { 'content-type': mime[extname(p)] }); res.end(readFileSync(p)); }).listen(4488);
+const b = await chromium.launch({ channel: 'chromium' });
+const page = await b.newPage({ viewport: { width: 433, height: 900 }, deviceScaleFactor: 1.5 });
+const errs=[]; page.on('pageerror', (e) => errs.push(e.message));
+await page.goto(`http://localhost:4488/demo/panel.html?theme=light&lang=pt&field=state&tab=proof`); await page.waitForTimeout(1500);
+await page.click('.box.scan .btn'); await page.waitForTimeout(1200);
+await page.evaluate(() => { const e = document.querySelector('.box.scan'); document.querySelectorAll('*').forEach((x) => { if (x.scrollHeight > x.clientHeight + 20 && getComputedStyle(x).overflowY.match(/auto|scroll/)) x.scrollTop += e.getBoundingClientRect().top - 140; }); window.scrollTo(0, e.getBoundingClientRect().top + scrollY - 140); });
+await page.waitForTimeout(300);
+await page.screenshot({ path: `${S}scan.png` });
+console.log(JSON.stringify({ errs, txt: await page.$eval('.box.scan', (e) => e.innerText.slice(0, 300)) })); await b.close(); srv.close();

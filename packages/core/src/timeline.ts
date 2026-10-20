@@ -1,6 +1,6 @@
 import type { QueryRequest, RestClient } from './client/RestClient';
 import { RecordNotFoundError, type AccessState, type Row, type Target } from './types';
-import { shift, toMs, uiActionMatches, uiActionQuery, uiActionRef, withTimeout } from './util';
+import { isWorkspaceAction, shift, toMs, uiActionMatches, uiActionQuery, uiActionRef, withTimeout } from './util';
 
 /**
  * Linha do tempo do registro inteiro: cada gravação (checkpoint da auditoria) com quem gravou,
@@ -146,6 +146,11 @@ export async function recordTimeline(client: RestClient, target: Omit<Target, 'f
       const ua = uiRows.find((u) => uiActionMatches(u, action));
       via = ua && !/^sysverb_/.test(ua.action_name ?? '') ? 'ui_action' : 'form';
       detail = ua?.name || undefined;
+    } else if (api && isWorkspaceAction(api.url)) {
+      // Workspace: o Salvar e os botões rodam como /api/now/ui/ui_action/<id>.
+      const ua = uiRows.find((u) => uiActionMatches(u, uiActionRef(api.url)));
+      via = ua && !/^sysverb_/.test(ua.action_name ?? '') ? 'ui_action' : 'form';
+      detail = ua && via === 'ui_action' ? `Workspace · ${ua.name}` : 'Workspace';
     } else if (api) { via = 'api'; detail = (api.url ?? '').split('?')[0]; }
     else if (chained && async) { via = 'async'; detail = (async.url ?? '').slice(12).trim(); }
     else if (chained) via = 'chained';

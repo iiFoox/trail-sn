@@ -339,6 +339,35 @@ describe('Rastro e rótulos', () => {
     expect(r.changes[0]!.evidence[0]!.type).toBe('client_script');
   });
 
+  it('Workspace: o Salvar roda como ui_action REST; pessoa sem automação concorrente → ação do usuário', async () => {
+    const s = scenario();
+    audit(s, 'impact', '3', '1', T0, 'admin', 1);
+    tx(s, T0, 'rest', `/api/now/ui/ui_action/f4deef100b701300099a83eb37673a4d?sysparm_table=incident&sysparm_sys_id=${INC.sysId}`, 'admin');
+    s.uiActions.push({ sys_id: 'f4deef100b701300099a83eb37673a4d', name: 'Save', action_name: 'sysverb_update', table: 'global', script: '' });
+    const r = await run(s, 'impact');
+    const e = top(r);
+    expect([e.type, e.grade]).toEqual(['user_action', 'confirmed']);
+    expect(e.facts.find((f) => f.kind === 'execution_in_window')!.detail).toContain('Workspace');
+    expect(r.changes[0]!.trace.some((t) => t.kind === 'form' && t.label === 'Workspace')).toBe(true);
+  });
+
+  it('Workspace: client script "All" que preenche o campo quando o gatilho mudou → client script', async () => {
+    const s = scenario();
+    audit(s, 'description', 'inicial', 'W9 client', T0, 'admin', 1);
+    audit(s, 'contact_type', 'phone', 'email', T0, 'admin', 1);
+    tx(s, T0, 'rest', `/api/now/ui/ui_action/f4deef100b701300099a83eb37673a4d?sysparm_table=incident&sysparm_sys_id=${INC.sysId}`, 'admin');
+    const c = build(s);
+    c.rows('dl_definition_rel_set', []);
+    c.rows('sys_script_client', [
+      { sys_id: id(), name: 'PT ws', type: 'onChange', field: 'contact_type', table: 'incident', active: 'true', ui_type: '10', script: "g_form.setValue('description', 'W9 client');" },
+      { sys_id: id(), name: 'PT desktop', type: 'onChange', field: 'contact_type', table: 'incident', active: 'true', ui_type: '0', script: "g_form.setValue('description', 'W9 client');" },
+    ]);
+    const r = await investigate(c, { table: 'incident', number: INC.number, field: 'description' });
+    const e = r.changes[0]!.evidence[0]!;
+    expect([e.type, e.artifact.name, e.grade]).toEqual(['client_script', 'PT ws', 'confirmed']);
+    expect(r.changes[0]!.evidence.some((x) => x.artifact.name === 'PT desktop')).toBe(false);
+  });
+
   it('condição falsa da BR desempata candidatas iguais', async () => {
     const s = scenario();
     s.record.short_description = '[PT] F1-SEQ';
@@ -611,5 +640,34 @@ describe('Rastro e rótulos', () => {
     const e = top(await run(s, 'description'));
     expect(e.artifact.name).toBe('PT calculo');
     expect(e.facts.some((f) => f.kind === 'sets_same_value')).toBe(true);
+  });
+});
+
+import { siCallsWithField } from '../src/util';
+describe('script include genérico e job sem transação', () => {
+  it('acha a chamada new SI().metodo(id, "campo", "valor")', () => {
+    expect(siCallsWithField("if (current.contact_type.changes()) new PTGrava().grava(current.getUniqueValue(), 'close_notes', 'M8 SI');", 'close_notes')).toEqual([{ si: 'PTGrava', call: "new PTGrava().grava(current.getUniqueValue(), 'close_notes', 'M8 SI')", value: 'M8 SI' }]);
+    expect(siCallsWithField("new PTGrava().grava(x, 'impact')", 'close_notes')).toEqual([]);
+  });
+
+  it('BR after que passa o campo para um SI genérico → br_via_script_include confirmado', async () => {
+    const s = scenario();
+    const b = br(s, 'PT chama SI', 'after', "if (current.contact_type.changes()) new PTGrava().grava(current.getUniqueValue(), 'close_notes', 'M8 SI');");
+    s.sis.push({ sys_id: id(), name: 'PTGrava', script: "var PTGrava = Class.create(); PTGrava.prototype = { grava: function(i, campo, valor) { var gr = new GlideRecord('incident'); if (gr.get(i)) { gr.setValue(campo, valor); gr.update(); } } };", active: 'true' });
+    audit(s, 'contact_type', 'phone', 'email', T0, 'admin', 1);
+    audit(s, 'close_notes', 'inicial', 'M8 SI', T0, 'admin', 2);
+    tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
+    const e = top(await run(s, 'close_notes'));
+    expect([e.type, e.grade]).toEqual(['br_via_script_include', 'confirmed']);
+    expect(e.artifact.name).toContain(b.name!);
+  });
+
+  it('job de execução única sem transação, mesmo com o usuário ativo em outras telas → job agendado', async () => {
+    const s = scenario();
+    audit(s, 'impact', '3', '1', T0, 'admin', 1);
+    tx(s, T0, 'rest', '/api/now/table/sys_user_group?sysparm_limit=1', 'admin');
+    s.jobs.push({ sys_id: id(), name: 'PT job', script: "var gr = new GlideRecord('incident'); if (gr.get('x')) { gr.setValue('impact', '1'); gr.update(); }", run_type: 'once', run_start: T0, 'run_as.user_name': 'admin', active: 'true' });
+    const e = top(await run(s, 'impact'));
+    expect([e.type, e.grade]).toEqual(['scheduled_job', 'confirmed']);
   });
 });

@@ -101,7 +101,7 @@ function matches(req: Req, rec: Record<string, string>): boolean | undefined {
 
 const kindOf = (when: string | undefined): RuleKind => (when === 'before' ? 'br_before' : when === 'async' || when === 'async_always' ? 'br_async' : 'br_after');
 
-export function findConflicts(field: string, brs: Row[], clientScripts: Row[], record: Record<string, string>): RuleConflict[] {
+export function findConflicts(field: string, brs: Row[], clientScripts: Row[], record: Record<string, string>, max = 8): RuleConflict[] {
   type R = ConflictRule & { req: Req; ops: Set<string>; cond: boolean | undefined; plain: boolean; persists: boolean; script?: string; condScript?: string };
   const rules: R[] = [];
   for (const b of brs) {
@@ -168,5 +168,46 @@ export function findConflicts(field: string, brs: Row[], clientScripts: Row[], r
     out.push({ field, a: strip(a), b: strip(b), overlap, ...(winner ? { winner, why } : {}) });
   }
   const w = { always: 0, now: 1, possible: 2 };
-  return out.sort((x, y) => w[x.overlap] - w[y.overlap]).slice(0, 8);
+  return out.sort((x, y) => w[x.overlap] - w[y.overlap]).slice(0, max);
+}
+
+/** Campos que um script grava com nome fixo (`current.x =`, `setValue('x'`, template `x=v`). */
+export function writtenFields(script: string | undefined, template?: string): string[] {
+  const out = new Set<string>();
+  for (const m of (script ?? '').matchAll(/\bcurrent\.([a-z][a-z0-9_]*)\s*=(?!=)/g)) out.add(m[1]!);
+  for (const m of (script ?? '').matchAll(/\.setValue\(\s*['"]([a-z][a-z0-9_]*)['"]\s*,/g)) out.add(m[1]!);
+  for (const f of Object.keys(parseFieldValues(template))) out.add(f);
+  return [...out];
+}
+
+export interface TableConflictScan { table: string; tables: string[]; rules: number; clientScripts: number; fields: number; conflicts: RuleConflict[]; timing: { totalMs: number; calls: number } }
+
+/**
+ * Varredura da tabela inteira: todas as BRs e client scripts ativos da hierarquia, campo por campo.
+ * Sem registro, só entram os pares que conflitam sempre (sem condição) ou que dependem dos mesmos campos
+ * com condições que não se excluem.
+ */
+export async function scanTableConflicts(client: { query: (r: { table: string; query: string; fields: string[]; limit: number }) => Promise<{ rows: Row[] }>; calls: number }, table: string): Promise<TableConflictScan> {
+  const started = Date.now();
+  const calls0 = client.calls;
+  const q = async (t: string, query: string, fields: string[], limit: number) => (await client.query({ table: t, query, fields, limit })).rows;
+  const tables: string[] = [];
+  let cur: string | undefined = table;
+  for (let i = 0; cur && i < 10; i++) {
+    tables.push(cur);
+    cur = (await q('sys_db_object', `name=${cur}`, ['super_class.name'], 1))[0]?.['super_class.name'] || undefined;
+  }
+  const [brs, cs] = await Promise.all([
+    q('sys_script', `collectionIN${tables.join(',')}^active=true`, ['sys_id', 'name', 'when', 'order', 'collection', 'script', 'template', 'condition', 'filter_condition', 'action_insert', 'action_update'], 1000),
+    q('sys_script_client', `tableIN${tables.join(',')}^active=true^scriptLIKEsetValue`, ['sys_id', 'name', 'type', 'field', 'table', 'script'], 500),
+  ]);
+  const byField = new Map<string, { brs: Row[]; cs: Row[] }>();
+  const slot = (f: string) => { let s = byField.get(f); if (!s) byField.set(f, (s = { brs: [], cs: [] })); return s; };
+  for (const b of brs) for (const f of writtenFields(b.script, b.template)) slot(f).brs.push(b);
+  for (const c of cs) for (const f of writtenFields(c.script)) slot(f).cs.push(c);
+  const conflicts: RuleConflict[] = [];
+  for (const [f, s] of byField) if (s.brs.length + s.cs.length > 1) conflicts.push(...findConflicts(f, s.brs, s.cs, {}, 50));
+  const w = { always: 0, now: 1, possible: 2 };
+  conflicts.sort((a, b) => w[a.overlap] - w[b.overlap] || a.field.localeCompare(b.field));
+  return { table, tables, rules: brs.length, clientScripts: cs.length, fields: byField.size, conflicts, timing: { totalMs: Date.now() - started, calls: client.calls - calls0 } };
 }

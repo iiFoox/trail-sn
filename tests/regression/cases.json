@@ -833,5 +833,921 @@
     "field": "contact_type",
     "expectedType": "user_action",
     "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-PFORM-choice",
+    "table": "incident",
+    "sd": "[PT] M8-INC-PFORM-choice",
+    "field": "impact",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-PAPI-choice",
+    "table": "incident",
+    "sd": "[PT] M8-INC-PAPI-choice",
+    "field": "impact",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-BBF-choice",
+    "table": "incident",
+    "sd": "[PT] M8-INC-BBF-choice",
+    "field": "impact",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 INC before choice",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-BBA-choice",
+    "table": "incident",
+    "sd": "[PT] M8-INC-BBA-choice",
+    "field": "impact",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 INC before choice",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-BAF-choice",
+    "table": "incident",
+    "sd": "[PT] M8-INC-BAF-choice",
+    "field": "impact",
+    "expectedType": "br_after",
+    "expectedName": "[PT] M8 INC after choice",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-BAS-choice",
+    "table": "incident",
+    "sd": "[PT] M8-INC-BAS-choice",
+    "field": "impact",
+    "expectedType": "br_async",
+    "expectedName": "[PT] M8 INC async choice",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-SA-choice",
+    "table": "incident",
+    "sd": "[PT] M8-INC-SA-choice",
+    "field": "impact",
+    "expectedType": "script_action",
+    "expectedName": "[PT] M8 INC script action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-UI-choice",
+    "table": "incident",
+    "sd": "[PT] M8-INC-UI-choice",
+    "field": "impact",
+    "expectedType": "ui_action",
+    "expectedName": "[PT] M8 INC botão choice",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-CS-choice",
+    "table": "incident",
+    "sd": "[PT] M8-INC-CS-choice",
+    "field": "impact",
+    "expectedType": "client_script",
+    "expectedName": "[PT] M8 INC client choice",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-JOB-choice",
+    "table": "incident",
+    "sd": "[PT] M8-INC-JOB-choice",
+    "field": "impact",
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] M8 INC job choice",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-ORD-choice",
+    "table": "incident",
+    "sd": "[PT] M8-INC-ORD-choice",
+    "field": "impact",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 INC ordem 300 choice",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-SI-choice",
+    "table": "incident",
+    "sd": "[PT] M8-INC-SI-choice",
+    "field": "impact",
+    "expectedType": "br_via_script_include",
+    "expectedName": "[PT] M8 INC chama SI choice",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-PFORM-text",
+    "table": "incident",
+    "sd": "[PT] M8-INC-PFORM-text",
+    "field": "close_notes",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-PAPI-text",
+    "table": "incident",
+    "sd": "[PT] M8-INC-PAPI-text",
+    "field": "close_notes",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-BBF-text",
+    "table": "incident",
+    "sd": "[PT] M8-INC-BBF-text",
+    "field": "close_notes",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 INC before text",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-BBA-text",
+    "table": "incident",
+    "sd": "[PT] M8-INC-BBA-text",
+    "field": "close_notes",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 INC before text",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-BAF-text",
+    "table": "incident",
+    "sd": "[PT] M8-INC-BAF-text",
+    "field": "close_notes",
+    "expectedType": "br_after",
+    "expectedName": "[PT] M8 INC after text",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-BAS-text",
+    "table": "incident",
+    "sd": "[PT] M8-INC-BAS-text",
+    "field": "close_notes",
+    "expectedType": "br_async",
+    "expectedName": "[PT] M8 INC async text",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-SA-text",
+    "table": "incident",
+    "sd": "[PT] M8-INC-SA-text",
+    "field": "close_notes",
+    "expectedType": "script_action",
+    "expectedName": "[PT] M8 INC script action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-UI-text",
+    "table": "incident",
+    "sd": "[PT] M8-INC-UI-text",
+    "field": "close_notes",
+    "expectedType": "ui_action",
+    "expectedName": "[PT] M8 INC botão text",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-CS-text",
+    "table": "incident",
+    "sd": "[PT] M8-INC-CS-text",
+    "field": "close_notes",
+    "expectedType": "client_script",
+    "expectedName": "[PT] M8 INC client text",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-JOB-text",
+    "table": "incident",
+    "sd": "[PT] M8-INC-JOB-text",
+    "field": "close_notes",
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] M8 INC job text",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-ORD-text",
+    "table": "incident",
+    "sd": "[PT] M8-INC-ORD-text",
+    "field": "close_notes",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 INC ordem 300 text",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-SI-text",
+    "table": "incident",
+    "sd": "[PT] M8-INC-SI-text",
+    "field": "close_notes",
+    "expectedType": "br_via_script_include",
+    "expectedName": "[PT] M8 INC chama SI text",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-PFORM-ref",
+    "table": "incident",
+    "sd": "[PT] M8-INC-PFORM-ref",
+    "field": "assignment_group",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-PAPI-ref",
+    "table": "incident",
+    "sd": "[PT] M8-INC-PAPI-ref",
+    "field": "assignment_group",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-BBF-ref",
+    "table": "incident",
+    "sd": "[PT] M8-INC-BBF-ref",
+    "field": "assignment_group",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 INC before ref",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-BBA-ref",
+    "table": "incident",
+    "sd": "[PT] M8-INC-BBA-ref",
+    "field": "assignment_group",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 INC before ref",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-BAF-ref",
+    "table": "incident",
+    "sd": "[PT] M8-INC-BAF-ref",
+    "field": "assignment_group",
+    "expectedType": "br_after",
+    "expectedName": "[PT] M8 INC after ref",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-BAS-ref",
+    "table": "incident",
+    "sd": "[PT] M8-INC-BAS-ref",
+    "field": "assignment_group",
+    "expectedType": "br_async",
+    "expectedName": "[PT] M8 INC async ref",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-SA-ref",
+    "table": "incident",
+    "sd": "[PT] M8-INC-SA-ref",
+    "field": "assignment_group",
+    "expectedType": "script_action",
+    "expectedName": "[PT] M8 INC script action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-UI-ref",
+    "table": "incident",
+    "sd": "[PT] M8-INC-UI-ref",
+    "field": "assignment_group",
+    "expectedType": "ui_action",
+    "expectedName": "[PT] M8 INC botão ref",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-CS-ref",
+    "table": "incident",
+    "sd": "[PT] M8-INC-CS-ref",
+    "field": "assignment_group",
+    "expectedType": "client_script",
+    "expectedName": "[PT] M8 INC client ref",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-JOB-ref",
+    "table": "incident",
+    "sd": "[PT] M8-INC-JOB-ref",
+    "field": "assignment_group",
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] M8 INC job ref",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-ORD-ref",
+    "table": "incident",
+    "sd": "[PT] M8-INC-ORD-ref",
+    "field": "assignment_group",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 INC ordem 300 ref",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-SI-ref",
+    "table": "incident",
+    "sd": "[PT] M8-INC-SI-ref",
+    "field": "assignment_group",
+    "expectedType": "br_via_script_include",
+    "expectedName": "[PT] M8 INC chama SI ref",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-PFORM-bool",
+    "table": "incident",
+    "sd": "[PT] M8-INC-PFORM-bool",
+    "field": "knowledge",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-PAPI-bool",
+    "table": "incident",
+    "sd": "[PT] M8-INC-PAPI-bool",
+    "field": "knowledge",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-BBF-bool",
+    "table": "incident",
+    "sd": "[PT] M8-INC-BBF-bool",
+    "field": "knowledge",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 INC before bool",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-BBA-bool",
+    "table": "incident",
+    "sd": "[PT] M8-INC-BBA-bool",
+    "field": "knowledge",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 INC before bool",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-BAF-bool",
+    "table": "incident",
+    "sd": "[PT] M8-INC-BAF-bool",
+    "field": "knowledge",
+    "expectedType": "br_after",
+    "expectedName": "[PT] M8 INC after bool",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-BAS-bool",
+    "table": "incident",
+    "sd": "[PT] M8-INC-BAS-bool",
+    "field": "knowledge",
+    "expectedType": "br_async",
+    "expectedName": "[PT] M8 INC async bool",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-SA-bool",
+    "table": "incident",
+    "sd": "[PT] M8-INC-SA-bool",
+    "field": "knowledge",
+    "expectedType": "script_action",
+    "expectedName": "[PT] M8 INC script action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-UI-bool",
+    "table": "incident",
+    "sd": "[PT] M8-INC-UI-bool",
+    "field": "knowledge",
+    "expectedType": "ui_action",
+    "expectedName": "[PT] M8 INC botão bool",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-CS-bool",
+    "table": "incident",
+    "sd": "[PT] M8-INC-CS-bool",
+    "field": "knowledge",
+    "expectedType": "client_script",
+    "expectedName": "[PT] M8 INC client bool",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-JOB-bool",
+    "table": "incident",
+    "sd": "[PT] M8-INC-JOB-bool",
+    "field": "knowledge",
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] M8 INC job bool",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-ORD-bool",
+    "table": "incident",
+    "sd": "[PT] M8-INC-ORD-bool",
+    "field": "knowledge",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 INC ordem 300 bool",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INC-SI-bool",
+    "table": "incident",
+    "sd": "[PT] M8-INC-SI-bool",
+    "field": "knowledge",
+    "expectedType": "br_via_script_include",
+    "expectedName": "[PT] M8 INC chama SI bool",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-PFORM-choice",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-PFORM-choice",
+    "field": "impact",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-PAPI-choice",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-PAPI-choice",
+    "field": "impact",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-BBF-choice",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-BBF-choice",
+    "field": "impact",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 CHG before choice",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-BBA-choice",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-BBA-choice",
+    "field": "impact",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 CHG before choice",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-BAF-choice",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-BAF-choice",
+    "field": "impact",
+    "expectedType": "br_after",
+    "expectedName": "[PT] M8 CHG after choice",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-BAS-choice",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-BAS-choice",
+    "field": "impact",
+    "expectedType": "br_async",
+    "expectedName": "[PT] M8 CHG async choice",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-SA-choice",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-SA-choice",
+    "field": "impact",
+    "expectedType": "script_action",
+    "expectedName": "[PT] M8 CHG script action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-UI-choice",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-UI-choice",
+    "field": "impact",
+    "expectedType": "ui_action",
+    "expectedName": "[PT] M8 CHG botão choice",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-CS-choice",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-CS-choice",
+    "field": "impact",
+    "expectedType": "client_script",
+    "expectedName": "[PT] M8 CHG client choice",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-JOB-choice",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-JOB-choice",
+    "field": "impact",
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] M8 CHG job choice",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-ORD-choice",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-ORD-choice",
+    "field": "impact",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 CHG ordem 300 choice",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-SI-choice",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-SI-choice",
+    "field": "impact",
+    "expectedType": "br_via_script_include",
+    "expectedName": "[PT] M8 CHG chama SI choice",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-PFORM-text",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-PFORM-text",
+    "field": "justification",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-PAPI-text",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-PAPI-text",
+    "field": "justification",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-BBF-text",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-BBF-text",
+    "field": "justification",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 CHG before text",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-BBA-text",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-BBA-text",
+    "field": "justification",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 CHG before text",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-BAF-text",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-BAF-text",
+    "field": "justification",
+    "expectedType": "br_after",
+    "expectedName": "[PT] M8 CHG after text",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-BAS-text",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-BAS-text",
+    "field": "justification",
+    "expectedType": "br_async",
+    "expectedName": "[PT] M8 CHG async text",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-SA-text",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-SA-text",
+    "field": "justification",
+    "expectedType": "script_action",
+    "expectedName": "[PT] M8 CHG script action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-UI-text",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-UI-text",
+    "field": "justification",
+    "expectedType": "ui_action",
+    "expectedName": "[PT] M8 CHG botão text",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-CS-text",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-CS-text",
+    "field": "justification",
+    "expectedType": "client_script",
+    "expectedName": "[PT] M8 CHG client text",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-JOB-text",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-JOB-text",
+    "field": "justification",
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] M8 CHG job text",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-ORD-text",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-ORD-text",
+    "field": "justification",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 CHG ordem 300 text",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-SI-text",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-SI-text",
+    "field": "justification",
+    "expectedType": "br_via_script_include",
+    "expectedName": "[PT] M8 CHG chama SI text",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-PFORM-ref",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-PFORM-ref",
+    "field": "assignment_group",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-PAPI-ref",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-PAPI-ref",
+    "field": "assignment_group",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-BBF-ref",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-BBF-ref",
+    "field": "assignment_group",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 CHG before ref",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-BBA-ref",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-BBA-ref",
+    "field": "assignment_group",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 CHG before ref",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-BAF-ref",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-BAF-ref",
+    "field": "assignment_group",
+    "expectedType": "br_after",
+    "expectedName": "[PT] M8 CHG after ref",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-BAS-ref",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-BAS-ref",
+    "field": "assignment_group",
+    "expectedType": "br_async",
+    "expectedName": "[PT] M8 CHG async ref",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-SA-ref",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-SA-ref",
+    "field": "assignment_group",
+    "expectedType": "script_action",
+    "expectedName": "[PT] M8 CHG script action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-UI-ref",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-UI-ref",
+    "field": "assignment_group",
+    "expectedType": "ui_action",
+    "expectedName": "[PT] M8 CHG botão ref",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-CS-ref",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-CS-ref",
+    "field": "assignment_group",
+    "expectedType": "client_script",
+    "expectedName": "[PT] M8 CHG client ref",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-JOB-ref",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-JOB-ref",
+    "field": "assignment_group",
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] M8 CHG job ref",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-ORD-ref",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-ORD-ref",
+    "field": "assignment_group",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 CHG ordem 300 ref",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-SI-ref",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-SI-ref",
+    "field": "assignment_group",
+    "expectedType": "br_via_script_include",
+    "expectedName": "[PT] M8 CHG chama SI ref",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-PFORM-bool",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-PFORM-bool",
+    "field": "cab_required",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-PAPI-bool",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-PAPI-bool",
+    "field": "cab_required",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-BBF-bool",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-BBF-bool",
+    "field": "cab_required",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 CHG before bool",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-BBA-bool",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-BBA-bool",
+    "field": "cab_required",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 CHG before bool",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-BAF-bool",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-BAF-bool",
+    "field": "cab_required",
+    "expectedType": "br_after",
+    "expectedName": "[PT] M8 CHG after bool",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-BAS-bool",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-BAS-bool",
+    "field": "cab_required",
+    "expectedType": "br_async",
+    "expectedName": "[PT] M8 CHG async bool",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-SA-bool",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-SA-bool",
+    "field": "cab_required",
+    "expectedType": "script_action",
+    "expectedName": "[PT] M8 CHG script action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-UI-bool",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-UI-bool",
+    "field": "cab_required",
+    "expectedType": "ui_action",
+    "expectedName": "[PT] M8 CHG botão bool",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-CS-bool",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-CS-bool",
+    "field": "cab_required",
+    "expectedType": "client_script",
+    "expectedName": "[PT] M8 CHG client bool",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-JOB-bool",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-JOB-bool",
+    "field": "cab_required",
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] M8 CHG job bool",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-ORD-bool",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-ORD-bool",
+    "field": "cab_required",
+    "expectedType": "br_before",
+    "expectedName": "[PT] M8 CHG ordem 300 bool",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHG-SI-bool",
+    "table": "change_request",
+    "sd": "[PT] M8-CHG-SI-bool",
+    "field": "cab_required",
+    "expectedType": "br_via_script_include",
+    "expectedName": "[PT] M8 CHG chama SI bool",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "W9-PESSOA-impact",
+    "table": "incident",
+    "sd": "[PT] W9-PESSOA",
+    "field": "impact",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "W9-BR-urgency",
+    "table": "incident",
+    "sd": "[PT] W9-BR",
+    "field": "urgency",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] W9 before urgency"
+  },
+  {
+    "id": "W9-BR-contact_type",
+    "table": "incident",
+    "sd": "[PT] W9-BR",
+    "field": "contact_type",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "W9-CS-description",
+    "table": "incident",
+    "sd": "[PT] W9-CS",
+    "field": "description",
+    "expectedType": "client_script",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] W9 client descrição"
+  },
+  {
+    "id": "W9-CS-contact_type",
+    "table": "incident",
+    "sd": "[PT] W9-CS",
+    "field": "contact_type",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "W9-BOTH-urgency",
+    "table": "incident",
+    "sd": "[PT] W9-BOTH",
+    "field": "urgency",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] W9 before urgency"
+  },
+  {
+    "id": "W9-BOTH-description",
+    "table": "incident",
+    "sd": "[PT] W9-BOTH",
+    "field": "description",
+    "expectedType": "client_script",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] W9 client descrição"
+  },
+  {
+    "id": "W9-BOTH-contact_type",
+    "table": "incident",
+    "sd": "[PT] W9-BOTH",
+    "field": "contact_type",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
   }
 ]

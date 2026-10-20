@@ -1,0 +1,248 @@
+[
+  {
+    "id": "B1",
+    "number": "INC0010106",
+    "field": "impact",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F9 Impacto para software",
+    "why": "Cadeia: '[PT] F9 Canal autoatendimento' (ordem 100) muda category para software; '[PT] F9 Impacto para software' (ordem 200) reage à category e grava impact=2. Client script '[PT] F9 Impacto sugerido por categoria' não roda (API e não é hardware)."
+  },
+  {
+    "id": "B2",
+    "number": "CHG0030060",
+    "field": "assignment_group",
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] F9 Distribui mudanças de infraestrutura",
+    "why": "Job de execução única grava assignment_group=Network. Isca: '[PT] F9 Grupo para alto risco' (Condition risk == 2, falsa)."
+  },
+  {
+    "id": "B3",
+    "number": "CHG0030060",
+    "field": "implementation_plan",
+    "expectedType": "br_via_script_include",
+    "expectedName": "[PT] F9 Gera plano de implementação",
+    "why": "Cadeia: job muda o grupo → BR after chama PTF9Politicas.planoImplementacao, que grava implementation_plan via GlideRecord."
+  },
+  {
+    "id": "B4",
+    "number": "CHG0030059",
+    "field": "impact",
+    "changeIndex": 1,
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "why": "Mudança anterior (3→2): pessoa no formulário."
+  },
+  {
+    "id": "B5",
+    "number": "CHG0030057",
+    "field": "backout_plan",
+    "expectedType": "br_after",
+    "expectedName": "[PT] F9 Plano de retorno padrão",
+    "why": "Pessoa mudou description pela API; BR after grava backout_plan e chama current.update() (checkpoint 2). '[PT] F9 Confere plano de retorno' só lê."
+  },
+  {
+    "id": "B6",
+    "number": "INC0010108",
+    "field": "assignment_group",
+    "expectedType": "assignment_rule",
+    "expectedName": "[PT] F9 Impressoras fiscais",
+    "why": "Pessoa mudou category para hardware pela API; a regra de atribuição grava assignment_group=Hardware (usuário system). Isca: '[PT] F9 Grupo padrão de hardware' tem return antecipado (priority != 1)."
+  },
+  {
+    "id": "B7",
+    "number": "CHG0030058",
+    "field": "justification",
+    "expectedType": "script_action",
+    "expectedName": "[PT] F9 Justificativa para o CAB",
+    "why": "Cadeia: UI action → BR after '[PT] F9 Sinaliza CAB' dispara pt.f9.mudanca → script action grava justification (usuário system)."
+  },
+  {
+    "id": "B8",
+    "number": "INC0010101",
+    "field": "urgency",
+    "expectedType": "ui_action",
+    "expectedName": "[PT] F9 Escalar para N2",
+    "why": "Botão do formulário grava urgency=1. Isca: '[PT] F9 Urgência para cliente VIP' (Condition caller VIP, falsa)."
+  },
+  {
+    "id": "B9",
+    "number": "INC0010103",
+    "field": "notify",
+    "expectedType": "br_via_script_include",
+    "expectedName": "[PT] F9 Aplica política de banco",
+    "why": "Pessoa mudou category para database pela API; BR after chama PTF9Politicas.aplicarBanco, que grava notify=2 via GlideRecord."
+  },
+  {
+    "id": "B10",
+    "number": "CHG0030061",
+    "field": "test_plan",
+    "changeIndex": 1,
+    "expectedType": "br_before",
+    "expectedName": "[PT] F9 Testes por risco",
+    "why": "Mudança anterior (checkpoint 1): BR before calcula o texto a partir do risk mudado pela API."
+  },
+  {
+    "id": "B11",
+    "number": "INC0010102",
+    "field": "urgency",
+    "expectedType": "client_script",
+    "expectedName": "[PT] F9 Sugere urgência pelo impacto",
+    "why": "Pessoa mudou impact no formulário; o client script onChange de impact preencheu urgency=2 antes do envio. Isca: '[PT] F9 Alerta de impacto alto' só mostra mensagem."
+  },
+  {
+    "id": "B12",
+    "number": "INC0010105",
+    "field": "description",
+    "expectedType": "br_after",
+    "expectedName": "[PT] F9 Registra histórico de rede",
+    "why": "Pessoa mudou category para network no formulário; BR after grava description e chama current.update()."
+  },
+  {
+    "id": "B13",
+    "number": "INC0010102",
+    "field": "description",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F9 Monta resumo de impacto",
+    "why": "Valor calculado: BR before monta texto com impacto/urgência/caller quando impact muda. '[PT] F9 Limpa resumo vazio' tem Condition description.nil() falsa."
+  },
+  {
+    "id": "B14",
+    "number": "CHG0030061",
+    "field": "test_plan",
+    "changeIndex": 0,
+    "expectedType": "br_after",
+    "expectedName": "[PT] F9 Revisão final de testes",
+    "why": "Mudança mais recente (checkpoint 2, acrescenta '(revisado pela qualidade)'): BR after com current.update()."
+  },
+  {
+    "id": "B15",
+    "number": "INC0010109",
+    "field": "urgency",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F9 Urgência ramal executivo",
+    "why": "Duas BRs before disputam: ordem 100 grava 2, ordem 450 (Condition contact_type phone e caller = usuário da sessão, verdadeira) grava 1 e vence. A de ordem 800 tem return antecipado."
+  },
+  {
+    "id": "B16",
+    "number": "INC0010104",
+    "field": "knowledge",
+    "expectedType": "br_async",
+    "expectedName": "[PT] F9 Marca para base de conhecimento",
+    "why": "BR async (filtro impact VALCHANGES) grava knowledge=true e chama current.update(), checkpoint separado logo após o PATCH."
+  },
+  {
+    "id": "B17",
+    "number": "INC0010099",
+    "field": "impact",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F9 Impacto por canal digital",
+    "why": "contact_type mudou para email no formulário; BR before ordem 100 grava impact=2. '[PT] F9 Impacto reavaliado por hardware' (ordem 400) tem return antecipado (category != hardware); client script '[PT] F9 Impacto sugerido por categoria' só age com hardware."
+  },
+  {
+    "id": "B18",
+    "number": "CHG0030059",
+    "field": "impact",
+    "changeIndex": 0,
+    "expectedType": "ui_action",
+    "expectedName": "[PT] F9 Reclassificar impacto",
+    "why": "Mudança mais recente (2→1): botão do formulário."
+  },
+  {
+    "id": "B19",
+    "number": "INC0010100",
+    "field": "assignment_group",
+    "expectedType": "br_after",
+    "expectedName": "[PT] F9 Roteia rede por urgência",
+    "why": "Pessoa mudou urgency pela API; BR after grava assignment_group=Network e chama current.update() (checkpoint 2)."
+  },
+  {
+    "id": "B20",
+    "number": "RITM0010008",
+    "field": "assignment_group",
+    "expectedType": "br_async",
+    "expectedName": "[PT] F9 Fila de provisionamento",
+    "why": "Pessoa mudou description pela API; BR async grava assignment_group=Hardware. Isca: '[PT] F9 Grupo por quantidade' (quantity > 5, falsa)."
+  },
+  {
+    "id": "B21",
+    "number": "INC0010107",
+    "field": "assigned_to",
+    "expectedType": "client_script",
+    "expectedName": "[PT] F9 Sugere técnico de hardware",
+    "why": "Pessoa escolheu o grupo Hardware no formulário; o client script onChange de assignment_group preencheu assigned_to=Don Goodliffe. Isca: '[PT] F9 Limpa técnico ao trocar grupo' só limpa para Software."
+  },
+  {
+    "id": "B22",
+    "number": "INC0010104",
+    "field": "impact",
+    "changeIndex": 0,
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] F9 Reavaliação noturna de impacto",
+    "why": "Mudança mais recente (2→1): job de execução única."
+  },
+  {
+    "id": "B23",
+    "number": "INC0010099",
+    "field": "category",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "why": "Pessoa (admin) mudou contact_type e category no formulário. '[PT] F9 Classificação automática de software' grava category=software, mas a Condition (contact_type == walk-in) é falsa."
+  },
+  {
+    "id": "B24",
+    "number": "CHG0030058",
+    "field": "cab_required",
+    "expectedType": "ui_action",
+    "expectedName": "[PT] F9 Solicitar aprovação do CAB",
+    "why": "Botão do formulário grava cab_required=true. Isca: botão '[PT] F9 Dispensar CAB' (não clicado)."
+  },
+  {
+    "id": "B25",
+    "number": "INC0010101",
+    "field": "priority",
+    "expectedType": "data_lookup",
+    "expectedName": "Priority Lookup",
+    "why": "Prioridade recalculada pelo Data Lookup padrão (dl_u_priority) quando a UI action mudou urgency 3→1 (prioridade 4→3). Isca: '[PT] F9 Prioridade manual de segurança' (só para category security)."
+  },
+  {
+    "id": "B26",
+    "number": "INC0010101",
+    "field": "severity",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F9 Severidade por urgência crítica",
+    "why": "Cadeia: a UI action muda urgency para 1 e a BR before grava severity=1 na mesma gravação. Isca: '[PT] F9 Severidade por impacto' (async, Condition impact == 1 falsa)."
+  },
+  {
+    "id": "B27",
+    "number": "INC0010103",
+    "field": "assigned_to",
+    "expectedType": "script_action",
+    "expectedName": "[PT] F9 Atribui DBA de plantão",
+    "why": "BR after '[PT] F9 Notifica DBA' dispara pt.f9.incidente; a script action grava assigned_to=Beth Anglin (usuário system). Isca: método atribuirPlantonista do script include PTF9Politicas, que nunca é chamado."
+  },
+  {
+    "id": "B28",
+    "number": "INC0010104",
+    "field": "impact",
+    "changeIndex": 1,
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "why": "Mudança anterior (3→2): pessoa pela API (PATCH)."
+  },
+  {
+    "id": "B29",
+    "number": "CHG0030056",
+    "field": "risk",
+    "expectedType": "client_script",
+    "expectedName": "[PT] F9 Risco sugerido por categoria",
+    "why": "Pessoa mudou category para Network no formulário; client script onChange de category preencheu risk=2. Isca: '[PT] F9 Risco de emergência' (return se type != emergency)."
+  },
+  {
+    "id": "B30",
+    "number": "INC0010106",
+    "field": "contact_type",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "why": "Pessoa mudou contact_type para self-service pela API."
+  }
+]

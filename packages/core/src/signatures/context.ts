@@ -10,7 +10,8 @@ export interface TableMeta {
   /** Script includes que referenciam o campo. */
   siField: Row[];
   /** Pares BR → script include quando a BR instancia um SI que escreve no campo. */
-  brViaSi: { br: Row; si: Row }[];
+  /** `arg`: a BR passa o nome do campo como texto para um método genérico do SI (que grava por nome dinâmico). */
+  brViaSi: { br: Row; si: Row; arg?: { call: string; value?: string } }[];
 }
 
 /** Rastros de execução carregados para uma mudança. */

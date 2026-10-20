@@ -104,6 +104,7 @@ const dict = {
       cfRule: '{name} ({kind}{order}) grava “{value}”', cfOrder: ', ordem {n}', cfWins: 'Fica valendo: {name}, {why}', cfNoWinner: 'Não dá para saber qual fica valendo',
       cfWhy: { higher_order: 'porque roda depois (ordem maior)', server_after_client: 'porque o servidor grava depois do formulário', after_update: 'porque roda depois e salva de novo' } as Record<string, string>,
       cfOverlap: { always: 'As duas rodam sempre', now: 'As duas valem para este registro', possible: 'As condições não se excluem' } as Record<string, string>,
+      scTitle: 'Conflitos em toda a tabela {table}', scHint: 'Lê todas as business rules e client scripts ativos da tabela (e das tabelas-pai) e lista os pares que gravam o mesmo campo com valores diferentes.', scRun: 'Varrer', scRunning: 'Lendo as regras da tabela…', scSummary: '{rules} business rules e {cs} client scripts, {fields} campos gravados, em {ms} ms.', scNone: 'Nenhum par de regras em conflito.',
       plainTitle: 'Para o usuário', plainHint: 'Uma frase sem termos técnicos, para colar no chamado.', plainCopy: 'Copiar frase', plainLbl: 'Resumo',
       plain: {
         chg: 'mudou de “{old}” para “{new}”', chgText: 'teve o texto alterado', empty: 'vazio',
@@ -140,7 +141,7 @@ const dict = {
       notCheckedText: 'Sem acesso: {what}.',
       expiredText: 'Os rastros desta data já foram apagados pela retenção da instância. Só a auditoria continua.',
       tr: {
-        form: '{user} salvou o formulário', ui_action: '{user} clicou no botão {label}', async: 'Regra rodou em segundo plano', job: 'Job agendado rodou',
+        form: '{user} salvou o formulário', formWs: '{user} salvou pelo Workspace', ui_action: '{user} clicou no botão {label}', async: 'Regra rodou em segundo plano', job: 'Job agendado rodou',
         api: 'Gravação via API', background_script: '{user} rodou um script de fundo', event: 'Evento {label} processado', flow: 'Flow {label} rodou',
         workflow: 'Workflow {label} rodou', change: '{field}: {old} → {new}',
       } as Record<string, string>,
@@ -197,7 +198,7 @@ const dict = {
       what: { sys_script: 'a regra', sys_script_include: 'o script include', sysevent_script_action: 'a script action', sys_ui_action: 'o botão', sysauto_script: 'o job', sysrule_assignment: 'a regra', sys_hub_flow: 'o flow', wf_workflow: 'o workflow', dl_definition: 'o data lookup', sys_script_client: 'o client script', sys_transform_map: 'o transform map' } as Record<string, string>,
       fact: {
         condition_false: 'A condição da regra não vale para este registro.', client_side_possible: 'Algo pode ter preenchido o campo no navegador antes de salvar.',
-        sets_same_value: 'O código grava exatamente este valor.', reads_only: 'O código só lê este campo; não grava nele.', no_trace: 'Não há registro de execução no instante da mudança.', last_writer: 'É a última regra a gravar este campo nesta gravação (maior order).', overwritten_later: 'Outra regra gravou este campo depois dela.', reacts_to_change: 'Reage a outro campo que mudou na mesma gravação.', api_write_on_record: 'A pessoa gravou este registro pela API no mesmo instante.', no_competing_automation: 'Nenhuma automação ativa explica este valor.', no_step_writes_field: 'Nenhum passo do flow grava este campo.', integration_user: 'Quem gravou é uma conta de integração.', sets_other_value: 'O código grava outro valor, não este.',
+        sets_same_value: 'O código grava exatamente este valor.', reads_only: 'O código só lê este campo; não grava nele.', no_trace: 'Não há registro de execução no instante da mudança.', last_writer: 'É a última regra a gravar este campo nesta gravação (maior order).', overwritten_later: 'Outra regra gravou este campo depois dela.', reacts_to_change: 'Reage a outro campo que mudou na mesma gravação.', api_write_on_record: 'A pessoa gravou este registro no mesmo instante, sem formulário clássico (API ou Workspace).', no_competing_automation: 'Nenhuma automação ativa explica este valor.', no_step_writes_field: 'Nenhum passo do flow grava este campo.', integration_user: 'Quem gravou é uma conta de integração.', sets_other_value: 'O código grava outro valor, não este.',
         trace_names_artifact: 'O sistema registrou a execução pelo nome.', execution_in_window: 'Rodou no mesmo instante da mudança.', references_field: 'O código altera o campo {field}.',
         references_table: 'É da mesma tabela do registro.', user_matches: 'É o mesmo usuário que aparece na auditoria.', form_value_differs: 'O formulário enviou outro valor; o servidor trocou ao salvar.',
         form_value_equals: 'O formulário enviou exatamente o novo valor.', new_checkpoint_same_second: 'Uma segunda gravação veio no mesmo segundo, sem job nem evento.',
@@ -328,6 +329,7 @@ const dict = {
       cfRule: '{name} ({kind}{order}) writes “{value}”', cfOrder: ', order {n}', cfWins: 'Ends up winning: {name}, {why}', cfNoWinner: 'Cannot tell which one wins',
       cfWhy: { higher_order: 'because it runs later (higher order)', server_after_client: 'because the server writes after the form', after_update: 'because it runs later and saves again' } as Record<string, string>,
       cfOverlap: { always: 'Both always run', now: 'Both apply to this record', possible: 'Their conditions do not exclude each other' } as Record<string, string>,
+      scTitle: 'Conflicts across table {table}', scHint: 'Reads every active business rule and client script of the table (and parent tables) and lists pairs that write the same field with different values.', scRun: 'Scan', scRunning: 'Reading the table rules…', scSummary: '{rules} business rules and {cs} client scripts, {fields} fields written, in {ms} ms.', scNone: 'No conflicting pair of rules.',
       plainTitle: 'For the user', plainHint: 'One sentence without technical terms, to paste in the ticket.', plainCopy: 'Copy sentence', plainLbl: 'Summary',
       plain: {
         chg: 'changed from “{old}” to “{new}”', chgText: 'had its text edited', empty: 'empty',
@@ -364,7 +366,7 @@ const dict = {
       notCheckedText: 'No access: {what}.',
       expiredText: 'Traces for this date were already purged by the instance retention. Only the audit remains.',
       tr: {
-        form: '{user} saved the form', ui_action: '{user} clicked the {label} button', async: 'Rule ran in the background', job: 'Scheduled job ran',
+        form: '{user} saved the form', formWs: '{user} saved from the Workspace', ui_action: '{user} clicked the {label} button', async: 'Rule ran in the background', job: 'Scheduled job ran',
         api: 'Write through the API', background_script: '{user} ran a background script', event: 'Event {label} processed', flow: 'Flow {label} ran',
         workflow: 'Workflow {label} ran', change: '{field}: {old} → {new}',
       } as Record<string, string>,
@@ -421,7 +423,7 @@ const dict = {
       what: { sys_script: 'the rule', sys_script_include: 'the script include', sysevent_script_action: 'the script action', sys_ui_action: 'the button', sysauto_script: 'the job', sysrule_assignment: 'the rule', sys_hub_flow: 'the flow', wf_workflow: 'the workflow', dl_definition: 'the data lookup', sys_script_client: 'the client script', sys_transform_map: 'the transform map' } as Record<string, string>,
       fact: {
         condition_false: 'The rule condition does not hold for this record.', client_side_possible: 'Something may have filled the field in the browser before saving.',
-        sets_same_value: 'The code writes exactly this value.', reads_only: 'The code only reads this field; it never writes it.', no_trace: 'There is no execution record at the moment of the change.', last_writer: 'It is the last rule to write this field in this save (highest order).', overwritten_later: 'Another rule wrote this field after it.', reacts_to_change: 'It reacts to another field that changed in the same save.', api_write_on_record: 'The person wrote this record through the API at the same moment.', no_competing_automation: 'No active automation explains this value.', no_step_writes_field: 'No step of the flow writes this field.', integration_user: 'The writer is an integration account.', sets_other_value: 'The code writes a different value, not this one.',
+        sets_same_value: 'The code writes exactly this value.', reads_only: 'The code only reads this field; it never writes it.', no_trace: 'There is no execution record at the moment of the change.', last_writer: 'It is the last rule to write this field in this save (highest order).', overwritten_later: 'Another rule wrote this field after it.', reacts_to_change: 'It reacts to another field that changed in the same save.', api_write_on_record: 'The person wrote this record at the same moment, outside the classic form (API or Workspace).', no_competing_automation: 'No active automation explains this value.', no_step_writes_field: 'No step of the flow writes this field.', integration_user: 'The writer is an integration account.', sets_other_value: 'The code writes a different value, not this one.',
         trace_names_artifact: 'The system logged the execution by name.', execution_in_window: 'It ran at the same moment as the change.', references_field: 'Its code changes the {field} field.',
         references_table: 'It belongs to the same table as the record.', user_matches: 'Same user as in the audit.', form_value_differs: 'The form sent a different value; the server changed it on save.',
         form_value_equals: 'The form sent exactly the new value.', new_checkpoint_same_second: 'A second write came in the same second, with no job or event.',

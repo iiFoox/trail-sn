@@ -1,7 +1,8 @@
 import { findConflicts } from './conflicts';
 import type { QueryRequest, RestClient } from './client/RestClient';
 import { scoreAll } from './scoring';
-import { fieldsRead } from './scriptEval';
+import { fieldsRead, writesOf } from './scriptEval';
+import { siCallsWithField } from './util';
 import { runSignatures, type ChangeContext, type TableMeta, type Traces } from './signatures';
 import {
   DEFAULT_OPTIONS,
@@ -15,7 +16,7 @@ import {
   type TraceItem,
 } from './types';
 import { isSaveButton } from './signatures/uiAction';
-import { decodeFlowValues, parseFieldValues, uiActionMatches, uiActionQuery, uiActionRef } from './util';
+import { decodeFlowValues, isWorkspaceAction, parseFieldValues, uiActionMatches, uiActionQuery, uiActionRef } from './util';
 import { conditionFields, mergeWindows, refsField, shift, toMs, withTimeout } from './util';
 
 /** Cache de metadados por tabela (hierarquia, BRs, script includes). A extensão guarda em chrome.storage.session. */
@@ -113,7 +114,8 @@ export async function investigate(
   const jobNames = unique(txAll.filter((t) => /^JOB: /.test(t.url ?? '') && !/^JOB: ASYNC: /.test(t.url ?? '')).map((t) => (t.url ?? '').slice(5).trim()));
   const eventNames = unique(evAll.map((e) => e.name ?? '').filter(Boolean));
   const uiActionIds = unique(txAll.filter((t) => (t.url ?? '').includes(sysId)).map((t) => uiActionRef(t.url) ?? '').filter(Boolean));
-  const needsJobScan = fieldChanges.some((c) => !txAll.some((t) => t.sys_created_by === c.user && !/^JOB: /.test(t.url ?? '') && inWindow(t, c, opts)));
+  // Só transações DESTE registro contam: o mesmo usuário mexendo em outras telas na hora não explica a mudança.
+  const needsJobScan = fieldChanges.some((c) => !txAll.some((t) => t.sys_created_by === c.user && !/^JOB: /.test(t.url ?? '') && (t.url ?? '').includes(sysId) && inWindow(t, c, opts)));
 
   const isAssignmentField = target.field === 'assignment_group' || target.field === 'assigned_to';
   const flowIds = unique(flowsAll.map((f) => f.flow ?? '').filter(Boolean));
@@ -125,7 +127,7 @@ export async function investigate(
     needsJobScan ? q('sysauto_script', `scriptLIKE${target.field}^scriptLIKE${target.table}`, ['sys_id', 'name', 'script', 'run_type', 'run_start', 'run_time', 'run_as.user_name', 'active'], 50) : Promise.resolve([]),
     isAssignmentField ? q('sysrule_assignment', `active=true^tableIN${meta.tables.join(',')}`, ['sys_id', 'name', 'table', 'condition', 'group', 'user', 'order'], 50) : Promise.resolve([]),
     quiet('dl_definition_rel_set', `source_table_field=${target.field}^dl_definition.active=true^dl_definition.source_tableIN${meta.tables.join(',')}`, ['dl_definition', 'dl_definition.name', 'dl_definition.run_on_form_change', 'dl_definition.run_on_update', 'dl_definition.matcher_table', 'matcher_table_field'], 20),
-    quiet('sys_script_client', `tableIN${meta.tables.join(',')}^active=true^scriptLIKE${target.field}`, ['sys_id', 'name', 'type', 'field', 'table', 'script'], 30),
+    quiet('sys_script_client', `tableIN${meta.tables.join(',')}^active=true^scriptLIKE${target.field}`, ['sys_id', 'name', 'type', 'field', 'table', 'script', 'ui_type'], 30),
     // Só para a lista de "outras regras": UI actions da hierarquia que citam o campo.
     quiet('sys_ui_action', `tableIN${meta.tables.join(',')}^active=true^scriptLIKE${target.field}`, ['sys_id', 'name', 'table', 'script'], 30),
     // Passos dos flows que rodaram no registro: dizem qual ação grava o campo.
@@ -295,6 +297,15 @@ export async function investigate(
     const siField = base.scriptIncludes.filter((s) => refsField(s.script, field));
     const brViaSi: TableMeta['brViaSi'] = [];
     for (const br of base.businessRules) for (const si of siField) if ((br.script ?? '').includes(si.name ?? '\u0000')) brViaSi.push({ br, si });
+    // SI genérico: a BR chama new X().metodo(..., 'campo', 'valor') e o SI grava por nome dinâmico (setValue(campo, ...)).
+    for (const br of base.businessRules) {
+      for (const c of siCallsWithField(br.script, field)) {
+        const si = base.scriptIncludes.find((x) => x.name === c.si);
+        if (!si || siField.includes(si)) continue;
+        if (!writesOf(si.script, field)?.dynamic) continue;
+        brViaSi.push({ br, si, arg: { call: c.call, ...(c.value !== undefined ? { value: c.value } : {}) } });
+      }
+    }
     return { ...base, brField, siField, brViaSi };
   }
 
@@ -336,6 +347,11 @@ function buildTrace(ctx: ChangeContext, top: Change['evidence'][number] | undefi
     const ua = action ? ctx.traces.uiActions.find((u) => uiActionMatches(u, action)) : undefined;
     if (action && !isSaveButton(ua)) {
       items.push({ ...base, kind: 'ui_action', label: ua?.name ?? action, cause: top?.type === 'ui_action' && !!ua && top.artifact.sysId === ua.sys_id });
+      continue;
+    }
+    if (isWorkspaceAction(url)) {
+      const wsCause = !!top && ['user_action', 'br_before', 'server_change', 'assignment_rule', 'data_lookup', 'client_script'].includes(top.type) && Math.abs(toMs(at) - toMs(ctx.at)) <= 3000;
+      items.push({ ...base, kind: 'form', label: 'Workspace', cause: wsCause });
       continue;
     }
     if (url.includes('/api/')) { items.push({ ...base, kind: 'api', label: url.split('?')[0]?.slice(0, 80) ?? url }); continue; }

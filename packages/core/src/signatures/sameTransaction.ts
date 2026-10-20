@@ -2,7 +2,8 @@ import { fact } from '../scoring';
 import { evalCondition, refsField, toMs } from '../util';
 import { evalExpr, scriptVerdict, writesOf } from '../scriptEval';
 import { envFor, reactsFacts, resolveOrder, scriptFacts } from './scriptFacts';
-import { parseFieldValues, sameVal } from '../util';
+import { parseFieldValues, sameVal, uiActionMatches, uiActionRef } from '../util';
+import { isSaveButton } from './uiAction';
 import { evidence, type ChangeContext, type Signature } from './context';
 import type { Evidence, Fact, Row } from '../types';
 
@@ -130,7 +131,15 @@ function chainedUpdate(ctx: ChangeContext): Evidence[] {
   resolveOrder(befores);
   out.push(...befores.map((x) => x.e));
   for (const x of ctx.meta.brViaSi.filter((x) => x.br.when === 'after' || x.br.when === 'before' || isAsync(x.br.when))) {
-    out.push(evidence('br_via_script_include', { name: `${x.br.name} → ${x.si.name}`, sysId: x.si.sys_id, table: 'sys_script_include' }, [...base(), ...conditionFacts(ctx, brCondition(x.br), 'sys_script')]));
+    const cond = conditionFacts(ctx, brCondition(x.br), 'sys_script');
+    const facts = [...base(), ...cond];
+    if (x.arg) {
+      // A chamada vira uma "gravação" na leitura do script da BR: avalia as condições em volta e o valor passado.
+      const pseudo = (x.br.script ?? '').replace(x.arg.call, x.arg.value !== undefined ? `current.${ctx.field} = '${x.arg.value.replace(/'/g, "\\'")}'` : `current.${ctx.field} = __dinamico__`);
+      facts[1] = fact('references_field', 'sys_script', `passa "${ctx.field}" para ${x.si.name}`);
+      facts.push(...scriptFacts(ctx, pseudo, 'sys_script', { mode: 'trigger', condition: x.br.condition, hasCondition: cond.length > 0 }), ...reactsFacts(ctx, [x.br.script, x.br.condition], 'sys_script'));
+    }
+    out.push(evidence('br_via_script_include', { name: `${x.br.name} → ${x.si.name}`, sysId: x.si.sys_id, table: 'sys_script_include' }, facts));
   }
   return out;
 }
@@ -148,6 +157,15 @@ function sameWriteFields(ctx: ChangeContext): string[] {
 
 function userTransaction(ctx: ChangeContext): Evidence[] {
   const out: Evidence[] = [];
+  /** Client script que pode ter preenchido o campo no navegador (onChange de um campo que mudou na mesma gravação). */
+  const clientEvidence = (scripts: Row[]): Evidence[] => scripts.map((cs) => {
+    const trigger = cs.field ?? '';
+    const triggered = cs.type === 'onChange' && changedTogether.includes(trigger);
+    const facts = [fact('references_field', 'sys_script_client', `o client script altera "${ctx.field}"`), fact('references_table', 'sys_script_client', `client script da tabela ${cs.table}`), ...scriptFacts(ctx, cs.script, 'sys_script_client', { trigger: cs.type === 'onChange' ? trigger : undefined, hasCondition: triggered })];
+    if (triggered) facts.push(fact('trace_identifies_mechanism', 'sys_audit', `${trigger} mudou na mesma gravação e dispara o script`), fact('condition_true', 'sys_script_client', 'onChange do campo que mudou'));
+    return evidence('client_script', { name: cs.name ?? '?', sysId: cs.sys_id, table: 'sys_script_client' }, facts, ['o navegador não registra se a pessoa digitou ou se o script preencheu']);
+  });
+  const isStrong = (es: Evidence[]) => es.some((e) => e.facts.some((f) => f.kind === 'trace_identifies_mechanism') && !e.facts.some((f) => f.kind === 'condition_false' || f.kind === 'sets_other_value' || f.kind === 'reads_only'));
   const tx = ctx.traces.transactions;
   const userTx = tx.filter((t) => t.sys_created_by === ctx.user && (t.url ?? '').includes(ctx.sysId));
 
@@ -201,14 +219,9 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
         [...lookupFacts(d), fact('condition_true', 'dl_definition', 'roda ao mudar o formulário (no navegador)')],
         ['o navegador não registra se a pessoa digitou ou se o data lookup preencheu']));
     }
-    for (const cs of ctx.traces.clientScripts) {
-      const trigger = cs.field ?? '';
-      const triggered = cs.type === 'onChange' && changedTogether.includes(trigger);
-      const facts = [fact('references_field', 'sys_script_client', `o client script altera "${ctx.field}"`), fact('references_table', 'sys_script_client', `client script da tabela ${cs.table}`), ...scriptFacts(ctx, cs.script, 'sys_script_client', { trigger: cs.type === 'onChange' ? trigger : undefined, hasCondition: triggered })];
-      if (triggered) facts.push(fact('trace_identifies_mechanism', 'sys_audit', `${trigger} mudou na mesma gravação e dispara o script`), fact('condition_true', 'sys_script_client', 'onChange do campo que mudou'));
-      clientSide.push(evidence('client_script', { name: cs.name ?? '?', sysId: cs.sys_id, table: 'sys_script_client' }, facts, ['o navegador não registra se a pessoa digitou ou se o script preencheu']));
-    }
-    const strongClient = clientSide.some((e) => e.facts.some((f) => f.kind === 'trace_identifies_mechanism') && !e.facts.some((f) => f.kind === 'condition_false' || f.kind === 'sets_other_value' || f.kind === 'reads_only'));
+    // Client scripts "Mobile / Service Portal" (ui_type 1) não rodam no formulário clássico.
+    clientSide.push(...clientEvidence(ctx.traces.clientScripts.filter((c) => c.ui_type !== '1')));
+    const strongClient = isStrong(clientSide);
     out.push(evidence('user_action', { name: formUser }, [
       fact('form_value_equals', 'syslog_transaction', 'o formulário enviou exatamente o novo valor'),
       fact('execution_in_window', 'syslog_transaction', `salvo às ${formAt}`),
@@ -254,20 +267,35 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
     }
     out.push(...server);
     // Concorrentes de verdade: automações que podem ter gravado este valor (sem condição falsa e sem gravar outro valor).
-    const rivals = server.filter((e) => !e.facts.some((f) => f.kind === 'condition_false' || f.kind === 'sets_other_value' || f.kind === 'reads_only'));
-    const u = userTx[0];
+    const rivals: Evidence[] = server.filter((e) => !e.facts.some((f) => f.kind === 'condition_false' || f.kind === 'sets_other_value' || f.kind === 'reads_only'));
+    // Salvamento pelo Workspace: o botão Salvar roda como /api/now/ui/ui_action/<id>?sysparm_sys_id=<registro>.
+    // Os valores enviados não ficam na URL; client scripts "All" (ui_type 10) rodam no Workspace e podem ter preenchido o campo.
+    const ws = userTx.find((t) => /\/api\/now\/ui\/ui_action\/[0-9a-f]{32}/.test(t.url ?? '') && Math.abs(toMs(t.sys_created_on ?? '') - toMs(ctx.at)) <= 3000);
+    const wsClient = ws ? clientEvidence(ctx.traces.clientScripts.filter((c) => c.ui_type === '10')) : [];
+    if (wsClient.length) { out.push(...wsClient); rivals.push(...wsClient.filter((e) => isStrong([e]))); }
+    // Botão do Workspace com script próprio que cita o campo: quem grava é o botão (assinatura uiAction), não o "Salvar".
+    const wsUa = ws ? ctx.traces.uiActions.find((x) => uiActionMatches(x, uiActionRef(ws.url))) : undefined;
+    if (wsUa && !isSaveButton(wsUa) && refsField(wsUa.script, ctx.field)) rivals.push(evidence('ui_action', { name: wsUa.name ?? '?' }, []));
+    const u = ws ?? userTx[0];
     if (u) {
       const url = u.url ?? '';
-      const api = /\/api\//.test(url);
+      const api = /\/api\//.test(url) && !ws;
       const onRecord = api && url.includes(ctx.sysId) && Math.abs(toMs(u.sys_created_on ?? '') - toMs(ctx.at)) <= 2000;
       const facts = [
-        fact('execution_in_window', 'syslog_transaction', `${u.type} ${url.split('?')[0]} às ${u.sys_created_on}`),
+        fact('execution_in_window', 'syslog_transaction', ws ? `salvo pelo Workspace às ${u.sys_created_on}` : `${u.type} ${url.split('?')[0]} às ${u.sys_created_on}`),
         fact('user_matches', 'syslog_transaction', `por ${ctx.user}`),
       ];
       let gaps: string[];
+      const onWs = !!ws && url.includes(ctx.sysId);
       const who = ctx.traces.users?.[ctx.user];
       if (api && who?.integration) facts.push(fact('integration_user', 'sys_user', `${who.name} é uma conta de integração (só API)`));
-      if (onRecord && !rivals.length) {
+      if (onWs) {
+        if (!rivals.length) {
+          facts.push(fact('api_write_on_record', 'syslog_transaction', `${ctx.user} salvou este registro pelo Workspace no mesmo instante`));
+          facts.push(fact('no_competing_automation', 'sys_script', server.length || wsClient.length ? 'as regras e client scripts que citam o campo não se aplicam a este registro' : 'nenhuma automação ativa grava este campo'));
+        } else if (isStrong(wsClient)) facts.push(fact('client_side_possible', 'sys_script_client', 'um client script do Workspace pode ter preenchido o campo antes de salvar'));
+        gaps = ['o Workspace não registra os valores enviados; a conclusão vem das regras que poderiam ter gravado este valor'];
+      } else if (onRecord && !rivals.length) {
         facts.push(fact('api_write_on_record', 'syslog_transaction', `${ctx.user} gravou este registro pela API no mesmo instante`));
         facts.push(fact('no_competing_automation', 'sys_script', server.length ? 'as regras que citam o campo não se aplicam a este registro' : 'nenhuma automação ativa grava este campo'));
         gaps = ['o corpo da requisição não fica registrado; a conclusão vem de não haver outra automação capaz de gravar este valor'];
