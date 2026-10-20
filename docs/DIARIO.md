@@ -9,6 +9,26 @@ Convenções:
 
 ---
 
+## 2026-10-20 (noite) — 0.12.1 e 0.12.2
+
+**Feito**
+- Idioma da sessão do ServiceNow chega ao motor (Codex). O mundo MAIN lê `g_user_lang`, `NOW.language`, `g_lang` ou `<html lang>`; `pt-BR`, `pt` e `pb` viram `pb` (o código do `sys_documentation`). No PDI o admin está em `en`, então o caso `pb` não foi testado na instância.
+- **0.12.2**:
+  - Painel flutuante com visual de janela do Mac: cantos arredondados, margem de 8 px da borda e bolinhas vermelha (fechar), amarela (minimizar) e verde (sempre visível).
+  - "Sempre visível" usa Document Picture-in-Picture: o painel vai para uma janela que fica por cima de tudo, até de outros programas. Fechar essa janela devolve o painel para a página.
+  - Recarregar sozinho (Codex): no build o vite gera `build.txt`. Quando a extensão está carregada sem compactação (sem `update_url`), o worker confere esse arquivo a cada 3 s e chama `chrome.runtime.reload()` quando ele muda. Na versão da loja isso não roda.
+- O dono carregou `trail-extensao` no Edge e, ao clicar no ícone, abriu a janela separada. Causa: pasta nova é instalação nova (outro ID), a instância ainda não estava conectada, e sem Trail na aba o código cai de propósito para a janela.
+- O site se publica sozinho a cada push (Vercel ligada ao GitHub, confirmado).
+
+**Em andamento**
+- Codex: janela separada encostada à direita do navegador; instância não conectada pede a conexão em vez de abrir a janela.
+- Antigravity: página b3 com as novidades da 0.12. Depois, os ajustes pedidos pelo dono:
+  - fases com no máximo 5 itens e "Ver mais";
+  - FAQ começando fechado;
+  - tabela de casos com 30 linhas e "Ver mais";
+  - seção do painel sem acompanhar a rolagem, trocando de aba sozinha, com os passos numa linha do tempo à direita.
+- Bateria do PDI com o motor da 0.12.1.
+
 ## 2026-10-20 — retomada a partir do pacote 0.12.0
 
 **Quem:** Claude Code (coordenação, integração, bateria no PDI, GitHub e Vercel), com dois agentes no Maestri: Codex (motor) e Antigravity (interface e documentação).
