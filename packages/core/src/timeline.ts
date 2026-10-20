@@ -21,7 +21,7 @@ export type SaveVia =
   | 'expired'     // rastros de transação já expiraram
   | 'unknown';
 
-export interface TimelineField { field: string; label: string; oldValue: string; newValue: string; oldDisplay: string; newDisplay: string; journal: boolean }
+export interface TimelineField { field: string; label: string; oldValue: string; newValue: string; oldDisplay: string; newDisplay: string; journal: boolean; /** Tabela referenciada (os valores são sys_ids dela). */ ref?: string }
 export interface TimelineSave {
   checkpoint: number;
   at: string;
@@ -162,7 +162,7 @@ export async function recordTimeline(client: RestClient, target: Omit<Target, 'f
     else if (user === 'system') via = 'system';
     const fields: TimelineField[] = rows.map((r) => {
       const f = r.fieldname ?? '';
-      return { field: f, label: colLabel[f] ?? f, oldValue: r.oldvalue ?? '', newValue: r.newvalue ?? '', oldDisplay: display(f, r.oldvalue ?? ''), newDisplay: display(f, r.newvalue ?? ''), journal: JOURNAL.has(f) };
+      return { field: f, label: colLabel[f] ?? f, oldValue: r.oldvalue ?? '', newValue: r.newvalue ?? '', oldDisplay: display(f, r.oldvalue ?? ''), newDisplay: display(f, r.newvalue ?? ''), journal: JOURNAL.has(f), ...(refTable[f] ? { ref: refTable[f] } : {}) };
     }).sort((a, b) => Number(a.journal) - Number(b.journal) || a.label.localeCompare(b.label));
     return { checkpoint: cp, at, user, via, ...(detail ? { detail } : {}), fields };
   }

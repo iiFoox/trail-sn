@@ -41,6 +41,8 @@ export const Glyph = {
   plug: P('M9 2v6M15 2v6M6 8h12v4a6 6 0 0 1-12 0V8zM12 18v4'),
   moon: P('M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z'),
   sun: P('M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4'),
+  minus: P('M5 12h14'),
+  close: P('M6 6l12 12M18 6L6 18'),
   detach: P('M14 3h7v7M21 3l-9 9M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5'),
   copy: P('M9 9h11v11H9zM5 15H4V4h11v1'),
   open: P('M14 3h7v7M21 3l-9 9M5 5h5M5 5v14h14v-5'),

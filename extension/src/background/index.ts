@@ -21,6 +21,14 @@ async function openWindow(): Promise<void> {
   const w = await chrome.windows.create({ url: chrome.runtime.getURL('src/sidepanel/index.html?window=1'), type: 'popup', width: 440, height: 860, focused: true });
   if (w?.id !== undefined) await session.set({ [WINDOW_KEY]: w.id });
 }
+/**
+ * Painel na página (flutuante): pede ao quadro de cima da aba para mostrar. Sem o Trail na aba (instância não conectada,
+ * página que não é do ServiceNow), cai para a janela separada, que não depende de gesto do usuário.
+ */
+async function openFloat(tabId: number, toggle = false): Promise<void> {
+  const ok = await chrome.tabs.sendMessage(tabId, { type: toggle ? 'float-toggle' : 'float-open', tabId }, { frameId: 0 }).then((r) => !!r, () => false);
+  if (!ok) await openWindow();
+}
 async function openPanel(tabId: number | undefined, mode?: PanelMode): Promise<void> {
   // Com o modo conhecido, sidePanel.open é chamado antes de qualquer await: o Edge descarta o gesto do usuário
   // assim que a primeira promessa resolve, e o painel lateral deixa de abrir.
@@ -30,6 +38,7 @@ async function openPanel(tabId: number | undefined, mode?: PanelMode): Promise<v
   }
   const m = mode ?? (await loadPrefs()).panelMode;
   if (m === 'window') return openWindow();
+  if (m === 'float') { if (tabId !== undefined) await openFloat(tabId); else await openWindow(); return; }
   // Abrir o painel lateral precisa de gesto do usuário; clique no ícone, no popup ou no menu contam.
   if (tabId !== undefined) await chrome.sidePanel.open({ tabId }).catch(() => { /* já aberto ou sem gesto */ });
 }
@@ -144,23 +153,27 @@ chrome.commands?.onCommand.addListener((cmd) => { if (cmd === 'toggle-icons') to
 // Botão direito: o menu do navegador com as opções do Trail (antes ficavam num popup).
 async function applyActionBehavior(): Promise<void> {
   const mode = (await loadPrefs()).panelMode;
-  await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: mode !== 'window' }).catch(() => undefined);
+  await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: mode === 'side' }).catch(() => undefined);
 }
-chrome.action.onClicked.addListener(() => { void openWindow(); }); // só dispara quando o painel lateral não abre sozinho (modo janela)
+// Só dispara quando o painel lateral não abre sozinho (modos "na página" e "janela").
+chrome.action.onClicked.addListener((tab) => {
+  void loadPrefs().then((p) => (p.panelMode === 'float' && tab.id !== undefined ? openFloat(tab.id, true) : openWindow()));
+});
 chrome.storage.onChanged.addListener((ch, area) => { if (area === 'sync' && ch[PREFS_KEY]) void applyActionBehavior(); });
 
 function createMenus(): void {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({ id: 'trail-open', title: 'Trail', contexts: ['page'] });
+    chrome.contextMenus.create({ id: 'trail-float', title: menuText('float'), contexts: ['action'] });
     chrome.contextMenus.create({ id: 'trail-side', title: menuText('side'), contexts: ['action'] });
     chrome.contextMenus.create({ id: 'trail-window', title: menuText('window'), contexts: ['action'] });
     chrome.contextMenus.create({ id: 'trail-icons', title: menuText('icons'), contexts: ['action'] });
     chrome.contextMenus.create({ id: 'trail-options', title: menuText('options'), contexts: ['action'] });
   });
 }
-function menuText(k: 'side' | 'window' | 'icons' | 'options'): string {
-  const pt = { side: 'Abrir no painel lateral', window: 'Abrir em janela separada', icons: 'Mostrar ou esconder os ícones nos campos (Alt+Shift+T)', options: 'Opções do Trail' };
-  const en = { side: 'Open in the side panel', window: 'Open in a separate window', icons: 'Show or hide the field icons (Alt+Shift+T)', options: 'Trail options' };
+function menuText(k: 'float' | 'side' | 'window' | 'icons' | 'options'): string {
+  const pt = { float: 'Abrir na página', side: 'Abrir no painel lateral', window: 'Abrir em janela separada', icons: 'Mostrar ou esconder os ícones nos campos (Alt+Shift+T)', options: 'Opções do Trail' };
+  const en = { float: 'Open on the page', side: 'Open in the side panel', window: 'Open in a separate window', icons: 'Show or hide the field icons (Alt+Shift+T)', options: 'Trail options' };
   return (chrome.i18n?.getUILanguage?.().startsWith('pt') ? pt : en)[k];
 }
 chrome.runtime.onInstalled.addListener(() => { void syncRegistrations(); createMenus(); void applyActionBehavior(); });
@@ -168,6 +181,7 @@ chrome.runtime.onStartup.addListener(() => { void syncRegistrations(); createMen
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   switch (info.menuItemId) {
     case 'trail-side': if (tab?.id !== undefined) void chrome.sidePanel.open({ tabId: tab.id }).catch(() => undefined); return;
+    case 'trail-float': if (tab?.id !== undefined) void openFloat(tab.id); return;
     case 'trail-window': void openWindow(); return;
     case 'trail-icons': toggleIcons(); return;
     case 'trail-options': void chrome.runtime.openOptionsPage(); return;
@@ -287,7 +301,12 @@ async function runRecord(tabId: number, origin: string, table: string, record: s
     const audit = (await client.query({ table: 'sys_audit', query: `documentkey=${rec.sys_id}^ORDERBYDESCsys_created_on`, fields: ['fieldname'], limit: 400 })).rows;
     const journal = new Set(['comments', 'work_notes', 'comments_and_work_notes', 'approval_history']);
     const fields = [...new Set(audit.map((a) => a.fieldname ?? '').filter((f) => f && !f.startsWith('sys_') && !journal.has(f)))].slice(0, 25);
-    const items: BatchItem[] = fields.map((f) => ({ sysId: rec.sys_id!, display, field: f, status: 'pending' }));
+    // Rótulos dos campos já na lista de espera: a pessoa vê "Service", não business_service, desde o começo.
+    const dict = fields.length ? (await client.query({ table: 'sys_dictionary', query: `nameIN${table},task,cmdb_ci^elementIN${fields.join(',')}`, fields: ['name', 'element', 'column_label'], limit: 200 }).catch(() => ({ rows: [] as Record<string, string>[] }))).rows : [];
+    const rank = (n?: string) => (n === table ? 0 : n === 'task' ? 1 : 2);
+    const lbl: Record<string, string> = {};
+    for (const d of [...dict].sort((a, b) => rank(a.name) - rank(b.name))) if (d.element && d.column_label && !(d.element in lbl)) lbl[d.element] = d.column_label;
+    const items: BatchItem[] = fields.map((f) => ({ sysId: rec.sys_id!, display, field: f, ...(lbl[f] ? { label: lbl[f] } : {}), status: 'pending' }));
     const save = async (status: 'running' | 'done') => setTab({ ...(await getTab(tabId)), tabId, status: 'idle', result: undefined, batch: { ...base, sysId: rec.sys_id, display, items: [...items], status, ...(status === 'done' ? { ms: Date.now() - started } : {}) } });
     await save('running');
     const retention = await retentionFor(origin, client);
@@ -295,7 +314,7 @@ async function runRecord(tabId: number, origin: string, table: string, record: s
     const worker = async () => {
       while (next < items.length) {
         const i = next++;
-        try { items[i] = { ...batchItemFrom(await investigate(client, { table, sysId: rec.sys_id!, field: items[i]!.field! }, { retention }, metaCache(origin))), field: items[i]!.field! }; }
+        try { const prev = items[i]!; const done = batchItemFrom(await investigate(client, { table, sysId: rec.sys_id!, field: prev.field! }, { retention }, metaCache(origin))); items[i] = { ...done, field: prev.field!, label: done.label ?? prev.label ?? prev.field! }; }
         catch (e) { items[i] = { ...items[i]!, status: 'error', error: (e as Error).message }; }
         if (Date.now() - last > 700) { last = Date.now(); await save('running'); }
       }
@@ -366,6 +385,16 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
         await runBatch(id, msg.origin, msg.table, msg.field, msg.sysIds.slice(0, 200), msg.token);
         return;
       }
+      case 'float-get': {
+        if (tabId === undefined) return;
+        const k = `float:${tabId}`;
+        return { tabId, ...((await session.get(k))[k] as { open?: boolean; min?: boolean } | undefined ?? {}) };
+      }
+      case 'float-set': {
+        if (tabId === undefined) return;
+        await session.set({ [`float:${tabId}`]: { open: msg.open, min: msg.min } });
+        return true;
+      }
       case 'open-panel': {
         await openPanel(tabId ?? (await activeTabId()), msg.mode);
         return;
@@ -398,4 +427,4 @@ async function activeTabId(): Promise<number | undefined> {
   return tab?.id;
 }
 
-chrome.tabs.onRemoved.addListener((tabId) => void session.remove(storageKey.tab(tabId)));
+chrome.tabs.onRemoved.addListener((tabId) => void session.remove([storageKey.tab(tabId), `float:${tabId}`]));

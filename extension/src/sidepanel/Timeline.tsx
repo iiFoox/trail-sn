@@ -6,6 +6,7 @@ import { Glyph } from '../shared/icons';
 import { send } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
 import { parts, plural, refLink } from './Result';
+import { Val } from './Val';
 
 const P = t(getPrefs().lang).p;
 const isDemo = new URLSearchParams(location.search).has('demo');
@@ -132,11 +133,11 @@ function Save({ i, sv, origin, sysId, onField, pick, onPick }: { i: number; sv: 
       </div>
       <ul class="fl">
         {fields.map((f) => (
-          <li><button class="fbtn" onClick={() => onField(f.field)} title={P.tlInvestigate}>
+          <li><div class="fbtn" role="button" tabIndex={0} onClick={() => onField(f.field)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onField(f.field); } }} title={P.tlInvestigate}>
             <b>{f.label}</b>
-            <span class="v"><span class={`o ${f.oldDisplay ? "" : "nil"}`}>{short(f.oldDisplay, P.tlEmptyValue)}</span> → <span class="n">{short(f.newDisplay, P.tlEmptyValue)}</span></span>
+            <span class="v"><Val cls="o" raw={f.oldValue} text={short(f.oldDisplay, P.tlEmptyValue)} refTable={f.ref} origin={origin} empty={P.tlEmptyValue} /> → <Val cls="n" raw={f.newValue} text={short(f.newDisplay, P.tlEmptyValue)} refTable={f.ref} origin={origin} empty={P.tlEmptyValue} /></span>
             <span class="go">{Glyph.chevron}</span>
-          </button></li>
+          </div></li>
         ))}
         {notes.map((f) => <li class="note"><b>{f.label}</b><q>{f.newDisplay.length > 160 ? f.newDisplay.slice(0, 157) + '…' : f.newDisplay}</q></li>)}
       </ul>

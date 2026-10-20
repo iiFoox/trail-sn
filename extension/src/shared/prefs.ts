@@ -1,6 +1,6 @@
 /**
  * Preferências do usuário: tema, idioma e onde o painel abre.
- * Padrões decididos: escuro, português, painel lateral.
+ * Padrões decididos: escuro, português, painel flutuante na página.
  *
  * As páginas da extensão (painel, popup, opções) compartilham a mesma origem, então o
  * localStorage serve de leitura síncrona no carregamento. O chrome.storage.sync guarda a
@@ -9,10 +9,11 @@
  */
 export type Theme = 'dark' | 'light' | 'system';
 export type Lang = 'pt' | 'en';
-export type PanelMode = 'side' | 'window';
-export interface Prefs { theme: Theme; lang: Lang; panelMode: PanelMode; showIcons: boolean }
+/** float: painel dentro da própria página (padrão desde a 0.12); side: painel lateral do navegador; window: janela separada. */
+export type PanelMode = 'float' | 'side' | 'window';
+export interface Prefs { theme: Theme; lang: Lang; panelMode: PanelMode; showIcons: boolean; /** Versão da escolha do painel: antes da 0.12 'side' era o padrão gravado, não uma escolha. */ modeV?: number }
 
-export const DEFAULT_PREFS: Prefs = { theme: 'dark', lang: 'pt', panelMode: 'side', showIcons: true };
+export const DEFAULT_PREFS: Prefs = { theme: 'dark', lang: 'pt', panelMode: 'float', showIcons: true, modeV: 2 };
 const KEY = 'trail.prefs';
 export const PREFS_KEY = KEY;
 
@@ -28,8 +29,10 @@ export function normalize(p: Partial<Prefs> | undefined): Prefs {
   return {
     theme: p?.theme === 'light' || p?.theme === 'system' ? p.theme : 'dark',
     lang: p?.lang === 'en' ? 'en' : 'pt',
-    panelMode: p?.panelMode === 'window' ? 'window' : 'side',
+    // 'side' gravado antes da 0.12 era só o padrão da época: quem não escolheu passa para o flutuante.
+    panelMode: p?.panelMode === 'window' ? 'window' : p?.panelMode === 'side' && p.modeV === 2 ? 'side' : 'float',
     showIcons: p?.showIcons !== false,
+    modeV: 2,
   };
 }
 

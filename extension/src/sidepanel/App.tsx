@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { demoState, describeLink } from '../shared/demo';
 import { fmt, t } from '../shared/i18n';
 import { applyTheme, getPrefs, resolvedTheme, savePrefs } from '../shared/prefs';
-import { EmptyIllustration, Glyph } from '../shared/icons';
+import { EmptyIllustration, Glyph, TrailMark } from '../shared/icons';
 import { Result } from './Result';
 import { Batch } from './Batch';
 import { setTrackedTab } from '../shared/tabRef';
@@ -15,9 +15,16 @@ const params = new URLSearchParams(location.search);
 const isDemo = params.has('demo');
 /** Aberto como janela separada (chrome.windows), não como painel lateral. */
 const isWindow = params.has('window');
+/** Painel flutuante: num iframe dentro da página do ServiceNow, preso à aba que o abriu. */
+const isFloat = params.has('float');
+const floatTab = Number(params.get('tab'));
+/** Onde este painel está: pedidos feitos daqui não abrem outro painel em outro lugar. */
+const here = isFloat ? 'float' as const : isWindow ? 'window' as const : 'side' as const;
+const toPage = (type: string, extra: Record<string, unknown> = {}) => { try { parent.postMessage({ type, ...extra }, '*'); } catch { /* fora do iframe */ } };
 
 /** A aba que o painel acompanha. Na janela separada, a aba ativa da última janela normal focada. */
 async function currentTab(): Promise<chrome.tabs.Tab | undefined> {
+  if (isFloat) return chrome.tabs.get(floatTab).catch(() => undefined);
   if (isWindow) {
     try {
       const w = await chrome.windows.getLastFocused({ windowTypes: ['normal'], populate: true });
@@ -40,7 +47,7 @@ function ThemeToggle() {
 
 export function App() {
   const [tabId, setTabId] = useState<number>();
-  const [state, setState] = useState<TabState | undefined>(isDemo ? (params.has('batch') ? demoBatch() : demoState(params.get('field') ?? 'state')) : undefined);
+  const [state, setState] = useState<TabState | undefined>(isDemo ? (params.has('batch') ? (params.get('batch') === 'rec' ? demoRecord(params.has('wait')) : demoBatch()) : demoState(params.get('field') ?? 'state')) : undefined);
   const [fallbackOrigin, setFallbackOrigin] = useState<string>();
   const [toast, setToast] = useState<string>();
   const toastTimer = useRef<number>();
@@ -56,7 +63,7 @@ export function App() {
     if (isDemo) { showToast(); setState({ ...demoState(f), status: 'running' }); setTimeout(() => setState(demoState(f)), 650); return; }
     const tgt = state?.result?.target;
     if (!origin || !tgt) return;
-    void send({ type: 'investigate', origin, target: { table: tgt.table, sysId: tgt.sysId, field: f } });
+    void send({ type: 'investigate', origin, mode: here, target: { table: tgt.table, sysId: tgt.sysId, field: f } });
   };
 
   // Demonstração: a página que hospeda o painel troca o campo; links não saem do site.
@@ -111,6 +118,7 @@ export function App() {
       }
     };
     chrome.storage.onChanged.addListener(onChange);
+    if (isFloat) { toPage('trail-float-ready'); return () => chrome.storage.onChanged.removeListener(onChange); }
     const consider = async (tab: chrome.tabs.Tab | undefined) => {
       if (!tab?.id) return;
       active.current = tab.id;
@@ -159,14 +167,29 @@ export function App() {
 
   return (
     <>
-      <header class="topbar">
-        {/* O navegador já mostra "Trail" no cabeçalho do painel: aqui fica só a instância e os botões. */}
+      <header class={`topbar ${isFloat ? 'drag' : ''}`} title={isFloat ? s.floatDragHint : undefined}
+        onPointerDown={isFloat ? (e) => {
+          if (e.button !== 0 || (e.target as HTMLElement).closest('button,a')) return;
+          e.preventDefault();
+          const el = e.currentTarget as HTMLElement;
+          el.setPointerCapture(e.pointerId);
+          toPage('trail-float-drag', { sx: e.screenX, sy: e.screenY });
+          const move = (ev: PointerEvent) => toPage('trail-float-move', { sx: ev.screenX, sy: ev.screenY, cx: ev.clientX });
+          const end = (ev: PointerEvent) => { el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', end); el.removeEventListener('pointercancel', end); toPage('trail-float-drop', { cx: ev.clientX }); };
+          el.addEventListener('pointermove', move); el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+        } : undefined}
+        onDblClick={isFloat ? (e) => { if (!(e.target as HTMLElement).closest('button,a')) toPage('trail-float-dock'); } : undefined}>
+        {/* No painel do navegador, ele já mostra "Trail" em cima; no flutuante, este é o único cabeçalho e leva a marca. */}
+        {isFloat && <span class="fmark" aria-hidden="true"><TrailMark /></span>}
+        {isFloat && <b class="fname">Trail</b>}
         {origin && <span class="host" title={origin}>{origin.replace(/^https?:\/\//, '')}</span>}
         {level && <span class={`dot ${level === 'full' ? '' : level}`} title={level} />}
         <div class="actions">
           {isDemo && <span class="demo-badge">{s.demoBadge}</span>}
           <ThemeToggle />
-          {!isWindow && (
+          {isFloat && <button class="icon-btn" title={s.floatMin} aria-label={s.floatMin} onClick={() => toPage('trail-float-min')}>{Glyph.minus}</button>}
+          {isFloat && <button class="icon-btn" title={s.floatClose} aria-label={s.floatClose} onClick={() => toPage('trail-float-close')}>{Glyph.close}</button>}
+          {!isWindow && !isFloat && (
             <button class="icon-btn" title={s.detach} aria-label={s.detach} onClick={() => {
               if (isDemo) { showToast(s.panelModeHint); return; }
               void send({ type: 'open-panel', mode: 'window' }).then(() => window.close());
@@ -185,7 +208,7 @@ export function App() {
         {state?.access && !state.result && <AccessNotice report={state.access} />}
         {state?.status === 'running' && <Loading />}
         {state?.status === 'error' && <div class="notice bad"><div class="title">{s.errorTitle}</div>{state.error}</div>}
-        {state?.batch && !state.result && origin && state.status !== 'running' && <Batch b={state.batch} origin={origin} onOpen={(id, f) => { void send({ type: 'investigate', origin, target: { table: state.batch!.table, sysId: id, field: f ?? state.batch!.field } }); }} />}
+        {state?.batch && !state.result && origin && state.status !== 'running' && <Batch b={state.batch} origin={origin} onOpen={(id, f) => { void send({ type: 'investigate', origin, mode: here, target: { table: state.batch!.table, sysId: id, field: f ?? state.batch!.field } }); }} />}
         {state?.result && origin && state.status !== 'running' && <Result r={state.result} origin={origin} access={state.access} toast={(m) => showToast(m)} onField={investigateField} />}
         {!needsConnect && !state?.result && !state?.batch && state?.status !== 'running' && (
           <div class="empty">
@@ -244,9 +267,9 @@ function ManualDrawer({ origin, table, sysId, field, tabId, open, onDemo }: { or
   const go = async () => {
     if (isDemo) { onDemo(fld); return; }
     if (!origin || tabId === undefined) return;
-    if (whole) { await send({ type: 'record', origin, table: tbl, record: rec }); return; }
+    if (whole) { await send({ type: 'record', origin, mode: here, table: tbl, record: rec }); return; }
     const target = /^[0-9a-f]{32}$/.test(rec) ? { table: tbl, sysId: rec, field: fld } : { table: tbl, number: rec, field: fld };
-    await send({ type: 'investigate', origin, target });
+    await send({ type: 'investigate', origin, mode: here, target });
   };
   return (
     <details class="drawer" open={isOpen} onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}>
@@ -273,6 +296,23 @@ function ManualDrawer({ origin, table, sysId, field, tabId, open, onDemo }: { or
   );
 }
 
+
+/** Demonstração do registro inteiro: os campos que mudaram num incidente, com nomes e valores como no formulário. */
+function demoRecord(wait = false): TabState {
+  const id = 'f'.repeat(32);
+  const it = (field: string, label: string, at: string, o: string, n: string, od: string, nd: string, type: string, name: string, grade: string, refTable?: string) => ({ sysId: id, display: 'INC0010172', title: 'Sistema de pedidos fora do ar', field, label, status: 'done' as const, at, oldValue: o, newValue: n, oldDisplay: od, newDisplay: nd, user: 'admin', changes: 1, ...(refTable ? { refTable } : {}), cause: { type, name, grade, score: 90, ...(type === 'user_action' ? {} : { sysId: 'demo', table: type === 'data_lookup' ? 'dl_definition' : 'sysauto_script' }) } });
+  const items = [
+    it('business_service', 'Service', '2026-10-20 22:42:10', '', 'a'.repeat(32), '', 'SAP Enterprise Services', 'user_action', 'admin', 'confirmed', 'cmdb_ci_service'),
+    it('subcategory', 'Subcategory', '2026-10-20 22:25:00', '', 'general_information', '', 'General Information', 'user_action', 'admin', 'confirmed'),
+    it('urgency', 'Urgency', '2026-10-20 22:21:00', '3', '1', '3 - Low', '1 - High', 'user_action', 'admin', 'confirmed'),
+    it('impact', 'Impact', '2026-10-20 22:21:00', '3', '1', '3 - Low', '1 - High', 'user_action', 'admin', 'confirmed'),
+    it('priority', 'Priority', '2026-10-20 22:21:00', '4', '1', '4 - Low', '1 - Critical', 'data_lookup', 'Priority Lookup', 'confirmed'),
+    it('description', 'Description', '2026-10-20 22:00:00', '', 'Gravado pelo job F18', '', 'Gravado pelo job F18', 'scheduled_job', '[PT] F18 Job que atualiza descrição', 'confirmed'),
+    it('activity_due', 'Activity due', '2026-10-20 22:25:27', '2026-10-21 00:21:19', '2026-10-21 00:25:27', '2026-10-21 00:21:19', '2026-10-21 00:25:27', 'user_action', 'admin', 'candidate'),
+  ];
+  if (wait) for (const i of [2, 5, 6]) items[i] = { sysId: id, display: 'INC0010172', field: items[i]!.field, label: items[i]!.label, status: 'pending' } as never;
+  return { tabId: 0, status: 'idle', ctx: { origin: 'https://sua-instancia.service-now.com', surface: 'ui16' }, batch: { table: 'incident', field: '*', kind: 'fields', sysId: id, display: 'INC0010172', items, status: wait ? 'running' : 'done', startedAt: new Date().toISOString(), ms: 5200 } };
+}
 
 /** Demonstração do lote: 12 incidentes, a categoria mudou por três causas. */
 function demoBatch(): TabState {

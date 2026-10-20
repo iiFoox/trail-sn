@@ -23,6 +23,8 @@ export declare const Glyph: {
     plug: import("preact").JSX.Element;
     moon: import("preact").JSX.Element;
     sun: import("preact").JSX.Element;
+    minus: import("preact").JSX.Element;
+    close: import("preact").JSX.Element;
     detach: import("preact").JSX.Element;
     copy: import("preact").JSX.Element;
     open: import("preact").JSX.Element;

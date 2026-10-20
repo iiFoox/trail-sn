@@ -17,6 +17,7 @@ import { FieldMapBox } from './FieldMap';
 import { fullReport, plainSummary, savePdf } from './export';
 import { diffLines, looksLong } from '../shared/diff';
 import { DiffView, type DiffLabels } from '../shared/DiffView';
+import { Val } from './Val';
 
 const lang = getPrefs().lang;
 const s = t(lang);
@@ -45,6 +46,11 @@ export function refLink(origin: string, ref: { table: string; sysId?: string; qu
 export function humanField(f: string): string {
   const x = f.replace(/_id$/, '').replace(/_/g, ' ');
   return x.charAt(0).toUpperCase() + x.slice(1);
+}
+
+/** O nome do campo como no formulário (business_service → Service); sem acesso ao dicionário, o técnico arrumado. */
+export function fieldName(r: Investigation): string {
+  return r.fieldLabel || humanField(r.target.field);
 }
 
 export function parts(utc: string): { date: string; time: string; full: string; rel: string } {
@@ -119,7 +125,7 @@ export function Result({ r, origin, access, toast, onField }: { r: Investigation
     return () => removeEventListener('keydown', on);
   }, [tab, histMode, diffOpen, r.changes.length]);
   const c: Change | undefined = r.changes[sel];
-  const field = humanField(r.target.field);
+  const field = fieldName(r);
 
   const denied = useMemo(() => {
     const fromAccess = access?.denied ?? [];
@@ -144,8 +150,8 @@ export function Result({ r, origin, access, toast, onField }: { r: Investigation
           {c ? (
             c.oldValue && c.oldValue.length > 40 && c.newValue.startsWith(c.oldValue) && !c.newValue.slice(c.oldValue.length).includes('\n') ? <span class="added" title={c.newValue}>{P.added} <b>“{c.newValue.slice(c.oldValue.length).trim()}”</b></span>
             : c.oldValue && looksLong(c.oldValue, c.newValue) ? <DiffSummary oldText={c.oldValue} newText={c.newValue} onOpen={(x, y) => setDiffOpen({ x, y })} />
-            : c.oldValue || c.checkpoint > 1 ? <><span class="old" title={c.oldValue}>{valueLabel(r, c.oldValue)}</span><span class="arr">→</span><span class="new" title={c.newValue}>{valueLabel(r, c.newValue)}</span></>
-              : <><span class="muted small">{P.createdAs}</span><span class="new" title={c.newValue}>{valueLabel(r, c.newValue)}</span></>
+            : c.oldValue || c.checkpoint > 1 ? <><Val cls="old" raw={c.oldValue} text={valueLabel(r, c.oldValue)} refTable={r.refTable} origin={origin} empty={P.empty} /><span class="arr">→</span><Val cls="new" raw={c.newValue} text={valueLabel(r, c.newValue)} refTable={r.refTable} origin={origin} empty={P.empty} /></>
+              : <><span class="muted small">{P.createdAs}</span><Val cls="new" raw={c.newValue} text={valueLabel(r, c.newValue)} refTable={r.refTable} origin={origin} empty={P.empty} /></>
           ) : <span class="muted small">{s.noChanges}</span>}
         </div>
         {c && <div class="when2">{when(c.at)}{(() => { const d = traceDaysLeft(c); return d !== null ? <span class="expire" title={P.expireHint}>{fmt(d === 0 ? P.expireToday : P.expireIn, { n: d })}</span> : null; })()}</div>}
@@ -280,6 +286,14 @@ const traceIcon: Record<string, preact.JSX.Element> = {
   event: Glyph.event, flow: Glyph.flow, workflow: Glyph.flow, change: Glyph.check,
 };
 
+/** Outro campo citado no rastro: o rótulo do formulário, se a instância deixou ler. */
+function otherName(r: Investigation, f: string): string {
+  return r.display?.fields[f] || humanField(f);
+}
+function OtherVal({ r, f, v, origin }: { r: Investigation; f: string; v: string; origin: string }) {
+  return <Val raw={v} text={r.display?.values[f]?.[v] ?? rawValue(v)} refTable={r.display?.refs[f]} origin={origin} empty={P.empty} />;
+}
+
 function rawValue(v: string): string {
   if (!v) return P.empty;
   return v.length > 48 ? v.slice(0, 45) + '…' : v;
@@ -306,8 +320,8 @@ function Trace({ r, c, origin, field, denied, expired }: { r: Investigation; c: 
               <div class="x"><span class="ti">{isWrite ? Glyph.rule : traceIcon[it.kind]}</span>{isWrite ? P.otherWrite : traceTitle(r, c, it, field)}</div>
               {(it.kind === 'async' || it.kind === 'job') && <div class="sub2">{it.label}</div>}
               {it.sent !== undefined && <div class="sub2">{fmt(P.sent, { field, value: valueLabel(r, it.sent) })}</div>}
-              {isWrite && <ul class="fw">{(it.fields ?? []).slice(0, 6).map((f) => <li><b>{humanField(f.field)}</b> {rawValue(f.oldValue)} → {rawValue(f.newValue)}</li>)}{(it.fields?.length ?? 0) > 6 && <li class="muted">{fmt(P.moreFields, { n: (it.fields?.length ?? 0) - 6 })}</li>}</ul>}
-              {isChange && it.fields?.length ? <div class="sub2 muted">{fmt(P.sameWrite, { list: it.fields.map((f) => humanField(f.field)).join(', ') })}</div> : null}
+              {isWrite && <ul class="fw">{(it.fields ?? []).slice(0, 6).map((f) => <li><b>{otherName(r, f.field)}</b> <OtherVal r={r} f={f.field} v={f.oldValue} origin={origin} /> → <OtherVal r={r} f={f.field} v={f.newValue} origin={origin} /></li>)}{(it.fields?.length ?? 0) > 6 && <li class="muted">{fmt(P.moreFields, { n: (it.fields?.length ?? 0) - 6 })}</li>}</ul>}
+              {isChange && it.fields?.length ? <div class="sub2 muted">{fmt(P.sameWrite, { list: it.fields.map((f) => otherName(r, f.field)).join(', ') })}</div> : null}
               <div class="src">
                 <span>{P.srcName[it.source] ?? it.source}{isChange || isWrite ? ` · ${fmt(P.checkpoint, { n: it.checkpoint ?? c.checkpoint })}` : ''}{it.kind === 'form' || it.kind === 'api' ? ` · ${it.label}` : ''}</span>
                 {it.ref && <a class="see" href={refLink(origin, it.ref)} target="_blank" rel="noreferrer">{P.seeInSn} {Glyph.open}</a>}
@@ -495,7 +509,7 @@ function Other({ e, origin, field, day }: { e: Evidence; origin: string; field: 
 
 // ---------- Histórico ----------
 function History({ r, origin, sel, onPick }: { r: Investigation; origin: string; sel: number; onPick: (i: number) => void }) {
-  const field = humanField(r.target.field);
+  const field = fieldName(r);
   type Row = { at: string; i: number };
   const rows: Row[] = r.changes.map((c, i) => ({ at: c.at, i }));
   if (r.unaudited?.lastUpdatedOn) rows.push({ at: r.unaudited.lastUpdatedOn, i: -1 });
@@ -535,12 +549,12 @@ function History({ r, origin, sel, onPick }: { r: Investigation; origin: string;
           const top = c.evidence[0];
           const expired = c.notes.some((n) => n.startsWith('traces_expired'));
           return (
-            <button class={`h ${i === sel ? 'on' : ''}`} style={`--i:${i}`} onClick={() => onPick(i)}>
+            <div class={`h ${i === sel ? 'on' : ''}`} role="button" tabIndex={0} aria-pressed={i === sel} style={`--i:${i}`} onClick={() => onPick(i)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(i); } }}>
               <div class="dt">{p.date}<small>{p.time}</small></div>
-              <div class="c">{c.oldValue || c.checkpoint > 1 ? <>{valueLabel(r, c.oldValue)} → <b>{valueLabel(r, c.newValue)}</b></> : <>{P.createdAs} <b>{valueLabel(r, c.newValue)}</b></>}
+              <div class="c">{c.oldValue || c.checkpoint > 1 ? <><Val raw={c.oldValue} text={valueLabel(r, c.oldValue)} refTable={r.refTable} origin={origin} empty={P.empty} /> → <b><Val raw={c.newValue} text={valueLabel(r, c.newValue)} refTable={r.refTable} origin={origin} empty={P.empty} /></b></> : <>{P.createdAs} <b><Val raw={c.newValue} text={valueLabel(r, c.newValue)} refTable={r.refTable} origin={origin} empty={P.empty} /></b></>}
                 <small>{top ? `${top.type === 'user_action' ? top.artifact.name : P.kind[top.type].split(' · ')[0]}` : expired ? P.warnExpired : c.user}</small></div>
               <span class={`g ${top?.grade ?? 'none'}`}>{top ? P.certainty[top.grade] : P.noTrace}</span>
-            </button>
+            </div>
           );
         })}
       </div>

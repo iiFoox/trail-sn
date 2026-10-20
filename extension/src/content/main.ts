@@ -8,18 +8,29 @@ import { TRAIL_GLYPH, TRAIL_MINI } from '../shared/mark';
  * Convivência com o SN Utils: prefixo trail- em tudo, shadowRoot próprio, ícone depois dos badges.
  */
 import { fmt, t } from '../shared/i18n';
-import { loadPrefs, normalize, PREFS_KEY, type Prefs } from '../shared/prefs';
+import { loadPrefs, normalize, PREFS_KEY, resolvedTheme, type Prefs } from '../shared/prefs';
 import type { PageContext } from '../shared/messages';
 import { openDiffWindow, type DiffWindowRequest } from './diffWindow';
+import { openFloat, setFloatTheme, showFloat, toggleFloat } from './floatPanel';
 (window as unknown as { __trailContent?: boolean }).__trailContent = true; // o worker não injeta de novo onde já está
 
 // Português até a preferência chegar do storage; os ícones criados depois já saem no idioma escolhido.
 let strings = t('pt');
-let panelMode: 'side' | 'window' | undefined;
+let panelMode: Prefs['panelMode'] | undefined;
+let theme: 'dark' | 'light' = 'dark';
 let showIcons = true;
 const hosts = new Set<HTMLElement>();
 const KEY_HINT = 'Alt+Shift+T';
-void loadPrefs().then((p) => { strings = t(p.lang); panelMode = p.panelMode; applyIcons(p.showIcons); welcome(); }).catch(() => undefined);
+void loadPrefs().then((p) => { strings = t(p.lang); panelMode = p.panelMode; theme = resolvedTheme(p.theme); applyIcons(p.showIcons); welcome(); restoreFloat(); }).catch(() => undefined);
+
+// ---------- painel flutuante (só no quadro de cima) ----------
+/** Recarregou a página com o painel aberto: ele volta no mesmo estado (aberto ou minimizado). */
+function restoreFloat(): void {
+  if (window !== window.top) return;
+  chrome.runtime.sendMessage({ type: 'float-get' }).then((r: { tabId?: number; open?: boolean; min?: boolean } | undefined) => {
+    if (r?.open && typeof r.tabId === 'number') openFloat(r.tabId, { theme, minimized: !!r.min });
+  }).catch(() => undefined);
+}
 
 // ---------- mostrar / esconder os ícones (atalho, popup ou opções) ----------
 function applyIcons(on: boolean): void {
@@ -31,6 +42,8 @@ chrome.storage?.onChanged?.addListener((ch, area) => {
   const before = normalize(ch[PREFS_KEY].oldValue as Partial<Prefs> | undefined);
   const after = normalize(ch[PREFS_KEY].newValue as Partial<Prefs> | undefined);
   panelMode = after.panelMode;
+  theme = resolvedTheme(after.theme);
+  setFloatTheme(theme);
   if (before.showIcons === after.showIcons) return;
   applyIcons(after.showIcons);
   if (window === window.top) notice(fmt(after.showIcons ? strings.iconsShown : strings.iconsHidden, { key: KEY_HINT }));
@@ -138,11 +151,18 @@ pushContext();
 
 function decorateForm(): void {
   if (!ctx.table || !ctx.sysId) return;
-  const labels = document.querySelectorAll<HTMLLabelElement>(`label[for^="${ctx.table}."]`);
+  // Campos comuns: for="incident.state". Referências (Caller, Service, Assignment group...): for="sys_display.incident.caller_id".
+  // Somente leitura: "sys_readonly." na frente. Caixas de seleção: "ni.". Listas (watch list): "select_0incident.watch_list".
+  // Sem tratar esses prefixos, as referências e as listas ficavam sem ícone (visto no PDI).
+  const re = new RegExp(`^(?:sys_readonly\\.)?(?:sys_display\\.|ni\\.|select_0)?${ctx.table}\\.([a-z0-9_]+)$`);
+  const labels = document.querySelectorAll<HTMLLabelElement>(`label[for*="${ctx.table}."]`);
+  // Um ícone por campo (a caixa de seleção do Knowledge, por exemplo, tem dois rótulos).
+  const done = new Set([...labels].filter((l) => decorated.has(l)).map((l) => l.getAttribute('for')?.match(re)?.[1] ?? ''));
   for (const label of labels) {
     if (decorated.has(label)) continue;
-    const field = (label.getAttribute('for') ?? '').replace(`${ctx.table}.`, '');
-    if (!field || field.includes('.')) continue;
+    const field = (label.getAttribute('for') ?? '').match(re)?.[1];
+    if (!field || done.has(field)) continue;
+    done.add(field);
     decorated.add(label);
     label.appendChild(makeIcon(field));
   }
@@ -279,10 +299,16 @@ decorateList();
 decoratePortal();
 
 // Janela "lado a lado" pedida pelo painel: desenhada só no quadro de cima, por cima da página inteira.
-chrome.runtime?.onMessage?.addListener((m: { type?: string } & Partial<DiffWindowRequest>, _s, reply) => {
+chrome.runtime?.onMessage?.addListener((m: { type?: string; tabId?: number } & Partial<DiffWindowRequest>, _s, reply) => {
+  if ((m?.type === 'float-open' || m?.type === 'float-toggle') && window === window.top && typeof m.tabId === 'number') {
+    if (m.type === 'float-open') showFloat(m.tabId, theme); else toggleFloat(m.tabId, theme);
+    reply({ ok: true });
+    return;
+  }
   if (m?.type !== 'diff-window' || window !== window.top || !m.key) return;
   openDiffWindow(m as DiffWindowRequest);
   reply({ ok: true });
 });
 // Gancho de teste (e2e): o mundo isolado do content script não é visível pela página.
 (window as unknown as { __trailOpenDiff?: typeof openDiffWindow }).__trailOpenDiff = openDiffWindow;
+(window as unknown as { __trailFloat?: unknown }).__trailFloat = { openFloat, showFloat, toggleFloat };

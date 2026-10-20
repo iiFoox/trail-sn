@@ -1,5 +1,6 @@
 import { findConflicts } from './conflicts';
 import { detectPingPong } from './pingpong';
+import { resolveDisplay } from './display';
 import type { QueryRequest, RestClient } from './client/RestClient';
 import { scoreAll } from './scoring';
 import { fieldsRead, writesOf } from './scriptEval';
@@ -63,7 +64,7 @@ export async function investigate(
   const [recRows, metaOrNull, dict] = await Promise.all([
     q(target.table, recQuery, ['sys_id', 'number', 'name', 'short_description', 'sys_mod_count', 'sys_created_on', 'sys_updated_on', 'sys_updated_by'], 1, 'record'),
     loadMeta(target.table, target.field),
-    quiet('sys_dictionary', `element=${target.field}^nameIN${target.table},task,cmdb_ci`, ['name', 'internal_type', 'reference'], 5),
+    quiet('sys_dictionary', `element=${target.field}^nameIN${target.table},task,cmdb_ci`, ['name', 'internal_type', 'reference', 'column_label'], 5),
   ]);
   const rec = recRows[0];
   if (!rec) throw new RecordNotFoundError(target);
@@ -91,6 +92,9 @@ export async function investigate(
   const merged = mergeWindows(windows);
   const values = unique(fieldChanges.flatMap((c) => [c.oldvalue ?? '', c.newvalue ?? '']).filter(Boolean));
   const refTable = dict.find((d) => d.internal_type === 'reference' && d.reference)?.reference;
+  // Rótulo do campo como aparece no formulário (business_service → Service): a tabela mais específica ganha.
+  const dictRank = (n?: string) => (n === target.table ? 0 : n === 'task' ? 1 : 2);
+  const fieldLabel = [...dict].sort((a, b) => dictRank(a.name) - dictRank(b.name)).find((d) => d.column_label)?.column_label;
   const changeUsers = unique(fieldChanges.map((c) => c.user ?? '').filter(Boolean));
   const [txAll, evAll, flowsAll, wfAll, labelRows, importRows, userRows, recordedAll] = await Promise.all([
     Promise.all(merged.map((w) => q('syslog_transaction', `sys_created_on>=${w.from}^sys_created_on<=${w.to}^ORDERBYsys_created_on`, ['sys_id', 'sys_created_on', 'type', 'url', 'sys_created_by'], 200))).then((r) => r.flat()),
@@ -314,11 +318,19 @@ export async function investigate(
     unaudited = { count: mods - maxCheckpoint, lastUpdatedOn: updatedOn, lastUpdatedBy: rec.sys_updated_by ?? '', clues };
   }
 
+  // Nomes como no formulário para os outros campos que aparecem no rastro (gravados junto ou perto da mudança).
+  const wanted: Record<string, string[]> = {};
+  for (const c of changes) for (const t of c.trace ?? []) for (const f of t.fields ?? []) (wanted[f.field] ??= []).push(f.oldValue, f.newValue);
+  const display = Object.keys(wanted).length ? await resolveDisplay(quiet, meta.tables, wanted) : undefined;
+
   const gaps = Object.entries(access).filter(([, s]) => s === 'denied' || s === 'timeout' || s === 'no_filter').map(([k, s]) => `${k}: ${s}`);
 
   return {
     target: { ...target, sysId, display: rec.number || rec.name || sysId, ...(rec.short_description ? { title: rec.short_description } : rec.number && rec.name ? { title: rec.name } : {}) },
     labels,
+    ...(fieldLabel ? { fieldLabel } : {}),
+    ...(refTable ? { refTable } : {}),
+    ...(display ? { display } : {}),
     tables: meta.tables,
     changes,
     unaudited,

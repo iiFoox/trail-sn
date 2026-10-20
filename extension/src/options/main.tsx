@@ -37,7 +37,7 @@ function Options() {
         <div class="card flat">
           <div class="pref-row"><b>{s.theme}</b><Seg k="theme" value={prefs.theme} onPick={pick} options={[['dark', s.themeDark], ['light', s.themeLight], ['system', s.themeSystem]]} /></div>
           <div class="pref-row"><b>{s.language}</b><Seg k="lang" value={prefs.lang} onPick={pick} options={[['pt', 'Português'], ['en', 'English']]} /></div>
-          <div class="pref-row"><b>{s.panelMode}</b><div><Seg k="panelMode" value={prefs.panelMode} onPick={pick} options={[['side', s.panelSide], ['window', s.panelWindow]]} /><div class="muted small" style="margin-top:6px">{s.panelModeHint}</div></div></div>
+          <div class="pref-row"><b>{s.panelMode}</b><div><Seg k="panelMode" value={prefs.panelMode} onPick={pick} options={[['float', s.panelFloat], ['side', s.panelSide], ['window', s.panelWindow]]} /><div class="muted small" style="margin-top:6px">{s.panelModeHint}</div></div></div>
           <div class="pref-row"><b>{s.showIcons}</b><div><Seg k="showIcons" value={prefs.showIcons} onPick={pick} options={[[true, s.iconsOn], [false, s.iconsOff]]} /><div class="muted small" style="margin-top:6px">{s.shortcut}: <kbd>Alt+Shift+T</kbd> · {s.shortcutHint}</div><div class="muted small" style="margin-top:4px">{s.keysHint}</div></div></div>
         </div>
         <h2>{s.instancesTitle}</h2>

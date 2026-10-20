@@ -2,7 +2,7 @@ import type { Change, Investigation } from '@trail/core';
 import { fmt, t } from '../shared/i18n';
 import { getPrefs } from '../shared/prefs';
 import { recordLink } from '../shared/instances';
-import { factText, humanField, localizeTimes, parts, traceTitle, valueLabel, when } from './Result';
+import { factText, fieldName, localizeTimes, parts, traceTitle, valueLabel, when } from './Result';
 import { looksLong } from '../shared/diff';
 
 const s = t(getPrefs().lang);
@@ -18,7 +18,7 @@ const PLAIN: Record<string, string> = {
 export function plainSummary(r: Investigation, c: Change): string {
   const top = c.evidence[0];
   const L = P.plain;
-  const field = humanField(r.target.field);
+  const field = fieldName(r);
   const p = parts(c.at);
   const show = (v: string) => (valueLabel(r, v) || L.empty).replace(/\s+/g, ' ').trim();
   const chg = looksLong(c.oldValue, c.newValue) || show(c.oldValue).length > 60 || show(c.newValue).length > 60 ? L.chgText : fmt(L.chg, { old: show(c.oldValue), new: show(c.newValue) });
@@ -32,7 +32,7 @@ export function plainSummary(r: Investigation, c: Change): string {
 
 /** Relatório completo em texto puro, para colar no chamado: resposta, provas, lacunas, alternativas e rastro. */
 export function fullReport(r: Investigation, c: Change, origin: string): string {
-  const field = humanField(r.target.field);
+  const field = fieldName(r);
   const top = c.evidence[0];
   const day = c.at.slice(0, 10);
   const L: string[] = [];

@@ -22,6 +22,8 @@ export type Message =
   | { type: 'field-map'; origin: string; table: string; field: string }
   | { type: 'preview'; origin: string; target: { table: string; sysId: string; field: string; value: string } }
   | { type: 'open-panel'; mode?: import('./prefs').PanelMode }
+  | { type: 'float-get' }
+  | { type: 'float-set'; open: boolean; min?: boolean }
   | { type: 'probe-auth'; origin: string }
   | { type: 'check-access'; origin: string; force?: boolean }
   | { type: 'activate'; origin: string }

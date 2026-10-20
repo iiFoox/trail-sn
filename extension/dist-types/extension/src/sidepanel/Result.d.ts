@@ -11,6 +11,8 @@ export declare function refLink(origin: string, ref: {
     query?: string;
 }): string;
 export declare function humanField(f: string): string;
+/** O nome do campo como no formulário (business_service → Service); sem acesso ao dicionário, o técnico arrumado. */
+export declare function fieldName(r: Investigation): string;
 export declare function parts(utc: string): {
     date: string;
     time: string;

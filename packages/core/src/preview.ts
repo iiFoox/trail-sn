@@ -11,6 +11,7 @@ import { writtenFields } from './conflicts';
 import { evalExpr, scriptVerdict, type Env } from './scriptEval';
 import { conditionFields, decodeFlowValues, evalCondition, parseFieldValues, sameVal } from './util';
 import type { Row } from './types';
+import { resolveDisplay } from './display';
 
 export type PreviewPhase = 'client' | 'before' | 'after' | 'async';
 export type PreviewWill = 'yes' | 'maybe';
@@ -44,6 +45,12 @@ export interface ChangePreview {
   uncertain: PreviewStep[];
   /** Regras que citam o campo mas não rodam com este valor (para o "por que não"). */
   skipped: { kind: PreviewStep['kind']; name: string; why: string }[];
+  /** Rótulo de cada campo citado, como no formulário. */
+  fieldLabels?: Record<string, string>;
+  /** Texto de cada valor, por campo (choice ou nome do registro referenciado). */
+  valueLabels?: Record<string, Record<string, string>>;
+  /** Campos de referência citados e a tabela de cada um (os valores viram links). */
+  refTables?: Record<string, string>;
   timing: { totalMs: number; calls: number };
 }
 
@@ -245,5 +252,11 @@ export async function previewChange(client: RestClient, target: { table: string;
 
   const result: ChangePreview['result'] = {};
   for (const f of changed) if (f !== mirror) result[f] = { from: record[f] ?? '', to: f in rec && (by[f] === 'você' || steps.some((x) => x.writes.some((w) => w.field === f && w.value !== undefined))) ? rec[f] ?? '' : '\u0000calc', by: by[f] ?? '?' };
-  return { table, sysId, field, from, to: value, steps, uncertain, result, skipped, timing: { totalMs: Date.now() - started, calls: client.calls - calls0 } };
+  // Nomes como no formulário: rótulo de cada campo citado e o texto de cada valor (choice ou registro referenciado).
+  const wanted: Record<string, (string | undefined)[]> = { [field]: [from, value] };
+  for (const [f, x] of Object.entries(result)) (wanted[f] ??= []).push(x.from, x.to);
+  for (const st of [...steps, ...uncertain]) for (const w of st.writes) (wanted[w.field] ??= []).push(w.value);
+  const names = await resolveDisplay(q, tables, wanted);
+  const fieldLabels = names.fields, valueLabels = names.values, refTables = names.refs;
+  return { table, sysId, field, from, to: value, steps, uncertain, result, skipped, fieldLabels, valueLabels, refTables, timing: { totalMs: Date.now() - started, calls: client.calls - calls0 } };
 }

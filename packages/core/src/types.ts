@@ -185,6 +185,12 @@ export interface Investigation {
   target: Target & { sysId: string; display: string; title?: string };
   /** Rótulo legível de cada valor do campo (choice ou registro referenciado), quando a instância deixa ler. */
   labels: Record<string, string>;
+  /** Rótulo do campo no formulário (ex.: business_service → Service). */
+  fieldLabel?: string;
+  /** Tabela referenciada, quando o campo é uma referência (os valores são sys_ids dela). */
+  refTable?: string;
+  /** Nomes como no formulário dos outros campos citados no rastro (rótulo, texto dos valores, tabela referenciada). */
+  display?: import('./display').DisplayNames;
   tables: string[];
   changes: Change[];
   unaudited: UnauditedUpdates | null;

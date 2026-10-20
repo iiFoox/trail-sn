@@ -11,9 +11,9 @@ let [sw] = ctx.serviceWorkers(); if (!sw) sw = await ctx.waitForEvent('servicewo
 const id = new URL(sw.url()).host;
 const page = await ctx.newPage(); const errors = []; page.on('pageerror', (e) => errors.push(e.message));
 await page.setViewportSize({ width: 400, height: 1000 });
-await page.goto(`chrome-extension://${id}/src/sidepanel/index.html?demo=1&batch=1`);
+await page.goto(`chrome-extension://${id}/src/sidepanel/index.html?demo=1&batch=${process.argv[4] || 1}`);
 await page.waitForSelector('.batch');
 await page.waitForTimeout(900);
-await page.screenshot({ path: resolve(outDir, `batch-${process.argv[3] || 'dark'}.png`), fullPage: true });
+await page.screenshot({ path: resolve(outDir, `batch-${process.argv[4] || 1}-${process.argv[3] || "dark"}.png`), fullPage: true });
 console.log(JSON.stringify({ errors, boxes: await page.$$eval('.tabpane .box', (b) => b.length) }));
 await ctx.close();

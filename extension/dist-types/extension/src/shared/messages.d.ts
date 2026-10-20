@@ -64,6 +64,12 @@ export type Message = {
     type: 'open-panel';
     mode?: import('./prefs').PanelMode;
 } | {
+    type: 'float-get';
+} | {
+    type: 'float-set';
+    open: boolean;
+    min?: boolean;
+} | {
     type: 'probe-auth';
     origin: string;
 } | {

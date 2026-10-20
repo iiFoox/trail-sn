@@ -17,6 +17,10 @@ await page.route('https://dev000000.service-now.com/**', (route) => route.fulfil
       window.g_form={getTableName:()=>'incident',getUniqueValue:()=>'${'b'.repeat(32)}'};</script>
     <label for="incident.state">State</label><input id="incident.state">
     <label for="incident.impact">Impact</label><input id="incident.impact">
+    <label for="sys_display.incident.business_service">Service</label><input id="sys_display.incident.business_service">
+    <label for="ni.incident.active">Active</label><input type="checkbox" id="ni.incident.active"><label for="ni.incident.active"></label>
+    <label for="sys_readonly.sys_display.incident.universal_request">Universal request</label>
+    <label for="select_0incident.watch_list">Watch list</label>
     <label for="incident.caller_id.name">Caller name (dot-walk, sem ícone)</label>
   </body></html>` }));
 await page.goto('https://dev000000.service-now.com/incident.do?sys_id=' + 'b'.repeat(32));
@@ -38,7 +42,9 @@ await page.waitForTimeout(200);
 const msgs = await page.evaluate(() => window.__msgs);
 const ctx = msgs.find((m) => m.type === 'context');
 const errors = [];
-if (icons !== 2) errors.push(`esperava 2 ícones, achei ${icons}`);
+if (icons !== 6) errors.push(`esperava 6 ícones (2 comuns, 2 referências, 1 caixa com dois rótulos, 1 lista), achei ${icons}`);
+const refField = await page.evaluate(() => document.querySelector('label[for="sys_display.incident.business_service"] .trail-host')?.shadowRoot.querySelector('button').getAttribute('aria-label'));
+if (!refField?.includes('(business_service)')) errors.push('referência sem ícone ou com campo errado: ' + refField);
 if (!ctx || ctx.ctx.table !== 'incident' || ctx.ctx.token?.length !== 72) errors.push('contexto não publicado com tabela e token: ' + JSON.stringify(ctx));
 const inv = msgs.find((m) => m.type === 'investigate');
 if (!inv || inv.target.field !== 'state' || inv.target.table !== 'incident' || inv.token?.length !== 72) errors.push('clique não gerou investigate correto: ' + JSON.stringify(inv));

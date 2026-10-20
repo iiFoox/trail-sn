@@ -13,8 +13,11 @@ const page = await ctx.newPage(); const errors = []; page.on('pageerror', (e) =>
 await page.setViewportSize({ width: 400, height: 1000 });
 await page.goto(`chrome-extension://${id}/src/sidepanel/index.html?demo=1&tab=whatif`);
 await page.waitForSelector('.wi-in input');
-await page.fill('.wi-in input', '7');
-await page.click('.wi-in button');
+await page.click('.wi-in input');
+await page.waitForTimeout(300);
+await page.screenshot({ path: resolve(outDir, `whatif-open-${process.argv[3] || 'dark'}.png`) });
+await page.click('.combo-list li:nth-child(2)');
+await page.click('.wi-in button.btn');
 await page.waitForTimeout(900);
 await page.screenshot({ path: resolve(outDir, `whatif-${process.argv[3] || 'dark'}.png`), fullPage: true });
 console.log(JSON.stringify({ errors, boxes: await page.$$eval('.tabpane .box', (b) => b.length) }));
