@@ -44,6 +44,7 @@ export const Glyph = {
   minus: P('M5 12h14'),
   close: P('M6 6l12 12M18 6L6 18'),
   detach: P('M14 3h7v7M21 3l-9 9M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5'),
+  toSide: P('M3 5h18v14H3zM15 5v14M6 12h6M9.5 9l3 3-3 3'),
   copy: P('M9 9h11v11H9zM5 15H4V4h11v1'),
   open: P('M14 3h7v7M21 3l-9 9M5 5h5M5 5v14h14v-5'),
   warn: P('M12 3l10 18H2L12 3zM12 10v4M12 17h.01'),

@@ -136,7 +136,13 @@ export function App() {
       }
     };
     chrome.storage.onChanged.addListener(onChange);
-    if (isFloat) { toPage('trail-float-ready'); return () => chrome.storage.onChanged.removeListener(onChange); }
+    if (isFloat) {
+      toPage('trail-float-ready');
+      // Esc fecha o painel flutuante, a não ser que algo dentro dele (diferença em tela cheia, lista aberta) já tenha usado a tecla.
+      const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setTimeout(() => { if (!e.defaultPrevented) toPage('trail-float-close'); }); };
+      addEventListener('keydown', esc);
+      return () => { chrome.storage.onChanged.removeListener(onChange); removeEventListener('keydown', esc); };
+    }
     const consider = async (tab: chrome.tabs.Tab | undefined) => {
       if (!tab?.id) return;
       active.current = tab.id;
@@ -212,6 +218,14 @@ export function App() {
         {level && <span class={`dot ${level === 'full' ? '' : level}`} title={level} />}
         <div class="actions">
           {isDemo && <span class="demo-badge">{s.demoBadge}</span>}
+          {isFloat && !isDemo && (
+            <button class="icon-btn" title={s.floatToSide} aria-label={s.floatToSide} onClick={() => {
+              // sidePanel.open precisa do gesto: chamado direto no clique, antes de qualquer await.
+              void chrome.sidePanel.open({ tabId: floatTab })
+                .then(() => toPage('trail-float-close'))
+                .catch(() => send({ type: 'open-panel', mode: 'side' }).then(() => toPage('trail-float-close')));
+            }}>{Glyph.toSide}</button>
+          )}
           <ThemeToggle />
           {!isWindow && !isFloat && (
             <button class="icon-btn" title={s.detach} aria-label={s.detach} onClick={() => {

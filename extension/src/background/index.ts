@@ -4,7 +4,7 @@
  * Nenhum estado em memória que importe: o worker pode ser encerrado a qualquer momento.
  */
 import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, batchItemFrom, fieldMap, previewChange, recordTimeline, scanTableConflicts, type AccessReport, type BatchItem, type MetaCache, type TableMeta } from '@trail/core';
-import { addInstance, listInstances, removeInstance } from '../shared/instances';
+import { addInstance, isEnabled, listInstances, looksLikeServiceNow, removeInstance } from '../shared/instances';
 import { loadPrefs, PREFS_KEY, type PanelMode } from '../shared/prefs';
 import { normalizeInstanceLanguage, storageKey, type Message, type PageContext, type ProbeResult, type TabState } from '../shared/messages';
 
@@ -49,13 +49,29 @@ void isDevelopmentInstall().then((development) => {
 
 // ---------- abrir o painel: lateral ou janela separada ----------
 const WINDOW_KEY = 'panelWindow';
+const WINDOW_WIDTH = 440;
+async function panelWindowBounds(): Promise<{ left?: number; top?: number; width: number; height: number }> {
+  const win = await chrome.windows.getLastFocused({ windowTypes: ['normal'] }).catch(() => chrome.windows.getCurrent().catch(() => undefined));
+  if (win?.left === undefined || win.top === undefined || win.width === undefined || win.height === undefined) return { width: WINDOW_WIDTH, height: 860 };
+  return {
+    left: win.left + Math.max(0, win.width - WINDOW_WIDTH),
+    top: win.top,
+    width: WINDOW_WIDTH,
+    height: Math.max(360, Math.min(1200, win.height)),
+  };
+}
 async function openWindow(): Promise<void> {
+  const bounds = await panelWindowBounds();
   const o = await session.get(WINDOW_KEY);
   const id = o[WINDOW_KEY] as number | undefined;
   if (typeof id === 'number') {
-    try { await chrome.windows.update(id, { focused: true }); return; } catch { /* foi fechada */ }
+    try {
+      await chrome.windows.update(id, { state: 'normal' });
+      await chrome.windows.update(id, { ...bounds, focused: true });
+      return;
+    } catch { /* foi fechada */ }
   }
-  const w = await chrome.windows.create({ url: chrome.runtime.getURL('src/sidepanel/index.html?window=1'), type: 'popup', width: 440, height: 860, focused: true });
+  const w = await chrome.windows.create({ url: chrome.runtime.getURL('src/sidepanel/index.html?window=1'), type: 'popup', ...bounds, focused: true });
   if (w?.id !== undefined) await session.set({ [WINDOW_KEY]: w.id });
 }
 /**
@@ -193,7 +209,15 @@ async function notifyOpenTabs(): Promise<void> {
   }
 }
 /** Liga a instância: guarda, registra os scripts e já injeta nas abas abertas, sem precisar recarregar. */
-async function activateOrigin(origin: string): Promise<void> {
+const activations = new Map<string, Promise<void>>();
+function activateOrigin(origin: string): Promise<void> {
+  const active = activations.get(origin);
+  if (active) return active;
+  const task = doActivateOrigin(origin).finally(() => activations.delete(origin));
+  activations.set(origin, task);
+  return task;
+}
+async function doActivateOrigin(origin: string): Promise<void> {
   await addInstance(origin);
   await registerScripts(origin);
   const tabs = await chrome.tabs.query({ url: `${origin}/*` }).catch(() => [] as chrome.tabs.Tab[]);
@@ -210,7 +234,15 @@ async function activateOrigin(origin: string): Promise<void> {
 chrome.permissions.onAdded.addListener((p) => {
   for (const o of p.origins ?? []) {
     const m = o.match(/^(https:\/\/[^/*]+)\/\*$/);
-    if (m?.[1]) void activateOrigin(m[1]);
+    if (m?.[1]) void activateOrigin(m[1]).then(async () => {
+      const key = `connect:${m[1]}`;
+      const pending = (await session.get(key))[key] as { tabId: number; at: number } | undefined;
+      await session.remove(key);
+      if (pending && Date.now() - pending.at < 120_000) {
+        await chrome.tabs.update(pending.tabId, { active: true }).catch(() => undefined);
+        await openFloat(pending.tabId);
+      }
+    }).catch(() => undefined);
   }
 });
 
@@ -231,9 +263,52 @@ async function applyActionBehavior(): Promise<void> {
   const mode = (await loadPrefs()).panelMode;
   await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: mode === 'side' }).catch(() => undefined);
 }
+async function openConnectionPrompt(tab: chrome.tabs.Tab, origin: string): Promise<void> {
+  if (tab.id === undefined) return;
+  await session.set({ [`connect:${origin}`]: { tabId: tab.id, at: Date.now() } });
+  try {
+    await chrome.action.setPopup({ tabId: tab.id, popup: 'src/popup/index.html' });
+    await chrome.action.openPopup({ windowId: tab.windowId });
+  } catch {
+    // Em navegadores sem openPopup, a mesma tela de conexão abre em uma aba.
+    await chrome.tabs.create({ url: chrome.runtime.getURL(`src/popup/index.html?tabId=${tab.id}`) });
+  } finally {
+    await chrome.action.setPopup({ tabId: tab.id, popup: '' }).catch(() => undefined);
+  }
+}
 // Só dispara quando o painel lateral não abre sozinho (modos "na página" e "janela").
 chrome.action.onClicked.addListener((tab) => {
-  void loadPrefs().then((p) => (p.panelMode === 'float' && tab.id !== undefined ? openFloat(tab.id, true) : openWindow()));
+  const url = tab.url;
+  const origin = url?.startsWith('https://') ? new URL(url).origin : undefined;
+  if (origin && tab.id !== undefined && looksLikeServiceNow(url)) {
+    // permissions.request precisa ser iniciado neste gesto, antes de qualquer await.
+    const request = chrome.permissions.request({ origins: [`${origin}/*`] });
+    const enabledBefore = isEnabled(origin);
+    void request.then(async (granted) => {
+      if (!granted) return;
+      const enabled = await enabledBefore;
+      await activateOrigin(origin);
+      if (!enabled) await openFloat(tab.id!);
+      else {
+        const prefs = await loadPrefs();
+        if (prefs.panelMode === 'float') await openFloat(tab.id!, true);
+        else await openWindow();
+      }
+    }, () => openConnectionPrompt(tab, origin)).catch(() => undefined);
+    return;
+  }
+  void (async () => {
+    if (origin && tab.id !== undefined && (await listInstances()).some((i) => i.origin === origin)) {
+      const granted = await chrome.permissions.contains({ origins: [`${origin}/*`] });
+      if (!granted) {
+        await openConnectionPrompt(tab, origin);
+        return;
+      }
+    }
+    const p = await loadPrefs();
+    if (p.panelMode === 'float' && tab.id !== undefined) await openFloat(tab.id, true);
+    else await openWindow();
+  })();
 });
 chrome.storage.onChanged.addListener((ch, area) => { if (area === 'sync' && ch[PREFS_KEY]) void applyActionBehavior(); });
 

@@ -592,7 +592,7 @@ function DiffSummary({ oldText, newText, onOpen }: { oldText: string; newText: s
 function DiffOverlay({ at, title, sub, oldText, newText, onClose }: { at: { x: number; y: number }; title: string; sub: string; oldText: string; newText: string; onClose: () => void }) {
   const [closing, setClosing] = useState(false);
   const close = () => { setClosing(true); setTimeout(onClose, 220); };
-  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); }; addEventListener('keydown', k); return () => removeEventListener('keydown', k); }, []);
+  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); close(); } }; addEventListener('keydown', k); return () => removeEventListener('keydown', k); }, []);
   const sideBySide = async () => {
     if (isDemo) return;
     const key = `diff:${Date.now()}:${Math.random().toString(36).slice(2)}`;

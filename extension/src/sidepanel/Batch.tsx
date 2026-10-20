@@ -2,8 +2,8 @@
  * Várias investigações de uma vez, no mesmo formato do histórico do campo:
  *  - registro inteiro: cada campo que mudou no registro;
  *  - lote da lista: o mesmo campo em vários registros.
- * Uma linha por mudança (quando · campo · antes → depois · quem ou o quê · certeza), a mais recente primeiro,
- * com filtros pela causa no topo. Clicar numa linha abre a análise completa daquela mudança.
+ * Mudanças agrupadas por minuto, autor e causa, com filtros pela causa no topo.
+ * Clicar numa linha abre a análise completa daquela mudança.
  */
 import { batchCsv, groupBatch, type BatchItem } from '@trail/core';
 import { useMemo, useState } from 'preact/hooks';
@@ -17,6 +17,31 @@ import { Val } from './Val';
 
 const P = t(getPrefs().lang).p;
 type B = NonNullable<TabState['batch']>;
+type SaveGroup = { key: string; at: string; cause: BatchItem['cause']; user: string; items: BatchItem[] };
+
+function groupSaves(rows: BatchItem[]): SaveGroup[] {
+  const saves = new Map<string, SaveGroup>();
+  for (const it of rows) {
+    const minute = it.at?.slice(0, 16) ?? `unknown:${it.field ?? it.sysId}`;
+    const cause = it.cause;
+    const key = `${minute}|${it.user ?? ''}|${cause?.type ?? ''}|${cause?.sysId ?? cause?.name ?? ''}`;
+    let group = saves.get(key);
+    if (!group) saves.set(key, (group = { key, at: it.at ?? '', cause, user: it.user ?? '', items: [] }));
+    group.items.push(it);
+  }
+  return [...saves.values()];
+}
+
+function saveTitle(group: SaveGroup, rec: boolean): string {
+  const cause = group.cause;
+  if (!cause) return P.noTrace;
+  if (cause.type === 'user_action') {
+    const label = rec ? (group.items.length === 1 ? P.btGroupField : P.btGroupFields) : (group.items.length === 1 ? P.btGroupRecord : P.btGroupRecords);
+    return fmt(label, { who: cause.name || group.user, n: group.items.length });
+  }
+  const kind = ((P.kind as Record<string, string>)[cause.type] ?? P.btGroupAutomation).split(' · ')[0] ?? P.btGroupAutomation;
+  return fmt(P.btGroupNamed, { kind, name: cause.name });
+}
 
 export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sysId: string, field?: string) => void }) {
   const rec = b.kind === 'fields';
@@ -31,6 +56,7 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
   const key = (i: BatchItem) => (rec ? i.field ?? '' : i.sysId);
   const groupOf = (i: BatchItem) => groups.find((g) => g.items.includes(key(i)))?.key ?? '';
   const rows = changed.filter((i) => !filter || groupOf(i) === filter).sort((a, c) => ((a.at ?? '') < (c.at ?? '') ? 1 : -1));
+  const saves = groupSaves(rows);
   const fieldLabel = b.items.find((i) => i.label)?.label ?? humanField(b.field);
   const title = rec ? fmt(P.btRecTitle, { rec: b.display ?? '' }) : fmt(P.btTitle, { field: fieldLabel, n: b.items.length });
   const sub = rec ? b.items.find((i) => i.title)?.title : b.table;
@@ -81,7 +107,19 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
 
       {(rows.length > 0 || pending.length > 0) && <div class="muted small">{P.btOpenHint}</div>}
       <div class="hist bt-list">
-        {rows.map((it, i) => <Row key={`${key(it)}-done`} it={it} i={i} rec={rec} origin={origin} onOpen={onOpen} />)}
+        {saves.map((group, i) => {
+          const when = parts(group.at);
+          return <details class="bt-group" key={group.key} open={i < 3}>
+            <summary class="bt-group-head">
+              <span class="bt-group-arrow" aria-hidden="true" />
+              <span class="bt-group-title"><time dateTime={group.at.replace(' ', 'T') + 'Z'}>{when.date} {when.time}</time> · {saveTitle(group, rec)}
+                {group.cause?.sysId && group.cause.table && group.cause.type !== 'user_action' && <a class="bt-group-link" href={recordLink(origin, group.cause.table, group.cause.sysId)} target="_blank" rel="noreferrer" title={fmt(P.openArtifact, { what: group.cause.name })} aria-label={fmt(P.openArtifact, { what: group.cause.name })} onClick={(e) => e.stopPropagation()}>↗</a>}
+              </span>
+              <span class="pill">{group.items.length}</span>
+            </summary>
+            <div class="bt-group-rows">{group.items.map((it, j) => <Row key={`${key(it)}-done`} it={it} i={i + j} rec={rec} origin={origin} onOpen={onOpen} />)}</div>
+          </details>;
+        })}
         {!filter && pending.map((it, i) => <Pending key={`${key(it)}-wait`} it={it} i={i} rec={rec} />)}
       </div>
 
@@ -101,27 +139,18 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
   );
 }
 
-/** Uma mudança: quando, o quê (campo ou registro), antes → depois, quem ou o quê mudou e a certeza. */
+/** Uma mudança dentro da gravação: campo ou registro, antes → depois e certeza. */
 function Row({ it, i, rec, origin, onOpen }: { it: BatchItem; i: number; rec: boolean; origin: string; onOpen: (sysId: string, field?: string) => void }) {
-  const p = parts(it.at ?? '');
   const c = it.cause;
-  const person = c?.type === 'user_action';
-  const kind = c && !person ? ((P.kind as Record<string, string>)[c.type] ?? c.type).split(' · ')[0] : '';
   const open = () => onOpen(it.sysId, it.field);
   return (
     <div class="h bt-row" role="button" tabIndex={0} style={`--i:${Math.min(i, 12)}`} onClick={open} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }}>
-      <div class="dt">{p.date}<small>{p.time}</small></div>
       <div class="c">
         <div class="what">{rec ? <b class="fl">{it.label ?? humanField(it.field ?? '')}</b> : <><b class="fl">{it.display}</b>{it.title && <span class="muted"> · {it.title}</span>}</>}</div>
         <div class="vals">
           <Val raw={it.oldValue ?? ''} text={it.oldDisplay} refTable={it.refTable} origin={origin} cls="o" empty={P.btEmpty} /><span class="arr">→</span>
           <Val raw={it.newValue ?? ''} text={it.newDisplay} refTable={it.refTable} origin={origin} cls="n" empty={P.empty} />
         </div>
-        <small class="by">
-          <span class="ci">{person ? Glyph.user : c ? typeGlyph[c.type as keyof typeof typeGlyph] ?? Glyph.check : Glyph.question}</span>
-          <span class="bt">{!c ? P.noTrace : person ? fmt(P.btByPerson, { who: c.name || it.user || '' })
-            : <>{kind} · {c.sysId && c.table ? <a href={recordLink(origin, c.table, c.sysId)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>{c.name}</a> : c.name}</>}</span>
-        </small>
       </div>
       <span class={`g ${c?.grade ?? 'none'}`}>{c ? P.certainty[c.grade as 'confirmed'] : P.noTrace}</span>
     </div>

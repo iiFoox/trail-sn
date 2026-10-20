@@ -774,3 +774,24 @@ table.cmpt tr.rev { opacity: .7; }
 .topbar .light.pin.on::after { content: "↙"; }
 .topbar .lights:hover .light::after, .topbar .light:focus-visible::after { opacity: 1; }
 .topbar .light:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* Mudanças do registro e do lote por momento de gravação */
+.bt-group { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; animation: rise .3s cubic-bezier(.2,.8,.2,1) both; }
+.bt-group-head { display: flex; align-items: center; gap: 9px; padding: 10px 12px; cursor: pointer; list-style: none; font-size: 12.5px; font-weight: 600; line-height: 1.35; }
+.bt-group-head::-webkit-details-marker { display: none; }
+.bt-group-head:hover { background: var(--surface-2); }
+.bt-group-head:focus-visible { outline: 2px solid var(--teal); outline-offset: -2px; }
+.bt-group[open] > .bt-group-head { border-bottom: 1px solid var(--line); }
+.bt-group-arrow { flex: none; width: 7px; height: 7px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(-45deg); transition: transform .18s; }
+.bt-group[open] .bt-group-arrow { transform: rotate(45deg); }
+.bt-group-title { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.bt-group-title time { color: var(--fg-2); font: 600 11.5px var(--mono); white-space: nowrap; }
+.bt-group-head .pill { flex: none; }
+.bt-group-link { display: inline-block; margin-left: 5px; color: var(--teal-2); text-decoration: none; }
+.bt-group-link:hover { text-decoration: underline; }
+.bt-group-rows { padding: 2px 10px; }
+.bt-group .bt-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 8px 4px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.bt-group .bt-row + .bt-row { border-top: 1px solid var(--line); }
+.bt-group .bt-row:not(.wait):hover { background: var(--surface-2); transform: none; }
+.bt-group .bt-row .vals { margin-bottom: 0; }
+@media (prefers-reduced-motion: reduce) { .bt-group, .bt-group-arrow { animation: none !important; transition: none !important; } }

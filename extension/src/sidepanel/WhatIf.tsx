@@ -74,7 +74,7 @@ function Combo({ options, value, placeholder, onChange, onEnter }: { options: [s
         onKeyDown={(e) => {
           if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); setHi((h) => Math.min(list.length - 1, h + 1)); }
           else if (e.key === 'ArrowUp') { e.preventDefault(); setHi((h) => Math.max(0, h - 1)); }
-          else if (e.key === 'Escape') setOpen(false);
+          else if (e.key === 'Escape' && open) { e.preventDefault(); setOpen(false); }
           else if (e.key === 'Enter') { e.preventDefault(); const o = open ? list[hi] : undefined; if (o) pick(o[0], o[1]); else if (value) onEnter(value); }
         }} />
       {options.length > 0 && <button class="cv" tabIndex={-1} aria-label={P.wiPick} onClick={() => setOpen(!open)}>{Glyph.chevron}</button>}

@@ -9,6 +9,20 @@ Convenções:
 
 ---
 
+## 2026-10-20 (noite) — 0.12.3
+
+Pedidos do dono depois de testar a 0.12.2 no Edge:
+- **Feito:**
+  - o painel flutuante muda de tamanho por qualquer borda ou canto (encostado: a borda de dentro, a de baixo e o canto entre elas);
+  - setinha na lateral para recolher e abrir;
+  - Esc fecha o painel, a não ser que algo dentro dele já tenha usado a tecla (diferença em tela cheia, lista do "E se?") ou que a pessoa esteja num campo ou diálogo da página;
+  - animação de abrir e fechar (deslizar com leve zoom e desfoque);
+  - setinha no cabeçalho para passar para o painel lateral do Edge (`chrome.sidePanel.open` direto no clique).
+- **Codex:** a janela separada abre encostada à direita do navegador. Clicar no ícone numa aba do ServiceNow ainda não conectada pede a permissão no próprio clique e abre o painel flutuante.
+- **Codex:** "Tudo que mudou" separado em grupos por momento (quem salvou, quantos campos), que podem recolher.
+
+- **Bateria no PDI com o motor da 0.12.1: 441/441**, mediana de 2,5 s e 26 chamadas por investigação (antes 2,3 s e 24). As duas chamadas a mais são as de rótulo do `sys_documentation`.
+
 ## 2026-10-20 (noite) — 0.12.1 e 0.12.2
 
 **Feito**

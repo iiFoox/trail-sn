@@ -27,16 +27,21 @@ export function App() {
     void loadPrefs().then((p) => setIcons(p.showIcons));
     void chrome.commands?.getAll().then((c) => { const k = c.find((x) => x.name === 'toggle-icons')?.shortcut; setShortcut(k || 'Alt+Shift+T'); }).catch(() => undefined);
     void (async () => {
-      const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      const requestedTabId = Number(new URLSearchParams(location.search).get('tabId'));
+      const [tab] = Number.isInteger(requestedTabId) && requestedTabId > 0
+        ? [await chrome.tabs.get(requestedTabId).catch(() => undefined)]
+        : await chrome.tabs.query({ active: true, lastFocusedWindow: true });
       if (tab?.id !== undefined) setTabId(tab.id);
       if (!tab?.url) return;
       try {
         const o = new URL(tab.url).origin;
         setOrigin(o);
-        setIsSn(looksLikeServiceNow(tab.url));
         let on = await isEnabled(o);
+        setIsSn(looksLikeServiceNow(tab.url) || on);
+        const granted = await chrome.permissions.contains({ origins: [`${o}/*`] }).catch(() => false);
+        if (on && !granted) on = false;
         // Permissão já concedida mas instância ainda desligada (o popup fechou durante o pedido): liga agora.
-        if (!on && await chrome.permissions.contains({ origins: [`${o}/*`] }).catch(() => false)) {
+        if (!on && granted) {
           await send({ type: 'activate', origin: o });
           on = true;
         }
@@ -61,6 +66,7 @@ export function App() {
     if (!ok) { setErr(s.permissionDenied); return; }
     await send({ type: 'activate', origin });
     setEnabled(true);
+    if (tabId !== undefined) await chrome.tabs.sendMessage(tabId, { type: 'float-open', tabId }, { frameId: 0 }).catch(() => undefined);
     setAccess(await send<AccessReport>({ type: 'check-access', origin, force: false }));
   };
   const disconnect = async () => {
