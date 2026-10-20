@@ -2615,5 +2615,305 @@
     "expectedType": "client_script",
     "minGrade": "probable",
     "expectedName": "[PT] F10 Sugere causa provável"
+  },
+  {
+    "id": "F11-H1",
+    "table": "incident",
+    "sysId": "8a4dffddc3c813101cbdb8e1b40131f8",
+    "field": "assigned_to",
+    "expectedType": "br_via_script_include",
+    "minGrade": "probable",
+    "changeIndex": 3,
+    "expectedName": "[PT] F11 Designa plantonista"
+  },
+  {
+    "id": "F11-H2",
+    "table": "problem",
+    "sysId": "654dbfddc3c813101cbdb8e1b40131d5",
+    "field": "cause_notes",
+    "expectedType": "br_via_script_include",
+    "minGrade": "probable",
+    "changeIndex": 3,
+    "expectedName": "[PT] F11 Registra início da análise"
+  },
+  {
+    "id": "F11-H3",
+    "table": "incident",
+    "sysId": "f54dffddc3c813101cbdb8e1b401317e",
+    "field": "urgency",
+    "expectedType": "user_action",
+    "minGrade": "probable",
+    "changeIndex": 0,
+    "expectedName": "admin"
+  },
+  {
+    "id": "F11-H4",
+    "table": "incident",
+    "sysId": "f54dffddc3c813101cbdb8e1b401317e",
+    "field": "assignment_group",
+    "expectedType": "assignment_rule",
+    "minGrade": "probable",
+    "changeIndex": 3,
+    "expectedName": "[PT] F11 Impressoras de loja"
+  },
+  {
+    "id": "F11-H5",
+    "table": "change_request",
+    "sysId": "564d3311c30c13101cbdb8e1b4013118",
+    "field": "implementation_plan",
+    "expectedType": "br_async",
+    "minGrade": "probable",
+    "changeIndex": 2,
+    "expectedName": "[PT] F11 Plano para impacto médio"
+  },
+  {
+    "id": "F11-H6",
+    "table": "incident",
+    "sysId": "f54dffddc3c813101cbdb8e1b401317e",
+    "field": "assignment_group",
+    "expectedType": "client_script",
+    "minGrade": "probable",
+    "changeIndex": 2,
+    "expectedName": "[PT] F11 Grupo para atendimento presenci"
+  },
+  {
+    "id": "F11-H7",
+    "table": "change_request",
+    "sysId": "9e4d3311c30c13101cbdb8e1b4013137",
+    "field": "justification",
+    "expectedType": "br_after",
+    "minGrade": "probable",
+    "changeIndex": 2,
+    "expectedName": "[PT] F11 Justificativa por risco"
+  },
+  {
+    "id": "F11-H8",
+    "table": "problem",
+    "sysId": "654dbfddc3c813101cbdb8e1b40131d5",
+    "field": "cause_notes",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "changeIndex": 0,
+    "expectedName": "[PT] F11 Causa provável de rede"
+  },
+  {
+    "id": "F11-H9",
+    "table": "change_request",
+    "sysId": "564d3311c30c13101cbdb8e1b4013118",
+    "field": "implementation_plan",
+    "expectedType": "client_script",
+    "minGrade": "probable",
+    "changeIndex": 1,
+    "expectedName": "[PT] F11 Plano sugerido para rede"
+  },
+  {
+    "id": "F11-H10",
+    "table": "problem",
+    "sysId": "854dbfddc3c813101cbdb8e1b40131b7",
+    "field": "assignment_group",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "changeIndex": 0,
+    "expectedName": "[PT] F11 Grupo de crise"
+  },
+  {
+    "id": "F11-H11",
+    "table": "incident",
+    "sysId": "f54dffddc3c813101cbdb8e1b401317e",
+    "field": "assignment_group",
+    "expectedType": "br_after",
+    "minGrade": "probable",
+    "changeIndex": 0,
+    "expectedName": "[PT] F11 Escala chamados urgentes de loj"
+  },
+  {
+    "id": "F11-H12",
+    "table": "problem",
+    "sysId": "654dbfddc3c813101cbdb8e1b40131d5",
+    "field": "cause_notes",
+    "expectedType": "scheduled_job",
+    "minGrade": "probable",
+    "changeIndex": 2,
+    "expectedName": "[PT] F11 Consolida análises do LDAP"
+  },
+  {
+    "id": "F11-H13",
+    "table": "problem",
+    "sysId": "854dbfddc3c813101cbdb8e1b40131b7",
+    "field": "assignment_group",
+    "expectedType": "ui_action",
+    "minGrade": "probable",
+    "changeIndex": 1,
+    "expectedName": "[PT] F11 Escalar para software"
+  },
+  {
+    "id": "F11-H14",
+    "table": "problem",
+    "sysId": "854dbfddc3c813101cbdb8e1b40131b7",
+    "field": "assignment_group",
+    "expectedType": "assignment_rule",
+    "minGrade": "probable",
+    "changeIndex": 3,
+    "expectedName": "[PT] F11 Problemas de banco do ERP"
+  },
+  {
+    "id": "F11-H15",
+    "table": "problem",
+    "sysId": "954dffddc3c813101cbdb8e1b4013125",
+    "field": "workaround",
+    "expectedType": "script_action",
+    "minGrade": "probable",
+    "changeIndex": 0,
+    "expectedName": "[PT] F11 Contorno por causa"
+  },
+  {
+    "id": "F11-H16",
+    "table": "change_request",
+    "sysId": "9e4d3311c30c13101cbdb8e1b4013137",
+    "field": "justification",
+    "expectedType": "user_action",
+    "minGrade": "probable",
+    "changeIndex": 0,
+    "expectedName": "admin"
+  },
+  {
+    "id": "F11-H17",
+    "table": "problem",
+    "sysId": "854dbfddc3c813101cbdb8e1b40131b7",
+    "field": "priority",
+    "expectedType": "data_lookup",
+    "minGrade": "probable",
+    "changeIndex": 0,
+    "expectedName": "Priority Problem Lookup"
+  },
+  {
+    "id": "F11-H18",
+    "table": "change_request",
+    "sysId": "564d3311c30c13101cbdb8e1b4013118",
+    "field": "implementation_plan",
+    "expectedType": "script_action",
+    "minGrade": "probable",
+    "changeIndex": 0,
+    "expectedName": "[PT] F11 Plano após revisão técnica"
+  },
+  {
+    "id": "F11-H19",
+    "table": "incident",
+    "sysId": "c24dffddc3c813101cbdb8e1b40131e4",
+    "field": "impact",
+    "expectedType": "ui_action",
+    "minGrade": "probable",
+    "changeIndex": 3,
+    "expectedName": "[PT] F11 Elevar impacto"
+  },
+  {
+    "id": "F11-H20",
+    "table": "change_request",
+    "sysId": "924dffddc3c813101cbdb8e1b40131b3",
+    "field": "assignment_group",
+    "expectedType": "br_via_script_include",
+    "minGrade": "probable",
+    "changeIndex": 0,
+    "expectedName": "[PT] F11 Revisão da justificativa"
+  },
+  {
+    "id": "F11-H21",
+    "table": "problem",
+    "sysId": "954dffddc3c813101cbdb8e1b4013125",
+    "field": "workaround",
+    "expectedType": "br_async",
+    "minGrade": "probable",
+    "changeIndex": 1,
+    "expectedName": "[PT] F11 Contorno para urgentes"
+  },
+  {
+    "id": "F11-H22",
+    "table": "problem",
+    "sysId": "954dffddc3c813101cbdb8e1b4013125",
+    "field": "workaround",
+    "expectedType": "client_script",
+    "minGrade": "probable",
+    "changeIndex": 2,
+    "expectedName": "[PT] F11 Sugere contorno de rede"
+  },
+  {
+    "id": "F11-H23",
+    "table": "incident",
+    "sysId": "8a4dffddc3c813101cbdb8e1b40131f8",
+    "field": "assigned_to",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "changeIndex": 0,
+    "expectedName": "[PT] F11 Técnico de software"
+  },
+  {
+    "id": "F11-H24",
+    "table": "incident",
+    "sysId": "c24dffddc3c813101cbdb8e1b40131e4",
+    "field": "impact",
+    "expectedType": "script_action",
+    "minGrade": "probable",
+    "changeIndex": 2,
+    "expectedName": "[PT] F11 Impacto avaliado pela rede"
+  },
+  {
+    "id": "F11-H25",
+    "table": "change_request",
+    "sysId": "924dffddc3c813101cbdb8e1b40131b3",
+    "field": "assignment_group",
+    "expectedType": "assignment_rule",
+    "minGrade": "probable",
+    "changeIndex": 3,
+    "expectedName": "[PT] F11 Mudanças de rede"
+  },
+  {
+    "id": "F11-H26",
+    "table": "change_request",
+    "sysId": "9e4d3311c30c13101cbdb8e1b4013137",
+    "field": "risk",
+    "expectedType": "user_action",
+    "minGrade": "probable",
+    "changeIndex": 0,
+    "expectedName": "admin"
+  },
+  {
+    "id": "F11-H27",
+    "table": "change_request",
+    "sysId": "924dffddc3c813101cbdb8e1b40131b3",
+    "field": "assignment_group",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "changeIndex": 1,
+    "expectedName": "[PT] F11 Grupo para alto risco"
+  },
+  {
+    "id": "F11-H28",
+    "table": "incident",
+    "sysId": "c24dffddc3c813101cbdb8e1b40131e4",
+    "field": "impact",
+    "expectedType": "user_action",
+    "minGrade": "probable",
+    "changeIndex": 4,
+    "expectedName": "admin"
+  },
+  {
+    "id": "F11-H29",
+    "table": "change_request",
+    "sysId": "9e4d3311c30c13101cbdb8e1b4013137",
+    "field": "justification",
+    "expectedType": "scheduled_job",
+    "minGrade": "probable",
+    "changeIndex": 1,
+    "expectedName": "[PT] F11 Revisa justificativas de certif"
+  },
+  {
+    "id": "F11-H30",
+    "table": "incident",
+    "sysId": "c24dffddc3c813101cbdb8e1b40131e4",
+    "field": "impact",
+    "expectedType": "br_async",
+    "minGrade": "probable",
+    "changeIndex": 0,
+    "expectedName": "[PT] F11 Reavalia impacto por urgência"
   }
 ]

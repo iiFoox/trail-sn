@@ -1,0 +1,272 @@
+[
+  {
+    "id": "H1",
+    "number": "INC0010133",
+    "field": "assigned_to",
+    "changeIndex": 3,
+    "expectedType": "br_via_script_include",
+    "expectedName": "[PT] F11 Designa plantonista",
+    "why": "cp2 (01:04:11): pessoa pôs assignment_group=Software pela API (cp1); a BR after (filtro assignment_group VALCHANGES) chama PTF11Rotinas.designarPlantonista, que grava Beth num GlideRecord próprio (state 1→2 OOB junto). Mudança mais antiga; depois vieram cp3 pessoa (David), cp4 UI action, cp5 BR before."
+  },
+  {
+    "id": "H2",
+    "number": "PRB0040013",
+    "field": "cause_notes",
+    "changeIndex": 3,
+    "expectedType": "br_via_script_include",
+    "expectedName": "[PT] F11 Registra início da análise",
+    "why": "cp2 (01:03:59): pessoa pôs assigned_to=Beth pela API (cp1, state 101→102 OOB); a BR after (filtro assigned_to VALCHANGES) chama PTF11Rotinas.anotarCausa, que grava cause_notes num GlideRecord próprio. Mudança mais antiga do campo."
+  },
+  {
+    "id": "H3",
+    "number": "INC0010131",
+    "field": "urgency",
+    "changeIndex": 0,
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "why": "Pessoa (admin) mudou urgency 3→1 pela API (PATCH) em cp4 (01:13:04). A linha igual em cp5 é repetição causada pelo current.update() da BR after; só há uma mudança real."
+  },
+  {
+    "id": "H4",
+    "number": "INC0010131",
+    "field": "assignment_group",
+    "changeIndex": 3,
+    "expectedType": "assignment_rule",
+    "expectedName": "[PT] F11 Impressoras de loja",
+    "why": "cp1 (01:03:59): pessoa mudou category inquiry→hardware pela API; a regra de atribuição gravou Hardware (linha com usuário system). Isca: '[PT] F11 Grupo de hardware crítico' (return se priority != 1)."
+  },
+  {
+    "id": "H5",
+    "number": "CHG0030084",
+    "field": "implementation_plan",
+    "changeIndex": 2,
+    "expectedType": "br_async",
+    "expectedName": "[PT] F11 Plano para impacto médio",
+    "why": "cp3 (01:10:18): pessoa mudou impact 3→2 pela API (cp2); a BR async (filtro impact VALCHANGES, Condition impact == 2) grava implementation_plan com current.update(), no mesmo segundo, como admin. Isca: '[PT] F11 Plano para impacto alto' (before, Condition impact == 1, falsa). Mais antiga ainda: cp1 pessoa no formulário."
+  },
+  {
+    "id": "H6",
+    "number": "INC0010131",
+    "field": "assignment_group",
+    "changeIndex": 2,
+    "expectedType": "client_script",
+    "expectedName": "[PT] F11 Grupo para atendimento presencial",
+    "why": "cp2 (01:10:00): pessoa mudou contact_type phone→walk-in no formulário clássico; o client script onChange preencheu assignment_group=Service Desk. Isca: client script '[PT] F11 Lembra canal de contato' (só mensagem). Entre esta e a mais recente: cp3 job '[PT] F11 Redistribui chamados de loja'."
+  },
+  {
+    "id": "H7",
+    "number": "CHG0030086",
+    "field": "justification",
+    "changeIndex": 2,
+    "expectedType": "br_after",
+    "expectedName": "[PT] F11 Justificativa por risco",
+    "why": "cp3 (01:10:28): pessoa mudou risk 3→2 pela API (cp2); a BR after grava justification e chama current.update(); a linha risk 3→2 se repete em cp3 (repetição). Isca: '[PT] F11 Log de risco' (after, só lê). Mais antiga: cp1 UI action '[PT] F11 Justificar por segurança'."
+  },
+  {
+    "id": "H8",
+    "number": "PRB0040013",
+    "field": "cause_notes",
+    "changeIndex": 0,
+    "expectedType": "br_before",
+    "expectedName": "[PT] F11 Causa provável de rede",
+    "why": "cp5 (01:13:04): pessoa mudou category software→network pela API; a BR before ordem 100 grava cause_notes. Isca: '[PT] F11 Causa provável de banco' (before 300, Condition category == database, falsa)."
+  },
+  {
+    "id": "H9",
+    "number": "CHG0030084",
+    "field": "implementation_plan",
+    "changeIndex": 1,
+    "expectedType": "client_script",
+    "expectedName": "[PT] F11 Plano sugerido para rede",
+    "why": "cp4 (01:12:43): pessoa mudou category Other→Network no formulário clássico; o client script onChange preencheu implementation_plan. Isca: client script '[PT] F11 Avisa categoria de mudança' (só mensagem)."
+  },
+  {
+    "id": "H10",
+    "number": "PRB0040011",
+    "field": "assignment_group",
+    "changeIndex": 0,
+    "expectedType": "br_before",
+    "expectedName": "[PT] F11 Grupo de crise",
+    "why": "cp4 (01:12:59): pessoa mudou impact 3→1 pela API; a BR before ordem 100 (impact.changes() && impact == 1) grava Service Desk. Isca: '[PT] F11 Grupo de crise de rede' (before 400, return porque category != network). Histórico do campo: cp1 regra, cp2 pessoa, cp3 UI action, cp4 esta."
+  },
+  {
+    "id": "H11",
+    "number": "INC0010131",
+    "field": "assignment_group",
+    "changeIndex": 0,
+    "expectedType": "br_after",
+    "expectedName": "[PT] F11 Escala chamados urgentes de loja",
+    "why": "cp5 (01:13:04): pessoa mudou urgency 3→1 pela API (cp4); a BR after grava Database e chama current.update(). As linhas urgency 3→1 e priority 4→3 se repetem em cp5 (repetição, não contar). Iscas: '[PT] F11 Grupo de hardware crítico' (before, return porque priority != 1) e '[PT] F11 Log de urgência de loja' (after, só lê)."
+  },
+  {
+    "id": "H12",
+    "number": "PRB0040013",
+    "field": "cause_notes",
+    "changeIndex": 2,
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] F11 Consolida análises do LDAP",
+    "why": "cp3 (01:09:54): job de execução única (rodou como admin) grava cause_notes 'Consolidado: ...'. Depois vieram cp4 (pessoa no formulário) e cp5 (BR before)."
+  },
+  {
+    "id": "H13",
+    "number": "PRB0040011",
+    "field": "assignment_group",
+    "changeIndex": 1,
+    "expectedType": "ui_action",
+    "expectedName": "[PT] F11 Escalar para software",
+    "why": "cp3 (01:10:31): botão do formulário grava Software (Network→Software). Isca: botão '[PT] F11 Devolver ao service desk' (não clicado)."
+  },
+  {
+    "id": "H14",
+    "number": "PRB0040011",
+    "field": "assignment_group",
+    "changeIndex": 3,
+    "expectedType": "assignment_rule",
+    "expectedName": "[PT] F11 Problemas de banco do ERP",
+    "why": "cp1 (01:03:55): job '[PT] F11 Reclassifica problemas do ERP' (rodou como admin) mudou category software→database; a regra de atribuição gravou Database (linha com usuário system). Mudança mais antiga do campo."
+  },
+  {
+    "id": "H15",
+    "number": "PRB0040012",
+    "field": "workaround",
+    "changeIndex": 0,
+    "expectedType": "script_action",
+    "expectedName": "[PT] F11 Contorno por causa",
+    "why": "cp6 (01:13:02, usuário system): pessoa gravou cause_notes pela API (cp5); a BR after '[PT] F11 Avisa causa identificada' enfileira pt.f11.problema e a script action grava workaround com current.update()."
+  },
+  {
+    "id": "H16",
+    "number": "CHG0030086",
+    "field": "justification",
+    "changeIndex": 0,
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "why": "cp5 (01:13:30): pessoa (admin) reescreveu justification no formulário clássico. Isca: botão '[PT] F11 Justificar por obsolescência' (não clicado)."
+  },
+  {
+    "id": "H17",
+    "number": "PRB0040011",
+    "field": "priority",
+    "changeIndex": 0,
+    "expectedType": "data_lookup",
+    "expectedName": "Priority Problem Lookup",
+    "why": "cp4 (01:12:59): pessoa mudou impact 3→1 pela API; o Data Lookup nativo de problem recalculou priority 5→3 na mesma gravação (junto com assignment_group pela BR before)."
+  },
+  {
+    "id": "H18",
+    "number": "CHG0030084",
+    "field": "implementation_plan",
+    "changeIndex": 0,
+    "expectedType": "script_action",
+    "expectedName": "[PT] F11 Plano após revisão técnica",
+    "why": "cp6 (01:13:23, usuário system): botão '[PT] F11 Pedir revisão técnica' pôs cab_required=true (cp5); a BR after '[PT] F11 Sinaliza revisão técnica' enfileira pt.f11.mudanca e a script action grava implementation_plan com current.update()."
+  },
+  {
+    "id": "H19",
+    "number": "INC0010132",
+    "field": "impact",
+    "changeIndex": 3,
+    "expectedType": "ui_action",
+    "expectedName": "[PT] F11 Elevar impacto",
+    "why": "cp2 (01:10:15): botão do formulário grava impact 2→1 (priority 4→3 pelo data lookup). Isca: botão '[PT] F11 Reduzir impacto' (não clicado). Depois: cp4 script action, cp5 BR before, cp7 BR async."
+  },
+  {
+    "id": "H20",
+    "number": "CHG0030085",
+    "field": "assignment_group",
+    "changeIndex": 0,
+    "expectedType": "br_via_script_include",
+    "expectedName": "[PT] F11 Revisão da justificativa",
+    "why": "cp5 (01:13:25): pessoa gravou justification pela API (cp4); a BR after (filtro justification VALCHANGES) chama PTF11Rotinas.revisarMudanca, que grava Software num GlideRecord próprio."
+  },
+  {
+    "id": "H21",
+    "number": "PRB0040012",
+    "field": "workaround",
+    "changeIndex": 1,
+    "expectedType": "br_async",
+    "expectedName": "[PT] F11 Contorno para urgentes",
+    "why": "cp4 (01:10:34): pessoa mudou urgency 3→1 pela API (cp3, priority 5→3 pelo data lookup); a BR async (filtro urgency VALCHANGES, Condition urgency == 1) grava workaround e chama current.update(); rodou no mesmo segundo, como admin. Isca: '[PT] F11 Contorno padrão' (before, Condition subcategory == vpn, falsa)."
+  },
+  {
+    "id": "H22",
+    "number": "PRB0040012",
+    "field": "workaround",
+    "changeIndex": 2,
+    "expectedType": "client_script",
+    "expectedName": "[PT] F11 Sugere contorno de rede",
+    "why": "cp2 (01:05:06): pessoa mudou category para network no formulário clássico; o client script onChange preencheu workaround (gravado como HTML <p>...</p>). Isca: client script '[PT] F11 Avisa mudança de categoria' (só mensagem)."
+  },
+  {
+    "id": "H23",
+    "number": "INC0010133",
+    "field": "assigned_to",
+    "changeIndex": 0,
+    "expectedType": "br_before",
+    "expectedName": "[PT] F11 Técnico de software",
+    "why": "cp5 (01:13:15): pessoa mudou category inquiry→software no formulário; duas BRs before disputam: ordem 100 ('[PT] F11 Técnico de sistemas') grava Beth, ordem 300 grava Don Goodliffe e vence. Isca: '[PT] F11 Técnico de banco' (Condition category == database, falsa)."
+  },
+  {
+    "id": "H24",
+    "number": "INC0010132",
+    "field": "impact",
+    "changeIndex": 2,
+    "expectedType": "script_action",
+    "expectedName": "[PT] F11 Impacto avaliado pela rede",
+    "why": "cp4 (01:12:32, usuário system): pessoa mudou category para network pela API (cp3); a BR after '[PT] F11 Avisa equipe de rede' enfileira pt.f11.incidente e a script action grava impact 1→2 com current.update()."
+  },
+  {
+    "id": "H25",
+    "number": "CHG0030085",
+    "field": "assignment_group",
+    "changeIndex": 3,
+    "expectedType": "assignment_rule",
+    "expectedName": "[PT] F11 Mudanças de rede",
+    "why": "cp1 (01:04:38): job '[PT] F11 Classifica mudanças de rede' (rodou como admin) mudou category Other→Network; a regra de atribuição gravou Network (linha com usuário system). Depois: cp2 pessoa no formulário (Hardware), cp3 BR before, cp5 BR via script include."
+  },
+  {
+    "id": "H26",
+    "number": "CHG0030086",
+    "field": "risk",
+    "changeIndex": 0,
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "why": "Pessoa (admin) mudou risk 3→2 pela API (PATCH) em cp2 (01:10:28). A linha igual em cp3 é repetição do current.update() da BR after '[PT] F11 Justificativa por risco'; só há uma mudança real."
+  },
+  {
+    "id": "H27",
+    "number": "CHG0030085",
+    "field": "assignment_group",
+    "changeIndex": 1,
+    "expectedType": "br_before",
+    "expectedName": "[PT] F11 Grupo para alto risco",
+    "why": "cp3 (01:12:47): pessoa mudou risk 3→2 pela API; a BR before ordem 100 grava Database. Isca: '[PT] F11 Grupo de emergência' (before 50, Condition type == emergency, falsa)."
+  },
+  {
+    "id": "H28",
+    "number": "INC0010132",
+    "field": "impact",
+    "changeIndex": 4,
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "why": "cp1 (01:04:07): pessoa (admin) mudou impact 3→2 no formulário clássico, junto com description. Mudança mais antiga."
+  },
+  {
+    "id": "H29",
+    "number": "CHG0030086",
+    "field": "justification",
+    "changeIndex": 1,
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] F11 Revisa justificativas de certificado",
+    "why": "cp4 (01:12:57): job de execução única (rodou como admin) grava justification 'Revisão trimestral: ...'."
+  },
+  {
+    "id": "H30",
+    "number": "INC0010132",
+    "field": "impact",
+    "changeIndex": 0,
+    "expectedType": "br_async",
+    "expectedName": "[PT] F11 Reavalia impacto por urgência",
+    "why": "cp7 (01:13:37): pessoa mudou urgency 3→2 pela API (cp6, 01:13:36); a BR async (filtro urgency VALCHANGES) grava impact 3→1 com current.update() (priority 4→2 pelo data lookup). Isca: '[PT] F11 Registra urgência' (after, só lê). Histórico: cp1 pessoa, cp2 UI action, cp4 script action, cp5 BR before, cp7 esta."
+  }
+]

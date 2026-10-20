@@ -16,7 +16,7 @@ export async function runOne(target: { table: string; number?: string; sysId?: s
   return {
     ms: Math.round(performance.now() - t0), calls: r.timing.calls, title: r.target.title, labels: r.labels, gaps: r.gaps,
     conflicts: (r.conflicts ?? []).map((k) => `${k.overlap} ${k.a.name}=${k.a.values[0]} x ${k.b.name}=${k.b.values[0]} vence:${k.winner ?? '?'}`),
-    unaudited: r.unaudited, changes: r.changes.slice(0, 3).map((c) => ({
+    unaudited: r.unaudited, changes: r.changes.slice(0, 10).map((c) => ({
       at: c.at, old: c.oldValue, neu: c.newValue, cp: c.checkpoint, user: c.user, notes: c.notes,
       ev: c.evidence.slice(0, 3).map((e) => `${e.type} ${e.grade} ${e.score} "${e.artifact.name}" {${e.facts.map((f) => f.kind + (f.points >= 0 ? '+' : '') + f.points).join(' ')}}`),
       trace: c.trace.map((t) => `${t.at.slice(11)} ${t.kind}${t.cause ? '*' : ''} ${t.label || ''}${t.sent !== undefined ? ' sent=' + t.sent : ''}${t.fields ? ' [' + t.fields.map((f) => f.field).join(',') + ']' : ''}${t.ref ? ' ->' + t.ref.table : ''}`),
@@ -53,6 +53,7 @@ export async function runRegression(list: any[] = cases as any[]): Promise<unkno
     const ms = Math.round(performance.now() - t0);
     if (c.maxMs && ms > c.maxMs) { ok = false; detail += ` (lento: ${ms} ms)`; }
     results.push({ id: c.id, ok, ms, calls, detail });
+    (globalThis as { _progress?: string })._progress = `${results.length}/${list.length}`;
   }
   const ms = results.map((r) => r.ms).sort((a, b) => a - b);
   return { access: access.level, denied: access.denied, results, median: ms[Math.floor(ms.length / 2)] };
