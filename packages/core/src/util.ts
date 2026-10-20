@@ -182,6 +182,12 @@ const DT = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 export function sameVal(a: string | undefined, b: string | undefined): boolean {
   if (a === b) return true;
   if (a === undefined || b === undefined) return false;
+  // Campo HTML: o editor guarda <p>texto</p>; o script grava só o texto.
+  const tag = /<\/?[a-z][^>]*>/i;
+  if (tag.test(a) || tag.test(b)) {
+    const txt = (x: string) => x.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
+    if (txt(a) === txt(b)) return true;
+  }
   // Data e hora: o script grava no fuso do usuário e a auditoria guarda em UTC. Diferença de fuso (múltiplo de 15 min, até 14 h) é o mesmo instante.
   if (DT.test(a) && DT.test(b)) { const d = Math.abs(toMs(a) - toMs(b)); return d <= 14 * 3600e3 && d % (15 * 60e3) === 0; }
   const x = BOOL[a], y = BOOL[b];

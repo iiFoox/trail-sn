@@ -69,3 +69,10 @@ describe('identidade do registro e da sessão', () => {
     expect(evalExpr("gs.getUserID() == 'u1'", { ...env, user: {} })).toBe(undefined);
   });
 });
+
+describe('campo HTML', () => {
+  it('texto gravado pelo script = <p>texto</p> guardado pelo editor', () => {
+    expect(sameVal('Possível falha DNS', '<p>Possível falha DNS</p>')).toBe(true);
+    expect(sameVal('outra coisa', '<p>Possível falha DNS</p>')).toBe(false);
+  });
+});

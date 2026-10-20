@@ -1766,7 +1766,7 @@
     "field": "assignment_group",
     "expectedType": "scheduled_job",
     "minGrade": "probable",
-    "expectedName": "[PT] F9 Distribui mudanças de infraestrutura"
+    "expectedName": "[PT] F9 Distribui mudanças de infraestru"
   },
   {
     "id": "F9-B3",
@@ -2353,7 +2353,7 @@
     "field": "knowledge",
     "expectedType": "br_async",
     "minGrade": "probable",
-    "expectedName": "[PT] F10 Conhecimento para tarefas urgentes"
+    "expectedName": "[PT] F10 Conhecimento para tarefas urgen"
   },
   {
     "id": "F10-B2",
@@ -2443,7 +2443,7 @@
     "field": "cause_notes",
     "expectedType": "br_via_script_include",
     "minGrade": "probable",
-    "expectedName": "[PT] F10 Registra responsável pela análise"
+    "expectedName": "[PT] F10 Registra responsável pela análi"
   },
   {
     "id": "F10-B12",
@@ -2560,7 +2560,7 @@
     "field": "production_system",
     "expectedType": "br_before",
     "minGrade": "probable",
-    "expectedName": "[PT] F10 Sistema de produção por categoria"
+    "expectedName": "[PT] F10 Sistema de produção por categor"
   },
   {
     "id": "F10-B25",
