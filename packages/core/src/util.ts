@@ -68,12 +68,27 @@ export function mergeWindows(windows: { from: string; to: string }[]): { from: s
  * Devolve true/false quando todos os termos são avaliáveis; undefined quando há OR, NQ,
  * operadores desconhecidos ou campos que não temos (nesses casos o motor não usa a condição).
  */
-export function evalCondition(cond: string | undefined, rec: Record<string, string>, skipField?: string): boolean | undefined {
+/**
+ * Avalia uma encoded query simples (só AND) contra o registro. `changes` diz o que mudou na gravação avaliada
+ * (para VALCHANGES, CHANGESTO e CHANGESFROM); sem ele, esses termos ficam "não avaliados".
+ */
+export function evalCondition(cond: string | undefined, rec: Record<string, string>, skipField?: string, changes?: { set: Set<string>; old: Record<string, string> }): boolean | undefined {
   if (!cond) return undefined;
   if (/\^NQ|\^OR|javascript:/.test(cond)) return undefined;
   const terms = cond.split('^').filter((t) => t && t !== 'EQ' && !t.startsWith('ORDERBY'));
   if (!terms.length) return undefined;
   for (const term of terms) {
+    const c = term.match(/^([a-z0-9_]+)(VALCHANGES|CHANGESTO|CHANGESFROM)(.*)$/);
+    if (c) {
+      if (!changes) return undefined;
+      const [, f, op, val] = c as unknown as [string, string, string, string];
+      if (!changes.set.has(f)) return false;
+      if (op === 'VALCHANGES') continue;
+      if (op === 'CHANGESTO') { if (f === skipField || !(f in rec)) return undefined; if (rec[f] !== val) return false; continue; }
+      if (!(f in changes.old)) return undefined;
+      if (changes.old[f] !== val) return false;
+      continue;
+    }
     const m = term.match(/^([a-z0-9_]+)(ISNOTEMPTY|ISEMPTY|STARTSWITH|ENDSWITH|NOTLIKE|LIKE|NOT IN|IN|!=|=)(.*)$/);
     if (!m) return undefined;
     const [, field, op, raw] = m as unknown as [string, string, string, string];
@@ -101,7 +116,7 @@ export function evalCondition(cond: string | undefined, rec: Record<string, stri
 /** Campos citados numa encoded query (para buscar só o necessário do registro). */
 export function conditionFields(cond: string | undefined): string[] {
   if (!cond) return [];
-  return [...new Set(cond.split(/\^(?:OR|NQ)?/).map((t) => t.match(/^([a-z0-9_]+)(?:ISNOTEMPTY|ISEMPTY|STARTSWITH|ENDSWITH|NOTLIKE|LIKE|NOT IN|IN|!=|=)/)?.[1]).filter((x): x is string => !!x))];
+  return [...new Set(cond.split(/\^(?:OR|NQ)?/).map((t) => t.match(/^([a-z0-9_]+)(?:ISNOTEMPTY|ISEMPTY|STARTSWITH|ENDSWITH|NOTLIKE|LIKE|NOT IN|IN|!=|=|CHANGESTO)/)?.[1]).filter((x): x is string => !!x))];
 }
 
 /**

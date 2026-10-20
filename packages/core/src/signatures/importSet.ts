@@ -1,5 +1,5 @@
 import { fact } from '../scoring';
-import { sameVal } from '../util';
+import { assignedLiterals, sameVal } from '../util';
 import { evidence, type Signature } from './context';
 
 /**
@@ -38,6 +38,9 @@ export const importSet: Signature = (ctx) => {
       }
     } else if (script) {
       facts.push(fact('references_field', 'sys_transform_script', script.when === 'map' ? `o script do transform map grava "${f}"` : `o script ${script.when} do transform map grava "${f}"`));
+      // O script grava valores fixos e nenhum é o valor que ficou: não foi ele (ex.: só grava para outra categoria).
+      const lits = assignedLiterals(script.script, f);
+      if (lits && lits.length && !lits.some((x) => sameVal(x, ctx.audit.newvalue ?? ''))) facts.push(fact('sets_other_value', 'sys_transform_script', `o script grava ${lits.map((x) => `"${x}"`).join(', ')}, não "${ctx.audit.newvalue ?? ''}"`));
     } else if (ctx.traces.transformMapsLoaded) {
       facts.push(fact('no_step_writes_field', 'sys_transform_entry', `o transform map não grava "${f}" (nem por mapeamento nem por script); outra regra reagiu à importação`));
     }

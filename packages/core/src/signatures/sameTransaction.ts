@@ -42,9 +42,11 @@ export function backgroundChain(ctx: ChangeContext): Evidence[] {
 }
 
 /** Fato de condição: verdadeira soma, falsa derruba. Avaliada com os valores atuais, nunca com o próprio campo. */
-function conditionFacts(ctx: ChangeContext, cond: string | undefined, source: string, fieldValue?: string): Fact[] {
+function conditionFacts(ctx: ChangeContext, cond: string | undefined, source: string, fieldValue?: string, mode: 'save' | 'trigger' = 'save'): Fact[] {
   // O próprio campo é avaliado com o valor de ANTES da mudança: é o que a regra viu quando rodou.
-  const r = evalCondition(cond, { ...ctx.record, [ctx.field]: fieldValue ?? ctx.audit.oldvalue ?? '' }, '');
+  // VALCHANGES/CHANGESTO/CHANGESFROM: o que mudou na gravação avaliada (a desta mudança, ou a anterior quando a regra é a causa).
+  const env = envFor(ctx, { mode });
+  const r = evalCondition(cond, { ...ctx.record, [ctx.field]: fieldValue ?? ctx.audit.oldvalue ?? '' }, '', { set: env.changed, old: env.old });
   if (r === true) return [fact('condition_true', source, 'a condição da regra vale para este registro (valores atuais)')];
   if (r === false) return [fact('condition_false', source, 'a condição da regra não vale para este registro (valores atuais)')];
   return [];
@@ -191,7 +193,7 @@ function chainedUpdate(ctx: ChangeContext): Evidence[] {
   ];
   for (const b of ctx.meta.brField.filter((b) => b.when === 'after' || isAsync(b.when))) {
     const gaps = isAsync(b.when) ? ['BR assíncrona rápida: não deixou transação de job; a ligação vem do código e do horário'] : [];
-    const cond = conditionFacts(ctx, brCondition(b), 'sys_script');
+    const cond = conditionFacts(ctx, brCondition(b), 'sys_script', undefined, 'trigger');
     out.push(evidence(isAsync(b.when) ? 'br_async' : 'br_after', { name: b.name ?? '?', sysId: b.sys_id, table: 'sys_script' }, [...base(), ...cond, ...brScriptFacts(ctx, b, 'trigger', cond)], gaps));
   }
   // A gravação aninhada (update() de uma regra after) roda as BRs before de novo.
@@ -199,7 +201,7 @@ function chainedUpdate(ctx: ChangeContext): Evidence[] {
   resolveOrder(befores);
   out.push(...befores.map((x) => x.e));
   for (const x of ctx.meta.brViaSi.filter((x) => x.br.when === 'after' || x.br.when === 'before' || isAsync(x.br.when))) {
-    const cond = conditionFacts(ctx, brCondition(x.br), 'sys_script');
+    const cond = conditionFacts(ctx, brCondition(x.br), 'sys_script', undefined, x.br.when === 'before' ? 'save' : 'trigger');
     const facts = [...base(), ...cond];
     if (x.arg) {
       // A chamada vira uma "gravação" na leitura do script da BR: avalia as condições em volta e o valor passado.

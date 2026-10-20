@@ -1,0 +1,86 @@
+[
+  { "id": "T01", "key": "I1", "table": "incident", "field": "assignment_group", "changeIndex": 2, "expectedType": "assignment_rule", "expectedName": "[PT] F15 Periféricos de loja", "minGrade": "probable",
+    "why": "Rodada 1: pessoa muda category inquiry→hardware pela API; com o grupo vazio, a regra de atribuição grava Hardware. Iscas: regra '[PT] F15 Periféricos de rede' (category=network, falsa) e BR before '[PT] F15 Grupo de periféricos críticos' (return se priority != 1)." },
+  { "id": "T02", "key": "I1", "table": "incident", "field": "assignment_group", "changeIndex": 1, "expectedType": "user_action", "expectedName": "admin", "minGrade": "confirmed",
+    "why": "Rodada 2: pessoa troca o grupo para Network no formulário e salva. Nenhuma regra reage." },
+  { "id": "T03", "key": "I1", "table": "incident", "field": "assignment_group", "changeIndex": 0, "expectedType": "ui_action", "expectedName": "[PT] F15 Encaminhar ao service desk", "minGrade": "confirmed",
+    "why": "Rodada 3: botão do formulário grava Service Desk e chama current.update()." },
+
+  { "id": "T04", "key": "I2", "table": "incident", "field": "close_notes", "changeIndex": 2, "expectedType": "br_before", "expectedName": "[PT] F15 Nota de urgência média", "minGrade": "confirmed",
+    "why": "Rodada 1: PATCH urgency 3→2; BR before (urgency.changes() && urgency == 2) grava a nota. Isca: '[PT] F15 Nota de urgência crítica' (condição urgency == 1, falsa); '[PT] F15 Registra nota do chamado' só lê o campo." },
+  { "id": "T05", "key": "I2", "table": "incident", "field": "close_notes", "changeIndex": 1, "expectedType": "br_async", "expectedName": "[PT] F15 Nota de impacto assíncrona", "minGrade": "confirmed",
+    "why": "Rodada 2: PATCH impact 3→2; BR async (filtro impact VALCHANGES) grava a nota e chama current.update() em transação separada." },
+  { "id": "T06", "key": "I2", "table": "incident", "field": "close_notes", "changeIndex": 0, "expectedType": "scheduled_job", "expectedName": "[PT] F15 Revisão noturna das notas", "minGrade": "probable",
+    "why": "Rodada 3: job run once grava a nota por GlideRecord (gr.get pelo sys_id)." },
+
+  { "id": "T07", "key": "I3", "table": "incident", "field": "description", "changeIndex": 0, "expectedType": "client_script", "expectedName": "[PT] F15 Descrição para autoatendimento", "minGrade": "probable",
+    "why": "Pessoa muda contact_type phone→self-service no formulário; o client script onChange (checa o short_description exato) preenche a descrição e a pessoa salva. Iscas: '[PT] F15 Descrição para presencial' (só walk-in) e '[PT] F15 Lembra canal de contato' (só mensagem)." },
+
+  { "id": "T08", "key": "I4", "table": "incident", "field": "description", "changeIndex": 0, "expectedType": "ui_policy", "expectedName": "[PT] F15 Hardware pede patrimônio", "minGrade": "probable",
+    "why": "Pessoa muda category para hardware no formulário; o ramo verdadeiro da UI policy (script_true) preenche a descrição antes de salvar. Iscas: BR before '[PT] F15 Descrição de balcão' (exige walk-in, falsa) e UI policy '[PT] F15 Banco pede nota de fechamento' (category=database, não se aplica)." },
+
+  { "id": "T09", "key": "I5", "table": "incident", "field": "close_notes", "changeIndex": 0, "expectedType": "ui_policy", "expectedName": "[PT] F15 Fora de rede registra nota", "minGrade": "probable",
+    "why": "Registro nasce com category=network; pessoa muda para software no formulário, a condição fica falsa e o ramo 'senão' (script_false, reverse if false) preenche close_notes antes de salvar. Isca: '[PT] F15 Software exige descrição' se aplica, mas só torna description obrigatória." },
+  { "id": "T10", "key": "I5", "table": "incident", "field": "category", "changeIndex": 0, "expectedType": "user_action", "expectedName": "admin", "minGrade": "confirmed",
+    "why": "A própria pessoa mudou network→software no formulário." },
+
+  { "id": "T11", "key": "I6", "table": "incident", "field": "description", "changeIndex": 0, "expectedType": "import_set", "expectedName": "[PT] F15 Pedidos da transportadora", "minGrade": "confirmed",
+    "why": "Importação POST /api/now/import/u_pt_f15_import; mapeamento direto u_descricao→description (coalesce por short_description)." },
+  { "id": "T12", "key": "I6", "table": "incident", "field": "correlation_display", "changeIndex": 0, "expectedType": "import_set", "expectedName": "[PT] F15 Pedidos da transportadora", "minGrade": "probable",
+    "why": "Mesmo lote: campo calculado pelo source script do field map ('TRANSP-' + u_codigo)." },
+  { "id": "T13", "key": "I6", "table": "incident", "field": "correlation_id", "changeIndex": 0, "expectedType": "import_set", "expectedName": "[PT] F15 Pedidos da transportadora", "minGrade": "probable",
+    "why": "Mesmo lote: gravado pelo script onBefore do transform map ('COLETA-' + u_codigo). Isca: BR before '[PT] F15 Correlação de coleta urgente' (só com urgency == 1)." },
+  { "id": "T14", "key": "I6", "table": "incident", "field": "category", "changeIndex": 0, "expectedType": "br_before", "expectedName": "[PT] F15 Categoria da transportadora", "minGrade": "probable",
+    "why": "O mapa grava hardware, mas a BR before troca para network na gravação; o audit mostra inquiry→network." },
+  { "id": "T15", "key": "I6", "table": "incident", "field": "urgency", "changeIndex": 0, "expectedType": "br_after", "expectedName": "[PT] F15 Urgência da transportadora", "minGrade": "probable",
+    "why": "O mapa não grava urgency; a BR after reage à mudança de description e grava urgency=2 com current.update(). Isca: o script onBefore cita urgency, mas só para u_categoria=database." },
+
+  { "id": "T16", "key": "I7", "table": "incident", "field": "description", "changeIndex": 2, "expectedType": "import_set", "expectedName": "[PT] F15 Pedidos da transportadora", "minGrade": "confirmed",
+    "why": "Rodada 1: primeira carga ('Pedido 1001')." },
+  { "id": "T17", "key": "I7", "table": "incident", "field": "description", "changeIndex": 1, "expectedType": "user_action", "expectedName": "admin", "minGrade": "confirmed",
+    "why": "Rodada 2: pessoa corrige a descrição pela Table API (PATCH)." },
+  { "id": "T18", "key": "I7", "table": "incident", "field": "description", "changeIndex": 0, "expectedType": "import_set", "expectedName": "[PT] F15 Pedidos da transportadora", "minGrade": "confirmed",
+    "why": "Rodada 3: segunda carga ('Pedido 1002') sobrescreve o ajuste manual." },
+
+  { "id": "T19", "key": "I8", "table": "incident", "field": "description", "changeIndex": 0, "expectedType": "user_action", "expectedName": "admin", "minGrade": "probable",
+    "why": "PATCH dentro de um lote da Batch API (/api/now/v1/batch); a URL da transação não cita o registro." },
+  { "id": "T20", "key": "I8", "table": "incident", "field": "close_notes", "changeIndex": 0, "expectedType": "br_before", "expectedName": "[PT] F15 Nota de origem do lote", "minGrade": "probable",
+    "why": "Mesma transação do lote: BR before grava a nota quando description muda." },
+
+  { "id": "T21", "key": "I9", "table": "incident", "field": "assigned_to", "changeIndex": 2, "expectedType": "br_via_script_include", "expectedName": "[PT] F15 Designa técnico de campo", "minGrade": "probable",
+    "why": "Rodada 1: PATCH assignment_group=Hardware; a BR after (filtro assignment_group VALCHANGES) chama PTF15Rotinas.designarTecnico, que grava Beth num GlideRecord próprio. Isca: BR before '[PT] F15 Técnico de banco' (category == database, falsa) grava justamente David." },
+  { "id": "T22", "key": "I9", "table": "incident", "field": "assigned_to", "changeIndex": 1, "expectedType": "user_action", "expectedName": "admin", "minGrade": "confirmed",
+    "why": "Rodada 2: pessoa põe David pela Table API (mesmo valor da isca '[PT] F15 Técnico de banco', cuja condição é falsa)." },
+  { "id": "T23", "key": "I9", "table": "incident", "field": "assigned_to", "changeIndex": 0, "expectedType": "ui_action", "expectedName": "[PT] F15 Assumir atendimento", "minGrade": "confirmed",
+    "why": "Rodada 3: botão grava gs.getUserID() (admin). Isca: '[PT] F15 Devolver para a fila' (não clicado) e PTF15Rotinas.liberarTecnico (não chamado)." },
+
+  { "id": "T24", "key": "I10", "table": "incident", "field": "close_notes", "changeIndex": 0, "expectedType": "user_action", "expectedName": "admin", "minGrade": "confirmed",
+    "why": "PATCH pela Table API. A data policy '[PT] F15 Nota obrigatória do fornecedor' só torna o campo obrigatório: nunca é causa." },
+
+  { "id": "T25", "key": "P1", "table": "problem", "field": "workaround", "changeIndex": 2, "expectedType": "br_before", "expectedName": "[PT] F15 Contorno para rede", "minGrade": "confirmed",
+    "why": "Rodada 1: PATCH category software→network; BR before (category.changes() && category == network) grava o contorno. Isca: '[PT] F15 Contorno para banco' (condição category == database)." },
+  { "id": "T26", "key": "P1", "table": "problem", "field": "workaround", "changeIndex": 1, "expectedType": "ui_action", "expectedName": "[PT] F15 Aplicar contorno padrão", "minGrade": "confirmed",
+    "why": "Rodada 2: botão do formulário do problema." },
+  { "id": "T27", "key": "P1", "table": "problem", "field": "workaround", "changeIndex": 0, "expectedType": "user_action", "expectedName": "admin", "minGrade": "confirmed",
+    "why": "Rodada 3: pessoa grava o contorno pela Table API." },
+
+  { "id": "T28", "key": "P2", "table": "problem", "field": "cause_notes", "changeIndex": 1, "expectedType": "br_via_script_include", "expectedName": "[PT] F15 Diagnóstico do backup", "minGrade": "probable",
+    "why": "Rodada 1: PATCH impact 3→2; BR after (filtro impact VALCHANGES) chama PTF15Rotinas.diagnosticarBackup, que grava cause_notes num GlideRecord próprio." },
+  { "id": "T29", "key": "P2", "table": "problem", "field": "cause_notes", "changeIndex": 0, "expectedType": "scheduled_job", "expectedName": "[PT] F15 Consolida diagnósticos", "minGrade": "probable",
+    "why": "Rodada 2: job run once grava 'Consolidado: ...'." },
+
+  { "id": "T30", "key": "C1", "table": "change_request", "field": "implementation_plan", "changeIndex": 2, "expectedType": "user_action", "expectedName": "admin", "minGrade": "confirmed",
+    "why": "Rodada 1: pessoa escreve o plano no formulário e salva." },
+  { "id": "T31", "key": "C1", "table": "change_request", "field": "implementation_plan", "changeIndex": 1, "expectedType": "br_after", "expectedName": "[PT] F15 Plano para risco alto", "minGrade": "confirmed",
+    "why": "Rodada 2: PATCH risk 3→2; BR after grava o plano com current.update(). Isca: '[PT] F15 Log de risco da mudança' só lê o plano." },
+  { "id": "T32", "key": "C1", "table": "change_request", "field": "implementation_plan", "changeIndex": 0, "expectedType": "ui_action", "expectedName": "[PT] F15 Congelar plano", "minGrade": "confirmed",
+    "why": "Rodada 3: botão do formulário. Isca: '[PT] F15 Descongelar plano' (condição exige cab_required, não aparece)." },
+
+  { "id": "T33", "key": "C2", "table": "change_request", "field": "backout_plan", "changeIndex": 0, "expectedType": "client_script", "expectedName": "[PT] F15 Retorno para impacto alto", "minGrade": "probable",
+    "why": "Pessoa muda impact 3→1 no formulário; o client script onChange preenche o plano de retorno e a pessoa salva. Iscas: '[PT] F15 Avisa impacto da mudança' (só mensagem) e UI policy '[PT] F15 Emergência exige retorno' (type=emergency, não se aplica; só obrigatoriedade)." },
+
+  { "id": "T34", "key": "C3", "table": "change_request", "field": "justification", "changeIndex": 1, "expectedType": "user_action", "expectedName": "admin", "minGrade": "confirmed",
+    "why": "Rodada 1: pessoa grava a justificativa pela Table API. Isca: BR before '[PT] F15 Justificativa de emergência' (type == emergency) e PTF15Rotinas.sugerirJustificativa (não chamado)." },
+  { "id": "T35", "key": "C3", "table": "change_request", "field": "justification", "changeIndex": 0, "expectedType": "scheduled_job", "expectedName": "[PT] F15 Padroniza justificativas", "minGrade": "probable",
+    "why": "Rodada 2: job run once grava 'Padronizado: ...'." }
+]

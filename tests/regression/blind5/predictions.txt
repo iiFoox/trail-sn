@@ -1,0 +1,35 @@
+T01	assignment_rule	probable	[PT] F15 Periféricos de loja
+T02	user_action	confirmed	admin
+T03	ui_action	confirmed	[PT] F15 Encaminhar ao service desk
+T04	br_before	confirmed	[PT] F15 Nota de urgência média
+T05	br_async	probable	[PT] F15 Nota de impacto assíncrona
+T06	scheduled_job	confirmed	[PT] F15 Revisão noturna das notas
+T07	client_script	confirmed	[PT] F15 Descrição para autoatendimento
+T08	ui_policy	confirmed	[PT] F15 Hardware pede patrimônio
+T09	ui_policy	confirmed	[PT] F15 Fora de rede registra nota
+T10	user_action	confirmed	admin
+T11	import_set	confirmed	[PT] F15 Pedidos da transportadora
+T12	import_set	confirmed	[PT] F15 Pedidos da transportadora
+T13	import_set	confirmed	[PT] F15 Pedidos da transportadora
+T14	br_before	confirmed	[PT] F15 Categoria da transportadora
+T15	import_set	confirmed	[PT] F15 Pedidos da transportadora
+T16	import_set	confirmed	[PT] F15 Pedidos da transportadora
+T17	user_action	confirmed	admin
+T18	import_set	confirmed	[PT] F15 Pedidos da transportadora
+T19	user_action	probable	admin
+T20	br_before	confirmed	[PT] F15 Nota de origem do lote
+T21	br_via_script_include	probable	[PT] F15 Designa técnico de campo → PTF15Rotinas
+T22	user_action	confirmed	admin
+T23	ui_action	confirmed	[PT] F15 Assumir atendimento
+T24	user_action	confirmed	admin
+T25	br_before	confirmed	[PT] F15 Contorno para rede
+T26	ui_action	confirmed	[PT] F15 Aplicar contorno padrão
+T27	user_action	confirmed	admin
+T28	br_via_script_include	probable	[PT] F15 Diagnóstico do backup → PTF15Rotinas
+T29	scheduled_job	confirmed	[PT] F15 Consolida diagnósticos
+T30	user_action	confirmed	admin
+T31	br_after	confirmed	[PT] F15 Plano para risco alto
+T32	ui_action	confirmed	[PT] F15 Congelar plano
+T33	client_script	confirmed	[PT] F15 Retorno para impacto alto
+T34	user_action	confirmed	admin
+T35	scheduled_job	confirmed	[PT] F15 Padroniza justificativas

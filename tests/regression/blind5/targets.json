@@ -1,0 +1,247 @@
+[
+ {
+  "id": "T01",
+  "key": "I1",
+  "table": "incident",
+  "field": "assignment_group",
+  "changeIndex": 2
+ },
+ {
+  "id": "T02",
+  "key": "I1",
+  "table": "incident",
+  "field": "assignment_group",
+  "changeIndex": 1
+ },
+ {
+  "id": "T03",
+  "key": "I1",
+  "table": "incident",
+  "field": "assignment_group",
+  "changeIndex": 0
+ },
+ {
+  "id": "T04",
+  "key": "I2",
+  "table": "incident",
+  "field": "close_notes",
+  "changeIndex": 2
+ },
+ {
+  "id": "T05",
+  "key": "I2",
+  "table": "incident",
+  "field": "close_notes",
+  "changeIndex": 1
+ },
+ {
+  "id": "T06",
+  "key": "I2",
+  "table": "incident",
+  "field": "close_notes",
+  "changeIndex": 0
+ },
+ {
+  "id": "T07",
+  "key": "I3",
+  "table": "incident",
+  "field": "description",
+  "changeIndex": 0
+ },
+ {
+  "id": "T08",
+  "key": "I4",
+  "table": "incident",
+  "field": "description",
+  "changeIndex": 0
+ },
+ {
+  "id": "T09",
+  "key": "I5",
+  "table": "incident",
+  "field": "close_notes",
+  "changeIndex": 0
+ },
+ {
+  "id": "T10",
+  "key": "I5",
+  "table": "incident",
+  "field": "category",
+  "changeIndex": 0
+ },
+ {
+  "id": "T11",
+  "key": "I6",
+  "table": "incident",
+  "field": "description",
+  "changeIndex": 0
+ },
+ {
+  "id": "T12",
+  "key": "I6",
+  "table": "incident",
+  "field": "correlation_display",
+  "changeIndex": 0
+ },
+ {
+  "id": "T13",
+  "key": "I6",
+  "table": "incident",
+  "field": "correlation_id",
+  "changeIndex": 0
+ },
+ {
+  "id": "T14",
+  "key": "I6",
+  "table": "incident",
+  "field": "category",
+  "changeIndex": 0
+ },
+ {
+  "id": "T15",
+  "key": "I6",
+  "table": "incident",
+  "field": "urgency",
+  "changeIndex": 0
+ },
+ {
+  "id": "T16",
+  "key": "I7",
+  "table": "incident",
+  "field": "description",
+  "changeIndex": 2
+ },
+ {
+  "id": "T17",
+  "key": "I7",
+  "table": "incident",
+  "field": "description",
+  "changeIndex": 1
+ },
+ {
+  "id": "T18",
+  "key": "I7",
+  "table": "incident",
+  "field": "description",
+  "changeIndex": 0
+ },
+ {
+  "id": "T19",
+  "key": "I8",
+  "table": "incident",
+  "field": "description",
+  "changeIndex": 0
+ },
+ {
+  "id": "T20",
+  "key": "I8",
+  "table": "incident",
+  "field": "close_notes",
+  "changeIndex": 0
+ },
+ {
+  "id": "T21",
+  "key": "I9",
+  "table": "incident",
+  "field": "assigned_to",
+  "changeIndex": 2
+ },
+ {
+  "id": "T22",
+  "key": "I9",
+  "table": "incident",
+  "field": "assigned_to",
+  "changeIndex": 1
+ },
+ {
+  "id": "T23",
+  "key": "I9",
+  "table": "incident",
+  "field": "assigned_to",
+  "changeIndex": 0
+ },
+ {
+  "id": "T24",
+  "key": "I10",
+  "table": "incident",
+  "field": "close_notes",
+  "changeIndex": 0
+ },
+ {
+  "id": "T25",
+  "key": "P1",
+  "table": "problem",
+  "field": "workaround",
+  "changeIndex": 2
+ },
+ {
+  "id": "T26",
+  "key": "P1",
+  "table": "problem",
+  "field": "workaround",
+  "changeIndex": 1
+ },
+ {
+  "id": "T27",
+  "key": "P1",
+  "table": "problem",
+  "field": "workaround",
+  "changeIndex": 0
+ },
+ {
+  "id": "T28",
+  "key": "P2",
+  "table": "problem",
+  "field": "cause_notes",
+  "changeIndex": 1
+ },
+ {
+  "id": "T29",
+  "key": "P2",
+  "table": "problem",
+  "field": "cause_notes",
+  "changeIndex": 0
+ },
+ {
+  "id": "T30",
+  "key": "C1",
+  "table": "change_request",
+  "field": "implementation_plan",
+  "changeIndex": 2
+ },
+ {
+  "id": "T31",
+  "key": "C1",
+  "table": "change_request",
+  "field": "implementation_plan",
+  "changeIndex": 1
+ },
+ {
+  "id": "T32",
+  "key": "C1",
+  "table": "change_request",
+  "field": "implementation_plan",
+  "changeIndex": 0
+ },
+ {
+  "id": "T33",
+  "key": "C2",
+  "table": "change_request",
+  "field": "backout_plan",
+  "changeIndex": 0
+ },
+ {
+  "id": "T34",
+  "key": "C3",
+  "table": "change_request",
+  "field": "justification",
+  "changeIndex": 1
+ },
+ {
+  "id": "T35",
+  "key": "C3",
+  "table": "change_request",
+  "field": "justification",
+  "changeIndex": 0
+ }
+]

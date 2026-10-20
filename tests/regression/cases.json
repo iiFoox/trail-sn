@@ -3316,5 +3316,355 @@
     "expectedType": "user_action",
     "expectedName": "admin",
     "minGrade": "confirmed"
+  },
+  {
+    "id": "F15-T01",
+    "table": "incident",
+    "sysId": "b1994c39c30c93101cbdb8e1b401315c",
+    "field": "assignment_group",
+    "expectedType": "assignment_rule",
+    "expectedName": "[PT] F15 Periféricos de loja",
+    "minGrade": "probable",
+    "changeIndex": 2
+  },
+  {
+    "id": "F15-T02",
+    "table": "incident",
+    "sysId": "b1994c39c30c93101cbdb8e1b401315c",
+    "field": "assignment_group",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed",
+    "changeIndex": 1
+  },
+  {
+    "id": "F15-T03",
+    "table": "incident",
+    "sysId": "b1994c39c30c93101cbdb8e1b401315c",
+    "field": "assignment_group",
+    "expectedType": "ui_action",
+    "expectedName": "[PT] F15 Encaminhar ao service desk",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "F15-T04",
+    "table": "incident",
+    "sysId": "02994c39c30c93101cbdb8e1b401319a",
+    "field": "close_notes",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F15 Nota de urgência média",
+    "minGrade": "confirmed",
+    "changeIndex": 2
+  },
+  {
+    "id": "F15-T05",
+    "table": "incident",
+    "sysId": "02994c39c30c93101cbdb8e1b401319a",
+    "field": "close_notes",
+    "expectedType": "br_async",
+    "expectedName": "[PT] F15 Nota de impacto assíncrona",
+    "minGrade": "confirmed",
+    "changeIndex": 1
+  },
+  {
+    "id": "F15-T06",
+    "table": "incident",
+    "sysId": "02994c39c30c93101cbdb8e1b401319a",
+    "field": "close_notes",
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] F15 Revisão noturna das notas",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F15-T07",
+    "table": "incident",
+    "sysId": "5a998c39c30c93101cbdb8e1b401311d",
+    "field": "description",
+    "expectedType": "client_script",
+    "expectedName": "[PT] F15 Descrição para autoatendimento",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F15-T08",
+    "table": "incident",
+    "sysId": "d2998c39c30c93101cbdb8e1b4013131",
+    "field": "description",
+    "expectedType": "ui_policy",
+    "expectedName": "[PT] F15 Hardware pede patrimônio",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F15-T09",
+    "table": "incident",
+    "sysId": "22998c39c30c93101cbdb8e1b4013183",
+    "field": "close_notes",
+    "expectedType": "ui_policy",
+    "expectedName": "[PT] F15 Fora de rede registra nota",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F15-T10",
+    "table": "incident",
+    "sysId": "22998c39c30c93101cbdb8e1b4013183",
+    "field": "category",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "F15-T11",
+    "table": "incident",
+    "sysId": "2a998c39c30c93101cbdb8e1b40131af",
+    "field": "description",
+    "expectedType": "import_set",
+    "expectedName": "[PT] F15 Pedidos da transportadora",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "F15-T12",
+    "table": "incident",
+    "sysId": "2a998c39c30c93101cbdb8e1b40131af",
+    "field": "correlation_display",
+    "expectedType": "import_set",
+    "expectedName": "[PT] F15 Pedidos da transportadora",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F15-T13",
+    "table": "incident",
+    "sysId": "2a998c39c30c93101cbdb8e1b40131af",
+    "field": "correlation_id",
+    "expectedType": "import_set",
+    "expectedName": "[PT] F15 Pedidos da transportadora",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F15-T14",
+    "table": "incident",
+    "sysId": "2a998c39c30c93101cbdb8e1b40131af",
+    "field": "category",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F15 Categoria da transportadora",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F15-T15",
+    "table": "incident",
+    "sysId": "2a998c39c30c93101cbdb8e1b40131af",
+    "field": "urgency",
+    "expectedType": "br_after",
+    "expectedName": "[PT] F15 Urgência da transportadora",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F15-T16",
+    "table": "incident",
+    "sysId": "b2998c39c30c93101cbdb8e1b40131c3",
+    "field": "description",
+    "expectedType": "import_set",
+    "expectedName": "[PT] F15 Pedidos da transportadora",
+    "minGrade": "confirmed",
+    "changeIndex": 2
+  },
+  {
+    "id": "F15-T17",
+    "table": "incident",
+    "sysId": "b2998c39c30c93101cbdb8e1b40131c3",
+    "field": "description",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed",
+    "changeIndex": 1
+  },
+  {
+    "id": "F15-T18",
+    "table": "incident",
+    "sysId": "b2998c39c30c93101cbdb8e1b40131c3",
+    "field": "description",
+    "expectedType": "import_set",
+    "expectedName": "[PT] F15 Pedidos da transportadora",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "F15-T19",
+    "table": "incident",
+    "sysId": "7a994839c30c93101cbdb8e1b40131e5",
+    "field": "description",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F15-T20",
+    "table": "incident",
+    "sysId": "7a994839c30c93101cbdb8e1b40131e5",
+    "field": "close_notes",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F15 Nota de origem do lote",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F15-T21",
+    "table": "incident",
+    "sysId": "4f998c39c30c93101cbdb8e1b40131ed",
+    "field": "assigned_to",
+    "expectedType": "br_via_script_include",
+    "expectedName": "[PT] F15 Designa técnico de campo",
+    "minGrade": "probable",
+    "changeIndex": 2
+  },
+  {
+    "id": "F15-T22",
+    "table": "incident",
+    "sysId": "4f998c39c30c93101cbdb8e1b40131ed",
+    "field": "assigned_to",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed",
+    "changeIndex": 1
+  },
+  {
+    "id": "F15-T23",
+    "table": "incident",
+    "sysId": "4f998c39c30c93101cbdb8e1b40131ed",
+    "field": "assigned_to",
+    "expectedType": "ui_action",
+    "expectedName": "[PT] F15 Assumir atendimento",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "F15-T24",
+    "table": "incident",
+    "sysId": "d799cc39c30c93101cbdb8e1b4013101",
+    "field": "close_notes",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "F15-T25",
+    "table": "problem",
+    "sysId": "d799cc39c30c93101cbdb8e1b4013155",
+    "field": "workaround",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F15 Contorno para rede",
+    "minGrade": "confirmed",
+    "changeIndex": 2
+  },
+  {
+    "id": "F15-T26",
+    "table": "problem",
+    "sysId": "d799cc39c30c93101cbdb8e1b4013155",
+    "field": "workaround",
+    "expectedType": "ui_action",
+    "expectedName": "[PT] F15 Aplicar contorno padrão",
+    "minGrade": "confirmed",
+    "changeIndex": 1
+  },
+  {
+    "id": "F15-T27",
+    "table": "problem",
+    "sysId": "d799cc39c30c93101cbdb8e1b4013155",
+    "field": "workaround",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "F15-T28",
+    "table": "problem",
+    "sysId": "2f99cc39c30c93101cbdb8e1b4013166",
+    "field": "cause_notes",
+    "expectedType": "br_via_script_include",
+    "expectedName": "[PT] F15 Diagnóstico do backup",
+    "minGrade": "probable",
+    "changeIndex": 1
+  },
+  {
+    "id": "F15-T29",
+    "table": "problem",
+    "sysId": "2f99cc39c30c93101cbdb8e1b4013166",
+    "field": "cause_notes",
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] F15 Consolida diagnósticos",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F15-T30",
+    "table": "change_request",
+    "sysId": "a3990839c30c93101cbdb8e1b4013198",
+    "field": "implementation_plan",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed",
+    "changeIndex": 2
+  },
+  {
+    "id": "F15-T31",
+    "table": "change_request",
+    "sysId": "a3990839c30c93101cbdb8e1b4013198",
+    "field": "implementation_plan",
+    "expectedType": "br_after",
+    "expectedName": "[PT] F15 Plano para risco alto",
+    "minGrade": "confirmed",
+    "changeIndex": 1
+  },
+  {
+    "id": "F15-T32",
+    "table": "change_request",
+    "sysId": "a3990839c30c93101cbdb8e1b4013198",
+    "field": "implementation_plan",
+    "expectedType": "ui_action",
+    "expectedName": "[PT] F15 Congelar plano",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "F15-T33",
+    "table": "change_request",
+    "sysId": "ff99cc39c30c93101cbdb8e1b401317b",
+    "field": "backout_plan",
+    "expectedType": "client_script",
+    "expectedName": "[PT] F15 Retorno para impacto alto",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F15-T34",
+    "table": "change_request",
+    "sysId": "7799cc39c30c93101cbdb8e1b4013184",
+    "field": "justification",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed",
+    "changeIndex": 1
+  },
+  {
+    "id": "F15-T35",
+    "table": "change_request",
+    "sysId": "7799cc39c30c93101cbdb8e1b4013184",
+    "field": "justification",
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] F15 Padroniza justificativas",
+    "minGrade": "probable",
+    "changeIndex": 0
   }
 ]

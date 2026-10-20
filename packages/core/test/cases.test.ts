@@ -943,3 +943,27 @@ describe('flow que chama subflow (Fase 14)', () => {
     expect(e.artifact.name).toContain('passo 1.1');
   });
 });
+
+describe('teste às cegas 5: correções', () => {
+  it('filtro VALCHANGES na BR async: vale quando o campo mudou na gravação anterior', async () => {
+    const s = scenario();
+    const b = br(s, 'PT async impacto', 'async', "current.close_notes = 'Impacto reavaliado'; current.update();");
+    b.filter_condition = 'impactVALCHANGES^EQ';
+    audit(s, 'impact', '3', '2', T0, 'admin', 2);
+    audit(s, 'close_notes', '', 'Impacto reavaliado', T0, 'admin', 3);
+    tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
+    const e = top(await run(s, 'close_notes'));
+    expect(e.type).toBe('br_async');
+    expect(e.facts.some((f) => f.kind === 'condition_true')).toBe(true);
+  });
+  it('filtro VALCHANGES num campo que não mudou: condição falsa', async () => {
+    const s = scenario();
+    const b = br(s, 'PT async urgência', 'async', "current.close_notes = 'Impacto reavaliado'; current.update();");
+    b.filter_condition = 'urgencyVALCHANGES^EQ';
+    audit(s, 'impact', '3', '2', T0, 'admin', 2);
+    audit(s, 'close_notes', '', 'Impacto reavaliado', T0, 'admin', 3);
+    tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
+    const r = await run(s, 'close_notes');
+    expect(r.changes[0]!.evidence.find((e) => e.type === 'br_async')!.facts.some((f) => f.kind === 'condition_false')).toBe(true);
+  });
+});
