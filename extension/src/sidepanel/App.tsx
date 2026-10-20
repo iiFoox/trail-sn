@@ -17,6 +17,8 @@ const isDemo = params.has('demo');
 const isWindow = params.has('window');
 /** Painel flutuante: num iframe dentro da página do ServiceNow, preso à aba que o abriu. */
 const isFloat = params.has('float');
+/** Painel flutuante destacado numa janela que fica por cima de tudo (Picture-in-Picture de documento). */
+const isPip = params.has('pip');
 const floatTab = Number(params.get('tab'));
 /** Onde este painel está: pedidos feitos daqui não abrem outro painel em outro lugar. */
 const here = isFloat ? 'float' as const : isWindow ? 'window' as const : 'side' as const;
@@ -183,8 +185,8 @@ export function App() {
 
   return (
     <>
-      <header class={`topbar ${isFloat ? 'drag' : ''}`} title={isFloat ? s.floatDragHint : undefined}
-        onPointerDown={isFloat ? (e) => {
+      <header class={`topbar ${isFloat && !isPip ? 'drag' : ''}`} title={isFloat && !isPip ? s.floatDragHint : undefined}
+        onPointerDown={isFloat && !isPip ? (e) => {
           if (e.button !== 0 || (e.target as HTMLElement).closest('button,a')) return;
           e.preventDefault();
           const el = e.currentTarget as HTMLElement;
@@ -194,7 +196,15 @@ export function App() {
           const end = (ev: PointerEvent) => { el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', end); el.removeEventListener('pointercancel', end); toPage('trail-float-drop', { cx: ev.clientX }); };
           el.addEventListener('pointermove', move); el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
         } : undefined}
-        onDblClick={isFloat ? (e) => { if (!(e.target as HTMLElement).closest('button,a')) toPage('trail-float-dock'); } : undefined}>
+        onDblClick={isFloat && !isPip ? (e) => { if (!(e.target as HTMLElement).closest('button,a')) toPage('trail-float-dock'); } : undefined}>
+        {/* Flutuante: botões no estilo de janela do Mac (fechar, minimizar, sempre visível). */}
+        {isFloat && (
+          <span class="lights">
+            <button class="light close" title={s.floatClose} aria-label={s.floatClose} onClick={() => toPage('trail-float-close')} />
+            <button class="light min" title={s.floatMin} aria-label={s.floatMin} onClick={() => toPage('trail-float-min')} />
+            <button class={`light pin ${isPip ? 'on' : ''}`} title={isPip ? s.floatUnpin : s.floatPin} aria-label={isPip ? s.floatUnpin : s.floatPin} aria-pressed={isPip} onClick={() => toPage('trail-float-pin')} />
+          </span>
+        )}
         {/* No painel do navegador, ele já mostra "Trail" em cima; no flutuante, este é o único cabeçalho e leva a marca. */}
         {isFloat && <span class="fmark" aria-hidden="true"><TrailMark /></span>}
         {isFloat && <b class="fname">Trail</b>}
@@ -203,8 +213,6 @@ export function App() {
         <div class="actions">
           {isDemo && <span class="demo-badge">{s.demoBadge}</span>}
           <ThemeToggle />
-          {isFloat && <button class="icon-btn" title={s.floatMin} aria-label={s.floatMin} onClick={() => toPage('trail-float-min')}>{Glyph.minus}</button>}
-          {isFloat && <button class="icon-btn" title={s.floatClose} aria-label={s.floatClose} onClick={() => toPage('trail-float-close')}>{Glyph.close}</button>}
           {!isWindow && !isFloat && (
             <button class="icon-btn" title={s.detach} aria-label={s.detach} onClick={() => {
               if (isDemo) { showToast(s.panelModeHint); return; }

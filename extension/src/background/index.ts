@@ -10,6 +10,43 @@ import { normalizeInstanceLanguage, storageKey, type Message, type PageContext, 
 
 const session = chrome.storage.session;
 
+declare const __TRAIL_BUILD_ID__: string;
+
+// Só a instalação sem compactação observa arquivos locais. A versão da loja não usa esse caminho.
+async function isDevelopmentInstall(): Promise<boolean> {
+  if (chrome.runtime.getManifest().update_url) return false;
+  try { return (await chrome.management.getSelf()).installType === 'development'; }
+  catch { return false; }
+}
+
+let checkingBuild = false;
+let reloadingBuild = false;
+async function checkBuild(): Promise<void> {
+  if (checkingBuild || reloadingBuild) return;
+  checkingBuild = true;
+  try {
+    // getSelf não exige permissão e a chamada à API mantém o worker ativo entre as verificações.
+    if (!(await isDevelopmentInstall())) return;
+    const response = await fetch(chrome.runtime.getURL('build.txt'), { cache: 'no-store' });
+    if (!response.ok) return; // a cópia para a pasta fixa pode estar em andamento
+    const diskBuild = (await response.text()).trim();
+    if (diskBuild && diskBuild !== __TRAIL_BUILD_ID__) {
+      reloadingBuild = true;
+      chrome.runtime.reload();
+    }
+  } catch { /* arquivo temporariamente indisponível; tenta de novo */ }
+  finally { checkingBuild = false; }
+}
+
+// Alarms exigiria uma permissão nova e tem período mínimo de 30 s. O intervalo de 3 s
+// vale enquanto o worker está vivo; getSelf renova sua atividade. Se ele reiniciar,
+// o ID embutido no background.js ainda detecta um build copiado durante o sono.
+void isDevelopmentInstall().then((development) => {
+  if (!development) return;
+  void checkBuild();
+  setInterval(() => { void checkBuild(); }, 3000);
+});
+
 // ---------- abrir o painel: lateral ou janela separada ----------
 const WINDOW_KEY = 'panelWindow';
 async function openWindow(): Promise<void> {
@@ -126,6 +163,35 @@ async function syncRegistrations(): Promise<void> {
     if (granted) await registerScripts(i.origin).catch(() => { /* já registrado */ });
   }
 }
+/** Scripts antigos continuam nas abas abertas após reload; a pessoa decide quando recarregar o formulário. */
+async function notifyOpenTabs(): Promise<void> {
+  if (!(await isDevelopmentInstall())) return;
+  for (const i of await listInstances()) {
+    const granted = await chrome.permissions.contains({ origins: [`${i.origin}/*`] }).catch(() => false);
+    if (!granted) continue;
+    const tabs = await chrome.tabs.query({ url: `${i.origin}/*` }).catch(() => [] as chrome.tabs.Tab[]);
+    for (const tab of tabs) {
+      if (tab.id === undefined) continue;
+      await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: () => {
+        if (document.getElementById('trail-update-notice')) return;
+        const pt = (document.documentElement.lang || navigator.language).toLowerCase().startsWith('pt');
+        const box = document.createElement('div');
+        box.id = 'trail-update-notice';
+        box.setAttribute('role', 'status');
+        box.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:2147483647;padding:12px 14px;border-radius:10px;background:#16212a;color:#fff;box-shadow:0 8px 24px #0005;font:13px/1.4 system-ui,sans-serif;max-width:320px';
+        const text = document.createElement('span');
+        text.textContent = pt ? 'O Trail foi atualizado. Recarregue esta aba para usar a nova versão.' : 'Trail was updated. Reload this tab to use the new version.';
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = pt ? 'Recarregar aba' : 'Reload tab';
+        button.style.cssText = 'display:block;margin-top:8px;border:0;background:#5fd3c1;color:#09222a;border-radius:5px;padding:5px 9px;cursor:pointer;font:inherit;font-weight:600';
+        button.addEventListener('click', () => location.reload());
+        box.append(text, button);
+        document.documentElement.appendChild(box);
+      } }).catch(() => undefined);
+    }
+  }
+}
 /** Liga a instância: guarda, registra os scripts e já injeta nas abas abertas, sem precisar recarregar. */
 async function activateOrigin(origin: string): Promise<void> {
   await addInstance(origin);
@@ -186,7 +252,10 @@ function menuText(k: 'float' | 'side' | 'window' | 'icons' | 'options'): string 
   const en = { float: 'Open on the page', side: 'Open in the side panel', window: 'Open in a separate window', icons: 'Show or hide the field icons (Alt+Shift+T)', options: 'Trail options' };
   return (chrome.i18n?.getUILanguage?.().startsWith('pt') ? pt : en)[k];
 }
-chrome.runtime.onInstalled.addListener(() => { void syncRegistrations(); createMenus(); void applyActionBehavior(); });
+chrome.runtime.onInstalled.addListener((details) => {
+  void syncRegistrations(); createMenus(); void applyActionBehavior();
+  if (details.reason === 'update') void notifyOpenTabs();
+});
 chrome.runtime.onStartup.addListener(() => { void syncRegistrations(); createMenus(); void applyActionBehavior(); });
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   switch (info.menuItemId) {

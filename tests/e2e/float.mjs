@@ -26,12 +26,13 @@ try {
   const pane = () => page.evaluate(() => { const p = document.getElementById('trail-float').shadowRoot.querySelector('.pane'); const r = p.getBoundingClientRect(); return { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height), cls: p.className, shown: p.style.display !== 'none' }; });
   await page.waitForTimeout(700);
   const opened = await pane();
-  if (opened.w !== 420 || opened.h !== 800 || opened.x !== 1280 - 420 || opened.y !== 0) errors.push('não abriu do tamanho do painel lateral: ' + JSON.stringify(opened));
+  if (opened.w !== 420 || opened.h !== 800 - 16 || opened.x !== 1280 - 420 - 8 || opened.y !== 8) errors.push('não abriu do tamanho do painel lateral: ' + JSON.stringify(opened));
   const frame = page.frames().find((f) => f.url().includes('float=1'));
   if (!frame) throw new Error('iframe do painel não carregou');
   await frame.waitForSelector('header.topbar.drag');
   const nTop = await frame.$$eval('header.topbar', (h) => h.length);
   if (nTop !== 1) errors.push('esperava um cabeçalho só, achei ' + nTop);
+  if (!(await frame.$('header.topbar .lights .light.pin'))) errors.push('faltou a bolinha verde (sempre visível)');
   if (shotDir) await page.screenshot({ path: resolve(shotDir, 'float-open.png') });
   // Arrasta pelo cabeçalho para o meio da tela: vira cartão solto.
   const hb = await (await frame.$('header.topbar')).boundingBox();
@@ -54,12 +55,12 @@ try {
   await page.mouse.up();
   await page.waitForTimeout(450);
   const left = await pane();
-  if (!left.cls.includes('left') || left.x !== 0 || left.h !== 800) errors.push('não encostou na esquerda: ' + JSON.stringify(left));
+  if (!left.cls.includes('left') || left.x !== 8 || left.h !== 800 - 16) errors.push('não encostou na esquerda: ' + JSON.stringify(left));
   // Duplo clique no cabeçalho: volta para a direita.
   await frame.dblclick('header.topbar .host, header.topbar', { position: { x: 160, y: 15 } }).catch(() => frame.dblclick('header.topbar'));
   await page.waitForTimeout(450);
   const back = await pane();
-  if (back.x !== 1280 - 420 || back.cls.includes('left')) errors.push('duplo clique não encostou na direita: ' + JSON.stringify(back));
+  if (back.x !== 1280 - 420 - 8 || back.cls.includes('left')) errors.push('duplo clique não encostou na direita: ' + JSON.stringify(back));
   // Minimizar e voltar.
   await frame.click(`header.topbar button[aria-label^="Minimizar"]`);
   await page.waitForTimeout(450);
@@ -80,7 +81,7 @@ try {
   await page.evaluate(() => window.__trailFloat.openFloat(1, { theme: 'light' }));
   await page.waitForTimeout(600);
   const re = await pane();
-  if (re.w !== 420 || re.x !== 860 || re.h !== 800) errors.push('reabrir não voltou ao tamanho do painel: ' + JSON.stringify(re));
+  if (re.w !== 420 || re.x !== 1280 - 420 - 8 || re.h !== 800 - 16) errors.push('reabrir não voltou ao tamanho do painel: ' + JSON.stringify(re));
   console.log(JSON.stringify({ opened, free, left, back, again, re, errors }, null, 1));
 } finally {
   await ctx.close();

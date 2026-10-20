@@ -1,4 +1,5 @@
 import preact from '@preact/preset-vite';
+import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
@@ -7,8 +8,16 @@ import { defineConfig } from 'vite';
  * todos como módulos ES. Os scripts injetados na página (content/ e page/) são
  * IIFE e saem de vite.scripts.config.ts, porque não podem importar módulos.
  */
+const buildId = `${Date.now()}-${randomUUID()}`;
+
 export default defineConfig({
-  plugins: [preact()],
+  plugins: [preact(), {
+    name: 'trail-build-id',
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'build.txt', source: `${buildId}\n` });
+    },
+  }],
+  define: { __TRAIL_BUILD_ID__: JSON.stringify(buildId) },
   publicDir: 'public',
   build: {
     outDir: 'dist',
