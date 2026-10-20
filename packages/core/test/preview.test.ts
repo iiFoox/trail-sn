@@ -22,7 +22,8 @@ describe('"E se eu mudar?"', () => {
     ]);
     c.rows('sysrule_assignment', [{ sys_id: 'r1', name: 'Rede', table: 'incident', active: 'true', condition: 'category=network^EQ', group: 'grp_net', order: '100' }]);
     const p = await previewChange(c, { table: 'incident', sysId: ID, field: 'category', value: 'network' });
-    expect(p.steps.map((s) => s.name)).toEqual(['Sugere urgência', 'Rede é prioridade', 'Impacto por urgência', 'Rede', 'Nota depois']);
+    // "Rede é prioridade" gravaria urgência 2, que o client script já pôs: sem efeito, não aparece.
+    expect(p.steps.map((s) => s.name)).toEqual(['Sugere urgência', 'Impacto por urgência', 'Rede', 'Nota depois']);
     expect(p.result.impact).toEqual({ from: '3', to: '2', by: 'Impacto por urgência' });
     expect(p.result.assignment_group!.to).toBe('grp_net');
     expect(p.steps.find((s) => s.name === 'Nota depois')!.updatesAgain).toBe(true);

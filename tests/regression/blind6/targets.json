@@ -1,0 +1,247 @@
+[
+ {
+  "id": "X01",
+  "key": "T1",
+  "table": "sc_task",
+  "field": "assignment_group",
+  "changeIndex": 2
+ },
+ {
+  "id": "X02",
+  "key": "T1",
+  "table": "sc_task",
+  "field": "assignment_group",
+  "changeIndex": 1
+ },
+ {
+  "id": "X03",
+  "key": "T1",
+  "table": "sc_task",
+  "field": "assignment_group",
+  "changeIndex": 0
+ },
+ {
+  "id": "X04",
+  "key": "T2",
+  "table": "sc_task",
+  "field": "description",
+  "changeIndex": 1
+ },
+ {
+  "id": "X05",
+  "key": "T2",
+  "table": "sc_task",
+  "field": "description",
+  "changeIndex": 0
+ },
+ {
+  "id": "X06",
+  "key": "T3",
+  "table": "sc_task",
+  "field": "assigned_to",
+  "changeIndex": 1
+ },
+ {
+  "id": "X07",
+  "key": "T3",
+  "table": "sc_task",
+  "field": "assigned_to",
+  "changeIndex": 0
+ },
+ {
+  "id": "X08",
+  "key": "T4",
+  "table": "sc_task",
+  "field": "description",
+  "changeIndex": 0
+ },
+ {
+  "id": "X09",
+  "key": "R1",
+  "table": "sc_req_item",
+  "field": "description",
+  "changeIndex": 2
+ },
+ {
+  "id": "X10",
+  "key": "R1",
+  "table": "sc_req_item",
+  "field": "description",
+  "changeIndex": 1
+ },
+ {
+  "id": "X11",
+  "key": "R1",
+  "table": "sc_req_item",
+  "field": "description",
+  "changeIndex": 0
+ },
+ {
+  "id": "X12",
+  "key": "R2",
+  "table": "sc_req_item",
+  "field": "assignment_group",
+  "changeIndex": 0
+ },
+ {
+  "id": "X13",
+  "key": "R2",
+  "table": "sc_req_item",
+  "field": "correlation_id",
+  "changeIndex": 1
+ },
+ {
+  "id": "X14",
+  "key": "R2",
+  "table": "sc_req_item",
+  "field": "correlation_id",
+  "changeIndex": 0
+ },
+ {
+  "id": "X15",
+  "key": "R3",
+  "table": "sc_req_item",
+  "field": "description",
+  "changeIndex": 0
+ },
+ {
+  "id": "X16",
+  "key": "CC1",
+  "table": "cmdb_ci_computer",
+  "field": "os_version",
+  "changeIndex": 0
+ },
+ {
+  "id": "X17",
+  "key": "CC1",
+  "table": "cmdb_ci_computer",
+  "field": "short_description",
+  "changeIndex": 0
+ },
+ {
+  "id": "X18",
+  "key": "CC2",
+  "table": "cmdb_ci_computer",
+  "field": "comments",
+  "changeIndex": 1
+ },
+ {
+  "id": "X19",
+  "key": "CC2",
+  "table": "cmdb_ci_computer",
+  "field": "comments",
+  "changeIndex": 0
+ },
+ {
+  "id": "X20",
+  "key": "CC3",
+  "table": "cmdb_ci_computer",
+  "field": "serial_number",
+  "changeIndex": 2
+ },
+ {
+  "id": "X21",
+  "key": "CC3",
+  "table": "cmdb_ci_computer",
+  "field": "serial_number",
+  "changeIndex": 1
+ },
+ {
+  "id": "X22",
+  "key": "CC3",
+  "table": "cmdb_ci_computer",
+  "field": "serial_number",
+  "changeIndex": 0
+ },
+ {
+  "id": "X23",
+  "key": "CC3",
+  "table": "cmdb_ci_computer",
+  "field": "os_version",
+  "changeIndex": 0
+ },
+ {
+  "id": "X24",
+  "key": "CC3",
+  "table": "cmdb_ci_computer",
+  "field": "short_description",
+  "changeIndex": 0
+ },
+ {
+  "id": "X25",
+  "key": "SV1",
+  "table": "cmdb_ci_server",
+  "field": "support_group",
+  "changeIndex": 1
+ },
+ {
+  "id": "X26",
+  "key": "SV1",
+  "table": "cmdb_ci_server",
+  "field": "support_group",
+  "changeIndex": 0
+ },
+ {
+  "id": "X27",
+  "key": "SV2",
+  "table": "cmdb_ci_server",
+  "field": "short_description",
+  "changeIndex": 0
+ },
+ {
+  "id": "X28",
+  "key": "SV2",
+  "table": "cmdb_ci_server",
+  "field": "used_for",
+  "changeIndex": 0
+ },
+ {
+  "id": "X29",
+  "key": "K1",
+  "table": "kb_knowledge",
+  "field": "meta",
+  "changeIndex": 2
+ },
+ {
+  "id": "X30",
+  "key": "K1",
+  "table": "kb_knowledge",
+  "field": "meta",
+  "changeIndex": 1
+ },
+ {
+  "id": "X31",
+  "key": "K1",
+  "table": "kb_knowledge",
+  "field": "meta",
+  "changeIndex": 0
+ },
+ {
+  "id": "X32",
+  "key": "K2",
+  "table": "kb_knowledge",
+  "field": "text",
+  "changeIndex": 1
+ },
+ {
+  "id": "X33",
+  "key": "K2",
+  "table": "kb_knowledge",
+  "field": "text",
+  "changeIndex": 0
+ },
+ {
+  "id": "X34",
+  "key": "K3",
+  "table": "kb_knowledge",
+  "field": "meta",
+  "changeIndex": 0
+ },
+ {
+  "id": "X35",
+  "key": "K3",
+  "table": "kb_knowledge",
+  "field": "valid_to",
+  "changeIndex": 0
+ }
+]

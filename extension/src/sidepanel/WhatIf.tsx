@@ -21,6 +21,7 @@ export function WhatIf({ r, origin, field }: { r: Investigation; origin: string;
   const label = (v: string, f: string = field) => (!v ? '—' : f === field || f === r.target.field ? r.labels?.[v] ?? v : v);
   const options = Object.entries(r.labels ?? {}).filter(([k]) => k !== current).slice(0, 30);
   const run = async () => {
+    if (value === current) { setErr(P.wiSame); setSt('err'); return; }
     setSt('run');
     try {
       const out = isDemo ? demoPreview(r, field, value) : await send<ChangePreview & { error?: string }>({ type: 'preview', origin, target: { table: r.target.table, sysId: r.target.sysId, field, value } });
@@ -50,36 +51,39 @@ export function WhatIf({ r, origin, field }: { r: Investigation; origin: string;
 }
 
 function Outcome({ res, origin, label }: { res: ChangePreview; origin: string; label: (v: string, f?: string) => string }) {
-  const sure = res.steps.filter((s) => s.will === 'yes' || s.writes.length || s.kind === 'flow');
+  const show = (v: string, f: string) => (v === '\u0000calc' ? P.wiCalc : label(v, f));
+  const row = (s: PreviewStep) => (
+    <div class="li">
+      <span class="ck" title={s.kind}>{typeGlyph[s.kind] ?? Glyph.check}</span>
+      <div class="grow">
+        <div>{s.sysId ? <a href={recordLink(origin, s.table, s.sysId)} target="_blank" rel="noreferrer">{s.name}</a> : s.name}</div>
+        {s.writes.map((w) => <div class="small"><code>{w.field}</code> → {w.value !== undefined ? label(w.value, w.field) : <i>{P.wiCalc}</i>}</div>)}
+        <div class="det">{s.why}{s.updatesAgain ? ` · ${P.wiAgain}` : ''}</div>
+      </div>
+    </div>
+  );
+  const effects = Object.entries(res.result).filter(([f]) => f !== res.field);
   return (
     <>
-      {!sure.length && <div class="box"><div class="li"><span class="ck">{Glyph.check}</span><span class="grow">{P.wiNothing}</span></div></div>}
+      {!res.steps.length && <div class="box"><div class="li"><span class="ck">{Glyph.check}</span><span class="grow">{P.wiNothing}</span></div></div>}
       {PHASES.map((ph) => {
         const list = res.steps.filter((s) => s.phase === ph);
         if (!list.length) return null;
-        return (
-          <div class="box">
-            <h4>{P.wiPhase[ph]}<span>{list.length}</span></h4>
-            {list.map((s) => (
-              <div class="li">
-                <span class="ck" title={s.kind}>{typeGlyph[s.kind] ?? Glyph.check}</span>
-                <div class="grow">
-                  <div>{s.sysId ? <a href={recordLink(origin, s.table, s.sysId)} target="_blank" rel="noreferrer">{s.name}</a> : s.name} <span class={`pill ${s.will === 'yes' ? '' : 'w'}`}>{s.will === 'yes' ? P.wiYes : P.wiMaybe}</span></div>
-                  {s.writes.length > 0 && <div class="small">{s.writes.map((w) => <code>{w.field} = {w.value !== undefined ? label(w.value, w.field) : '?'}</code> )}</div>}
-                  <div class="det">{s.why}{s.updatesAgain ? ` · ${P.wiAgain}` : ''}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        );
+        return <div class="box"><h4>{P.wiPhase[ph]}<span>{list.length}</span></h4>{list.map(row)}</div>;
       })}
-      {Object.keys(res.result).length > 0 && (
+      {effects.length > 0 && (
         <div class="box">
           <h4>{P.wiResult}</h4>
           {Object.entries(res.result).map(([f, x]) => (
-            <div class="li"><div class="grow"><code>{f}</code> <span class="old">{label(x.from, f)}</span> <span class="arr">→</span> <span class="new">{label(x.to, f)}</span> <span class="muted small">{fmt(P.wiBy, { who: x.by === 'você' ? P.wiYou : x.by })}</span></div></div>
+            <div class="li"><div class="grow"><code>{f}</code> <span class="old">{label(x.from, f)}</span> <span class="arr">→</span> <span class="new">{show(x.to, f)}</span> <span class="muted small">{fmt(P.wiBy, { who: x.by === 'você' ? P.wiYou : x.by })}</span></div></div>
           ))}
         </div>
+      )}
+      {res.uncertain.length > 0 && (
+        <details class="box fold">
+          <summary><h4><span class="grow">{P.wiUncertain}<span class="why">{P.wiUncertainHint}</span></span><span class="pill w">{res.uncertain.length}</span></h4></summary>
+          {res.uncertain.map(row)}
+        </details>
       )}
       {res.skipped.length > 0 && (
         <details class="box fold">
@@ -87,22 +91,21 @@ function Outcome({ res, origin, label }: { res: ChangePreview; origin: string; l
           {res.skipped.slice(0, 40).map((s) => <div class="li"><span class="ck x">–</span><div class="grow">{s.name}<div class="det">{s.why}</div></div></div>)}
         </details>
       )}
-      <div class="muted small">{fmt(P.wiSummary, { n: res.steps.length, ms: res.timing.totalMs })} · {P.wiNote}</div>
+      <div class="muted small">{fmt(P.wiSummary, { n: res.steps.length, ms: res.timing.totalMs })}</div>
     </>
   );
 }
 
 function demoPreview(r: Investigation, field: string, value: string): ChangePreview {
-  const st = (phase: PreviewStep['phase'], kind: PreviewStep['kind'], name: string, writes: PreviewStep['writes'], why: string, extra: Partial<PreviewStep> = {}): PreviewStep => ({ phase, kind, name, table: 'sys_script', order: 100, will: 'yes', reacts: true, writes, why, ...extra });
+  const calc = '\u0000calc';
   return {
     table: r.target.table, sysId: r.target.sysId, field, from: r.changes[0]?.newValue ?? '', to: value,
     steps: [
-      st('client', 'data_lookup', 'Priority Lookup', [{ field: 'priority', value: '2' }], `"${field}" é entrada do lookup: recalcula no formulário`),
-      st('before', 'br_before', 'Escala para o plantão', [{ field: 'assignment_group', value: 'Service Desk' }], `reage à mudança (${field})`),
-      st('after', 'br_after', 'Avisa o solicitante', [{ field: 'work_notes' }], `reage à mudança (${field})`, { will: 'maybe', updatesAgain: true }),
+      { phase: 'before', kind: 'br_before', name: 'mark_resolved', table: 'sys_script', sysId: 'demo', order: 100, will: 'yes', reacts: true, writes: [{ field: 'resolved_by' }, { field: 'resolved_at' }], why: `reage à mudança de ${field}` },
     ],
-    result: { [field]: { from: r.changes[0]?.newValue ?? '', to: value, by: 'você' }, priority: { from: '3', to: '2', by: 'Priority Lookup' }, assignment_group: { from: '', to: 'Service Desk', by: 'Escala para o plantão' } },
+    uncertain: [{ phase: 'before', kind: 'br_before', name: 'Caller Close', table: 'sys_script', order: 100, will: 'maybe', reacts: true, writes: [{ field: 'close_code' }], why: `reage à mudança de ${field}` }],
+    result: { [field]: { from: r.changes[0]?.newValue ?? '', to: value, by: 'você' }, resolved_by: { from: '', to: calc, by: 'mark_resolved' }, resolved_at: { from: '', to: calc, by: 'mark_resolved' } },
     skipped: [{ kind: 'br_before', name: 'Urgência para VIP', why: 'o filtro da regra não vale com este valor' }],
-    timing: { totalMs: 920, calls: 11 },
+    timing: { totalMs: 880, calls: 9 },
   };
 }

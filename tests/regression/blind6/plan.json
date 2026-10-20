@@ -1,0 +1,86 @@
+[
+  { "id": "X01", "key": "T1", "table": "sc_task", "field": "assignment_group", "changeIndex": 2, "expectedType": "assignment_rule", "expectedName": "[PT] F16 Imagem de notebook urgente", "minGrade": "probable",
+    "why": "Rodada 1: PATCH urgency 3→1 pela API; com o grupo vazio, a regra de atribuição da sc_task grava Hardware. Iscas: regra '[PT] F16 Imagem de notebook comum' (urgency=2, falsa) e BR before '[PT] F16 Grupo de tarefas críticas' (return se impact != 1)." },
+  { "id": "X02", "key": "T1", "table": "sc_task", "field": "assignment_group", "changeIndex": 1, "expectedType": "user_action", "expectedName": "admin", "minGrade": "confirmed",
+    "why": "Rodada 2: pessoa troca o grupo para Service Desk no formulário e salva." },
+  { "id": "X03", "key": "T1", "table": "sc_task", "field": "assignment_group", "changeIndex": 0, "expectedType": "ui_action", "expectedName": "[PT] F16 Encaminhar para redes", "minGrade": "confirmed",
+    "why": "Rodada 3: botão do formulário grava Network e chama current.update()." },
+
+  { "id": "X04", "key": "T2", "table": "sc_task", "field": "description", "changeIndex": 1, "expectedType": "br_async", "expectedName": "[PT] F16 Instruções da licença", "minGrade": "confirmed",
+    "why": "Rodada 1: PATCH impact 3→2; BR async (filtro impact VALCHANGES) grava a descrição e chama current.update() em transação separada. Isca: '[PT] F16 Registra descrição da tarefa' (after) só lê." },
+  { "id": "X05", "key": "T2", "table": "sc_task", "field": "description", "changeIndex": 0, "expectedType": "scheduled_job", "expectedName": "[PT] F16 Revisa instruções de licença", "minGrade": "probable",
+    "why": "Rodada 2: job run once grava 'Revisado: ...' por GlideRecord (gr.get pelo sys_id)." },
+
+  { "id": "X06", "key": "T3", "table": "sc_task", "field": "assigned_to", "changeIndex": 1, "expectedType": "br_via_script_include", "expectedName": "[PT] F16 Responsável do acesso", "minGrade": "probable",
+    "why": "Rodada 1: PATCH assignment_group=Service Desk; BR after (filtro assignment_group VALCHANGES) chama PTF16Rotinas.designarResponsavel, que grava Beth num GlideRecord próprio. Iscas: BR before '[PT] F16 Responsável de urgência' (urgency == 1, falsa) grava David; PTF16Rotinas.liberarResponsavel não é chamado." },
+  { "id": "X07", "key": "T3", "table": "sc_task", "field": "assigned_to", "changeIndex": 0, "expectedType": "user_action", "expectedName": "admin", "minGrade": "probable",
+    "why": "Rodada 2: PATCH assigned_to=David dentro de um lote da Batch API (mesmo valor da isca '[PT] F16 Responsável de urgência', cuja condição é falsa)." },
+
+  { "id": "X08", "key": "T4", "table": "sc_task", "field": "description", "changeIndex": 0, "expectedType": "client_script", "expectedName": "[PT] F16 Roteiro de entrega urgente", "minGrade": "probable",
+    "why": "Pessoa muda priority 4→1 no formulário; o client script onChange (short_description exato, newValue == 1) preenche a descrição e a pessoa salva. Iscas: '[PT] F16 Roteiro de entrega planejada' (só priority 4), '[PT] F16 Avisa prioridade da tarefa' (só mensagem) e UI policy '[PT] F16 Tarefa urgente exige descrição' (aplica-se, mas só obrigatoriedade)." },
+
+  { "id": "X09", "key": "R1", "table": "sc_req_item", "field": "description", "changeIndex": 2, "expectedType": "br_before", "expectedName": "[PT] F16 Especificação do notebook", "minGrade": "confirmed",
+    "why": "Rodada 1: PATCH urgency 3→2; BR before (urgency.changes() && urgency == 2) grava a especificação. Isca: '[PT] F16 Especificação executiva' (condição urgency == 1)." },
+  { "id": "X10", "key": "R1", "table": "sc_req_item", "field": "description", "changeIndex": 1, "expectedType": "ui_action", "expectedName": "[PT] F16 Padronizar especificação", "minGrade": "confirmed",
+    "why": "Rodada 2: botão do formulário do item. Isca: '[PT] F16 Limpar especificação' (condição exige quantity > 5, não aparece)." },
+  { "id": "X11", "key": "R1", "table": "sc_req_item", "field": "description", "changeIndex": 0, "expectedType": "user_action", "expectedName": "admin", "minGrade": "confirmed",
+    "why": "Rodada 3: pessoa grava a descrição pela Table API (PATCH)." },
+
+  { "id": "X12", "key": "R2", "table": "sc_req_item", "field": "assignment_group", "changeIndex": 0, "expectedType": "user_action", "expectedName": "admin", "minGrade": "probable",
+    "why": "Rodada 1: PATCH assignment_group=Software dentro de um lote da Batch API; a URL da transação não cita o registro." },
+  { "id": "X13", "key": "R2", "table": "sc_req_item", "field": "correlation_id", "changeIndex": 1, "expectedType": "br_before", "expectedName": "[PT] F16 Código da licença", "minGrade": "probable",
+    "why": "Mesma transação do lote: BR before grava 'LIC-SW-2026' quando assignment_group muda." },
+  { "id": "X14", "key": "R2", "table": "sc_req_item", "field": "correlation_id", "changeIndex": 0, "expectedType": "scheduled_job", "expectedName": "[PT] F16 Renova códigos de licença", "minGrade": "probable",
+    "why": "Rodada 2: job run once grava 'LIC-RENOVADA-2027'." },
+
+  { "id": "X15", "key": "R3", "table": "sc_req_item", "field": "description", "changeIndex": 0, "expectedType": "br_after", "expectedName": "[PT] F16 Termo de acesso financeiro", "minGrade": "confirmed",
+    "why": "PATCH impact 3→2; BR after grava o termo com current.update(). Iscas: BR before '[PT] F16 Termo de acesso urgente' (impact == 1) e PTF16Rotinas.gerarTermo (não chamado)." },
+
+  { "id": "X16", "key": "CC1", "table": "cmdb_ci_computer", "field": "os_version", "changeIndex": 0, "expectedType": "user_action", "expectedName": "admin", "minGrade": "confirmed",
+    "why": "Pessoa muda a versão do SO 10.0.19045→10.0.22631 no formulário do computador." },
+  { "id": "X17", "key": "CC1", "table": "cmdb_ci_computer", "field": "short_description", "changeIndex": 0, "expectedType": "client_script", "expectedName": "[PT] F16 Descrição pela versão do SO", "minGrade": "probable",
+    "why": "Mesma gravação: client script onChange de os_version (name exato, versão 10.0.22*) preenche a descrição antes de salvar. Iscas: '[PT] F16 Descrição para Windows 10' (só 10.0.19*), '[PT] F16 Lembra versão do SO' (só mensagem), BR before '[PT] F16 Descrição de legado' (versão 6.1, falsa) e o ramo 'senão' da UI policy '[PT] F16 SO legado registra aviso' (roda, mas só mostra mensagem)." },
+
+  { "id": "X18", "key": "CC2", "table": "cmdb_ci_computer", "field": "comments", "changeIndex": 1, "expectedType": "br_before", "expectedName": "[PT] F16 Nota de memória ampliada", "minGrade": "confirmed",
+    "why": "Rodada 1: PATCH ram 8192→16384; BR before (ram.changes() && ram >= 16384) grava a nota. Isca: '[PT] F16 Nota de memória insuficiente' (ram < 4096)." },
+  { "id": "X19", "key": "CC2", "table": "cmdb_ci_computer", "field": "comments", "changeIndex": 0, "expectedType": "ui_action", "expectedName": "[PT] F16 Marcar para recolhimento", "minGrade": "confirmed",
+    "why": "Rodada 2: botão do formulário do computador. Isca: '[PT] F16 Liberar do recolhimento' (exige install_status 7, não aparece)." },
+
+  { "id": "X20", "key": "CC3", "table": "cmdb_ci_computer", "field": "serial_number", "changeIndex": 2, "expectedType": "import_set", "expectedName": "[PT] F16 Inventário de notebooks", "minGrade": "confirmed",
+    "why": "Rodada 1: POST /api/now/import/u_pt_f16_import (lote L1); mapeamento direto u_serial→serial_number, coalesce no name. Isca: BR before '[PT] F16 Serial do fabricante' (exige manufacturer, falsa)." },
+  { "id": "X21", "key": "CC3", "table": "cmdb_ci_computer", "field": "serial_number", "changeIndex": 1, "expectedType": "user_action", "expectedName": "admin", "minGrade": "confirmed",
+    "why": "Rodada 2: pessoa corrige o serial pela Table API (PATCH)." },
+  { "id": "X22", "key": "CC3", "table": "cmdb_ci_computer", "field": "serial_number", "changeIndex": 0, "expectedType": "import_set", "expectedName": "[PT] F16 Inventário de notebooks", "minGrade": "confirmed",
+    "why": "Rodada 3: segunda carga (lote L2) sobrescreve o ajuste manual." },
+  { "id": "X23", "key": "CC3", "table": "cmdb_ci_computer", "field": "os_version", "changeIndex": 0, "expectedType": "import_set", "expectedName": "[PT] F16 Inventário de notebooks", "minGrade": "confirmed",
+    "why": "Rodada 1: mapeamento direto u_versao_so→os_version (a carga L2 traz o mesmo valor, sem mudança)." },
+  { "id": "X24", "key": "CC3", "table": "cmdb_ci_computer", "field": "short_description", "changeIndex": 0, "expectedType": "br_after", "expectedName": "[PT] F16 Descrição pós-inventário", "minGrade": "probable",
+    "why": "O mapa não grava short_description; a BR after reage à mudança de os_version na carga L1 e grava a descrição com current.update()." },
+
+  { "id": "X25", "key": "SV1", "table": "cmdb_ci_server", "field": "support_group", "changeIndex": 1, "expectedType": "br_via_script_include", "expectedName": "[PT] F16 Suporte do servidor", "minGrade": "probable",
+    "why": "Rodada 1: PATCH used_for Development→Production; BR after (filtro used_for VALCHANGES) chama PTF16Rotinas.definirSuporte, que grava o grupo Database num GlideRecord próprio. Iscas: BR before '[PT] F16 Suporte de contingência' (Disaster recovery, falsa) e PTF16Rotinas.liberarSuporte (não chamado)." },
+  { "id": "X26", "key": "SV1", "table": "cmdb_ci_server", "field": "support_group", "changeIndex": 0, "expectedType": "scheduled_job", "expectedName": "[PT] F16 Realinha suporte de servidores", "minGrade": "probable",
+    "why": "Rodada 2: job run once grava o grupo Network." },
+
+  { "id": "X27", "key": "SV2", "table": "cmdb_ci_server", "field": "short_description", "changeIndex": 0, "expectedType": "ui_policy", "expectedName": "[PT] F16 Produção pede janela", "minGrade": "probable",
+    "why": "Pessoa muda used_for Test→Production no formulário; o ramo verdadeiro da UI policy (script_true) preenche a descrição antes de salvar. Iscas: '[PT] F16 Desenvolvimento libera mudanças' (Development, não se aplica) e '[PT] F16 Produção exige descrição' (aplica-se, só obrigatoriedade)." },
+  { "id": "X28", "key": "SV2", "table": "cmdb_ci_server", "field": "used_for", "changeIndex": 0, "expectedType": "user_action", "expectedName": "admin", "minGrade": "confirmed",
+    "why": "A própria pessoa mudou Test→Production no formulário." },
+
+  { "id": "X29", "key": "K1", "table": "kb_knowledge", "field": "meta", "changeIndex": 2, "expectedType": "user_action", "expectedName": "admin", "minGrade": "confirmed",
+    "why": "Rodada 1: pessoa escreve as palavras-chave no formulário do artigo. Isca: UI policy '[PT] F16 Artigo sem validade exige palavras' (valid_to vazio, não se aplica; só obrigatoriedade)." },
+  { "id": "X30", "key": "K1", "table": "kb_knowledge", "field": "meta", "changeIndex": 1, "expectedType": "br_before", "expectedName": "[PT] F16 Palavras-chave de validade", "minGrade": "confirmed",
+    "why": "Rodada 2: PATCH valid_to; BR before (valid_to.changes()) grava as palavras-chave. Isca: '[PT] F16 Palavras-chave do wiki' (article_type == wiki, falsa) e PTF16Rotinas.sugerirPalavras (não chamado)." },
+  { "id": "X31", "key": "K1", "table": "kb_knowledge", "field": "meta", "changeIndex": 0, "expectedType": "ui_action", "expectedName": "[PT] F16 Revisar palavras-chave", "minGrade": "confirmed",
+    "why": "Rodada 3: botão do formulário do artigo." },
+
+  { "id": "X32", "key": "K2", "table": "kb_knowledge", "field": "text", "changeIndex": 1, "expectedType": "br_after", "expectedName": "[PT] F16 Aviso de VPN no artigo", "minGrade": "confirmed",
+    "why": "Rodada 1: PATCH meta com 'forticlient'; BR after grava o corpo do artigo com current.update(). Iscas: '[PT] F16 Aviso de AnyConnect' (meta sem 'anyconnect') e '[PT] F16 Registra texto do artigo' (só lê)." },
+  { "id": "X33", "key": "K2", "table": "kb_knowledge", "field": "text", "changeIndex": 0, "expectedType": "br_via_script_include", "expectedName": "[PT] F16 Revisão técnica do artigo", "minGrade": "probable",
+    "why": "Rodada 2: PATCH valid_to; BR after (filtro valid_to VALCHANGES) chama PTF16Rotinas.revisarArtigo, que grava o texto num GlideRecord próprio." },
+
+  { "id": "X34", "key": "K3", "table": "kb_knowledge", "field": "meta", "changeIndex": 0, "expectedType": "user_action", "expectedName": "admin", "minGrade": "probable",
+    "why": "Rodada 1: PATCH meta dentro de um lote da Batch API. Isca: BR async '[PT] F16 Texto da política assíncrono' (filtro meta VALCHANGES, mas condição article_type == wiki é falsa; não grava text)." },
+  { "id": "X35", "key": "K3", "table": "kb_knowledge", "field": "valid_to", "changeIndex": 0, "expectedType": "scheduled_job", "expectedName": "[PT] F16 Renova validade das políticas", "minGrade": "probable",
+    "why": "Rodada 2: job run once grava valid_to = 2028-12-31." }
+]

@@ -40,6 +40,8 @@ export interface ChangePreview {
   steps: PreviewStep[];
   /** Como o registro ficaria (campos que a previsão sabe calcular). */
   result: Record<string, { from: string; to: string; by: string }>;
+  /** Automações que talvez rodem (condição que não deu para avaliar): mostradas à parte, sem entrar no resultado. */
+  uncertain: PreviewStep[];
   /** Regras que citam o campo mas não rodam com este valor (para o "por que não"). */
   skipped: { kind: PreviewStep['kind']; name: string; why: string }[];
   timing: { totalMs: number; calls: number };
@@ -75,16 +77,29 @@ export async function previewChange(client: RestClient, target: { table: string;
   // Estado que vai sendo construído: cada etapa vê o que as anteriores deixaram.
   const rec: Record<string, string> = { ...record, [field]: value };
   const changed = new Set<string>([field]);
+  let mirror = '';
+  // No incidente, incident_state acompanha state (o ServiceNow mantém os dois iguais); regras padrão leem incident_state.
+  if (tables.includes('incident') && (field === 'state' || field === 'incident_state') && ('incident_state' in record || 'state' in record)) {
+    const twin = field === 'state' ? 'incident_state' : 'state';
+    rec[twin] = value; changed.add(twin); mirror = twin;
+  }
   const by: Record<string, string> = { [field]: 'você' };
   const steps: PreviewStep[] = [];
   const skipped: ChangePreview['skipped'] = [];
   const env = (extra: Partial<Env> = {}): Env => ({ rec, old: record, changed, ...(target.user ? { user: target.user } : {}), ...extra });
+  // Só entra o que tem efeito: uma gravação que muda o valor (ou calcula um valor na hora, numa regra que com certeza roda).
+  // Regras que gravariam o mesmo valor que já está lá não mudam nada e ficam de fora. O que não dá para confirmar
+  // (condição que não sabemos avaliar) vai para `uncertain`, separado.
+  const uncertain: PreviewStep[] = [];
   const apply = (s: PreviewStep) => {
-    steps.push(s);
-    if (s.will !== 'yes') return;
-    for (const w of s.writes) {
-      if (w.value === undefined) continue;
-      if (!sameVal(rec[w.field] ?? '', w.value)) { rec[w.field] = w.value; changed.add(w.field); }
+    const writes = s.writes.filter((w) => w.value === undefined ? s.will === 'yes' : !sameVal(rec[w.field] ?? '', w.value));
+    const eff = { ...s, writes };
+    if (s.kind !== 'flow' && !writes.length) return;
+    if (s.will !== 'yes') { uncertain.push(eff); return; }
+    steps.push(eff);
+    for (const w of writes) {
+      if (w.value !== undefined) { rec[w.field] = w.value; changed.add(w.field); }
+      else changed.add(w.field);
       by[w.field] = s.name;
     }
   };
@@ -176,15 +191,13 @@ export async function previewChange(client: RestClient, target: { table: string;
       const w = writesOfScript(b.script, b.template, e);
       if (!w.anyReachable) { if (mentions) skipped.push({ kind: `br_${when}` as PreviewStep['kind'], name, why: 'o trecho que grava depende de uma condição que não vale' }); continue; }
       const reacts = reactsTo([b.script, b.condition], b.filter_condition);
-      // Regra que roda em qualquer gravação e não depende do que mudou: mostra só se grava algo que muda o registro.
-      const effective = w.writes.filter((x) => x.value === undefined || !sameVal(rec[x.field] ?? '', x.value));
-      if (!reacts && !effective.length) continue;
+      // Regra que roda em qualquer gravação e não depende do que mudou não é efeito desta mudança: fica de fora.
+      if (!reacts) continue;
+      const effective = w.writes;
       const maybe = f === undefined && !!b.filter_condition || c === undefined || w.unknown;
-      // Regra que não reage a esta mudança e cuja condição não sabemos avaliar (ex.: fechamento, reabertura): é ruído.
-      if (!reacts && maybe) continue;
       apply({ phase: when, kind: `br_${when}` as PreviewStep['kind'], name, table: 'sys_script', ...(b.sys_id ? { sysId: b.sys_id } : {}), order: Number(b.order ?? 100), will: maybe ? 'maybe' : 'yes', reacts, writes: reacts ? w.writes : effective,
         ...(when !== 'before' && /\.update\(\s*\)/.test(b.script ?? '') ? { updatesAgain: true } : {}),
-        why: reacts ? `reage à mudança (${[...changed].filter((x) => (b.script ?? '').includes(x) || (b.filter_condition ?? '').includes(x) || (b.condition ?? '').includes(x)).join(', ') || field})` : 'roda em toda gravação e mudaria o valor' });
+        why: `reage à mudança de ${[...changed].filter((x) => (b.script ?? '').includes(x) || (b.filter_condition ?? '').includes(x) || (b.condition ?? '').includes(x)).join(', ') || field}` });
     }
   };
   server('before');
@@ -216,12 +229,21 @@ export async function previewChange(client: RestClient, target: { table: string;
     const ok = c ? cond(c) : undefined;
     if (ok === false) continue;
     const reacts = !!c && conditionFields(c).some((f) => changed.has(f));
-    // Gatilho que não depende do campo: roda em qualquer atualização (a menos que seja "uma vez só" e já tenha rodado).
-    apply({ phase: 'async', kind: 'flow', name: t['flow.name'] || 'Flow', table: 'sys_hub_flow', ...(t.flow ? { sysId: t.flow } : {}), order: 0, will: ok && reacts ? 'yes' : 'maybe', reacts, writes: [],
-      why: reacts ? 'o gatilho do flow passa a valer com este valor' : c ? 'o gatilho do flow vale para este registro em qualquer atualização (se for "uma vez só", pode já ter rodado)' : 'o flow roda em toda atualização da tabela' });
+    // Só interessa o flow que passa a disparar por causa desta mudança; os que rodam em toda atualização não são efeito dela.
+    if (!reacts || evalCondition(c, record) === true) continue; // já valia antes: não é efeito desta mudança
+    const acts = t.flow ? await q('sys_hub_action_instance_v2', `flow=${t.flow}^ORDERBYorder`, ['order', 'values', 'action_type.name'], 50) : [];
+    const writes: PreviewWrite[] = [];
+    for (const a of acts) {
+      const params = (await decodeFlowValues(a.values)) ?? [];
+      const pick = (n: string) => params.find((x) => x.name === n)?.value ?? '';
+      const tb = pick('table_name');
+      if (tb && !tables.includes(tb)) continue;
+      for (const [f, v] of Object.entries(parseFieldValues(pick('values') || pick('fields')))) writes.push(v.includes('{{') ? { field: f } : { field: f, value: v });
+    }
+    apply({ phase: 'async', kind: 'flow', name: t['flow.name'] || 'Flow', table: 'sys_hub_flow', ...(t.flow ? { sysId: t.flow } : {}), order: 0, will: ok ? 'yes' : 'maybe', reacts, writes, why: 'o gatilho do flow passa a valer com este valor' });
   }
 
   const result: ChangePreview['result'] = {};
-  for (const f of changed) result[f] = { from: record[f] ?? '', to: rec[f] ?? '', by: by[f] ?? '?' };
-  return { table, sysId, field, from, to: value, steps, result, skipped, timing: { totalMs: Date.now() - started, calls: client.calls - calls0 } };
+  for (const f of changed) if (f !== mirror) result[f] = { from: record[f] ?? '', to: f in rec && (by[f] === 'você' || steps.some((x) => x.writes.some((w) => w.field === f && w.value !== undefined))) ? rec[f] ?? '' : '\u0000calc', by: by[f] ?? '?' };
+  return { table, sysId, field, from, to: value, steps, uncertain, result, skipped, timing: { totalMs: Date.now() - started, calls: client.calls - calls0 } };
 }

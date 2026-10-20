@@ -10,3 +10,4 @@ export * from './client/FakeRestClient';
 export * from './timeline';
 export * from './conflicts';
 export * from './preview';
+export * from './batch';

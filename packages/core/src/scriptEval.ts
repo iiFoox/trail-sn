@@ -222,7 +222,14 @@ function isRef(n: Node): n is FieldRef { return typeof n === 'object' && n !== n
 function isObj(n: Node): n is { kind: 'obj'; name: string } { return typeof n === 'object' && n !== null && (n as { kind: string }).kind === 'obj'; }
 
 /** Avalia uma expressão. `undefined` = não deu para saber (nunca chuta). */
+/** Constantes de estado do incidente (script include IncidentStateSNC, padrão do ServiceNow). */
+const STATE_CONSTS: Record<string, string> = { NEW: '1', IN_PROGRESS: '2', ACTIVE: '2', ON_HOLD: '3', AWAITING_PROBLEM: '3', AWAITING_USER_INFO: '3', AWAITING_EVIDENCE: '3', RESOLVED: '6', CLOSED: '7', CANCELED: '8' };
+function withConstants(expr: string): string {
+  return expr.replace(/\bIncidentState(?:SNC)?\.([A-Z_]+)\b/g, (m, k: string) => (k in STATE_CONSTS ? `'${STATE_CONSTS[k]}'` : m));
+}
+
 export function evalExpr(expr: string, env: Env): Val {
+  expr = withConstants(expr);
   const v = evalStrict(expr, env);
   if (v !== U) return v;
   // Trecho que não sabemos avaliar (ex.: `new TableUtils(...)`, plugins): uma parte certa ainda decide a expressão inteira.
