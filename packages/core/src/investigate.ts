@@ -298,10 +298,15 @@ export async function investigate(
     const lastAudit = audit.length ? audit[audit.length - 1]?.sys_created_on ?? null : null;
     const updatedOn = rec.sys_updated_on ?? '';
     if (updatedOn && (!lastAudit || toMs(updatedOn) > toMs(lastAudit) + 1000)) {
-      const tx = await q('syslog_transaction', `sys_created_on>=${shift(updatedOn, -3)}^sys_created_on<=${shift(updatedOn, 5)}`, ['sys_created_on', 'type', 'url', 'sys_created_by'], 50);
+      const [tx, evs] = await Promise.all([
+        q('syslog_transaction', `sys_created_on>=${shift(updatedOn, -3)}^sys_created_on<=${shift(updatedOn, 5)}`, ['sys_created_on', 'type', 'url', 'sys_created_by'], 50),
+        // Eventos do próprio registro no instante (ex.: sla.warning.breach no task_sla): dizem qual motor mexeu nele.
+        quiet('sysevent', `instance=${sysId}^sys_created_on>=${shift(updatedOn, -3)}^sys_created_on<=${shift(updatedOn, 5)}`, ['sys_created_on', 'name'], 20),
+      ]);
       for (const t of tx) {
         if (/^JOB: |\/sys\.scripts\.do|\/api\//.test(t.url ?? '')) clues.push(`${t.sys_created_on} ${t.type} ${(t.url ?? '').split('?')[0]?.slice(0, 80)} (${t.sys_created_by})`);
       }
+      for (const e of evs) clues.push(`${e.sys_created_on} evento ${e.name ?? ''} neste registro`);
     }
     unaudited = { count: mods - maxCheckpoint, lastUpdatedOn: updatedOn, lastUpdatedBy: rec.sys_updated_by ?? '', clues };
   }

@@ -1,5 +1,5 @@
 /** Bundle para rodar a bateria dentro de uma aba logada da instância (console/devtools). */
-import { FetchRestClient, detectAccess, investigate, type Grade } from '../../../packages/core/src/index';
+import { FetchRestClient, detectAccess, investigate, previewChange, type Grade } from '../../../packages/core/src/index';
 import cases from '../cases.json';
 
 const order: Grade[] = ['candidate', 'probable', 'confirmed'];
@@ -59,3 +59,5 @@ export async function runRegression(list: any[] = cases as any[]): Promise<unkno
   return { access: access.level, denied: access.denied, results, median: ms[Math.floor(ms.length / 2)] };
 }
 export const allCases = cases as any[];
+
+export async function preview(t: { table: string; sysId: string; field: string; value: string }): Promise<unknown> { return previewChange(makeClient(), t); }
