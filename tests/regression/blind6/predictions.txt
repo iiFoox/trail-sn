@@ -1,0 +1,35 @@
+X01	-	-	SEM MUDANCA
+X02	assignment_rule	probable	[PT] F16 Imagem de notebook urgente
+X03	ui_action	confirmed	[PT] F16 Encaminhar para redes
+X04	br_async	confirmed	[PT] F16 Instruções da licença
+X05	scheduled_job	confirmed	[PT] F16 Revisa instruções de licença
+X06	br_via_script_include	probable	[PT] F16 Responsável do acesso → PTF16Rotinas
+X07	user_action	probable	admin
+X08	client_script	confirmed	[PT] F16 Roteiro de entrega urgente
+X09	br_before	confirmed	[PT] F16 Especificação do notebook
+X10	ui_action	confirmed	[PT] F16 Padronizar especificação
+X11	user_action	confirmed	admin
+X12	user_action	probable	admin
+X13	br_before	confirmed	[PT] F16 Código da licença
+X14	scheduled_job	confirmed	[PT] F16 Renova códigos de licença
+X15	br_after	confirmed	[PT] F16 Termo de acesso financeiro
+X16	user_action	confirmed	admin
+X17	client_script	confirmed	[PT] F16 Descrição pela versão do SO
+X18	br_before	confirmed	[PT] F16 Nota de memória ampliada
+X19	ui_action	confirmed	[PT] F16 Marcar para recolhimento
+X20	import_set	confirmed	[PT] F16 Inventário de notebooks
+X21	user_action	confirmed	admin
+X22	import_set	confirmed	[PT] F16 Inventário de notebooks
+X23	import_set	confirmed	[PT] F16 Inventário de notebooks
+X24	br_after	confirmed	[PT] F16 Descrição pós-inventário
+X25	br_via_script_include	probable	[PT] F16 Suporte do servidor → PTF16Rotinas
+X26	scheduled_job	confirmed	[PT] F16 Realinha suporte de servidores
+X27	-	-	SEM MUDANCA
+X28	-	-	SEM MUDANCA
+X29	-	-	SEM MUDANCA
+X30	br_async	probable	Run Article Optimization on update
+X31	br_async	probable	Run Article Optimization on update
+X32	br_async	probable	Run Article Optimization on update
+X33	br_async	probable	Run Article Optimization on update
+X34	br_async	probable	Run Article Optimization on update
+X35	br_async	probable	Run Article Optimization on update

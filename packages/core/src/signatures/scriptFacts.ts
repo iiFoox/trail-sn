@@ -118,7 +118,7 @@ export function reactsFacts(ctx: ChangeContext, texts: (string | undefined)[], s
   return [];
 }
 
-const ruled = (e: Evidence) => e.facts.some((f) => f.kind === 'condition_false' || f.kind === 'reads_only' || f.kind === 'sets_other_value' || f.kind === 'no_step_writes_field');
+const ruled = (e: Evidence) => e.facts.some((f) => f.kind === 'condition_false' || f.kind === 'reads_only' || f.kind === 'not_referenced' || f.kind === 'sets_other_value' || f.kind === 'no_step_writes_field');
 
 /**
  * Várias BRs before na mesma gravação: o ServiceNow roda em ordem crescente de `order`; quem grava por último é o valor que fica.

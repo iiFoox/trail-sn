@@ -85,6 +85,7 @@ export type FactKind =
   | 'no_competing_automation'
   | 'no_step_writes_field'
   | 'integration_user'
+  | 'not_referenced'
   | 'tie_with_same_type';
 
 export interface Fact {

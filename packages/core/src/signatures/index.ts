@@ -36,7 +36,7 @@ export function runSignatures(full: ChangeContext): Evidence[] {
   const out = NAMED_TRACES.flatMap((s) => s(ctx));
   // Só um rastro que nomeia o artefato encerra a busca; sinais fracos (ex.: script action genérica) não.
   // Rastro forte só conta se nada o desmente (passo do flow que não grava o campo, valor diferente, condição falsa).
-  const ruledOut = (e: Evidence) => e.facts.some((f) => f.kind === 'no_step_writes_field' || f.kind === 'sets_other_value' || f.kind === 'condition_false' || f.kind === 'reads_only');
+  const ruledOut = (e: Evidence) => e.facts.some((f) => f.kind === 'no_step_writes_field' || f.kind === 'sets_other_value' || f.kind === 'condition_false' || f.kind === 'reads_only' || f.kind === 'not_referenced');
   const strong = out.some((e) => !ruledOut(e) && e.facts.some((f) => f.kind === 'trace_names_artifact' || f.kind === 'trace_identifies_mechanism'));
   // Só transações DESTE registro: a mesma pessoa navegando em outras telas na hora não é uma gravação dela aqui.
   const anyUserTx = ctx.traces.transactions.some((t) => t.sys_created_by === ctx.user && !/^JOB: /.test(t.url ?? '') && isRecordWrite(t.url, ctx.sysId))

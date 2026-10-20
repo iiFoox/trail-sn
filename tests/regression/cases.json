@@ -3693,5 +3693,275 @@
     "expectedName": "[PT] F17 Urgência média ao descrever",
     "minGrade": "probable",
     "changeIndex": 1
+  },
+  {
+    "id": "F16-X04",
+    "table": "sc_task",
+    "sysId": "db97147dc38c93101cbdb8e1b401314f",
+    "field": "description",
+    "expectedType": "br_async",
+    "expectedName": "[PT] F16 Instruções da licença",
+    "minGrade": "confirmed",
+    "changeIndex": 1
+  },
+  {
+    "id": "F16-X05",
+    "table": "sc_task",
+    "sysId": "db97147dc38c93101cbdb8e1b401314f",
+    "field": "description",
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] F16 Revisa instruções de licença",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F16-X06",
+    "table": "sc_task",
+    "sysId": "9b97147dc38c93101cbdb8e1b4013172",
+    "field": "assigned_to",
+    "expectedType": "br_via_script_include",
+    "expectedName": "[PT] F16 Responsável do acesso",
+    "minGrade": "probable",
+    "changeIndex": 1
+  },
+  {
+    "id": "F16-X07",
+    "table": "sc_task",
+    "sysId": "9b97147dc38c93101cbdb8e1b4013172",
+    "field": "assigned_to",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F16-X08",
+    "table": "sc_task",
+    "sysId": "a397147dc38c93101cbdb8e1b4013189",
+    "field": "description",
+    "expectedType": "client_script",
+    "expectedName": "[PT] F16 Roteiro de entrega urgente",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F16-X09",
+    "table": "sc_req_item",
+    "sysId": "6a97907dc38c93101cbdb8e1b40131f7",
+    "field": "description",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F16 Especificação do notebook",
+    "minGrade": "confirmed",
+    "changeIndex": 2
+  },
+  {
+    "id": "F16-X10",
+    "table": "sc_req_item",
+    "sysId": "6a97907dc38c93101cbdb8e1b40131f7",
+    "field": "description",
+    "expectedType": "ui_action",
+    "expectedName": "[PT] F16 Padronizar especificação",
+    "minGrade": "confirmed",
+    "changeIndex": 1
+  },
+  {
+    "id": "F16-X11",
+    "table": "sc_req_item",
+    "sysId": "6a97907dc38c93101cbdb8e1b40131f7",
+    "field": "description",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "F16-X12",
+    "table": "sc_req_item",
+    "sysId": "4397d07dc38c93101cbdb8e1b40131d0",
+    "field": "assignment_group",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F16-X13",
+    "table": "sc_req_item",
+    "sysId": "4397d07dc38c93101cbdb8e1b40131d0",
+    "field": "correlation_id",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F16 Código da licença",
+    "minGrade": "probable",
+    "changeIndex": 1
+  },
+  {
+    "id": "F16-X14",
+    "table": "sc_req_item",
+    "sysId": "4397d07dc38c93101cbdb8e1b40131d0",
+    "field": "correlation_id",
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] F16 Renova códigos de licença",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F16-X15",
+    "table": "sc_req_item",
+    "sysId": "8b97d07dc38c93101cbdb8e1b40131d6",
+    "field": "description",
+    "expectedType": "br_after",
+    "expectedName": "[PT] F16 Termo de acesso financeiro",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "F16-X16",
+    "table": "cmdb_ci_computer",
+    "sysId": "6797147dc38c93101cbdb8e1b4013194",
+    "field": "os_version",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "F16-X17",
+    "table": "cmdb_ci_computer",
+    "sysId": "6797147dc38c93101cbdb8e1b4013194",
+    "field": "short_description",
+    "expectedType": "client_script",
+    "expectedName": "[PT] F16 Descrição pela versão do SO",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F16-X18",
+    "table": "cmdb_ci_computer",
+    "sysId": "bf97147dc38c93101cbdb8e1b401319c",
+    "field": "comments",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F16 Nota de memória ampliada",
+    "minGrade": "confirmed",
+    "changeIndex": 1
+  },
+  {
+    "id": "F16-X19",
+    "table": "cmdb_ci_computer",
+    "sysId": "bf97147dc38c93101cbdb8e1b401319c",
+    "field": "comments",
+    "expectedType": "ui_action",
+    "expectedName": "[PT] F16 Marcar para recolhimento",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "F16-X20",
+    "table": "cmdb_ci_computer",
+    "sysId": "b797147dc38c93101cbdb8e1b40131a0",
+    "field": "serial_number",
+    "expectedType": "import_set",
+    "expectedName": "[PT] F16 Inventário de notebooks",
+    "minGrade": "confirmed",
+    "changeIndex": 2
+  },
+  {
+    "id": "F16-X21",
+    "table": "cmdb_ci_computer",
+    "sysId": "b797147dc38c93101cbdb8e1b40131a0",
+    "field": "serial_number",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed",
+    "changeIndex": 1
+  },
+  {
+    "id": "F16-X22",
+    "table": "cmdb_ci_computer",
+    "sysId": "b797147dc38c93101cbdb8e1b40131a0",
+    "field": "serial_number",
+    "expectedType": "import_set",
+    "expectedName": "[PT] F16 Inventário de notebooks",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "F16-X23",
+    "table": "cmdb_ci_computer",
+    "sysId": "b797147dc38c93101cbdb8e1b40131a0",
+    "field": "os_version",
+    "expectedType": "import_set",
+    "expectedName": "[PT] F16 Inventário de notebooks",
+    "minGrade": "confirmed",
+    "changeIndex": 0
+  },
+  {
+    "id": "F16-X24",
+    "table": "cmdb_ci_computer",
+    "sysId": "b797147dc38c93101cbdb8e1b40131a0",
+    "field": "short_description",
+    "expectedType": "br_after",
+    "expectedName": "[PT] F16 Descrição pós-inventário",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F16-X25",
+    "table": "cmdb_ci_server",
+    "sysId": "7797547dc38c93101cbdb8e1b4013139",
+    "field": "support_group",
+    "expectedType": "br_via_script_include",
+    "expectedName": "[PT] F16 Suporte do servidor",
+    "minGrade": "probable",
+    "changeIndex": 1
+  },
+  {
+    "id": "F16-X26",
+    "table": "cmdb_ci_server",
+    "sysId": "7797547dc38c93101cbdb8e1b4013139",
+    "field": "support_group",
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] F16 Realinha suporte de servidores",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F16-X32",
+    "table": "kb_knowledge",
+    "sysId": "9ca7947dc38c93101cbdb8e1b401316f",
+    "field": "text",
+    "expectedType": "br_after",
+    "expectedName": "[PT] F16 Aviso de VPN no artigo",
+    "minGrade": "confirmed",
+    "changeIndex": 1
+  },
+  {
+    "id": "F16-X33",
+    "table": "kb_knowledge",
+    "sysId": "9ca7947dc38c93101cbdb8e1b401316f",
+    "field": "text",
+    "expectedType": "br_via_script_include",
+    "expectedName": "[PT] F16 Revisão técnica do artigo",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F16-X34",
+    "table": "kb_knowledge",
+    "sysId": "60a7947dc38c93101cbdb8e1b4013177",
+    "field": "meta",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "probable",
+    "changeIndex": 0
+  },
+  {
+    "id": "F16-X35",
+    "table": "kb_knowledge",
+    "sysId": "60a7947dc38c93101cbdb8e1b4013177",
+    "field": "valid_to",
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] F16 Renova validade das políticas",
+    "minGrade": "probable",
+    "changeIndex": 0
   }
 ]

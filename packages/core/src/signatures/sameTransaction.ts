@@ -250,7 +250,7 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
     facts.push(...scriptFacts(ctx, p.script, 'sys_ui_policy', { hasCondition: true }).filter((f) => f.kind !== 'condition_true'));
     return evidence('ui_policy', { name: p.name ?? '?', sysId: p.sys_id, table: 'sys_ui_policy' }, facts, ['o navegador não registra se a pessoa digitou ou se a UI policy preencheu']);
   });
-  const isStrong = (es: Evidence[]) => es.some((e) => e.facts.some((f) => f.kind === 'trace_identifies_mechanism') && !e.facts.some((f) => f.kind === 'condition_false' || f.kind === 'sets_other_value' || f.kind === 'reads_only'));
+  const isStrong = (es: Evidence[]) => es.some((e) => e.facts.some((f) => f.kind === 'trace_identifies_mechanism') && !e.facts.some((f) => f.kind === 'condition_false' || f.kind === 'sets_other_value' || f.kind === 'reads_only' || f.kind === 'not_referenced'));
   const tx = ctx.traces.transactions;
   let userTx = tx.filter((t) => t.sys_created_by === ctx.user && isRecordWrite(t.url, ctx.sysId));
   // Gravado como "system" dentro do salvamento de outra pessoa (regra de atribuição): a transação é a dessa pessoa.
@@ -387,7 +387,7 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
     }
     out.push(...server);
     // Concorrentes de verdade: automações que podem ter gravado este valor (sem condição falsa e sem gravar outro valor).
-    const rivals: Evidence[] = server.filter((e) => !e.facts.some((f) => f.kind === 'condition_false' || f.kind === 'sets_other_value' || f.kind === 'reads_only'));
+    const rivals: Evidence[] = server.filter((e) => !e.facts.some((f) => f.kind === 'condition_false' || f.kind === 'sets_other_value' || f.kind === 'reads_only' || f.kind === 'not_referenced'));
     // Salvamento pelo Workspace: o botão Salvar roda como /api/now/ui/ui_action/<id>?sysparm_sys_id=<registro>.
     // Os valores enviados não ficam na URL; client scripts "All" (ui_type 10) rodam no Workspace e podem ter preenchido o campo.
     const ws = userTx.find((t) => /\/api\/now\/ui\/ui_action\/[0-9a-f]{32}/.test(t.url ?? '') && Math.abs(toMs(t.sys_created_on ?? '') - toMs(ctx.at)) <= 3000);

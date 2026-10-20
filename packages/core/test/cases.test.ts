@@ -967,3 +967,15 @@ describe('teste às cegas 5: correções', () => {
     expect(r.changes[0]!.evidence.find((e) => e.type === 'br_async')!.facts.some((f) => f.kind === 'condition_false')).toBe(true);
   });
 });
+
+describe('teste às cegas 6: correção', () => {
+  it('BR async padrão que rodou no instante mas não cita o campo não é a causa', async () => {
+    const s = scenario();
+    br(s, 'Run Article Optimization on update', 'async', "new KBOptimizer().run(current);");
+    audit(s, 'description', '', 'Texto novo', T0, 'admin', 1);
+    tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
+    tx(s, shiftStr(T0, 2), 'other', 'JOB: ASYNC: Run Article Optimization on update', 'system');
+    const e = top(await run(s, 'description'));
+    expect(e.type).toBe('user_action');
+  });
+});
