@@ -132,11 +132,12 @@ function pushContext(): void {
 const decorated = new WeakSet<Element>();
 
 document.addEventListener('trail:context', (e) => {
-  const d = (e as CustomEvent<{ token?: string; userName?: string; table?: string; sysId?: string }>).detail ?? {};
+  const d = (e as CustomEvent<{ token?: string; userName?: string; language?: string; table?: string; sysId?: string }>).detail ?? {};
   ctx = {
     ...ctx,
     token: d.token ?? ctx.token,
     userName: d.userName ?? ctx.userName,
+    language: d.language ?? ctx.language,
     table: ctx.table ?? d.table,
     sysId: ctx.sysId ?? d.sysId,
     surface: ctx.surface === 'unknown' && d.table ? 'ui16' : ctx.surface,
@@ -198,6 +199,7 @@ function investigate(field: string): void {
     type: 'investigate',
     origin,
     token: ctx.token,
+    language: ctx.language,
     // O modo vai junto para o worker abrir o painel lateral sem esperar nada: o Edge perde o gesto do clique em qualquer await.
     ...(panelMode ? { mode: panelMode } : {}),
     target: { table: ctx.table, sysId: ctx.sysId, field },
@@ -240,7 +242,7 @@ function batch(table: string, field: string): void {
   const checked = [...document.querySelectorAll<HTMLInputElement>(`input[id^="check_${table}_"]:checked`)].map((c) => c.id.slice(`check_${table}_`.length)).filter((x) => /^[0-9a-f]{32}$/.test(x));
   const ids = checked.length ? checked : [...document.querySelectorAll<HTMLElement>('tr.list_row[sys_id]')].map((r) => r.getAttribute('sys_id') ?? '').filter((x) => /^[0-9a-f]{32}$/.test(x));
   if (!ids.length) return;
-  chrome.runtime.sendMessage({ type: 'batch', origin, table, field, sysIds: [...new Set(ids)], token: ctx.token, ...(panelMode ? { mode: panelMode } : {}) }).catch(() => { /* noop */ });
+  chrome.runtime.sendMessage({ type: 'batch', origin, table, field, sysIds: [...new Set(ids)], token: ctx.token, language: ctx.language, ...(panelMode ? { mode: panelMode } : {}) }).catch(() => { /* noop */ });
 }
 
 // ---------- ícone nos campos (Workspace / Next Experience) ----------

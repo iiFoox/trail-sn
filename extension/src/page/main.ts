@@ -2,12 +2,14 @@
  * Roda no mundo da página (world: MAIN). Só lê contexto e publica por CustomEvent.
  * Nenhuma chamada de rede, nenhuma alteração no DOM.
  *
- * Expõe: g_ck (X-UserToken), NOW.user_name, g_form.getTableName()/getUniqueValue() no UI16.
+ * Expõe: g_ck (X-UserToken), usuário/idioma da sessão, g_form.getTableName()/getUniqueValue() no UI16.
  */
 (() => {
   const w = window as unknown as {
     g_ck?: string;
-    NOW?: { user_name?: string };
+    g_lang?: string;
+    g_user_lang?: string;
+    NOW?: { user_name?: string; language?: string };
     g_form?: { getTableName?: () => string; getUniqueValue?: () => string };
   };
 
@@ -15,6 +17,7 @@
     const detail = {
       token: w.g_ck || undefined,
       userName: w.NOW?.user_name,
+      language: w.g_user_lang || w.NOW?.language || w.g_lang || document.documentElement.lang || undefined,
       table: safe(() => w.g_form?.getTableName?.()),
       sysId: safe(() => w.g_form?.getUniqueValue?.()),
     };

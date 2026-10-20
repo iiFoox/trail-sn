@@ -6,7 +6,7 @@
 import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, batchItemFrom, fieldMap, previewChange, recordTimeline, scanTableConflicts, type AccessReport, type BatchItem, type MetaCache, type TableMeta } from '@trail/core';
 import { addInstance, listInstances, removeInstance } from '../shared/instances';
 import { loadPrefs, PREFS_KEY, type PanelMode } from '../shared/prefs';
-import { storageKey, type Message, type PageContext, type ProbeResult, type TabState } from '../shared/messages';
+import { normalizeInstanceLanguage, storageKey, type Message, type PageContext, type ProbeResult, type TabState } from '../shared/messages';
 
 const session = chrome.storage.session;
 
@@ -51,6 +51,16 @@ async function getTab(tabId: number): Promise<TabState> {
 }
 async function setTab(state: TabState): Promise<void> {
   await session.set({ [storageKey.tab(state.tabId)]: state });
+}
+
+async function languageFor(origin: string, tabId?: number, explicit?: string): Promise<string> {
+  if (explicit) return normalizeInstanceLanguage(explicit);
+  if (tabId !== undefined) {
+    const ctx = (await getTab(tabId)).ctx;
+    if (ctx?.origin === origin && ctx.language) return normalizeInstanceLanguage(ctx.language);
+  }
+  const stored = (await session.get(storageKey.language(origin)))[storageKey.language(origin)];
+  return normalizeInstanceLanguage(stored);
 }
 
 // ---------- token ----------
@@ -260,7 +270,7 @@ async function retentionFor(origin: string, client: FetchRestClient) {
 
 // ---------- investigação ----------
 /** Investiga o mesmo campo em vários registros (selecionados na lista), três de cada vez, com o cache da tabela. */
-async function runBatch(tabId: number, origin: string, table: string, field: string, sysIds: string[], token?: string): Promise<void> {
+async function runBatch(tabId: number, origin: string, table: string, field: string, sysIds: string[], language: string, token?: string): Promise<void> {
   await rememberToken(origin, token);
   const started = Date.now();
   const items: BatchItem[] = sysIds.map((sysId) => ({ sysId, display: sysId, status: 'pending' }));
@@ -274,7 +284,7 @@ async function runBatch(tabId: number, origin: string, table: string, field: str
     while (next < items.length) {
       const i = next++;
       try {
-        const r = await investigate(client, { table, sysId: items[i]!.sysId, field }, { retention }, metaCache(origin));
+        const r = await investigate(client, { table, sysId: items[i]!.sysId, field }, { retention, language }, metaCache(origin));
         items[i] = batchItemFrom(r);
       } catch (e) { items[i] = { ...items[i]!, status: 'error', error: (e as Error).message }; }
       // Atualiza o painel no máximo a cada 700 ms (cada gravação no storage redesenha o painel).
@@ -286,7 +296,7 @@ async function runBatch(tabId: number, origin: string, table: string, field: str
 }
 
 /** Registro inteiro: investiga cada campo que mudou no registro (os mais recentes primeiro, até 25 campos). */
-async function runRecord(tabId: number, origin: string, table: string, record: string, token?: string): Promise<void> {
+async function runRecord(tabId: number, origin: string, table: string, record: string, language: string, token?: string): Promise<void> {
   await rememberToken(origin, token);
   const started = Date.now();
   const client = makeClient(origin);
@@ -314,7 +324,7 @@ async function runRecord(tabId: number, origin: string, table: string, record: s
     const worker = async () => {
       while (next < items.length) {
         const i = next++;
-        try { const prev = items[i]!; const done = batchItemFrom(await investigate(client, { table, sysId: rec.sys_id!, field: prev.field! }, { retention }, metaCache(origin))); items[i] = { ...done, field: prev.field!, label: done.label ?? prev.label ?? prev.field! }; }
+        try { const prev = items[i]!; const done = batchItemFrom(await investigate(client, { table, sysId: rec.sys_id!, field: prev.field! }, { retention, language }, metaCache(origin))); items[i] = { ...done, field: prev.field!, label: done.label ?? prev.label ?? prev.field! }; }
         catch (e) { items[i] = { ...items[i]!, status: 'error', error: (e as Error).message }; }
         if (Date.now() - last > 700) { last = Date.now(); await save('running'); }
       }
@@ -324,7 +334,7 @@ async function runRecord(tabId: number, origin: string, table: string, record: s
   } catch (e) { await fail((e as Error).message); }
 }
 
-async function runInvestigation(tabId: number, origin: string, target: { table: string; sysId?: string; number?: string; field: string }, token?: string): Promise<void> {
+async function runInvestigation(tabId: number, origin: string, target: { table: string; sysId?: string; number?: string; field: string }, language: string, token?: string): Promise<void> {
   await rememberToken(origin, token);
   const prev = await getTab(tabId);
   await setTab({ ...prev, tabId, status: 'running', startedAt: new Date().toISOString(), result: undefined, error: undefined, batch: undefined });
@@ -332,7 +342,7 @@ async function runInvestigation(tabId: number, origin: string, target: { table: 
     const client = makeClient(origin);
     const retention = await retentionFor(origin, client);
     const [result, access] = await Promise.all([
-      investigate(client, target, { retention }, metaCache(origin)),
+      investigate(client, target, { retention, language }, metaCache(origin)),
       checkAccess(origin),
     ]);
     await setTab({ ...(await getTab(tabId)), status: 'done', result, access });
@@ -349,40 +359,43 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
       case 'context': {
         if (tabId === undefined) return;
         await rememberToken(msg.ctx.origin, msg.ctx.token);
-        const safeCtx: PageContext = { ...msg.ctx, token: undefined }; // o token não fica no estado da aba
-        await setTab({ ...(await getTab(tabId)), tabId, ctx: safeCtx });
+        const prev = await getTab(tabId);
+        const language = msg.ctx.language ?? (prev.ctx?.origin === msg.ctx.origin ? prev.ctx.language : undefined);
+        const safeCtx: PageContext = { ...msg.ctx, token: undefined, language }; // o token não fica no estado da aba
+        await setTab({ ...prev, tabId, ctx: safeCtx });
+        if (msg.ctx.language) await session.set({ [storageKey.language(msg.ctx.origin)]: normalizeInstanceLanguage(msg.ctx.language) });
         return;
       }
       case 'toggle-icons':
         toggleIcons();
         return true;
       case 'timeline':
-        return recordTimeline(makeClient(msg.origin), msg.target);
+        return recordTimeline(makeClient(msg.origin), msg.target, { language: await languageFor(msg.origin, tabId ?? (await activeTabId()), msg.language) });
       case 'scan-conflicts':
         return scanTableConflicts(makeClient(msg.origin), msg.table);
       case 'field-map':
         return fieldMap(makeClient(msg.origin), { table: msg.table, field: msg.field });
       case 'preview':
-        return previewChange(makeClient(msg.origin), msg.target);
+        return previewChange(makeClient(msg.origin), { ...msg.target, language: await languageFor(msg.origin, tabId ?? (await activeTabId()), msg.language) });
       case 'investigate': {
         const id = tabId ?? (await activeTabId());
         if (id === undefined) return;
         await openPanel(id, msg.mode);
-        await runInvestigation(id, msg.origin, msg.target, msg.token);
+        await runInvestigation(id, msg.origin, msg.target, await languageFor(msg.origin, id, msg.language), msg.token);
         return;
       }
       case 'record': {
         const id = tabId ?? (await activeTabId());
         if (id === undefined) return;
         await openPanel(id, msg.mode);
-        await runRecord(id, msg.origin, msg.table, msg.record, msg.token);
+        await runRecord(id, msg.origin, msg.table, msg.record, await languageFor(msg.origin, id, msg.language), msg.token);
         return;
       }
       case 'batch': {
         const id = tabId ?? (await activeTabId());
         if (id === undefined) return;
         await openPanel(id, msg.mode);
-        await runBatch(id, msg.origin, msg.table, msg.field, msg.sysIds.slice(0, 200), msg.token);
+        await runBatch(id, msg.origin, msg.table, msg.field, msg.sysIds.slice(0, 200), await languageFor(msg.origin, id, msg.language), msg.token);
         return;
       }
       case 'float-get': {

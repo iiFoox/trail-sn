@@ -8,19 +8,21 @@ export interface PageContext {
   /** X-UserToken da sessão, quando a página expõe window.g_ck. */
   token?: string;
   userName?: string;
+  /** Idioma da sessão do ServiceNow, vindo do mundo MAIN. */
+  language?: string;
   surface: 'ui16' | 'workspace' | 'portal' | 'unknown';
 }
 
 export type Message =
   | { type: 'context'; ctx: PageContext }
-  | { type: 'investigate'; origin: string; target: Target; token?: string; mode?: import('./prefs').PanelMode }
+  | { type: 'investigate'; origin: string; target: Target; token?: string; language?: string; mode?: import('./prefs').PanelMode }
   | { type: 'toggle-icons' }
-  | { type: 'timeline'; origin: string; target: { table: string; sysId: string } }
+  | { type: 'timeline'; origin: string; target: { table: string; sysId: string }; language?: string }
   | { type: 'scan-conflicts'; origin: string; table: string }
-  | { type: 'batch'; origin: string; table: string; field: string; sysIds: string[]; token?: string; mode?: import('./prefs').PanelMode }
-  | { type: 'record'; origin: string; table: string; record: string; token?: string; mode?: import('./prefs').PanelMode }
+  | { type: 'batch'; origin: string; table: string; field: string; sysIds: string[]; token?: string; language?: string; mode?: import('./prefs').PanelMode }
+  | { type: 'record'; origin: string; table: string; record: string; token?: string; language?: string; mode?: import('./prefs').PanelMode }
   | { type: 'field-map'; origin: string; table: string; field: string }
-  | { type: 'preview'; origin: string; target: { table: string; sysId: string; field: string; value: string } }
+  | { type: 'preview'; origin: string; target: { table: string; sysId: string; field: string; value: string }; language?: string }
   | { type: 'open-panel'; mode?: import('./prefs').PanelMode }
   | { type: 'float-get' }
   | { type: 'float-set'; open: boolean; min?: boolean }
@@ -59,8 +61,18 @@ export const storageKey = {
   meta: (origin: string, table: string) => `meta:${origin}:${table}`,
   access: (origin: string) => `access:${origin}`,
   token: (origin: string) => `token:${origin}`,
+  language: (origin: string) => `language:${origin}`,
   probe: (origin: string) => `probe:${origin}`,
 };
+
+/** sys_documentation usa `pb` para português brasileiro. */
+export function normalizeInstanceLanguage(value: unknown): string {
+  if (typeof value !== 'string') return 'en';
+  const code = value.trim().toLowerCase().replace('_', '-');
+  if (code === 'pb' || code === 'pt' || code === 'pt-br') return 'pb';
+  const base = code.split('-')[0] ?? '';
+  return /^[a-z]{2}$/.test(base) ? base : 'en';
+}
 
 export function send<T = unknown>(msg: Message): Promise<T> {
   return chrome.runtime.sendMessage(msg) as Promise<T>;
