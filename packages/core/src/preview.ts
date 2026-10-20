@@ -56,7 +56,7 @@ export interface ChangePreview {
 
 type Q = (table: string, query: string, fields: string[], limit: number) => Promise<Row[]>;
 
-export async function previewChange(client: RestClient, target: { table: string; sysId: string; field: string; value: string; user?: { name?: string; sysId?: string } }): Promise<ChangePreview> {
+export async function previewChange(client: RestClient, target: { table: string; sysId: string; field: string; value: string; language?: string; user?: { name?: string; sysId?: string } }): Promise<ChangePreview> {
   const started = Date.now();
   const calls0 = client.calls;
   const q: Q = async (t, query, fields, limit) => { try { return (await client.query({ table: t, query, fields, limit })).rows; } catch { return []; } };
@@ -256,7 +256,7 @@ export async function previewChange(client: RestClient, target: { table: string;
   const wanted: Record<string, (string | undefined)[]> = { [field]: [from, value] };
   for (const [f, x] of Object.entries(result)) (wanted[f] ??= []).push(x.from, x.to);
   for (const st of [...steps, ...uncertain]) for (const w of st.writes) (wanted[w.field] ??= []).push(w.value);
-  const names = await resolveDisplay(q, tables, wanted);
+  const names = await resolveDisplay(q, tables, wanted, target.language);
   const fieldLabels = names.fields, valueLabels = names.values, refTables = names.refs;
   return { table, sysId, field, from, to: value, steps, uncertain, result, skipped, fieldLabels, valueLabels, refTables, timing: { totalMs: Date.now() - started, calls: client.calls - calls0 } };
 }

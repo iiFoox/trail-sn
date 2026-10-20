@@ -623,8 +623,10 @@ html.embed .wrap.wide{height:100vh}
 .drawer-x:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 /* comparar duas gravações */
-.cmpbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.cmpbar { display: flex; gap: 6px 10px; align-items: center; flex-wrap: wrap; }
+.cmpbar .cmp-hint { margin: 0; flex-basis: 100%; line-height: 1.45; }
 .cmpbar .btn.on { border-color: var(--accent, #2bb3a3); color: var(--accent, #2bb3a3); }
+ol.rtl.picking .hd { cursor: pointer; }
 ol.rtl .hd .pk { flex: none; width: 24px; height: 24px; border-radius: 50%; border: 1.5px dashed var(--muted); background: transparent; color: #fff; font: 600 11px var(--mono); cursor: pointer; display: grid; place-items: center; }
 ol.rtl .hd .pk.on { border: 0; background: var(--accent, #2bb3a3); }
 ol.rtl > li.picked { border-color: var(--accent, #2bb3a3); box-shadow: 0 0 0 1px var(--accent, #2bb3a3) inset; }

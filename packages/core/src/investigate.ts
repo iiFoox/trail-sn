@@ -1,6 +1,6 @@
 import { findConflicts } from './conflicts';
 import { detectPingPong } from './pingpong';
-import { resolveDisplay } from './display';
+import { documentation, fieldLabels, resolveDisplay } from './display';
 import type { QueryRequest, RestClient } from './client/RestClient';
 import { scoreAll } from './scoring';
 import { fieldsRead, writesOf } from './scriptEval';
@@ -61,22 +61,26 @@ export async function investigate(
 
   // ---------- rodada 1: registro, auditoria e metadados ----------
   const recQuery = target.sysId ? `sys_id=${target.sysId}` : `number=${target.number ?? ''}`;
-  const [recRows, metaOrNull, dict] = await Promise.all([
+  const [recRows, metaOrNull] = await Promise.all([
     q(target.table, recQuery, ['sys_id', 'number', 'name', 'short_description', 'sys_mod_count', 'sys_created_on', 'sys_updated_on', 'sys_updated_by'], 1, 'record'),
     loadMeta(target.table, target.field),
-    quiet('sys_dictionary', `element=${target.field}^nameIN${target.table},task,cmdb_ci`, ['name', 'internal_type', 'reference', 'column_label'], 5),
   ]);
   const rec = recRows[0];
   if (!rec) throw new RecordNotFoundError(target);
   const sysId = rec.sys_id ?? '';
   const meta = metaOrNull;
 
-  const audit = await q(
-    'sys_audit',
-    `tablename=${target.table}^documentkey=${sysId}^ORDERBYsys_created_on`,
-    ['sys_id', 'fieldname', 'oldvalue', 'newvalue', 'user', 'sys_created_on', 'record_checkpoint'],
-    1000,
-  );
+  // Rótulo do campo junto com a auditoria: não acrescenta rodada.
+  const [audit, dict, docs] = await Promise.all([
+    q(
+      'sys_audit',
+      `tablename=${target.table}^documentkey=${sysId}^ORDERBYsys_created_on`,
+      ['sys_id', 'fieldname', 'oldvalue', 'newvalue', 'user', 'sys_created_on', 'record_checkpoint'],
+      1000,
+    ),
+    quiet('sys_dictionary', `element=${target.field}^nameIN${meta.tables.join(',')}`, ['name', 'internal_type', 'reference', 'column_label', 'element'], 30),
+    documentation(quiet, meta.tables, [target.field], opts.language),
+  ]);
   const checkpoints: Record<string, Row[]> = {};
   for (const a of audit) (checkpoints[a.record_checkpoint ?? '0'] ??= []).push(a);
   const maxCheckpoint = Math.max(0, ...Object.keys(checkpoints).map(Number));
@@ -93,8 +97,7 @@ export async function investigate(
   const values = unique(fieldChanges.flatMap((c) => [c.oldvalue ?? '', c.newvalue ?? '']).filter(Boolean));
   const refTable = dict.find((d) => d.internal_type === 'reference' && d.reference)?.reference;
   // Rótulo do campo como aparece no formulário (business_service → Service): a tabela mais específica ganha.
-  const dictRank = (n?: string) => (n === target.table ? 0 : n === 'task' ? 1 : 2);
-  const fieldLabel = [...dict].sort((a, b) => dictRank(a.name) - dictRank(b.name)).find((d) => d.column_label)?.column_label;
+  const fieldLabel = fieldLabels(docs, dict, meta.tables, opts.language)[target.field];
   const changeUsers = unique(fieldChanges.map((c) => c.user ?? '').filter(Boolean));
   const [txAll, evAll, flowsAll, wfAll, labelRows, importRows, userRows, recordedAll] = await Promise.all([
     Promise.all(merged.map((w) => q('syslog_transaction', `sys_created_on>=${w.from}^sys_created_on<=${w.to}^ORDERBYsys_created_on`, ['sys_id', 'sys_created_on', 'type', 'url', 'sys_created_by'], 200))).then((r) => r.flat()),
@@ -321,7 +324,7 @@ export async function investigate(
   // Nomes como no formulário para os outros campos que aparecem no rastro (gravados junto ou perto da mudança).
   const wanted: Record<string, string[]> = {};
   for (const c of changes) for (const t of c.trace ?? []) for (const f of t.fields ?? []) (wanted[f.field] ??= []).push(f.oldValue, f.newValue);
-  const display = Object.keys(wanted).length ? await resolveDisplay(quiet, meta.tables, wanted) : undefined;
+  const display = Object.keys(wanted).length ? await resolveDisplay(quiet, meta.tables, wanted, opts.language) : undefined;
 
   const gaps = Object.entries(access).filter(([, s]) => s === 'denied' || s === 'timeout' || s === 'no_filter').map(([k, s]) => `${k}: ${s}`);
 

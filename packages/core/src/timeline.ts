@@ -1,4 +1,5 @@
 import type { QueryRequest, RestClient } from './client/RestClient';
+import { documentation, fieldLabels } from './display';
 import { RecordNotFoundError, type AccessState, type Row, type Target } from './types';
 import { isFormSubmitFor, isWorkspaceAction, shift, toMs, uiActionMatches, uiActionQuery, uiActionRef, withTimeout } from './util';
 
@@ -43,7 +44,7 @@ const JOURNAL = new Set(['work_notes', 'comments', 'comments_and_work_notes']);
 const MAX_AUDIT = 600;
 const MAX_TX_SAVES = 30;
 
-export async function recordTimeline(client: RestClient, target: Omit<Target, 'field'>, opts: { sourceTimeoutMs?: number; retentionDays?: number } = {}): Promise<Timeline> {
+export async function recordTimeline(client: RestClient, target: Omit<Target, 'field'>, opts: { sourceTimeoutMs?: number; retentionDays?: number; language?: string } = {}): Promise<Timeline> {
   const started = Date.now();
   const callsBefore = client.calls;
   const timeout = opts.sourceTimeoutMs ?? 4000;
@@ -76,16 +77,16 @@ export async function recordTimeline(client: RestClient, target: Omit<Target, 'f
   const fields = [...new Set(audit.map((a) => a.fieldname ?? '').filter(Boolean))];
 
   // ---------- rótulos dos campos e dos valores ----------
-  const [dict, choices] = await Promise.all([
+  const [dict, docs, choices] = await Promise.all([
     fields.length ? q('sys_dictionary', `nameIN${tables.join(',')}^elementIN${fields.join(',')}`, ['name', 'element', 'column_label', 'internal_type', 'reference'], 300) : Promise.resolve([]),
+    documentation(q, tables, fields, opts.language),
     fields.length ? q('sys_choice', `nameIN${tables.join(',')}^elementIN${fields.join(',')}^inactive=false`, ['name', 'element', 'value', 'label', 'language'], 1000) : Promise.resolve([]),
   ]);
   const rank = (t: string | undefined) => { const i = tables.indexOf(t ?? ''); return i < 0 ? 99 : i; };
-  const colLabel: Record<string, string> = {};
+  const colLabel = fieldLabels(docs, dict, tables, opts.language);
   const refTable: Record<string, string> = {};
   for (const d of [...dict].sort((a, b) => rank(a.name) - rank(b.name))) {
     const el = d.element ?? '';
-    if (!(el in colLabel) && d.column_label) colLabel[el] = d.column_label;
     if (!(el in refTable) && d.internal_type === 'reference' && d.reference) refTable[el] = d.reference;
   }
   const choiceLabel: Record<string, Record<string, string>> = {};

@@ -1,6 +1,6 @@
 import type { AccessReport } from '@trail/core';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { demoState, describeLink } from '../shared/demo';
+import { demoBatch, demoRecord, demoState, describeLink } from '../shared/demo';
 import { fmt, t } from '../shared/i18n';
 import { applyTheme, getPrefs, resolvedTheme, savePrefs } from '../shared/prefs';
 import { EmptyIllustration, Glyph, TrailMark } from '../shared/icons';
@@ -58,9 +58,22 @@ export function App() {
     if (msg) toastTimer.current = window.setTimeout(() => setToast(undefined), 3200);
   };
 
-  // Investigar outro campo do mesmo registro (a partir da linha do tempo).
+  // Investigar outro campo do mesmo registro (a partir da linha do tempo) ou registro inteiro no demo.
+  const demoTimer = useRef<number>();
+  const runDemoField = (f: string) => {
+    window.clearTimeout(demoTimer.current);
+    showToast(); scrollTo(0, 0);
+    setState({ ...demoState(f), status: 'running' });
+    demoTimer.current = window.setTimeout(() => setState(demoState(f)), 650);
+  };
+  const runDemoRecord = () => {
+    window.clearTimeout(demoTimer.current);
+    showToast(); scrollTo(0, 0);
+    setState(demoRecord(true));
+    demoTimer.current = window.setTimeout(() => setState(demoRecord(false)), 750);
+  };
   const investigateField = (f: string) => {
-    if (isDemo) { showToast(); setState({ ...demoState(f), status: 'running' }); setTimeout(() => setState(demoState(f)), 650); return; }
+    if (isDemo) { runDemoField(f); return; }
     const tgt = state?.result?.target;
     if (!origin || !tgt) return;
     void send({ type: 'investigate', origin, mode: here, target: { table: tgt.table, sysId: tgt.sysId, field: f } });
@@ -70,8 +83,11 @@ export function App() {
   useEffect(() => {
     if (!isDemo) return;
     const onMsg = (e: MessageEvent) => {
-      const d = e.data as { type?: string; field?: string } | null;
-      if (d?.type === 'trail-demo' && d.field) { showToast(); scrollTo(0, 0); setState({ ...demoState(d.field), status: 'running' }); setTimeout(() => setState(demoState(d.field)), 650); }
+      const d = e.data as { type?: string; field?: string; batch?: string } | null;
+      if (d?.type === 'trail-demo') {
+        if (d.batch === 'rec' || d.field === '*') runDemoRecord();
+        else if (d.field) runDemoField(d.field);
+      }
     };
     const onClick = (e: MouseEvent) => {
       const a = (e.target as Element | null)?.closest?.('a');
@@ -208,7 +224,7 @@ export function App() {
         {state?.access && !state.result && <AccessNotice report={state.access} />}
         {state?.status === 'running' && <Loading />}
         {state?.status === 'error' && <div class="notice bad"><div class="title">{s.errorTitle}</div>{state.error}</div>}
-        {state?.batch && !state.result && origin && state.status !== 'running' && <Batch b={state.batch} origin={origin} onOpen={(id, f) => { void send({ type: 'investigate', origin, mode: here, target: { table: state.batch!.table, sysId: id, field: f ?? state.batch!.field } }); }} />}
+        {state?.batch && !state.result && origin && state.status !== 'running' && <Batch b={state.batch} origin={origin} onOpen={(id, f) => { if (isDemo) { investigateField(f ?? state.batch!.field); return; } void send({ type: 'investigate', origin, mode: here, target: { table: state.batch!.table, sysId: id, field: f ?? state.batch!.field } }); }} />}
         {state?.result && origin && state.status !== 'running' && <Result r={state.result} origin={origin} access={state.access} toast={(m) => showToast(m)} onField={investigateField} />}
         {!needsConnect && !state?.result && !state?.batch && state?.status !== 'running' && (
           <div class="empty">
@@ -218,8 +234,8 @@ export function App() {
           </div>
         )}
       </main>
-      <ManualDrawer origin={origin} table={state?.ctx?.table ?? state?.result?.target.table} sysId={state?.ctx?.sysId ?? state?.result?.target.sysId} field={state?.result?.target.field} tabId={tabId} open={!state?.result && !state?.batch}
-        onDemo={(f) => { showToast(); setState({ ...demoState(f), status: 'running' }); setTimeout(() => setState(demoState(f)), 650); }} />
+      <ManualDrawer origin={origin} table={state?.ctx?.table ?? state?.result?.target.table ?? state?.batch?.table} sysId={state?.ctx?.sysId ?? state?.result?.target.sysId ?? state?.batch?.sysId} field={state?.result?.target.field} tabId={tabId} open={!state?.result && !state?.batch}
+        onDemo={(f, whole) => (whole ? runDemoRecord() : runDemoField(f))} />
       {toast && <div class="toast" role="status" onClick={() => showToast()}>{toast}</div>}
     </>
   );
@@ -255,7 +271,7 @@ function AccessNotice({ report }: { report: AccessReport }) {
   );
 }
 
-function ManualDrawer({ origin, table, sysId, field, tabId, open, onDemo }: { origin?: string; table?: string; sysId?: string; field?: string; tabId?: number; open: boolean; onDemo: (field: string) => void }) {
+function ManualDrawer({ origin, table, sysId, field, tabId, open, onDemo }: { origin?: string; table?: string; sysId?: string; field?: string; tabId?: number; open: boolean; onDemo: (field: string, whole: boolean) => void }) {
   const [tbl, setTbl] = useState(table ?? 'incident');
   const [rec, setRec] = useState(sysId ?? '');
   const [fld, setFld] = useState(field ?? 'state');
@@ -265,7 +281,8 @@ function ManualDrawer({ origin, table, sysId, field, tabId, open, onDemo }: { or
   const [isOpen, setOpen] = useState(open);
   useEffect(() => setOpen(open), [open]);
   const go = async () => {
-    if (isDemo) { onDemo(fld); return; }
+    setOpen(false);
+    if (isDemo) { onDemo(fld, whole); return; }
     if (!origin || tabId === undefined) return;
     if (whole) { await send({ type: 'record', origin, mode: here, table: tbl, record: rec }); return; }
     const target = /^[0-9a-f]{32}$/.test(rec) ? { table: tbl, sysId: rec, field: fld } : { table: tbl, number: rec, field: fld };
@@ -294,35 +311,4 @@ function ManualDrawer({ origin, table, sysId, field, tabId, open, onDemo }: { or
       </div>
     </details>
   );
-}
-
-
-/** Demonstração do registro inteiro: os campos que mudaram num incidente, com nomes e valores como no formulário. */
-function demoRecord(wait = false): TabState {
-  const id = 'f'.repeat(32);
-  const it = (field: string, label: string, at: string, o: string, n: string, od: string, nd: string, type: string, name: string, grade: string, refTable?: string) => ({ sysId: id, display: 'INC0010172', title: 'Sistema de pedidos fora do ar', field, label, status: 'done' as const, at, oldValue: o, newValue: n, oldDisplay: od, newDisplay: nd, user: 'admin', changes: 1, ...(refTable ? { refTable } : {}), cause: { type, name, grade, score: 90, ...(type === 'user_action' ? {} : { sysId: 'demo', table: type === 'data_lookup' ? 'dl_definition' : 'sysauto_script' }) } });
-  const items = [
-    it('business_service', 'Service', '2026-10-20 22:42:10', '', 'a'.repeat(32), '', 'SAP Enterprise Services', 'user_action', 'admin', 'confirmed', 'cmdb_ci_service'),
-    it('subcategory', 'Subcategory', '2026-10-20 22:25:00', '', 'general_information', '', 'General Information', 'user_action', 'admin', 'confirmed'),
-    it('urgency', 'Urgency', '2026-10-20 22:21:00', '3', '1', '3 - Low', '1 - High', 'user_action', 'admin', 'confirmed'),
-    it('impact', 'Impact', '2026-10-20 22:21:00', '3', '1', '3 - Low', '1 - High', 'user_action', 'admin', 'confirmed'),
-    it('priority', 'Priority', '2026-10-20 22:21:00', '4', '1', '4 - Low', '1 - Critical', 'data_lookup', 'Priority Lookup', 'confirmed'),
-    it('description', 'Description', '2026-10-20 22:00:00', '', 'Gravado pelo job F18', '', 'Gravado pelo job F18', 'scheduled_job', '[PT] F18 Job que atualiza descrição', 'confirmed'),
-    it('activity_due', 'Activity due', '2026-10-20 22:25:27', '2026-10-21 00:21:19', '2026-10-21 00:25:27', '2026-10-21 00:21:19', '2026-10-21 00:25:27', 'user_action', 'admin', 'candidate'),
-  ];
-  if (wait) for (const i of [2, 5, 6]) items[i] = { sysId: id, display: 'INC0010172', field: items[i]!.field, label: items[i]!.label, status: 'pending' } as never;
-  return { tabId: 0, status: 'idle', ctx: { origin: 'https://sua-instancia.service-now.com', surface: 'ui16' }, batch: { table: 'incident', field: '*', kind: 'fields', sysId: id, display: 'INC0010172', items, status: wait ? 'running' : 'done', startedAt: new Date().toISOString(), ms: 5200 } };
-}
-
-/** Demonstração do lote: 12 incidentes, a categoria mudou por três causas. */
-function demoBatch(): TabState {
-  const mk = (n: number, type: string, name: string, grade: string, user = 'system') => ({ sysId: n.toString(16).padStart(32, '0'), display: `INC00${10100 + n}`, title: ['Impressora sem rede', 'VPN cai toda hora', 'Notebook lento', 'E-mail não sincroniza'][n % 4], status: 'done' as const,
-    at: `2026-10-${10 + (n % 9)} 1${n % 9}:2${n % 6}:00`, oldValue: 'inquiry', newValue: n % 3 ? 'network' : 'hardware', user, changes: 1 + (n % 2), cause: { type, name, grade, score: grade === 'confirmed' ? 85 : 55, sysId: 'demo', table: 'sys_script' } });
-  const items = [
-    ...[1, 2, 3, 4, 5, 6, 7].map((n) => mk(n, 'br_before', 'Categoria pelo grupo de suporte', 'confirmed')),
-    ...[8, 9, 10].map((n) => mk(n, 'user_action', 'beth.anglin', 'confirmed', 'beth.anglin')),
-    mk(11, 'import_set', 'Chamados do parceiro', 'confirmed'),
-    { sysId: '0'.repeat(31) + 'c', display: 'INC0010112', title: 'Monitor piscando', status: 'unchanged' as const, changes: 0 },
-  ];
-  return { tabId: 0, status: 'idle', ctx: { origin: 'https://sua-instancia.service-now.com', surface: 'ui16' }, batch: { table: 'incident', field: 'category', items, status: 'done', startedAt: new Date().toISOString(), ms: 8400 } };
 }

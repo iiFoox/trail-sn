@@ -73,11 +73,11 @@ export function RecordTimeline({ origin, table, sysId, onField }: { origin: stri
       </div>
       {data.saves.length > 1 && <div class="cmpbar">
         <button class={`btn sm ${cmp ? 'on' : ''}`} aria-pressed={!!cmp} onClick={() => setCmp(cmp ? null : [])}>{Glyph.compare} {cmp ? P.cmpOff : P.cmpBtn}</button>
-        {cmp && cmp.length < 2 && <span class="muted small">{cmp.length ? P.cmpPickOne : P.cmpPick}</span>}
+        {cmp && cmp.length < 2 && <p class="cmp-hint muted small">{cmp.length ? P.cmpPickOne : P.cmpPick}</p>}
       </div>}
       {cmp?.length === 2 && <Compare data={data} a={cmp[0]!} b={cmp[1]!} onClose={() => setCmp([])} />}
       {!filtered.length && <div class="muted small">{P.tlNone}</div>}
-      <ol class="rtl">
+      <ol class={`rtl ${cmp ? 'picking' : ''}`}>
         {saves.map((sv, i) => <Save i={i % PAGE} sv={sv} origin={origin} sysId={data.target.sysId} onField={onField}
           pick={cmp ? (cmp.indexOf(sv.checkpoint) === 0 ? 'A' : cmp.indexOf(sv.checkpoint) === 1 ? 'B' : '') : undefined}
           onPick={() => setCmp((c) => { const cur = c ?? []; if (cur.includes(sv.checkpoint)) return cur.filter((x) => x !== sv.checkpoint); return [...cur, sv.checkpoint].slice(-2); })} />)}
@@ -122,7 +122,7 @@ function Save({ i, sv, origin, sysId, onField, pick, onPick }: { i: number; sv: 
   const notes = sv.fields.filter((f) => f.journal);
   return (
     <li class={`via-${sv.via} ${pick ? 'picked' : ''}`} style={`--i:${i}`}>
-      <div class="hd">
+      <div class="hd" onClick={pick !== undefined ? (e) => { if (!(e.target as HTMLElement).closest('a,button')) onPick?.(); } : undefined}>
         {pick !== undefined && <button class={`pk ${pick ? 'on' : ''}`} aria-pressed={!!pick} aria-label={P.cmpBtn} onClick={onPick}>{pick || ''}</button>}
         <span class="ti" title={P.viaHint[sv.via]}>{viaIcon[sv.via]}</span>
         <div class="grow">

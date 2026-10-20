@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trail · laudo pericial de registros ServiceNow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: uma folha de laudo centrada, com cabeçalho de caso, provas numeradas A–D na margem e carimbos de grau */
+:root{--desk:#d9dedc;--sheet:#f4f6f5;--ink:#1d2226;--mu:#5d676d;--rule:#c4cbcc;--stamp:#b4362d;--ok:#2d6a4f;--warn:#9a6a00;--navy:#032d42;
+--serif:"IBM Plex Serif",Georgia,serif;--sans:"IBM Plex Sans",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--desk);color:var(--ink);font:17px/1.6 var(--sans);-webkit-font-smoothing:antialiased;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+a{color:inherit}
+nav{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:20px;padding-block:20px}
+.logo{display:flex;gap:10px;align-items:center;font:600 18px var(--serif);text-decoration:none}
+.logo svg{width:30px;height:30px}
+nav .r{margin-left:auto;display:flex;gap:18px;font-size:14px;color:var(--mu)}
+.sheet{max-width:1080px;margin:0 auto 48px;background:var(--sheet);border:1px solid var(--rule);box-shadow:0 2px 0 #c9cfcd,0 30px 60px rgba(29,34,38,.12);padding-block:56px 64px;padding-inline:clamp(20px,6vw,80px);position:relative}
+.head{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:2px solid var(--ink);border-bottom:1px solid var(--ink);font:13px var(--mono)}
+.head div{padding:10px 12px 10px 0;border-right:1px solid var(--rule)}.head div:last-child{border-right:0}
+.head small{display:block;color:var(--mu);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+h1{font:400 clamp(40px,5.6vw,72px)/1.05 var(--serif);letter-spacing:-.02em;margin:48px 0 18px;text-wrap:balance;max-width:16ch}
+.lead{font:400 21px/1.5 var(--serif);color:var(--mu);max-width:44ch;margin:0}
+.stamp{position:absolute;right:clamp(20px,6vw,80px);top:150px;border:3px solid var(--stamp);color:var(--stamp);font:600 15px var(--mono);letter-spacing:.18em;padding:10px 14px;transform:rotate(-8deg);opacity:.85;text-align:center}
+.stamp small{display:block;font-size:10px;letter-spacing:.1em}
+.cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+.btn{display:inline-block;padding:12px 20px;background:var(--navy);color:#fff;text-decoration:none;font-weight:600;font-size:15px;border-radius:4px}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--ink)}
+.exhibit{display:grid;grid-template-columns:120px minmax(0,1fr);gap:28px;padding-block:44px;border-top:1px solid var(--rule)}
+.exhibit:first-of-type{margin-top:56px}
+.tag{font:500 12px var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--mu)}
+.tag b{display:block;font:600 34px/1 var(--serif);color:var(--ink);letter-spacing:0;margin-top:6px}
+h2{font:600 clamp(26px,3vw,34px)/1.2 var(--serif);margin:0 0 12px;text-wrap:balance}
+.exhibit p{margin:0 0 14px;max-width:60ch;color:var(--mu)}
+code{font:14px var(--mono)}
+/* painel como prova */
+.ex-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,360px);gap:32px;align-items:start}
+.panel{background:#f7f9fb;border:1px solid var(--rule);border-radius:12px;overflow:hidden;font:13px/1.45 var(--sans);box-shadow:0 12px 30px rgba(29,34,38,.10);transform:rotate(.6deg)}
+.p-top{background:linear-gradient(180deg,#032d42,#0b3f5a);color:#fff;display:flex;gap:8px;align-items:center;padding:9px 12px;font-weight:600}
+.p-top span{margin-left:auto;font:11px var(--mono);opacity:.8}
+.p-b{padding:12px;display:flex;flex-direction:column;gap:8px}
+.ev{background:#fff;border:1px solid #d7dde3;border-left:4px solid #7fcf9b;border-radius:8px;padding:9px 11px}
+.ev.p{border-left-color:#f0c75a}.ev.c{border-left-color:#b9c2cb}
+.ev .t{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#6e7984;font-weight:600}
+.ev .r{display:flex;justify-content:space-between;gap:8px}.ev a{color:#1f8476;font-weight:700;text-decoration:none}
+.bd{font-size:10px;font-weight:700;border-radius:999px;padding:2px 7px;background:#dff5e6;color:#1b6b3a;white-space:nowrap;height:fit-content}.bd.p{background:#fff1cc;color:#8a5a00}.bd.c{background:#e9edf1;color:#4b5560}
+/* tabela de laudo */
+.ledger{width:100%;border-collapse:collapse;font-size:15px;margin-top:8px}
+.ledger th{text-align:left;font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--mu);border-bottom:1px solid var(--ink);padding:8px 10px 8px 0}
+.ledger td{border-bottom:1px solid var(--rule);padding:10px 10px 10px 0;vertical-align:top}
+.ledger td:nth-child(2){color:var(--mu)}
+.mark{font:600 11px var(--mono);letter-spacing:.12em;border:1.5px solid currentColor;padding:2px 6px;display:inline-block;transform:rotate(-3deg)}
+.mark.ok{color:var(--ok)}.mark.p{color:var(--warn)}.mark.d{color:var(--mu)}
+.tw{overflow-x:auto}
+.figures{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-top:2px solid var(--ink);border-bottom:1px solid var(--ink);margin-top:10px}
+.figures div{padding:16px 14px 16px 0;border-right:1px solid var(--rule)}.figures div:last-child{border-right:0}
+.figures b{display:block;font:400 40px/1 var(--serif);font-variant-numeric:tabular-nums}
+.figures span{font-size:13px;color:var(--mu)}
+.sign{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-top:56px;padding-top:24px;border-top:2px solid var(--ink);flex-wrap:wrap}
+.sign .line{font:italic 400 22px var(--serif)}
+.sign small{display:block;font:12px var(--mono);color:var(--mu);font-style:normal}
+footer{max-width:1080px;margin:0 auto;display:flex;gap:20px;justify-content:center;color:#4a5358;font-size:14px;padding-block:8px 48px;flex-wrap:wrap}
+@media (max-width:820px){.head{grid-template-columns:repeat(2,minmax(0,1fr))}.exhibit{grid-template-columns:1fr;gap:12px}.ex-row{grid-template-columns:1fr}.figures{grid-template-columns:repeat(2,minmax(0,1fr))}.stamp{position:static;display:inline-block;margin-top:20px}nav .r{display:none}}
+</style>
+</head>
+<body>
+<nav>
+  <a class="logo" href="#"><svg viewBox="0 0 128 128" aria-hidden="true"><rect width="128" height="128" rx="28" fill="#0b3f5a"/><path d="M18 92h92" stroke="#7fa3b3" stroke-width="5" stroke-linecap="round"/><circle cx="58" cy="54" r="26" fill="#032d42" stroke="#fff" stroke-width="9"/><circle cx="58" cy="54" r="8" fill="#62d84e"/><path d="M77 73l16 16" stroke="#fff" stroke-width="11" stroke-linecap="round"/></svg>Trail</a>
+  <div class="r"><a href="#a">Método</a><a href="#b">Tipos</a><a href="#c">Números</a><a href="#d">Acesso</a></div>
+  <a class="btn" href="#fim">Instalar</a>
+</nav>
+
+<article class="sheet">
+  <div class="head">
+    <div><small>Laudo</small>nº 0001/2026</div>
+    <div><small>Objeto</small>incident.state</div>
+    <div><small>Registro</small>INC0010001</div>
+    <div><small>Instância</small>dev457034</div>
+  </div>
+  <div class="stamp">CONFIRMADO<small>80 pontos</small></div>
+  <h1>O que alterou este campo, quando e por quê.</h1>
+  <p class="lead">O Trail é uma extensão para ServiceNow que faz a perícia de um campo: lê a auditoria, cruza com o que rodou naquele segundo e apresenta a causa com as provas.</p>
+  <div class="cta"><a class="btn" href="#fim">Instalar no Chrome</a><a class="btn ghost" href="#a">Ler o método</a></div>
+
+  <section class="exhibit" id="a">
+    <div class="tag">Prova<b>A</b></div>
+    <div class="ex-row">
+      <div>
+        <h2>A causa vem acompanhada dos fatos.</h2>
+        <p>Cada evidência lista os fatos que a sustentam e quanto cada um pesa. O grau sai de faixas fixas: confirmado a partir de 70 pontos, provável de 40 a 69, candidato abaixo.</p>
+        <p>Quando falta acesso ou o rastro já expirou, o laudo diz exatamente o quê, em vez de chutar.</p>
+      </div>
+      <div class="panel" aria-label="Recorte do painel do Trail">
+        <div class="p-top">Trail<span>INC0010001 · state</span></div>
+        <div class="p-b">
+          <div class="ev"><div class="r"><div><div class="t">BR assíncrona</div><a href="#">[PERICIA-TESTE] Resolve incidente</a></div><span class="bd">CONFIRMADO 80</span></div></div>
+          <div class="ev p"><div class="r"><div><div class="t">BR → script include</div><a href="#">C3 after → PericiaTesteUtil</a></div><span class="bd p">PROVÁVEL 50</span></div></div>
+          <div class="ev c"><div class="r"><div><div class="t">Processo em segundo plano</div><span>rastros expirados</span></div><span class="bd c">CANDIDATO 10</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="exhibit" id="b">
+    <div class="tag">Prova<b>B</b></div>
+    <div>
+      <h2>Treze tipos de causa reconhecidos.</h2>
+      <div class="tw"><table class="ledger">
+        <tr><th>Tipo</th><th>Sinal na instância</th><th>Grau</th></tr>
+        <tr><td>BR assíncrona</td><td><code>JOB: ASYNC</code> com o nome da regra</td><td><span class="mark ok">CONFIRMADO</span></td></tr>
+        <tr><td>BR before</td><td>o formulário enviou um valor, o servidor gravou outro</td><td><span class="mark ok">CONFIRMADO</span></td></tr>
+        <tr><td>Script action</td><td>evento do registro processado no mesmo segundo</td><td><span class="mark ok">CONFIRMADO</span></td></tr>
+        <tr><td>UI action</td><td><code>sys_action</code> na transação do clique</td><td><span class="mark ok">CONFIRMADO</span></td></tr>
+        <tr><td>Job agendado</td><td>transação <code>JOB:</code> ou horário programado</td><td><span class="mark ok">CONFIRMADO</span></td></tr>
+        <tr><td>BR → script include</td><td>novo checkpoint no mesmo segundo</td><td><span class="mark p">PROVÁVEL</span></td></tr>
+        <tr><td>Flow / workflow</td><td>contexto ativo no registro</td><td><span class="mark p">PROVÁVEL</span></td></tr>
+        <tr><td>Sem auditoria</td><td><code>sys_mod_count</code> &gt; checkpoints</td><td><span class="mark d">DETECTADO</span></td></tr>
+      </table></div>
+    </div>
+  </section>
+
+  <section class="exhibit" id="c">
+    <div class="tag">Prova<b>C</b></div>
+    <div>
+      <h2>Medido numa instância real.</h2>
+      <p>Bateria de regressão na PDI dev457034, com artefatos de teste criados para isso, executada em 19/10/2026.</p>
+      <div class="figures">
+        <div><b>12/12</b><span>tipo e grau corretos</span></div>
+        <div><b>2,05 s</b><span>mediana sem cache</span></div>
+        <div><b>11–12</b><span>chamadas GET</span></div>
+        <div><b>56 d</b><span>retenção de transações</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="exhibit" id="d">
+    <div class="tag">Prova<b>D</b></div>
+    <div>
+      <h2>Só leitura, só com a sua sessão.</h2>
+      <p>Nenhuma chamada além de GET. Nada sai do navegador e não há telemetria. Sem admin, um papel de leitura documentado cobre auditoria, transações, eventos e metadados, e o painel lista o que faltar por nome técnico.</p>
+    </div>
+  </section>
+
+  <div class="sign" id="fim">
+    <div><span class="line">Instale, abra um registro, clique no campo.</span><small>UI16 e Workspace · Chrome e Edge · PT e EN</small></div>
+    <a class="btn" href="#fim">Instalar no Chrome</a>
+  </div>
+</article>
+<footer><span>Trail · MIT</span><a href="#">Documentação</a><a href="#d">Papel de leitura</a><a href="/">← outras direções</a></footer>
+</body>
+</html>

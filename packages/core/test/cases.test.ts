@@ -259,6 +259,30 @@ describe('Rastro e rótulos', () => {
     expect(c.trace[0]?.sent).toBe('1');
   });
 
+  it('usa o rótulo da filha no idioma pedido', async () => {
+    const s = scenario();
+    audit(s, 'state', '1', '2', T0, 'admin', 1);
+    const c = build(s);
+    c.rows('sys_dictionary', [{ name: 'task', element: 'state', column_label: 'State' }]);
+    c.rows('sys_documentation', [
+      { name: 'task', element: 'state', label: 'Estado base', language: 'pt' },
+      { name: 'incident', element: 'state', label: 'Situação', language: 'pt' },
+    ]);
+    const r = await investigate(c, { table: 'incident', number: INC.number, field: 'state' }, { language: 'pt' });
+    expect(r.fieldLabel).toBe('Situação');
+    expect(c.log.filter((x) => x.table === 'sys_documentation')).toHaveLength(1);
+  });
+
+  it('mantém o rótulo do dicionário sem acesso à documentação', async () => {
+    const s = scenario();
+    audit(s, 'state', '1', '2', T0, 'admin', 1);
+    const c = build(s);
+    c.rows('sys_dictionary', [{ name: 'task', element: 'state', column_label: 'State' }]);
+    c.deny('sys_documentation');
+    const r = await investigate(c, { table: 'incident', number: INC.number, field: 'state' });
+    expect(r.fieldLabel).toBe('State');
+  });
+
   it('rótulos de choice vêm de sys_choice, preferindo inglês', async () => {
     const s = scenario();
     audit(s, 'state', '1', '2', T0, 'admin', 1);

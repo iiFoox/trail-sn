@@ -2,11 +2,16 @@
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
-import { join, extname } from 'node:path';
-const root = '/home/claude/trail-site';
+import { dirname, join, resolve, extname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+const here = dirname(fileURLToPath(import.meta.url));
+const root = resolve(here, '../../site');
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png' };
-const srv = createServer((req, res) => { let p = join(root, decodeURIComponent(req.url.split('?')[0])); if (existsSync(p) && statSync(p).isDirectory()) p = join(p, 'index.html'); if (!existsSync(p)) { res.writeHead(404); return res.end(); } res.writeHead(200, { 'content-type': mime[extname(p)] || 'application/octet-stream' }); res.end(readFileSync(p)); }).listen(4481);
-const S = '/tmp/claude-0/-home-claude/1355b350-d507-52b2-99e3-d63903bae67d/scratchpad/';
+const srv = createServer((req, res) => {
+  const urlPath = decodeURIComponent(req.url.split('?')[0]);
+  let p = join(root, urlPath); if (existsSync(p) && statSync(p).isDirectory()) p = join(p, 'index.html'); if (!existsSync(p)) { res.writeHead(404); return res.end(); } res.writeHead(200, { 'content-type': mime[extname(p)] || 'application/octet-stream' }); res.end(readFileSync(p));
+}).listen(4481);
+const S = process.argv[2] ? resolve(process.argv[2]) + '/' : '';
 const b = await chromium.launch({ channel: 'chromium' });
 const page = await b.newPage({ viewport: { width: 1280, height: 860 } });
 const errs = [];
@@ -33,7 +38,7 @@ for (const field of ['priority', 'impact', 'category', 'severity', 'description'
     who: document.querySelector('.who .nm')?.textContent?.trim()?.slice(0, 60),
     cert: document.querySelector('.cert b')?.textContent,
   }));
-  if (field === 'priority') await page.locator('.compo').screenshot({ path: S + 'compo-priority.png' });
+  if (field === 'priority' && S) await page.locator('.compo').screenshot({ path: S + 'compo-priority.png' });
 }
 // links dentro do painel
 await panelFrame.evaluate(() => document.querySelector('.btns a, .headcard a')?.click());
@@ -47,9 +52,9 @@ for (const label of ['Popup', 'Opções', 'Painel · escuro', 'Painel · claro']
 }
 await page.locator('#telas .gal').scrollIntoViewIfNeeded();
 await page.click('#galseg button:has-text("Opções")'); await page.waitForTimeout(900);
-await page.locator('#telas .gal').screenshot({ path: S + 'gal-options.png' });
+if (S) await page.locator('#telas .gal').screenshot({ path: S + 'gal-options.png' });
 // dentro do painel: cada callout
 await page.locator('#painel').scrollIntoViewIfNeeded();
-for (const i of [0, 3, 4, 6, 7]) { await page.click(`.co >> nth=${i}`); await page.waitForTimeout(1100); await page.locator('.inside').screenshot({ path: S + `inside-${i}.png` }); }
+for (const i of [0, 3, 4, 6, 7]) { await page.click(`.co >> nth=${i}`); await page.waitForTimeout(1100); if (S) await page.locator('.inside').screenshot({ path: S + `inside-${i}.png` }); }
 console.log(JSON.stringify({ results, navs, errs }, null, 1));
 await b.close(); srv.close();

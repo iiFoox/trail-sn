@@ -336,9 +336,39 @@ export function describeLink(href: string): string {
   const map: Record<string, string> = {
     syslog_transaction: 'essa transação', sysevent: 'esse evento', sys_flow_context: 'esse flow', wf_context: 'esse workflow',
     incident: 'o registro', sys_script: 'a business rule', sys_script_include: 'o script include', sysevent_script_action: 'a script action',
-    sysauto_script: 'o job agendado', sys_ui_action: 'a UI action', sysrule_assignment: 'a regra de atribuição', dl_u_priority: 'o data lookup',
+    sysauto_script: 'o job agendado', sys_ui_action: 'a UI action', sysrule_assignment: 'a regra de atribuição', dl_u_priority: 'o data lookup', dl_definition: 'o data lookup', cmdb_ci_service: 'o serviço',
   };
   return map[table] ?? 'o artefato';
+}
+
+/** Demonstração do registro inteiro: os campos que mudaram num incidente, com nomes e valores como no formulário. */
+export function demoRecord(wait = false): TabState {
+  const id = 'f'.repeat(32);
+  const it = (field: string, label: string, at: string, o: string, n: string, od: string, nd: string, type: string, name: string, grade: string, refTable?: string) => ({ sysId: id, display: 'INC0010172', title: 'Sistema de pedidos fora do ar', field, label, status: 'done' as const, at, oldValue: o, newValue: n, oldDisplay: od, newDisplay: nd, user: 'admin', changes: 1, ...(refTable ? { refTable } : {}), cause: { type, name, grade, score: 90, ...(type === 'user_action' ? {} : { sysId: 'demo', table: type === 'data_lookup' ? 'dl_definition' : 'sysauto_script' }) } });
+  const items = [
+    it('business_service', 'Service', '2026-10-20 22:42:10', '', 'a'.repeat(32), '', 'SAP Enterprise Services', 'user_action', 'admin', 'confirmed', 'cmdb_ci_service'),
+    it('subcategory', 'Subcategory', '2026-10-20 22:25:00', '', 'general_information', '', 'General Information', 'user_action', 'admin', 'confirmed'),
+    it('urgency', 'Urgency', '2026-10-20 22:21:00', '3', '1', '3 - Low', '1 - High', 'user_action', 'admin', 'confirmed'),
+    it('impact', 'Impact', '2026-10-20 22:21:00', '3', '1', '3 - Low', '1 - High', 'user_action', 'admin', 'confirmed'),
+    it('priority', 'Priority', '2026-10-20 22:21:00', '4', '1', '4 - Low', '1 - Critical', 'data_lookup', 'Priority Lookup', 'confirmed'),
+    it('description', 'Description', '2026-10-20 22:00:00', '', 'Gravado pelo job F18', '', 'Gravado pelo job F18', 'scheduled_job', '[PT] F18 Job que atualiza descrição', 'confirmed'),
+    it('activity_due', 'Activity due', '2026-10-20 22:25:27', '2026-10-21 00:21:19', '2026-10-21 00:25:27', '2026-10-21 00:21:19', '2026-10-21 00:25:27', 'user_action', 'admin', 'candidate'),
+  ];
+  if (wait) for (const i of [2, 5, 6]) items[i] = { sysId: id, display: 'INC0010172', field: items[i]!.field, label: items[i]!.label, status: 'pending' } as never;
+  return { tabId: 0, status: 'idle', ctx: { origin: DEMO_ORIGIN, table: 'incident', sysId: id, surface: 'ui16' }, batch: { table: 'incident', field: '*', kind: 'fields', sysId: id, display: 'INC0010172', items, status: wait ? 'running' : 'done', startedAt: new Date().toISOString(), ms: 5200 } };
+}
+
+/** Demonstração do lote: 12 incidentes, a categoria mudou por três causas. */
+export function demoBatch(): TabState {
+  const mk = (n: number, type: string, name: string, grade: string, user = 'system') => ({ sysId: n.toString(16).padStart(32, '0'), display: `INC00${10100 + n}`, title: ['Impressora sem rede', 'VPN cai toda hora', 'Notebook lento', 'E-mail não sincroniza'][n % 4], status: 'done' as const,
+    at: `2026-10-${10 + (n % 9)} 1${n % 9}:2${n % 6}:00`, oldValue: 'inquiry', newValue: n % 3 ? 'network' : 'hardware', user, changes: 1 + (n % 2), cause: { type, name, grade, score: grade === 'confirmed' ? 85 : 55, sysId: 'demo', table: 'sys_script' } });
+  const items = [
+    ...[1, 2, 3, 4, 5, 6, 7].map((n) => mk(n, 'br_before', 'Categoria pelo grupo de suporte', 'confirmed')),
+    ...[8, 9, 10].map((n) => mk(n, 'user_action', 'beth.anglin', 'confirmed', 'beth.anglin')),
+    mk(11, 'import_set', 'Chamados do parceiro', 'confirmed'),
+    { sysId: '0'.repeat(31) + 'c', display: 'INC0010112', title: 'Monitor piscando', status: 'unchanged' as const, changes: 0 },
+  ];
+  return { tabId: 0, status: 'idle', ctx: { origin: DEMO_ORIGIN, table: 'incident', surface: 'ui16' }, batch: { table: 'incident', field: 'category', items, status: 'done', startedAt: new Date().toISOString(), ms: 8400 } };
 }
 
 /** Linha do tempo do registro de demonstração, montada a partir das mesmas histórias. */

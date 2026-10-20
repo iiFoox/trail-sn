@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trail · perícia de registros ServiceNow</title>
+<meta name="description" content="Clique no ícone ao lado de qualquer campo do ServiceNow e descubra o que o alterou, quando e por quê. Somente leitura.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+/* Paleta: abismo teal (Auros) · contenção por hairlines (Linear) · nav de vidro (Raycast) · verde ServiceNow como único acento */
+:root{color-scheme:dark;
+--abyss:#011d1c;--deep:#012624;--kelp:#003734;--kelp2:#02443f;--line:rgba(203,255,252,.10);--line2:rgba(203,255,252,.22);
+--fg:#edfffe;--fg2:#bbc7c6;--mu:#7f9694;--green:#62d84e;--green2:#3fb531;--aqua:#cbfffc;--amber:#f0c75a;--red:#ff7a70;
+--sans:Geist,system-ui,sans-serif;--mono:"Geist Mono",ui-monospace,monospace;--r:12px;--r2:16px;
+--ease:cubic-bezier(.2,.7,.2,1)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--deep);color:var(--fg);font:16px/1.6 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+::selection{background:rgba(98,216,78,.35)}
+.wrap{max-width:1200px;margin:0 auto;padding-left:max(24px,env(safe-area-inset-left));padding-right:max(24px,env(safe-area-inset-right));position:relative}
+/* fundo vivo: duas luzes que seguem o cursor devagar */
+.glow{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.glow i{position:absolute;width:60vmax;height:60vmax;border-radius:50%;filter:blur(90px);opacity:.55;transition:transform 1.8s var(--ease)}
+.glow i:nth-child(1){background:radial-gradient(circle,rgba(0,130,124,.45),transparent 60%);left:-20vmax;top:-20vmax;transform:translate(var(--gx,0),var(--gy,0))}
+.glow i:nth-child(2){background:radial-gradient(circle,rgba(98,216,78,.14),transparent 60%);right:-25vmax;top:10vmax;transform:translate(calc(var(--gx,0) * -.6),calc(var(--gy,0) * -.6))}
+.grid-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:64px 64px;mask-image:radial-gradient(ellipse at 50% 0%,#000 20%,transparent 70%);opacity:.5}
+main{position:relative;z-index:1}
+/* nav de vidro */
+nav{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:6px;padding:6px 6px 6px 14px;border-radius:999px;border:1px solid var(--line2);background:rgba(1,29,28,.55);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);box-shadow:0 10px 40px rgba(0,0,0,.35),inset 0 1px rgba(255,255,255,.06);transition:box-shadow .4s,background .4s;width:max-content;max-width:calc(100vw - 32px)}
+nav.scrolled{background:rgba(1,29,28,.82)}
+.logo{display:flex;align-items:center;gap:9px;font-weight:700;text-decoration:none;margin-right:10px;letter-spacing:-.01em}
+.logo svg{width:26px;height:26px;transition:transform .9s var(--ease)}
+.logo:hover svg{transform:rotate(-360deg)}
+nav .lk{display:flex;gap:2px}
+nav .lk a{padding:8px 12px;border-radius:999px;color:var(--fg2);text-decoration:none;font-size:14px;transition:background .25s,color .25s}
+nav .lk a:hover{background:rgba(203,255,252,.08);color:var(--fg)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:999px;background:var(--green);color:#052a0c;font-weight:700;text-decoration:none;font-size:14px;border:0;cursor:pointer;transition:transform .25s var(--ease),box-shadow .25s,background .25s;position:relative;overflow:hidden}
+.btn:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(98,216,78,.3)}
+.btn:active{transform:translateY(0)}
+.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line2)}
+.btn.ghost:hover{box-shadow:none;background:rgba(203,255,252,.06)}
+.btn.sm{padding:7px 12px;font-size:13px}
+/* hero */
+.hero{min-height:100svh;display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:48px;align-items:center;padding-block:128px 72px}
+.kicker{display:inline-flex;align-items:center;gap:8px;font:500 12px var(--mono);color:var(--green);letter-spacing:.06em;text-transform:uppercase}
+.kicker i{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(98,216,78,.6);animation:ping 2s infinite}
+@keyframes ping{70%{box-shadow:0 0 0 10px rgba(98,216,78,0)}100%{box-shadow:0 0 0 0 rgba(98,216,78,0)}}
+h1{font-size:clamp(42px,5.6vw,76px);line-height:1;letter-spacing:-.035em;margin:18px 0 22px;font-weight:600;text-wrap:balance}
+h1 .w{display:inline-block;opacity:0;transform:translateY(24px) rotate(2deg);animation:rise .9s var(--ease) forwards}
+h1 .w:nth-child(2){animation-delay:.08s}h1 .w:nth-child(3){animation-delay:.16s}h1 .w:nth-child(4){animation-delay:.24s}h1 .w:nth-child(5){animation-delay:.32s}h1 .w:nth-child(6){animation-delay:.4s}h1 .w:nth-child(7){animation-delay:.48s}
+@keyframes rise{to{opacity:1;transform:none}}
+h1 em{font-style:normal;background:linear-gradient(90deg,var(--aqua),var(--green));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{color:var(--fg2);font-size:19px;max-width:40ch;margin:0 0 28px;opacity:0;animation:rise .9s .5s var(--ease) forwards}
+.cta{display:flex;gap:10px;flex-wrap:wrap;opacity:0;animation:rise .9s .62s var(--ease) forwards}
+.hint{margin-top:26px;color:var(--mu);font-size:14px;display:flex;align-items:center;gap:10px;opacity:0;animation:rise .9s .8s var(--ease) forwards}
+.hint kbd{font:500 12px var(--mono);border:1px solid var(--line2);border-radius:6px;padding:2px 7px;color:var(--fg2)}
+/* palco: formulário SN + console + painel */
+.stage{position:relative;min-height:640px;perspective:1600px}
+.form{position:absolute;left:0;top:0;width:min(440px,100%);background:#f7f9fb;color:#161a1d;border-radius:var(--r);box-shadow:0 0 0 1px rgba(255,255,255,.08),0 30px 80px rgba(0,0,0,.5);font:13px/1.4 var(--sans);transform:rotateY(6deg) rotateX(2deg);transition:transform .9s var(--ease);z-index:2}
+.stage:hover .form{transform:rotateY(3deg) rotateX(1deg)}
+.form .bar{background:linear-gradient(180deg,#293e40,#1f3133);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:10px;border-radius:var(--r) var(--r) 0 0;font-weight:600}
+.form .bar span{margin-left:auto;font:11px var(--mono);opacity:.75}
+.form .bar b{display:inline-block;width:10px;height:10px;border-radius:2px;background:#62d84e}
+.fields{padding:14px 16px 16px;display:grid;gap:9px}
+.f{display:grid;grid-template-columns:112px 1fr;align-items:center;gap:10px}
+.f label{color:#4b5560;font-weight:600;display:flex;align-items:center;gap:6px;justify-content:flex-end;text-align:right}
+.f .in{border:1px solid #cfd6dc;background:#fff;border-radius:4px;padding:6px 8px;color:#161a1d;min-height:30px;transition:box-shadow .3s,border-color .3s;position:relative}
+.f.hot .in{border-color:#1f8476;box-shadow:0 0 0 3px rgba(31,132,118,.2)}
+.f .in.changed:after{content:attr(data-new);position:absolute;inset:0;padding:6px 8px;background:#fff;border-radius:4px;animation:swap .5s var(--ease) both}
+@keyframes swap{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.q{all:unset;cursor:pointer;width:18px;height:18px;border-radius:50%;border:1px solid #c3cbd3;color:#6e7984;display:inline-grid;place-items:center;transition:all .2s;flex:none;position:relative}
+.q svg{width:11px;height:11px}
+.q:hover,.q.on{color:#fff;background:#1f8476;border-color:#1f8476;box-shadow:0 0 0 4px rgba(31,132,118,.25)}
+.q.pulse:before{content:"";position:absolute;inset:-3px;border-radius:50%;border:2px solid #1f8476;animation:ping2 1.6s infinite}
+@keyframes ping2{0%{transform:scale(.8);opacity:1}100%{transform:scale(1.9);opacity:0}}
+.console{position:absolute;left:24px;top:330px;width:min(420px,100%);background:#02110f;border:1px solid var(--line2);border-radius:var(--r);font:12px/1.65 var(--mono);color:#9fc4c0;overflow:hidden;z-index:1;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.console .hd{display:flex;gap:6px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);color:var(--mu);font-size:11px}
+.console .hd i{width:8px;height:8px;border-radius:50%;background:var(--kelp2)}
+.console .hd span{margin-left:auto}
+.console pre{margin:0;padding:10px 12px;min-height:150px;white-space:pre-wrap}
+.console .ln{display:block;opacity:0;transform:translateX(-6px);transition:opacity .3s,transform .3s}
+.console .ln.show{opacity:1;transform:none}
+.console .g{color:var(--green)}.console .t{color:var(--aqua)}.console .m{color:var(--mu)}.console .a{color:var(--amber)}
+.caret{display:inline-block;width:7px;height:13px;background:var(--green);vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.panel{position:absolute;right:0;top:120px;width:min(380px,100%);background:#0f171d;border:1px solid #2a3a46;border-radius:var(--r2);overflow:hidden;font:13px/1.45 var(--sans);box-shadow:0 40px 100px rgba(0,0,0,.55);z-index:3;transform:translateX(40px) scale(.96);opacity:0;transition:transform .8s var(--ease),opacity .6s}
+.panel.in{transform:none;opacity:1}
+.p-top{background:linear-gradient(180deg,#032d42,#0b3f5a);display:flex;align-items:center;gap:8px;padding:10px 14px;font-weight:700}
+.p-top svg{width:18px;height:18px}
+.p-top span{margin-left:auto;font:11px var(--mono);color:#cfe3ea;background:rgba(255,255,255,.08);padding:4px 8px;border-radius:999px}
+.p-body{padding:12px 14px 16px;display:flex;flex-direction:column;gap:10px}
+.rec{background:#16212a;border:1px solid #2a3a46;border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center}
+.rec strong{font-size:16px;color:#7ad3c4}.rec small{display:block;color:#8c99a5}
+.chip{background:#163a36;color:#7ad3c4;border-radius:999px;padding:3px 9px;font-weight:600;font-size:12px}
+.tabs{display:flex;gap:14px;border-bottom:1px solid #2a3a46;color:#8c99a5;font-weight:600;font-size:12px}.tabs span{padding:6px 0}.tabs .on{color:#7ad3c4;box-shadow:inset 0 -2px #2bb39f}
+.chg{border-left:2px solid #37485a;margin-left:6px;padding-left:14px;position:relative;display:flex;flex-direction:column;gap:6px}
+.chg:before{content:"";position:absolute;left:-7px;top:4px;width:12px;height:12px;border-radius:50%;background:#2e7d4f;transform:scale(0);transition:transform .4s var(--ease) .3s}
+.panel.in .chg:before{transform:scale(1)}
+.vals{display:flex;gap:6px;align-items:center;font:12px var(--mono)}.vals span{border:1px solid #2a3a46;border-radius:6px;padding:1px 7px}.vals .n{background:#163a36;color:#7ad3c4;border-color:transparent}
+.ev{background:#16212a;border:1px solid #2a3a46;border-left:4px solid #2e7d4f;border-radius:10px;padding:9px 11px;opacity:0;transform:translateY(8px);transition:opacity .4s,transform .5s var(--ease)}
+.ev.in{opacity:1;transform:none}
+.ev .t{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#8c99a5;font-weight:600}
+.ev .r{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.ev .nm{color:#7ad3c4;font-weight:700}
+.bd{font-size:10px;font-weight:800;border-radius:999px;padding:3px 8px;background:#163a26;color:#a7e8bd;white-space:nowrap;letter-spacing:.04em;transform:scale(1.6) rotate(-8deg);opacity:0;transition:transform .35s cubic-bezier(.2,1.4,.4,1),opacity .2s}
+.ev.in .bd{transform:none;opacity:1;transition-delay:.9s}
+.bd.p{background:#3d2f0b;color:#ffd98a}
+.meter{height:4px;background:#2a3a46;border-radius:2px;margin-top:8px;overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2e7d4f,#62d84e);transition:width 1s var(--ease) .3s}
+.facts{margin-top:7px;border-top:1px solid #2a3a46;font:11.5px var(--mono);color:#b7c2cc}
+.facts div{display:flex;gap:10px;padding:4px 0;opacity:0;transform:translateX(-6px);transition:all .35s}
+.ev.in .facts div{opacity:1;transform:none}
+.ev.in .facts div:nth-child(1){transition-delay:.4s}.ev.in .facts div:nth-child(2){transition-delay:.55s}.ev.in .facts div:nth-child(3){transition-delay:.7s}
+.facts b{color:#2bb39f;width:30px;flex:none}
+.replay{position:absolute;right:0;top:80px;z-index:4;opacity:0;transition:opacity .4s}
+.stage.done .replay{opacity:1}
+/* seções */
+section{padding-block:120px;position:relative}
+.eyebrow{font:500 12px var(--mono);color:var(--green);letter-spacing:.1em;text-transform:uppercase}
+h2{font-size:clamp(32px,4vw,52px);letter-spacing:-.03em;line-height:1.05;margin:12px 0 16px;font-weight:600;text-wrap:balance;max-width:20ch}
+.sub{color:var(--fg2);max-width:56ch;margin:0;font-size:17px}
+.rv{opacity:0;transform:translateY(28px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
+.rv.in{opacity:1;transform:none}
+/* método: texto rola, painel fixo */
+.method{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:64px;align-items:start}
+.steps{display:flex;flex-direction:column;gap:38vh;padding-block:10vh 30vh}
+.step{opacity:.28;transition:opacity .5s;max-width:46ch}
+.step.on{opacity:1}
+.step .n{font:600 12px var(--mono);color:var(--green);letter-spacing:.1em}
+.step h3{margin:8px 0 10px;font-size:28px;letter-spacing:-.02em}
+.step p{margin:0;color:var(--fg2)}
+.step code{font:13px var(--mono);color:var(--aqua);background:rgba(203,255,252,.08);padding:1px 6px;border-radius:5px}
+.sticky{position:sticky;top:110px}
+.layers{position:relative;background:#0f171d;border:1px solid #2a3a46;border-radius:var(--r2);padding:16px;min-height:420px;font:13px var(--sans);box-shadow:0 30px 80px rgba(0,0,0,.45)}
+.layer{position:absolute;inset:16px;opacity:0;transform:translateY(12px) scale(.98);transition:opacity .5s,transform .6s var(--ease);display:flex;flex-direction:column;gap:10px}
+.layer.on{opacity:1;transform:none}
+.layer h4{margin:0;font:600 11px var(--mono);color:#8c99a5;letter-spacing:.1em;text-transform:uppercase}
+.row{display:grid;grid-template-columns:1fr auto;gap:8px;padding:8px 10px;background:#16212a;border:1px solid #2a3a46;border-radius:8px;color:#e8edf1}
+.row small{color:#8c99a5;font:11px var(--mono)}
+.row.hl{border-color:#2bb39f;box-shadow:0 0 0 3px rgba(43,179,159,.15)}
+.wf{display:grid;grid-template-columns:150px 1fr;gap:6px 10px;align-items:center;font:11.5px var(--mono);color:#b7c2cc}
+.wf .bar{height:14px;border-radius:4px;background:linear-gradient(90deg,#1f8476,#2bb39f);width:0;transition:width 1.2s var(--ease)}
+.layer.on .wf .bar{width:var(--w)}
+.wf .bar.q{background:linear-gradient(90deg,#8a6a1a,#f0c75a)}
+.score{display:flex;flex-direction:column;gap:8px}
+.score .f{grid-template-columns:44px 1fr;color:#e8edf1}
+.score .f b{font:600 13px var(--mono);color:#2bb39f;text-align:right}
+.score .f span{color:#b7c2cc}
+.total{margin-top:6px;border-top:1px solid #2a3a46;padding-top:10px;display:flex;justify-content:space-between;align-items:center;font-weight:700}
+.total .bd{transform:none;opacity:1}
+/* mosaico com holofote */
+.mosaic{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:44px}
+.tile{position:relative;background:var(--kelp);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:8px;min-width:0;cursor:pointer;overflow:hidden;transition:transform .35s var(--ease),border-color .35s}
+.tile:hover{transform:translateY(-3px);border-color:var(--line2)}
+.tile:before{content:"";position:absolute;inset:0;background:radial-gradient(240px circle at var(--mx,50%) var(--my,50%),rgba(98,216,78,.14),transparent 60%);opacity:0;transition:opacity .35s}
+.tile:hover:before{opacity:1}
+.tile>*{position:relative}
+.tile b{font-size:15px}
+.tile span{font:12px var(--mono);color:var(--mu);overflow-wrap:anywhere}
+.tile em{font-style:normal;font:700 10px var(--mono);letter-spacing:.08em;color:var(--green);margin-top:auto}
+.tile em.p{color:var(--amber)}.tile em.d{color:var(--fg2)}
+.tile .more{max-height:0;overflow:hidden;color:var(--fg2);font-size:13px;transition:max-height .5s var(--ease),margin .4s}
+.tile.open .more{max-height:140px;margin-top:4px}
+.tile svg{width:22px;height:22px;color:var(--aqua)}
+/* números */
+.nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;margin-top:44px}
+.num{border-top:1px solid var(--line2);padding-top:14px}
+.num b{display:block;font:600 52px/1 var(--mono);letter-spacing:-.04em;font-variant-numeric:tabular-nums;color:var(--aqua)}
+.num span{font-size:14px;color:var(--fg2)}
+/* acesso interativo */
+.access{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;margin-top:44px;align-items:start}
+.seg{display:inline-flex;background:var(--kelp);border:1px solid var(--line);border-radius:999px;padding:4px;gap:4px}
+.seg button{all:unset;cursor:pointer;padding:8px 14px;border-radius:999px;font-size:14px;color:var(--fg2);transition:background .3s,color .3s}
+.seg button.on{background:var(--green);color:#052a0c;font-weight:700}
+.srcs{display:grid;gap:8px;margin-top:18px}
+.src{display:grid;grid-template-columns:1fr auto;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--kelp);font:13px var(--mono);transition:border-color .4s,background .4s}
+.src .st{font-weight:700;letter-spacing:.04em;font-size:11px;transition:color .3s}
+.src.ok .st{color:var(--green)}.src.no .st{color:var(--red)}.src.em .st{color:var(--amber)}
+.src.no{border-color:rgba(255,122,112,.35);background:rgba(255,122,112,.06)}
+.verdict{background:var(--kelp);border:1px solid var(--line2);border-radius:var(--r2);padding:24px;position:sticky;top:110px}
+.verdict .lvl{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--green)}
+.verdict.partial .lvl{color:var(--amber)}.verdict.none .lvl{color:var(--red)}
+.verdict h3{margin:8px 0 10px;font-size:24px;letter-spacing:-.02em}
+.verdict p{margin:0;color:var(--fg2)}
+.verdict code{display:block;margin-top:14px;font:12px var(--mono);color:var(--aqua);background:rgba(0,0,0,.25);padding:10px 12px;border-radius:8px;white-space:pre-wrap}
+/* fim */
+.end{text-align:center;padding-block:140px 100px;display:flex;flex-direction:column;align-items:center;gap:18px}
+.end h2{max-width:24ch;margin-inline:auto}
+.ring{width:84px;height:84px;margin-bottom:10px}
+.ring .arc{stroke-dasharray:240;stroke-dashoffset:240;transition:stroke-dashoffset 1.6s var(--ease)}
+.rv.in .ring .arc{stroke-dashoffset:40}
+footer{display:flex;gap:22px;justify-content:center;color:var(--mu);font-size:13px;padding-block:28px 48px;border-top:1px solid var(--line);flex-wrap:wrap}
+footer a{text-decoration:none}footer a:hover{color:var(--fg)}
+@media (max-width:960px){.hero{grid-template-columns:1fr;padding-top:110px;min-height:0}.stage{min-height:0;display:flex;flex-direction:column;gap:14px}.form,.console,.panel,.replay{position:static;width:100%;transform:none}.panel{opacity:1}.method,.access{grid-template-columns:1fr}.steps{gap:48px;padding-block:0}.step{opacity:1}.sticky{position:static}.layers{min-height:0}.layer{position:static;display:none}.layer.on{display:flex}.mosaic{grid-template-columns:repeat(2,minmax(0,1fr))}.nums{grid-template-columns:repeat(2,minmax(0,1fr))}nav .lk{display:none}.verdict{position:static}}
+@media (prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}.rv,.lead,.cta,.hint,h1 .w,.panel,.ev,.ev .bd,.facts div{opacity:1!important;transform:none!important}.console .ln{opacity:1;transform:none}.meter i{width:var(--w,80%)}.ring .arc{stroke-dashoffset:40}.layer.on .wf .bar{width:var(--w)}}
+</style>
+</head>
+<body>
+<div class="glow" aria-hidden="true"><i></i><i></i></div>
+<div class="grid-bg" aria-hidden="true"></div>
+
+<nav id="nav">
+  <a class="logo" href="#top" aria-label="Trail">
+    <svg viewBox="0 0 128 128" aria-hidden="true"><rect width="128" height="128" rx="64" fill="#032d42"/><circle cx="64" cy="64" r="38" fill="none" stroke="#244f63" stroke-width="12"/><path d="M64 26a38 38 0 1 1-36.4 27" fill="none" stroke="#62d84e" stroke-width="12" stroke-linecap="round"/><path d="M18 40l10 15 15-9" fill="none" stroke="#62d84e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M64 44v22l14 9" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Trail
+  </a>
+  <div class="lk"><a href="#metodo">Método</a><a href="#tipos">O que detecta</a><a href="#numeros">Números</a><a href="#acesso">Acesso</a></div>
+  <a class="btn sm" href="#instalar">Instalar</a>
+</nav>
+
+<main id="top">
+<div class="wrap">
+<header class="hero">
+  <div>
+    <span class="kicker"><i></i>Extensão para ServiceNow · somente leitura</span>
+    <h1><span class="w">O que</span> <span class="w">alterou</span> <span class="w">este</span> <span class="w">campo,</span> <span class="w"><em>quando</em></span> <span class="w"><em>e por</em></span> <span class="w"><em>quê.</em></span></h1>
+    <p class="lead">Um ícone ao lado de cada campo. Clique e o Trail cruza auditoria, transações, eventos e flows da sua própria sessão. Volta com a causa, os fatos e o link.</p>
+    <div class="cta"><a class="btn" href="#instalar">Instalar no Chrome</a><a class="btn ghost" href="#metodo">Ver o método</a></div>
+    <p class="hint"><kbd>?</kbd> Experimente ao lado: clique no ícone de qualquer campo do formulário.</p>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="form" aria-label="Formulário de incidente do ServiceNow, simulado">
+      <div class="bar"><b></b>Incident · INC0010001<span>dev457034</span></div>
+      <div class="fields">
+        <div class="f"><label>Number</label><div class="in">INC0010001</div></div>
+        <div class="f" data-k="state"><label><button class="q pulse" data-k="state" aria-label="Por que mudou? state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M3 18c3-7 6-7 9 0s6 7 8-7"/></svg></button>State</label><div class="in" data-new="Resolved">In Progress</div></div>
+        <div class="f" data-k="impact"><label><button class="q" data-k="impact" aria-label="Por que mudou? impact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M3 18c3-7 6-7 9 0s6 7 8-7"/></svg></button>Impact</label><div class="in" data-new="1 - High">3 - Low</div></div>
+        <div class="f" data-k="contact_type"><label><button class="q" data-k="contact_type" aria-label="Por que mudou? contact_type"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M3 18c3-7 6-7 9 0s6 7 8-7"/></svg></button>Contact type</label><div class="in" data-new="Email">Phone</div></div>
+        <div class="f" data-k="severity"><label><button class="q" data-k="severity" aria-label="Por que mudou? severity"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M3 18c3-7 6-7 9 0s6 7 8-7"/></svg></button>Severity</label><div class="in" data-new="1 - High">3 - Low</div></div>
+        <div class="f"><label>Short description</label><div class="in">Impressora do 3º andar sem rede</div></div>
+      </div>
+    </div>
+
+    <div class="console" aria-live="polite">
+      <div class="hd"><i></i><i></i><i></i>&nbsp;trail · investigar <span id="c-target">—</span></div>
+      <pre id="console"></pre>
+    </div>
+
+    <button class="btn ghost sm replay" id="replay">↻ Rodar de novo</button>
+
+    <div class="panel" id="panel" aria-label="Painel do Trail">
+      <div class="p-top"><svg viewBox="0 0 128 128" aria-hidden="true"><rect width="128" height="128" rx="64" fill="#1f8476"/><path d="M64 26a38 38 0 1 1-36.4 27" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round"/><path d="M64 44v22l14 9" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>Trail<span>dev457034</span></div>
+      <div class="p-body">
+        <div class="rec"><div><strong>INC0010001</strong><small>incident › task</small></div><span class="chip" id="p-field">state</span></div>
+        <div class="tabs"><span class="on">Mudanças 1</span><span>Suspeitos</span><span>Acesso</span></div>
+        <div class="chg"><b id="p-when">18/10, 01:37:02 <small style="color:#8c99a5;font-weight:400">· admin · cp 3</small></b>
+          <div class="vals"><span id="p-old">2</span>→<span class="n" id="p-new">6</span></div>
+          <div class="ev" id="ev">
+            <div class="r"><div><div class="t" id="p-type">BR assíncrona</div><div class="nm" id="p-name">—</div></div><span class="bd" id="p-badge">CONFIRMADO 80</span></div>
+            <div class="meter"><i id="p-meter"></i></div>
+            <div class="facts" id="p-facts"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+</div>
+
+<section id="metodo"><div class="wrap">
+  <div class="rv"><span class="eyebrow">Método</span><h2>Perícia, não adivinhação.</h2><p class="sub">Role para ver as três camadas. O painel à direita acompanha.</p></div>
+  <div class="method">
+    <div class="steps">
+      <div class="step on" data-i="0"><div class="n">01 · AUDITORIA</div><h3>Cada mudança do campo, com checkpoint</h3><p>A linha do tempo vem de <code>sys_audit</code>: valor antigo, valor novo, usuário e o número do checkpoint da atualização. Quando <code>sys_mod_count</code> é maior que os checkpoints, o Trail avisa que houve atualização sem auditoria.</p></div>
+      <div class="step" data-i="1"><div class="n">02 · RASTROS</div><h3>Tudo que rodou de 3 s antes a 15 s depois</h3><p>Transações, eventos processados, contextos de flow e workflow, em paralelo e pela sua sessão. Janelas de mudanças próximas são fundidas numa só consulta. Uma fonte negada vira lacuna, nunca erro.</p></div>
+      <div class="step" data-i="2"><div class="n">03 · PONTUAÇÃO</div><h3>Fatos que somam, grau que explica</h3><p>Rastro que nomeia o artefato vale 50. Código que cita o campo, 20. Mesma tabela, 10. Confirmado a partir de 70, provável de 40 a 69, candidato abaixo. Dois candidatos iguais perdem 15 cada.</p></div>
+    </div>
+    <div class="sticky"><div class="layers">
+      <div class="layer on" data-i="0">
+        <h4>sys_audit · INC0010001 · state</h4>
+        <div class="row hl"><div>2 → 6 <small>· 2026-10-18 01:37:02</small></div><small>admin · cp 3</small></div>
+        <div class="row"><div>1 → 2 <small>· 2026-10-17 14:02:11</small></div><small>pericia.itil · cp 2</small></div>
+        <div class="row"><div>∅ → 1 <small>· 2026-07-02 09:15:40</small></div><small>system · cp 1</small></div>
+        <div class="row" style="border-style:dashed;color:#f0c75a"><div>sys_mod_count 4 &gt; 3 checkpoints</div><small>sem auditoria</small></div>
+      </div>
+      <div class="layer" data-i="1">
+        <h4>janela 01:36:59 → 01:37:17 · 4 fontes em paralelo</h4>
+        <div class="wf">
+          <span>syslog_transaction</span><div class="bar" style="--w:92%"></div>
+          <span>sysevent</span><div class="bar" style="--w:48%"></div>
+          <span>sys_flow_context</span><div class="bar" style="--w:61%"></div>
+          <span>wf_context</span><div class="bar q" style="--w:30%"></div>
+          <span>sysauto_script</span><div class="bar" style="--w:55%"></div>
+          <span>sys_ui_action</span><div class="bar" style="--w:40%"></div>
+        </div>
+        <div class="row hl" style="margin-top:6px"><div>JOB: ASYNC: [PERICIA-TESTE] Resolve incidente por pa… <small>· system</small></div><small>01:37:02</small></div>
+        <div class="row"><div>form /incident.do?sys_uniqueValue=ad7b… <small>· admin</small></div><small>01:37:01</small></div>
+      </div>
+      <div class="layer" data-i="2">
+        <h4>pontuação · BR assíncrona</h4>
+        <div class="score">
+          <div class="f"><b>+50</b><span>o rastro nomeia o artefato: job ASYNC com o nome da regra</span></div>
+          <div class="f"><b>+20</b><span>o script referencia <code style="font:12px var(--mono)">state</code></span></div>
+          <div class="f"><b>+10</b><span>business rule da tabela <code style="font:12px var(--mono)">incident</code></span></div>
+          <div class="f"><b style="color:#8c99a5">+0</b><span style="color:#8c99a5">sem empate com outro candidato do mesmo tipo</span></div>
+        </div>
+        <div class="total"><span>Total</span><span class="bd">CONFIRMADO 80</span></div>
+      </div>
+    </div></div>
+  </div>
+</div></section>
+
+<section id="tipos"><div class="wrap">
+  <div class="rv"><span class="eyebrow">O que detecta</span><h2>Treze tipos de causa.</h2><p class="sub">Passe o mouse. Clique para ver o sinal que identifica cada um na instância.</p></div>
+  <div class="mosaic" id="mosaic">
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.2 2.2M16.2 16.2l2.2 2.2M5.6 18.4l2.2-2.2M16.2 7.8l2.2-2.2"/></svg><b>BR assíncrona</b><span>JOB: ASYNC: &lt;nome&gt;</span><div class="more">Roda como job logo após o salvamento e deixa transação com o nome exato da regra. Nomeia o artefato: +50.</div><em>CONFIRMADO</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h7M17 15l2 2 4-4"/></svg><b>BR before</b><span>formulário ≠ gravado</span><div class="more">A transação do formulário traz o valor que o usuário enviou. Se o gravado é outro, o servidor alterou ao salvar.</div><em>CONFIRMADO</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg><b>Script action</b><span>sysevent no mesmo segundo</span><div class="more">Evento do registro processado no mesmo segundo da mudança, com script action ativa para aquele evento.</div><em>CONFIRMADO</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M4 4l7 16 2-6 6-2L4 4z"/></svg><b>UI action</b><span>sys_action=&lt;sys_id&gt;</span><div class="more">O clique no botão deixa o sys_id da UI action na URL da transação. Resolve o nome e lê o script.</div><em>CONFIRMADO</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 7v5l3 2"/></svg><b>Job agendado</b><span>JOB: &lt;nome&gt; ou horário</span><div class="more">Com transação, nomeia o job. Sem transação, compara o horário programado e o "executar como" com a mudança.</div><em>CONFIRMADO</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M20 21a8 8 0 0 0-16 0M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg><b>Ação do usuário</b><span>formulário = gravado</span><div class="more">O formulário enviou exatamente o valor que ficou gravado. Foi a pessoa, não uma automação.</div><em>CONFIRMADO</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2M9 12h6"/></svg><b>BR → script include</b><span>checkpoint no mesmo segundo</span><div class="more">Um novo checkpoint gravado no mesmo segundo do anterior, sem job nem evento: uma BR after ou um script include que ela chama.</div><em class="p">PROVÁVEL</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M5 6h4v4H5zM15 14h4v4h-4zM9 8h3a3 3 0 0 1 3 3v3"/></svg><b>Flow / workflow</b><span>contexto ativo no registro</span><div class="more">Contexto de flow ou workflow apontando para o registro, ativo no instante da mudança.</div><em class="p">PROVÁVEL</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 5h16v14H4zM8 9l3 3-3 3M13 15h4"/></svg><b>Script de fundo</b><span>/sys.scripts.do na janela</span><div class="more">Transação de Scripts - Background do mesmo usuário na janela. O código não fica registrado, por isso é provável.</div><em class="p">PROVÁVEL</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-3-3.9M9 7a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg><b>Regra de atribuição</b><span>sysrule_assignment</span><div class="more">Para assignment_group e assigned_to: o formulário enviou vazio, o servidor gravou o grupo da regra.</div><em class="p">PROVÁVEL</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 5h16v6H4zM4 13h16v6H4zM8 8h.01M8 16h.01"/></svg><b>Alteração no servidor</b><span>sem BR before candidata</span><div class="more">O valor mudou ao salvar, mas nenhuma BR before cita o campo: data lookup, regra de atribuição ou outro mecanismo.</div><em class="p">PROVÁVEL</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z"/></svg><b>Sem auditoria</b><span>sys_mod_count &gt; checkpoints</span><div class="more">setWorkflow(false), importações e campos não auditados não deixam rastro em sys_audit. O Trail conta a diferença e procura pistas no horário.</div><em class="d">DETECTADO</em></div>
+  </div>
+</div></section>
+
+<section id="numeros"><div class="wrap">
+  <div class="rv"><span class="eyebrow">Medido</span><h2>Numa instância de verdade.</h2><p class="sub">Bateria de regressão na PDI dev457034, 19 de outubro de 2026, pela própria aba logada. Artefatos criados para isso: business rules, script includes, eventos, jobs, flows e UI actions.</p></div>
+  <div class="nums">
+    <div class="num rv"><b data-count="12" data-suffix="/12">0/12</b><span>casos com tipo e grau corretos</span></div>
+    <div class="num rv"><b data-count="2.05" data-dec="2" data-suffix=" s">0,00 s</b><span>mediana por investigação, sem cache</span></div>
+    <div class="num rv"><b data-count="11">0</b><span>chamadas GET por investigação</span></div>
+    <div class="num rv"><b data-count="29">0</b><span>testes unitários do motor</span></div>
+  </div>
+</div></section>
+
+<section id="acesso"><div class="wrap">
+  <div class="rv"><span class="eyebrow">Acesso</span><h2>Sem admin, sem escrita, sem telemetria.</h2><p class="sub">Antes de prometer, o Trail testa cada fonte com uma chamada mínima. Troque o perfil para ver o que muda.</p></div>
+  <div class="access">
+    <div class="rv">
+      <div class="seg" id="seg" role="tablist"><button class="on" data-p="admin">admin</button><button data-p="reader">x_trail_reader</button><button data-p="itil">itil</button><button data-p="basic">usuário básico</button></div>
+      <div class="srcs" id="srcs"></div>
+    </div>
+    <div class="verdict rv" id="verdict"><div class="lvl">acesso completo</div><h3>Perícia completa.</h3><p>Todas as fontes leem. O painel não mostra nenhum aviso.</p><code></code></div>
+  </div>
+</div></section>
+
+<div class="wrap end rv" id="instalar">
+  <svg class="ring" viewBox="0 0 128 128" aria-hidden="true"><circle cx="64" cy="64" r="38" fill="none" stroke="#244f63" stroke-width="12"/><path class="arc" d="M64 26a38 38 0 1 1-36.4 27" fill="none" stroke="#62d84e" stroke-width="12" stroke-linecap="round"/><path d="M64 44v22l14 9" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <h2>Instale, abra um registro, clique no campo.</h2>
+  <p class="sub">UI16 e Workspace · Chrome e Edge · português e inglês · MIT</p>
+  <a class="btn" href="#instalar">Instalar no Chrome</a>
+</div>
+<footer><span>Trail · MIT</span><a href="#">Documentação</a><a href="#acesso">Papel de leitura</a><a href="/">← outras direções</a></footer>
+</main>
+
+<script>
+(() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+  // luz que segue o cursor
+  const glow = $('.glow');
+  if (!reduce) addEventListener('pointermove', (e) => {
+    glow.style.setProperty('--gx', ((e.clientX / innerWidth) - .5) * 160 + 'px');
+    glow.style.setProperty('--gy', ((e.clientY / innerHeight) - .5) * 160 + 'px');
+  }, { passive: true });
+
+  // nav
+  const nav = $('#nav');
+  addEventListener('scroll', () => nav.classList.toggle('scrolled', scrollY > 40), { passive: true });
+
+  // revelar ao rolar
+  const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: .15 });
+  $$('.rv').forEach((el) => io.observe(el));
+
+  // ---------- demonstração: casos reais da PDI ----------
+  const CASES = {
+    state: { field: 'state', old: '2', neu: '6', when: '18/10, 01:37:02', who: 'admin · cp 3', type: 'BR assíncrona', name: '[PERICIA-TESTE] Resolve incidente por palavra-chave', grade: 'CONFIRMADO', score: 80,
+      lines: ['<span class="m">→</span> GET sys_audit         <span class="t">documentkey=ad7b…31f3</span>   <span class="g">3 mudanças</span>', '<span class="m">→</span> GET sys_script        <span class="t">collectionIN incident,task</span> <span class="g">cache</span>', '<span class="m">→</span> GET syslog_transaction <span class="t">01:36:59 … 01:37:17</span>  <span class="g">14 linhas</span>', '<span class="m">→</span> GET sysevent · sys_flow_context · wf_context  <span class="m">0 · 0 · 0</span>', '<span class="a">✓</span> JOB: ASYNC: [PERICIA-TESTE] Resolve incidente por pa…', '<span class="a">✓</span> o script referencia <span class="t">"state"</span> · BR da tabela incident', '<span class="m">11 chamadas · 1,84 s · somente GET</span>'],
+      facts: [['+50', 'job ASYNC às 01:37:02 nomeia a regra'], ['+20', 'o script referencia "state"'], ['+10', 'BR da tabela incident']] },
+    impact: { field: 'impact', old: '3', neu: '1', when: '18/10, 02:10:33', who: 'pericia.itil · cp 1', type: 'BR before', name: '[PT] C2 before define impacto', grade: 'CONFIRMADO', score: 80,
+      lines: ['<span class="m">→</span> GET sys_audit         <span class="t">documentkey=…</span>   <span class="g">1 mudança</span>', '<span class="m">→</span> GET syslog_transaction <span class="t">02:10:30 … 02:10:48</span>  <span class="g">6 linhas</span>', '<span class="a">✓</span> form /incident.do?sys_uniqueValue=… <span class="t">incident.impact=3</span>', '<span class="a">✓</span> enviado <span class="t">3</span> · gravado <span class="g">1</span> → o servidor alterou ao salvar', '<span class="a">✓</span> 1 BR before ativa referencia <span class="t">"impact"</span>', '<span class="m">11 chamadas · 2,06 s · somente GET</span>'],
+      facts: [['+30', 'o formulário enviou outro valor'], ['+20', 'salvo às 02:10:33, na janela'], ['+20', 'o script referencia "impact"']] },
+    contact_type: { field: 'contact_type', old: 'phone', neu: 'email', when: '18/10, 02:14:07', who: 'admin · cp 2', type: 'Script action (evento)', name: '[PT] C4 script action', grade: 'CONFIRMADO', score: 70,
+      lines: ['<span class="m">→</span> GET sys_audit         <span class="g">2 mudanças</span>', '<span class="m">→</span> GET sysevent          <span class="t">instance=… processed 02:14:06…08</span> <span class="g">1 evento</span>', '<span class="a">✓</span> evento <span class="t">pt.contato</span> processado às 02:14:07', '<span class="m">→</span> GET sysevent_script_action <span class="t">event_name=pt.contato</span> <span class="g">1</span>', '<span class="a">✓</span> o script referencia <span class="t">"contact_type"</span>', '<span class="m">12 chamadas · 2,25 s · somente GET</span>'],
+      facts: [['+50', 'evento processado no mesmo segundo'], ['+20', 'o script referencia "contact_type"']] },
+    severity: { field: 'severity', old: '3', neu: '1', when: '18/10, 02:20:00', who: 'system · cp 1', type: 'Job agendado', name: '[PT] C5 job ajusta severidade', grade: 'CONFIRMADO', score: 70,
+      lines: ['<span class="m">→</span> GET sys_audit         <span class="g">1 mudança · usuário system</span>', '<span class="m">→</span> GET syslog_transaction <span class="t">02:19:57 … 02:20:15</span>  <span class="g">3 linhas</span>', '<span class="a">✓</span> JOB: [PT] C5 job ajusta severidade <span class="m">· system · 02:19:59</span>', '<span class="m">→</span> GET sysauto_script    <span class="t">nameIN …</span> <span class="g">1</span>', '<span class="a">✓</span> o script referencia <span class="t">"severity"</span>', '<span class="m">12 chamadas · 2,05 s · somente GET</span>'],
+      facts: [['+50', 'transação JOB nomeia o job'], ['+20', 'o script referencia "severity"']] },
+  };
+
+  const stage = $('#stage'), con = $('#console'), panel = $('#panel'), ev = $('#ev');
+  let token = 0;
+  const wait = (ms) => new Promise((r) => setTimeout(r, reduce ? 0 : ms));
+
+  async function run(key) {
+    const c = CASES[key]; const my = ++token;
+    stage.classList.remove('done');
+    $$('.q').forEach((b) => { b.classList.toggle('on', b.dataset.k === key); b.classList.remove('pulse'); });
+    $$('.f').forEach((f) => f.classList.toggle('hot', f.dataset.k === key));
+    $$('.f .in').forEach((i) => i.classList.remove('changed'));
+    $('#c-target').textContent = 'incident.' + key;
+    panel.classList.remove('in'); ev.classList.remove('in'); $('#p-meter').style.width = '0';
+    con.innerHTML = '';
+    for (const l of c.lines) {
+      if (my !== token) return;
+      const s = document.createElement('span'); s.className = 'ln'; s.innerHTML = l + '\n'; con.appendChild(s);
+      requestAnimationFrame(() => s.classList.add('show'));
+      await wait(260 + Math.random() * 180);
+    }
+    const caret = document.createElement('span'); caret.className = 'caret'; con.appendChild(caret);
+    if (my !== token) return;
+    $('#p-field').textContent = c.field; $('#p-when').innerHTML = `${c.when} <small style="color:#8c99a5;font-weight:400">· ${c.who}</small>`;
+    $('#p-old').textContent = c.old; $('#p-new').textContent = c.neu; $('#p-type').textContent = c.type; $('#p-name').textContent = c.name;
+    const bd = $('#p-badge'); bd.textContent = `${c.grade} ${c.score}`; bd.classList.toggle('p', c.grade !== 'CONFIRMADO');
+    $('#p-facts').innerHTML = c.facts.map(([p, t]) => `<div><b>${p}</b>${t}</div>`).join('');
+    panel.classList.add('in');
+    await wait(350);
+    ev.classList.add('in');
+    $('#p-meter').style.setProperty('--w', c.score + '%'); $('#p-meter').style.width = c.score + '%';
+    const field = $(`.f[data-k="${key}"] .in`); if (field) field.classList.add('changed');
+    await wait(900);
+    if (my === token) stage.classList.add('done');
+  }
+  $$('.q').forEach((b) => b.addEventListener('click', () => run(b.dataset.k)));
+  $('#replay').addEventListener('click', () => run($('.q.on')?.dataset.k || 'state'));
+  setTimeout(() => run('state'), reduce ? 0 : 1200);
+
+  // ---------- método: passo ativo controla a camada ----------
+  const steps = $$('.step'), layers = $$('.layer');
+  const so = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { const i = e.target.dataset.i; steps.forEach((s) => s.classList.toggle('on', s.dataset.i === i)); layers.forEach((l) => l.classList.toggle('on', l.dataset.i === i)); } }), { rootMargin: '-45% 0px -45% 0px' });
+  steps.forEach((s) => so.observe(s));
+
+  // ---------- mosaico: holofote e expansão ----------
+  $$('.tile').forEach((t) => {
+    t.addEventListener('pointermove', (e) => { const r = t.getBoundingClientRect(); t.style.setProperty('--mx', (e.clientX - r.left) + 'px'); t.style.setProperty('--my', (e.clientY - r.top) + 'px'); });
+    t.addEventListener('click', () => t.classList.toggle('open'));
+  });
+
+  // ---------- números ----------
+  const no = new IntersectionObserver((es) => es.forEach((e) => {
+    if (!e.isIntersecting) return; no.unobserve(e.target);
+    const b = e.target; const end = parseFloat(b.dataset.count), dec = +(b.dataset.dec || 0), suf = b.dataset.suffix || '';
+    const t0 = performance.now(), dur = reduce ? 0 : 1400;
+    const tick = (t) => { const k = Math.min(1, (t - t0) / dur); const v = end * (1 - Math.pow(1 - k, 3)); b.textContent = v.toFixed(dec).replace('.', ',') + suf; if (k < 1) requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  }), { threshold: .6 });
+  $$('[data-count]').forEach((b) => no.observe(b));
+
+  // ---------- acesso por perfil (observado na PDI) ----------
+  const SRC = ['sys_audit', 'syslog_transaction', 'sysevent', 'sysevent_script_action', 'sys_flow_context', 'wf_context', 'sys_script', 'sys_script_include', 'sys_ui_action', 'sysauto_script', 'sys_db_object'];
+  const PROFILES = {
+    admin: { lvl: 'full', st: Object.fromEntries(SRC.map((s) => [s, 'ok'])) },
+    reader: { lvl: 'full', st: Object.fromEntries(SRC.map((s) => [s, 'ok'])) },
+    itil: { lvl: 'none', st: { sys_audit: 'no', syslog_transaction: 'no', sysevent: 'em', sysevent_script_action: 'no', sys_flow_context: 'em', wf_context: 'em', sys_script: 'no', sys_script_include: 'no', sys_ui_action: 'ok', sysauto_script: 'em', sys_db_object: 'ok' } },
+    basic: { lvl: 'none', st: Object.fromEntries(SRC.map((s) => [s, s === 'sys_db_object' ? 'ok' : 'no'])) },
+  };
+  const LABEL = { ok: 'LÊ', no: 'NEGADO', em: 'VAZIO' };
+  const TXT = {
+    full: ['acesso completo', 'Perícia completa.', 'Todas as fontes leem. O painel não mostra nenhum aviso.'],
+    partial: ['acesso parcial', 'Perícia com lacunas.', 'Auditoria e metadados lidos, mas algumas fontes estão negadas. BRs assíncronas e UI actions podem não aparecer.'],
+    none: ['sem perícia', 'A auditoria está negada.', 'Sem sys_audit não há linha do tempo. O painel mostra o que pedir ao administrador, com os nomes técnicos para copiar no chamado.'],
+  };
+  const srcs = $('#srcs'), verdict = $('#verdict');
+  srcs.innerHTML = SRC.map((s) => `<div class="src" data-s="${s}"><span>${s}</span><span class="st"></span></div>`).join('');
+  function profile(p) {
+    const pr = PROFILES[p];
+    SRC.forEach((s, i) => setTimeout(() => { const el = $(`.src[data-s="${s}"]`); el.className = 'src ' + pr.st[s]; $('.st', el).textContent = LABEL[pr.st[s]]; }, reduce ? 0 : i * 45));
+    const denied = SRC.filter((s) => pr.st[s] === 'no');
+    const lvl = pr.lvl === 'full' && denied.length ? 'partial' : pr.lvl;
+    verdict.className = 'verdict rv in ' + lvl;
+    const [a, b, c] = TXT[lvl];
+    $('.lvl', verdict).textContent = a; $('h3', verdict).textContent = b; $('p', verdict).textContent = c;
+    $('code', verdict).textContent = denied.length ? 'negado: ' + denied.join(', ') : (p === 'reader' ? 'papel: x_trail_reader (read em ' + SRC.length + ' tabelas, nenhuma escrita)' : 'nenhuma fonte negada');
+  }
+  $$('#seg button').forEach((b) => b.addEventListener('click', () => { $$('#seg button').forEach((x) => x.classList.toggle('on', x === b)); profile(b.dataset.p); }));
+  profile('admin');
+})();
+</script>
+</body>
+</html>

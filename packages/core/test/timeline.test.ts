@@ -3,6 +3,29 @@ import { recordTimeline } from '../src/timeline';
 import { INC, T0, audit, build, formTx, id, scenario, shiftStr, tx } from './fixtures/builder';
 
 describe('linha do tempo do registro', () => {
+  it('usa o rótulo documentado na filha e no idioma pedido', async () => {
+    const s = scenario();
+    audit(s, 'impact', '3', '1', T0, 'admin', 1);
+    const c = build(s);
+    c.rows('sys_dictionary', [{ name: 'task', element: 'impact', column_label: 'Impact' }]);
+    c.rows('sys_documentation', [
+      { name: 'task', element: 'impact', label: 'Impacto base', language: 'pt' },
+      { name: 'incident', element: 'impact', label: 'Impacto do incidente', language: 'pt' },
+    ]);
+    const tl = await recordTimeline(c, { table: 'incident', number: INC.number }, { language: 'pt' });
+    expect(tl.saves[0]?.fields[0]?.label).toBe('Impacto do incidente');
+    expect(c.log.filter((x) => x.table === 'sys_documentation')).toHaveLength(1);
+  });
+
+  it('mantém o rótulo do dicionário sem acesso à documentação', async () => {
+    const s = scenario();
+    audit(s, 'impact', '3', '1', T0, 'admin', 1);
+    const c = build(s);
+    c.rows('sys_dictionary', [{ name: 'task', element: 'impact', column_label: 'Impact' }]);
+    c.deny('sys_documentation');
+    const tl = await recordTimeline(c, { table: 'incident', number: INC.number });
+    expect(tl.saves[0]?.fields[0]?.label).toBe('Impact');
+  });
   it('agrupa por gravação e diz por onde cada uma entrou', async () => {
     const s = scenario();
     const t1 = shiftStr(T0, -3600), t2 = T0, t3 = shiftStr(T0, 60), t4 = shiftStr(T0, 120);

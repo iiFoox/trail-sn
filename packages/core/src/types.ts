@@ -25,6 +25,8 @@ export interface InvestigationOptions {
   maxChanges: number;
   /** Tempo máximo por fonte, em ms; estourou vira lacuna, não erro. */
   sourceTimeoutMs: number;
+  /** Idioma do usuário para os rótulos de campo; inglês quando não informado. */
+  language?: string;
   /** Retenção (segundos) das tabelas de rastro, de sys_auto_flush; mudanças mais antigas ganham aviso. */
   retention?: Partial<Record<'syslog_transaction' | 'sysevent', number>>;
 }

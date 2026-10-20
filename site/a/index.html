@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trail · perícia de registros para ServiceNow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: coluna de 1200px, hero dividido texto|produto, uma faixa escura para o painel, cartões cinza */
+:root{--paper:#fbfbfa;--ink:#17191c;--mist:#f0f1f2;--slate:#6f7580;--line:#e6e8ea;--peach:#fbe1d1;--sienna:#5d2a1a;--teal:#1f8476;--ok:#2f8f57;--warn:#b7791f;
+--serif:Newsreader,"Source Serif 4",Georgia,serif;--sans:Geist,system-ui,sans-serif;--mono:"Geist Mono",ui-monospace,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.wrap{max-width:1200px;margin:0 auto;padding-left:max(24px,env(safe-area-inset-left));padding-right:max(24px,env(safe-area-inset-right))}
+nav{display:flex;align-items:center;gap:24px;padding-block:22px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;font-weight:600;font-size:18px;text-decoration:none}
+.logo svg{width:28px;height:28px}
+nav .links{display:flex;gap:26px;color:var(--slate);font-size:15px;margin-left:auto}
+nav .links a{text-decoration:none}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:var(--ink);color:#fff;text-decoration:none;font-size:15px;font-weight:500}
+.pill.ghost{background:transparent;color:var(--ink);border:1px solid var(--ink)}
+.hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:56px;align-items:center;padding-block:40px 96px}
+.eyebrow{font-size:14px;color:var(--slate);letter-spacing:.02em}
+h1{font:400 clamp(44px,6.2vw,84px)/1.02 var(--serif);letter-spacing:-.025em;margin:16px 0 22px;text-wrap:balance}
+h1 em{font-style:italic;color:var(--teal)}
+.lead{font-size:20px;color:var(--slate);max-width:34ch;margin:0 0 28px}
+.cta{display:flex;gap:12px;flex-wrap:wrap}
+.fine{font-size:14px;color:var(--slate);margin-top:16px}
+.stage{position:relative;min-height:540px}
+.note{position:absolute;left:-24px;bottom:28px;width:250px;background:var(--peach);color:var(--sienna);border-radius:16px;padding:18px;box-shadow:0 10px 30px rgba(93,42,26,.12)}
+.note b{display:block;font:400 22px/1.25 var(--serif);margin:4px 0}
+.note small{font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+/* painel desenhado */
+.panel{--p-bg:#f7f9fb;--p-sf:#fff;--p-ln:#d7dde3;--p-fg:#161a1d;--p-mu:#6e7984;--p-teal:#1f8476;--p-soft:#e3f1ee;width:min(380px,100%);margin-left:auto;background:var(--p-bg);border-radius:18px;overflow:hidden;box-shadow:0 0 0 1px rgba(23,25,28,.06),0 30px 60px rgba(23,25,28,.14);font:13px/1.45 var(--sans);color:var(--p-fg)}
+.panel.dark{--p-bg:#0f171d;--p-sf:#16212a;--p-ln:#2a3a46;--p-fg:#e8edf1;--p-mu:#8c99a5;--p-soft:#163a36;box-shadow:0 0 0 1px rgba(255,255,255,.06),0 30px 60px rgba(0,0,0,.4)}
+.p-top{background:linear-gradient(180deg,#032d42,#0b3f5a);color:#fff;display:flex;align-items:center;gap:8px;padding:10px 14px;font-weight:600}
+.p-top i{width:20px;height:20px;border-radius:6px;background:var(--p-teal);display:grid;place-items:center}
+.p-top span{margin-left:auto;font:11px var(--mono);color:#cfe3ea;background:rgba(255,255,255,.08);padding:4px 8px;border-radius:999px}
+.p-body{padding:12px 14px 16px;display:flex;flex-direction:column;gap:10px}
+.p-rec{background:var(--p-sf);border:1px solid var(--p-ln);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center}
+.p-rec b{font-size:16px;color:var(--p-teal)}
+.p-rec small{display:block;color:var(--p-mu)}
+.chip{background:var(--p-soft);color:var(--p-teal);border-radius:999px;padding:3px 9px;font-weight:600;font-size:12px}
+.p-tabs{display:flex;gap:14px;border-bottom:1px solid var(--p-ln);color:var(--p-mu);font-weight:600}
+.p-tabs span{padding:6px 0}.p-tabs .on{color:var(--p-teal);box-shadow:inset 0 -2px var(--p-teal)}
+.p-chg{border-left:2px solid var(--p-ln);margin-left:6px;padding-left:14px;position:relative;display:flex;flex-direction:column;gap:6px}
+.p-chg:before{content:"";position:absolute;left:-7px;top:4px;width:12px;height:12px;border-radius:50%;background:#7fcf9b}
+.p-chg.cand:before{background:var(--p-sf);border:3px solid #b9c2cb;width:6px;height:6px}
+.vals{display:flex;gap:6px;align-items:center;font-family:var(--mono);font-size:12px}
+.vals span{border:1px solid var(--p-ln);border-radius:6px;padding:1px 7px;background:var(--p-sf)}
+.vals span.n{background:var(--p-soft);color:var(--p-teal);border-color:transparent}
+.ev{background:var(--p-sf);border:1px solid var(--p-ln);border-left:4px solid #7fcf9b;border-radius:10px;padding:9px 11px}
+.ev.cand{border-left-color:#b9c2cb}
+.ev .t{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--p-mu);font-weight:600}
+.ev .row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.ev a{color:var(--p-teal);font-weight:700;text-decoration:none}
+.badge{font-size:10px;font-weight:700;border-radius:999px;padding:2px 7px;background:#dff5e6;color:#1b6b3a;white-space:nowrap}
+.badge.c{background:#e9edf1;color:#4b5560}
+.meter{height:4px;background:var(--p-ln);border-radius:2px;margin-top:7px;overflow:hidden}.meter i{display:block;height:100%;background:#7fcf9b}
+/* seções */
+section{padding-block:88px}
+h2{font:400 clamp(34px,4.4vw,52px)/1.1 var(--serif);letter-spacing:-.02em;margin:0 0 18px;text-wrap:balance;max-width:20ch}
+.sub{color:var(--slate);max-width:52ch;margin:0}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:40px}
+.card{background:var(--mist);border-radius:22px;padding:26px;display:flex;flex-direction:column;gap:10px}
+.card .n{font:500 13px var(--mono);color:var(--slate)}
+.card h3{margin:0;font-size:21px;font-weight:500}
+.card p{margin:0;color:var(--slate);font-size:16px}
+code{font:14px var(--mono)}
+.band{background:var(--ink);color:#f2f2f0}
+.band .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px;align-items:center}
+.band .sub{color:#a9adb3}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-top:36px}
+.stat{border-top:1px solid #3a3d42;padding-top:12px}
+.stat b{display:block;font:400 40px/1 var(--serif);font-variant-numeric:tabular-nums}
+.stat span{font-size:14px;color:#a9adb3}
+table{width:100%;border-collapse:collapse;font-size:15px}
+.tbl{background:#fff;border-radius:20px;box-shadow:0 0 0 1px rgba(23,25,28,.05),0 16px 40px rgba(23,25,28,.07);overflow-x:auto;margin-top:36px}
+th,td{text-align:left;padding:13px 20px;border-top:1px solid var(--line);vertical-align:top}
+th{color:var(--slate);font-weight:500;border-top:0}
+td:nth-child(2){color:var(--slate)}
+.g{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px}
+.g.c{background:#e3f4ea;color:var(--ok)}.g.p{background:#fbf0d9;color:var(--warn)}.g.d{background:var(--mist);color:var(--slate)}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:40px}
+.end{text-align:center;padding-block:96px 64px;display:flex;flex-direction:column;align-items:center;gap:18px}
+.end h2{max-width:22ch}
+footer{display:flex;gap:22px;justify-content:center;color:var(--slate);font-size:14px;padding-block:24px 48px;flex-wrap:wrap}
+@media (max-width:860px){.hero,.band .grid{grid-template-columns:1fr}.stage{min-height:0}.note{position:static;width:auto;margin-top:16px}.cards,.two{grid-template-columns:1fr}nav .links{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <a class="logo" href="#"><svg viewBox="0 0 128 128" aria-hidden="true" style="width:30px;height:30px"><rect width="128" height="128" rx="64" fill="#032d42"/><circle cx="64" cy="64" r="38" fill="none" stroke="#244f63" stroke-width="12"/><path d="M64 26a38 38 0 1 1-36.4 27" fill="none" stroke="#62d84e" stroke-width="12" stroke-linecap="round"/><path d="M18 40l10 15 15-9" fill="none" stroke="#62d84e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M64 44v22l14 9" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>Trail</a>
+  <div class="links"><a href="#como">Como funciona</a><a href="#tipos">O que detecta</a><a href="#acesso">Acesso</a></div>
+  <a class="pill" href="#instalar">Instalar no Chrome</a>
+</nav>
+
+<header class="hero">
+  <div>
+    <span class="eyebrow">Extensão para ServiceNow · somente leitura</span>
+    <h1>O que alterou este campo, <em>e por quê.</em></h1>
+    <p class="lead">Um ícone ao lado de cada campo abre a linha do tempo da mudança, com a regra, o job, o flow ou a UI action que a causou.</p>
+    <div class="cta"><a class="pill" href="#instalar">Instalar no Chrome</a><a class="pill ghost" href="#como">Como funciona →</a></div>
+    <p class="fine">UI16 e Workspace. Nenhuma permissão na instalação: você ativa instância por instância.</p>
+  </div>
+  <div class="stage">
+    <div class="panel" aria-label="Painel do Trail mostrando o campo state do INC0010001">
+      <div class="p-top"><i><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M3 18c3-7 6-7 9 0s6 7 8-7"/></svg></i>Trail<span>dev457034</span></div>
+      <div class="p-body">
+        <div class="p-rec"><div><b>INC0010001</b><small>incident › task</small></div><span class="chip">state</span></div>
+        <div class="p-tabs"><span class="on">Mudanças 3</span><span>Suspeitos 3</span><span>Acesso</span></div>
+        <div class="p-chg"><b>18/10, 01:37:02 <small style="color:var(--p-mu);font-weight:400">· admin</small></b>
+          <div class="vals"><span>2</span>→<span class="n">6</span></div>
+          <div class="ev"><div class="row"><div><div class="t">BR assíncrona</div><a href="#">[PERICIA-TESTE] Resolve incidente por palavra-chave</a></div><span class="badge">CONFIRMADO 80</span></div><div class="meter"><i style="width:80%"></i></div></div>
+        </div>
+        <div class="p-chg"><b>17/10, 14:02:11 <small style="color:var(--p-mu);font-weight:400">· pericia.itil</small></b>
+          <div class="vals"><span>1</span>→<span class="n">2</span></div>
+          <div class="ev"><div class="row"><div><div class="t">Ação direta do usuário</div><a href="#">pericia.itil</a></div><span class="badge">CONFIRMADO 80</span></div><div class="meter"><i style="width:80%"></i></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="note"><small>Confirmado · 80 pontos</small><b>job ASYNC às 01:37:02</b>o script referencia <code>state</code></div>
+  </div>
+</header>
+</div>
+
+<section id="como"><div class="wrap">
+  <h2>Perícia, não adivinhação.</h2>
+  <p class="sub">Três camadas, lidas em paralelo pela sua própria sessão, em cerca de dois segundos.</p>
+  <div class="cards">
+    <div class="card"><span class="n">01 · auditoria</span><h3>Cada mudança do campo</h3><p>A linha do tempo vem de <code>sys_audit</code>. Atualizações que não deixaram auditoria também aparecem.</p></div>
+    <div class="card"><span class="n">02 · rastros</span><h3>O que rodou naquele segundo</h3><p>Transações, eventos, contextos de flow e workflow na janela da mudança.</p></div>
+    <div class="card"><span class="n">03 · evidência</span><h3>Pontuada e verificável</h3><p>Cada fato soma pontos. Confirmado a partir de 70, provável de 40 a 69, candidato abaixo.</p></div>
+  </div>
+</div></section>
+
+<section class="band"><div class="wrap grid">
+  <div>
+    <h2>Testado numa instância de verdade.</h2>
+    <p class="sub">Bateria de regressão na PDI com artefatos reais: business rules, script includes, eventos, jobs, flows e UI actions.</p>
+    <div class="stats">
+      <div class="stat"><b>12 / 12</b><span>casos com tipo e grau corretos</span></div>
+      <div class="stat"><b>2,05 s</b><span>mediana por investigação, sem cache</span></div>
+      <div class="stat"><b>11–12</b><span>chamadas GET por investigação</span></div>
+      <div class="stat"><b>13</b><span>tipos de causa reconhecidos</span></div>
+    </div>
+  </div>
+  <div class="panel dark" aria-hidden="true">
+    <div class="p-top"><i></i>Trail<span>dev457034</span></div>
+    <div class="p-body">
+      <div class="p-rec"><div><b>INC0010004</b><small>incident › task</small></div><span class="chip">contact_type</span></div>
+      <div class="p-chg"><b>Script action <small style="color:var(--p-mu);font-weight:400">· evento no mesmo segundo</small></b>
+        <div class="ev"><div class="row"><div><div class="t">Script action (evento)</div><a href="#">[PT] C4 script action</a></div><span class="badge">CONFIRMADO 70</span></div><div class="meter"><i style="width:70%"></i></div></div>
+      </div>
+      <div class="p-chg cand"><b>Mudança de 02/07 <small style="color:var(--p-mu);font-weight:400">· system</small></b>
+        <div class="ev cand"><div class="row"><div><div class="t">Processo em segundo plano</div><span>rastros expirados (eventos: 7 dias)</span></div><span class="badge c">CANDIDATO 10</span></div></div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<section id="tipos"><div class="wrap">
+  <h2>Treze tipos de causa, um painel.</h2>
+  <p class="sub">Quando a instância nega uma fonte, o painel diz qual e o que isso esconde.</p>
+  <div class="tbl"><table>
+    <tr><th>Tipo</th><th>Sinal observado</th><th>Grau na PDI</th></tr>
+    <tr><td>BR assíncrona</td><td>transação <code>JOB: ASYNC</code> com o nome da regra</td><td><span class="g c">Confirmado</span></td></tr>
+    <tr><td>BR before</td><td>o formulário enviou um valor e o servidor gravou outro</td><td><span class="g c">Confirmado</span></td></tr>
+    <tr><td>Script action</td><td>evento do registro processado no mesmo segundo</td><td><span class="g c">Confirmado</span></td></tr>
+    <tr><td>UI action</td><td><code>sys_action</code> na transação do clique</td><td><span class="g c">Confirmado</span></td></tr>
+    <tr><td>Job agendado</td><td>transação <code>JOB:</code> ou horário programado que bate</td><td><span class="g c">Confirmado</span></td></tr>
+    <tr><td>BR → script include</td><td>novo checkpoint no mesmo segundo, sem job nem evento</td><td><span class="g p">Provável</span></td></tr>
+    <tr><td>Flow / workflow</td><td>contexto ativo no registro naquele instante</td><td><span class="g p">Provável</span></td></tr>
+    <tr><td>Sem auditoria</td><td><code>sys_mod_count</code> maior que os checkpoints auditados</td><td><span class="g d">Detectado</span></td></tr>
+  </table></div>
+</div></section>
+
+<section id="acesso" style="padding-top:0"><div class="wrap">
+  <div class="two">
+    <div class="card"><h3>Só leitura, só com a sua sessão</h3><p>Nenhuma chamada além de GET. Nada sai do navegador, não há telemetria, e o cache some ao fechar.</p></div>
+    <div class="card"><h3>Funciona sem admin</h3><p>Um papel de leitura documentado cobre auditoria, transações, eventos e metadados. O painel lista o que falta, por nome técnico.</p></div>
+  </div>
+</div></section>
+
+<div class="wrap end" id="instalar">
+  <h2>Instale, abra um registro, clique no campo.</h2>
+  <p class="sub">Chrome e Edge. Português e inglês. Firefox depois.</p>
+  <a class="pill" href="#instalar">Instalar no Chrome</a>
+</div>
+<footer><span>Trail · MIT</span><a href="#">Documentação</a><a href="#acesso">Papel de leitura</a><a href="/">← outras direções</a></footer>
+</body>
+</html>

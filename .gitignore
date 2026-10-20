@@ -4,3 +4,4 @@ dist/
 .vite/
 tests/regression/.env
 tests/regression/results/
+extension/dist-types/

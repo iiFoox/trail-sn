@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trail · Perícia de registros ServiceNow</title>
+<meta name="description" content="Clique no ícone ao lado de qualquer campo do ServiceNow e descubra o que o alterou, quando e por quê. Somente leitura.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="/b3/style.css">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20128%20128%22%3E%3Crect%20width%3D%22128%22%20height%3D%22128%22%20rx%3D%2264%22%20fill%3D%22%23032d42%22/%3E%3Ccircle%20cx%3D%2264%22%20cy%3D%2264%22%20r%3D%2238%22%20fill%3D%22none%22%20stroke%3D%22%23244f63%22%20stroke-width%3D%2212%22/%3E%3Cpath%20d%3D%22M64%2026a38%2038%200%201%201-36.4%2027%22%20fill%3D%22none%22%20stroke%3D%22%2362d84e%22%20stroke-width%3D%2212%22%20stroke-linecap%3D%22round%22/%3E%3Cpath%20d%3D%22M18%2040l10%2015%2015-9%22%20fill%3D%22none%22%20stroke%3D%22%2362d84e%22%20stroke-width%3D%229%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3Cpath%20d%3D%22M64%2044v22l14%209%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%229%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E%0A">
+</head>
+<body>
+<div id="progress" aria-hidden="true"></div>
+<canvas id="trails" aria-hidden="true"></canvas>
+<div class="cursor" id="cursor" aria-hidden="true"></div>
+<div class="glow" aria-hidden="true"><i></i><i></i></div>
+<div class="grid-bg" aria-hidden="true"></div>
+
+<nav id="nav">
+  <a class="logo" href="#top" aria-label="Trail">
+    <svg viewBox="0 0 128 128" aria-hidden="true"><rect width="128" height="128" rx="64" fill="#032d42"/><circle cx="64" cy="64" r="38" fill="none" stroke="#244f63" stroke-width="12"/><path d="M64 26a38 38 0 1 1-36.4 27" fill="none" stroke="#62d84e" stroke-width="12" stroke-linecap="round"/><path d="M18 40l10 15 15-9" fill="none" stroke="#62d84e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M64 44v22l14 9" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Trail
+  </a>
+  <div class="lk"><a href="#passos">Na prática</a><a href="#metodo">Método</a><a href="#tipos">Detecta</a><a href="#numeros">Provas</a><a href="#faq">Perguntas</a></div>
+  <a class="btn sm" href="#passos">Experimentar</a>
+</nav>
+
+<main id="top">
+<div class="wrap">
+<header class="hero">
+  <div>
+    <span class="kicker"><i></i><span class="scramble" id="scramble">// por que esse campo mudou?</span></span>
+    <h1><span class="w">O que</span> <span class="w">alterou</span> <span class="w">este</span> <span class="w">campo,</span> <span class="w"><em>quando</em></span> <span class="w"><em>e por</em></span> <span class="w"><em>quê.</em></span></h1>
+    <p class="lead">Um ícone ao lado de cada campo. Clique e o Trail cruza auditoria, transações, eventos e flows da sua própria sessão. Volta com a causa, os fatos e o link.</p>
+    <div class="cta"><a class="btn" href="#passos"><span class="shine"></span>Ver funcionando</a><a class="btn ghost" href="#metodo">Ver o método</a></div>
+    <p class="hint"><kbd>?</kbd> Experimente ao lado: clique no ícone de qualquer campo do formulário.</p>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="form" aria-label="Formulário de incidente do ServiceNow, simulado">
+      <div class="bar"><b></b>Incident · INC0010001<span>sua-instancia</span></div>
+      <div class="fields">
+        <div class="f"><label>Number</label><div class="in">INC0010001</div></div>
+        <div class="f" data-k="state"><label><button class="q pulse" data-k="state" aria-label="Por que mudou? state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.9a7.1 7.1 0 1 1-6.8 5.1"/><path d="M3.4 7.5l1.9 2.8 2.8-1.7"/><path d="M12 8.3v4.1l2.6 1.7"/></svg></button>State</label><div class="in" data-new="Resolved">In Progress</div></div>
+        <div class="f" data-k="impact"><label><button class="q" data-k="impact" aria-label="Por que mudou? impact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.9a7.1 7.1 0 1 1-6.8 5.1"/><path d="M3.4 7.5l1.9 2.8 2.8-1.7"/><path d="M12 8.3v4.1l2.6 1.7"/></svg></button>Impact</label><div class="in" data-new="1 - High">3 - Low</div></div>
+        <div class="f" data-k="contact_type"><label><button class="q" data-k="contact_type" aria-label="Por que mudou? contact_type"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.9a7.1 7.1 0 1 1-6.8 5.1"/><path d="M3.4 7.5l1.9 2.8 2.8-1.7"/><path d="M12 8.3v4.1l2.6 1.7"/></svg></button>Contact type</label><div class="in" data-new="Email">Phone</div></div>
+        <div class="f" data-k="severity"><label><button class="q" data-k="severity" aria-label="Por que mudou? severity"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.9a7.1 7.1 0 1 1-6.8 5.1"/><path d="M3.4 7.5l1.9 2.8 2.8-1.7"/><path d="M12 8.3v4.1l2.6 1.7"/></svg></button>Severity</label><div class="in" data-new="1 - High">2 - Medium</div></div>
+        <div class="f"><label>Short description</label><div class="in">Impressora do 3º andar sem rede</div></div>
+      </div>
+    </div>
+
+    <div class="console" aria-live="polite">
+      <div class="hd"><i></i><i></i><i></i>&nbsp;trail · investigar <span id="c-target">—</span></div>
+      <pre id="console"></pre>
+    </div>
+
+    <button class="btn ghost sm replay" id="replay">↻ Rodar de novo</button>
+
+    <div class="panel" id="panel" aria-label="Painel do Trail">
+      <div class="p-top"><svg viewBox="0 0 128 128" aria-hidden="true"><rect width="128" height="128" rx="64" fill="#032d42"/><circle cx="64" cy="64" r="38" fill="none" stroke="#244f63" stroke-width="12"/><path d="M64 26a38 38 0 1 1-36.4 27" fill="none" stroke="#62d84e" stroke-width="12" stroke-linecap="round"/><path d="M18 40l10 15 15-9" fill="none" stroke="#62d84e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M64 44v22l14 9" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>Trail<span>sua-instancia</span></div>
+      <div class="p-body">
+        <div class="rec"><div><strong>INC0010001</strong><small>incident › task</small></div><span class="chip" id="p-field">state</span></div>
+        <div class="tabs"><span class="on">Resposta</span><span>Rastro</span><span>Provas</span><span>Histórico</span></div>
+        <div class="chg"><b id="p-when">17/10 22:37 <small style="color:#8c99a5;font-weight:400">· depois que admin salvou</small></b>
+          <div class="vals"><span id="p-old">In Progress</span>→<span class="n" id="p-new">Resolved</span></div>
+          <div class="ev" id="ev">
+            <div class="r"><div><div class="t" id="p-type">BR assíncrona</div><div class="nm" id="p-name">—</div></div><span class="bd" id="p-badge">CERTEZA ALTA<i class="stamp-wave"></i></span></div>
+            <div class="meter"><i id="p-meter"></i></div>
+            <div class="facts" id="p-facts"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+</div>
+
+<div class="marquee" aria-hidden="true"><div class="track" id="track">
+<span><i></i>sys_audit</span><span><i></i>syslog_transaction</span><span><i></i>sysevent</span><span><i></i>sysevent_script_action</span><span><i></i>sys_flow_context</span><span><i></i>wf_context</span><span><i></i>sys_script</span><span><i></i>sys_script_include</span><span><i></i>sys_ui_action</span><span><i></i>sysauto_script</span><span><i></i>sysrule_assignment</span><span><i></i>sys_db_object</span><span><i></i>Somente GET</span><span><i></i>X-UserToken</span><span><i></i>23 chamadas · 2,3 s</span>
+<span><i></i>sys_audit</span><span><i></i>syslog_transaction</span><span><i></i>sysevent</span><span><i></i>sysevent_script_action</span><span><i></i>sys_flow_context</span><span><i></i>wf_context</span><span><i></i>sys_script</span><span><i></i>sys_script_include</span><span><i></i>sys_ui_action</span><span><i></i>sysauto_script</span><span><i></i>sysrule_assignment</span><span><i></i>sys_db_object</span><span><i></i>Somente GET</span><span><i></i>X-UserToken</span><span><i></i>23 chamadas · 2,3 s</span>
+</div></div>
+
+
+<section id="passos"><div class="wrap">
+  <div class="rv"><span class="eyebrow">Na prática</span><h2>Quatro passos, dentro do ServiceNow.</h2><p class="sub">Não são prints: é a extensão rodando aqui na página. O formulário usa o código real que põe os ícones nos campos e o painel é a interface real em modo demonstração. Clique no ícone de qualquer campo: cada um tem a sua história, montada a partir dos casos testados na PDI.</p></div>
+  <div class="story">
+    <div class="frame rv"><div class="pic live" data-w="1180" data-x="0" data-y="40"><iframe src="/demo/form.html" title="Formulário UI16 com o Trail" loading="lazy" tabindex="-1" width="1180" height="900"></iframe></div><div class="n">01 · ÍCONE</div><h3>Um ícone ao lado de cada campo</h3><p>Aparece em formulários UI16 e no Workspace, só em campos do próprio registro. Dot-walk fica de fora.</p></div>
+    <div class="frame rv"><div class="pic live" data-w="620" data-x="560" data-y="100"><iframe src="/demo/form.html?hot=state" title="Campo State selecionado" loading="lazy" tabindex="-1" width="1180" height="900"></iframe><i class="ring" style="--rx:19%;--ry:27%"></i></div><div class="n">02 · CLIQUE</div><h3>Clique no campo que intriga</h3><p>O Trail lê tabela, sys_id e o token da sua sessão direto da página. Nenhuma credencial é digitada.</p></div>
+    <div class="frame rv"><div class="pic live" data-w="400" data-x="0" data-y="56"><iframe src="/demo/panel.html?tab=trace" title="Aba Rastro do painel do Trail" loading="lazy" tabindex="-1" width="400" height="900"></iframe></div><div class="n">03 · RASTRO</div><h3>O que rodou, segundo a segundo</h3><p>Auditoria, transações, eventos e flows lidos em paralelo viram uma sequência, com a causa marcada. O que não deu pra ver aparece como "não verificado".</p></div>
+    <div class="frame rv"><div class="pic live" data-w="400" data-x="0" data-y="56"><iframe src="/demo/panel.html" title="Resposta no painel do Trail" loading="lazy" tabindex="-1" width="400" height="900"></iframe></div><div class="n">04 · RESPOSTA</div><h3>Quem mudou, com que certeza</h3><p>De qual valor pra qual, quando, o que mudou e a certeza em palavras. Um botão abre a regra; outro copia o resumo pro chamado.</p></div>
+  </div>
+  <div class="compo rv">
+    <div class="shot"><div class="chrome"><i></i><i></i><i></i><span>sua-instancia.service-now.com/incident.do?sys_id=ad7b…31f3</span></div><div class="fit" data-w="1180"><iframe id="cform" src="/demo/form.html?hot=state" title="Formulário UI16 interativo com o Trail" loading="lazy" width="1180" height="620"></iframe></div><span class="hintbar">Clique no ícone ao lado de qualquer campo</span></div>
+    <div class="side"><iframe id="cpanel" src="/demo/panel.html" title="Painel lateral do Trail" loading="lazy" width="400" height="900"></iframe><div class="scan" id="cscan"><b>Investigando <span id="cscan-f">state</span></b><pre id="cscan-l"></pre></div></div>
+  </div>
+</div></section>
+
+<section id="metodo"><div class="wrap">
+  <div class="rv"><span class="eyebrow">Método</span><h2>Perícia, não adivinhação.</h2><p class="sub">Role para ver as três camadas. O painel à direita acompanha.</p></div>
+  <div class="method">
+    <div class="steps">
+      <div class="step on" data-i="0"><div class="n">01 · AUDITORIA</div><h3>Cada mudança do campo, com checkpoint</h3><p>A linha do tempo vem de <code>sys_audit</code>: valor antigo, valor novo, usuário e o número do checkpoint da atualização. Quando <code>sys_mod_count</code> é maior que os checkpoints, o Trail avisa que houve atualização sem auditoria.</p></div>
+      <div class="step" data-i="1"><div class="n">02 · RASTROS</div><h3>Tudo que rodou de 3 s antes a 15 s depois</h3><p>Transações, eventos processados, contextos de flow e workflow, em paralelo e pela sua sessão. Janelas de mudanças próximas são fundidas numa só consulta. Uma fonte negada vira lacuna, nunca erro.</p></div>
+      <div class="step" data-i="2"><div class="n">03 · PONTUAÇÃO</div><h3>Fatos que somam, grau que explica</h3><p>Rastro que nomeia o artefato vale 50. Código que cita o campo, 20. Mesma tabela, 10. Confirmado a partir de 70, provável de 40 a 69, candidato abaixo. Dois candidatos iguais perdem 15 cada. No painel, isso vira <b>certeza alta, média ou baixa</b>, com as provas escritas em frases.</p></div>
+    </div>
+    <div class="sticky"><div class="layers">
+      <div class="layer on" data-i="0">
+        <h4>sys_audit · INC0010001 · state</h4>
+        <div class="row hl"><div>2 → 6 <small>· 2026-10-18 01:37:02</small></div><small>admin · cp 3</small></div>
+        <div class="row"><div>1 → 2 <small>· 2026-10-17 14:02:11</small></div><small>pericia.itil · cp 2</small></div>
+        <div class="row"><div>∅ → 1 <small>· 2026-07-02 09:15:40</small></div><small>system · cp 1</small></div>
+        <div class="row" style="border-style:dashed;color:#f0c75a"><div>sys_mod_count 14 &gt; 13 checkpoints</div><small>Sem auditoria</small></div>
+      </div>
+      <div class="layer" data-i="1">
+        <h4>janela 01:36:59 → 01:37:17 · 4 fontes em paralelo</h4>
+        <div class="wf">
+          <span>syslog_transaction</span><div class="bar" style="--w:92%"></div>
+          <span>sysevent</span><div class="bar" style="--w:48%"></div>
+          <span>sys_flow_context</span><div class="bar" style="--w:61%"></div>
+          <span>wf_context</span><div class="bar q" style="--w:30%"></div>
+          <span>sysauto_script</span><div class="bar" style="--w:55%"></div>
+          <span>sys_ui_action</span><div class="bar" style="--w:40%"></div>
+        </div>
+        <div class="row hl" style="margin-top:6px"><div>JOB: ASYNC: [PERICIA-TESTE] Resolve incidente por pa… <small>· system</small></div><small>01:37:02</small></div>
+        <div class="row"><div>form /incident.do?sys_uniqueValue=ad7b… <small>· admin</small></div><small>01:37:01</small></div>
+      </div>
+      <div class="layer" data-i="2">
+        <h4>pontuação · BR assíncrona</h4>
+        <div class="score">
+          <div class="f"><b>+50</b><span>O rastro nomeia o artefato: job ASYNC com o nome da regra</span></div>
+          <div class="f"><b>+20</b><span>O script referencia <code style="font:12px var(--mono)">state</code></span></div>
+          <div class="f"><b>+10</b><span>Business rule da tabela <code style="font:12px var(--mono)">incident</code></span></div>
+          <div class="f"><b style="color:#8c99a5">+0</b><span style="color:#8c99a5">Sem empate com outro candidato do mesmo tipo</span></div>
+        </div>
+        <div class="total"><span>Total</span><span class="bd">CONFIRMADO 80</span></div>
+      </div>
+    </div></div>
+  </div>
+</div></section>
+
+
+<section id="painel"><div class="wrap">
+  <div class="rv"><span class="eyebrow">Dentro do painel</span><h2>A resposta primeiro. O resto, um clique abaixo.</h2><p class="sub">Clique nos itens para percorrer as quatro abas. É a interface real, investigando o campo <code style="font:14px var(--mono);color:var(--aqua)">state</code> do incidente de demonstração.</p></div>
+  <div class="inside">
+    <div class="shot rv" id="inside-shot"><div class="chrome"><i></i><i></i><i></i><span>Trail · painel lateral</span></div><div class="tall" id="inside-img"><iframe id="inside-frame" src="/demo/panel.html" title="Painel do Trail completo" loading="lazy" tabindex="-1" width="400" height="1500" scrolling="no"></iframe></div></div>
+    <div class="callouts rv" id="callouts">
+      <div class="co on" data-tab="answer" data-y="0"><b><i>1</i>O que mudou, sempre à vista</b><p>Registro, campo e <b>de qual valor pra qual</b>, com os nomes que você vê na tela (In Progress → Resolved, não 2 → 6) e a hora no seu fuso. Fica fixo em todas as abas.</p></div>
+      <div class="co" data-tab="answer" data-y="0"><b><i>2</i>Resposta: quem mudou e com que certeza</b><p>Em linguagem de gente: "regra automática que roda logo depois de salvar", o nome dela e <b>certeza alta, média ou baixa</b>, com o motivo numa frase. Dá pra parar aqui.</p></div>
+      <div class="co" data-tab="answer" data-y="0"><b><i>3</i>Abrir a regra, copiar o resumo</b><p>Um botão abre o artefato na instância. O outro copia um resumo pronto pra colar no chamado: o que mudou, quem, quando e as provas.</p></div>
+      <div class="co" data-tab="trace" data-y="0"><b><i>4</i>Rastro: o que aconteceu, em ordem</b><p>Tudo que rodou no registro de 3 s antes a 15 s depois: o admin salvou às 22:37:01, a regra rodou às 22:37:02, o campo mudou. <b>A causa vem marcada</b>, e o que não deu pra ver aparece tracejado.</p></div>
+      <div class="co" data-tab="proof" data-y="0"><b><i>5</i>Provas, cada uma numa frase</b><p>"O sistema registrou a execução pelo nome", "o código altera o campo State". Embaixo de cada frase, o dado bruto e a fonte, pra quem quiser conferir.</p></div>
+      <div class="co" data-tab="proof" data-y="170"><b><i>6</i>Por que não foi o outro</b><p>A alternativa não some: o admin que salvou um segundo antes aparece com o motivo de ter perdido, <b>o formulário dele enviou In Progress, não Resolved</b>.</p></div>
+      <div class="co" data-tab="proof" data-y="330"><b><i>7</i>O que pode estar faltando</b><p>Fontes sem acesso, gravações sem auditoria e rastros expirados, explicados. Um botão copia o <b>pedido de acesso pronto</b> pro admin, com as tabelas e o papel <code>x_trail_reader</code>.</p></div>
+      <div class="co" data-tab="history" data-y="0"><b><i>8</i>Histórico do campo</b><p>Todas as mudanças, inclusive a gravação sem auditoria, cada uma com a certeza. Clicar numa mudança abre a análise dela.</p></div>
+    </div>
+  </div>
+</div></section>
+
+<section id="tipos"><div class="wrap">
+  <div class="rv"><span class="eyebrow">O que detecta</span><h2>Cada mecanismo deixa um sinal.</h2><p class="sub">Os 14 tipos de causa que o motor reconhece, agrupados pelo rastro que deixam na instância. Passe o mouse; clique para ver o sinal.</p></div>
+  <div class="mosaic" id="mosaic">
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.2 2.2M16.2 16.2l2.2 2.2M5.6 18.4l2.2-2.2M16.2 7.8l2.2-2.2"/></svg><b>BR assíncrona</b><span>JOB: ASYNC: &lt;nome&gt;</span><div class="more">Roda como job logo após o salvamento e deixa transação com o nome exato da regra. Nomeia o artefato: +50.</div><em>CERTEZA ALTA</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h7M17 15l2 2 4-4"/></svg><b>BR before</b><span>Formulário ≠ gravado</span><div class="more">A transação do formulário traz o valor que o usuário enviou. Se o gravado é outro, o servidor alterou ao salvar.</div><em>CERTEZA ALTA</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg><b>Script action</b><span>Sysevent no mesmo segundo</span><div class="more">Evento do registro processado no mesmo segundo da mudança, com script action ativa para aquele evento.</div><em>CERTEZA ALTA</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M4 4l7 16 2-6 6-2L4 4z"/></svg><b>UI action</b><span>sys_action=&lt;sys_id ou nome&gt;</span><div class="more">O clique no botão deixa o sys_id ou o action_name da UI action na URL da transação. Resolve o botão e lê o script.</div><em>CERTEZA ALTA</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 7v5l3 2"/></svg><b>Job agendado</b><span>JOB: &lt;nome&gt; ou horário</span><div class="more">Com transação, nomeia o job. Sem transação, compara o horário programado e o "executar como" com a mudança.</div><em>CERTEZA ALTA</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M20 21a8 8 0 0 0-16 0M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg><b>Ação do usuário</b><span>Formulário = gravado</span><div class="more">O formulário enviou exatamente o valor que ficou gravado. Foi a pessoa, não uma automação.</div><em>CERTEZA ALTA</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2M9 12h6"/></svg><b>BR → script include</b><span>Checkpoint no mesmo segundo</span><div class="more">Um novo checkpoint gravado no mesmo segundo do anterior, sem job nem evento: uma BR after ou um script include que ela chama.</div><em class="p">CERTEZA MÉDIA</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M5 6h4v4H5zM15 14h4v4h-4zM9 8h3a3 3 0 0 1 3 3v3"/></svg><b>Flow / workflow</b><span>Contexto ativo no registro</span><div class="more">Contexto de flow ou workflow apontando para o registro, ativo no instante da mudança.</div><em class="p">CERTEZA MÉDIA</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 5h16v14H4zM8 9l3 3-3 3M13 15h4"/></svg><b>Script de fundo</b><span>/sys.scripts.do na janela</span><div class="more">Transação de Scripts - Background do mesmo usuário na janela. O código não fica registrado, por isso é provável.</div><em class="p">CERTEZA MÉDIA</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-3-3.9M9 7a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg><b>Regra de atribuição</b><span>sysrule_assignment</span><div class="more">Para assignment_group e assigned_to: o formulário enviou vazio, o servidor gravou o grupo da regra.</div><em class="p">CERTEZA MÉDIA</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 5h16v6H4zM4 13h16v6H4zM8 8h.01M8 16h.01"/></svg><b>Alteração no servidor</b><span>Sem BR before candidata</span><div class="more">O valor mudou ao salvar, mas nenhuma BR before cita o campo: data lookup, regra de atribuição ou outro mecanismo.</div><em class="p">CERTEZA MÉDIA</em></div>
+    <div class="tile rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z"/></svg><b>Sem auditoria</b><span>sys_mod_count &gt; checkpoints</span><div class="more">setWorkflow(false), importações e campos não auditados não deixam rastro em sys_audit. O Trail conta a diferença e procura pistas no horário.</div><em class="d">DETECTADO</em></div>
+  </div>
+</div></section>
+
+
+<section id="antes"><div class="wrap">
+  <div class="rv"><span class="eyebrow">Antes e depois</span><h2>O que você faz hoje quando um campo muda sozinho.</h2><p class="sub">A rotina de quem já perseguiu uma business rule às 18h de uma sexta.</p></div>
+  <div class="ba rv">
+    <div><h3>Sem o Trail <span>Manual</span></h3>
+      <ol><li>Abrir o histórico do registro e achar a mudança.</li><li>Anotar a hora e o usuário, converter o fuso.</li><li>Abrir <em>sys_audit</em> e filtrar por documentkey e campo.</li><li>Abrir <em>syslog_transaction</em>, filtrar a janela, ler URL por URL.</li><li>Listar as BRs da tabela e abrir uma por uma procurando o campo.</li><li>Checar flows, workflows, jobs e script actions, cada um na sua tela.</li><li>Se nada bateu: perguntar no chat de quem é aquela regra.</li></ol>
+      <div class="clock">25–60 min<small>Estimativa por campo, para quem já sabe onde procurar</small></div></div>
+    <div class="ok"><h3>Com o Trail <span>1 clique</span></h3>
+      <ol><li>Clicar no ícone ao lado do campo.</li><li>Ler a resposta: quem mudou, quando e com que certeza. Abrir a regra pelo botão.</li></ol>
+      <p style="margin:14px 0 0;color:var(--fg2);font-size:14.5px">E quando não dá para afirmar, o painel diz exatamente o que faltou: fonte negada, rastro expirado ou atualização sem auditoria. A dúvida vira um pedido objetivo ao admin, não uma caça.</p>
+      <div class="clock">2,3 s<small>Mediana medida na PDI, cerca de 23 chamadas GET, sem cache</small></div></div>
+  </div>
+</div></section>
+
+<section id="numeros"><div class="wrap">
+  <div class="rv"><span class="eyebrow">Medido</span><h2>441 casos, numa instância de verdade.</h2><p class="sub">Bateria de regressão numa PDI (instância pessoal de desenvolvimento do ServiceNow), 19 e 20 de outubro de 2026, pela própria aba logada. Artefatos criados para isso: business rules (before, after, async), script includes, eventos, jobs, flows, UI actions, regras de atribuição, data lookups, client scripts, UI policies, data policy, importação por Import Set com scripts de transformação, um subflow, uma conta de integração e uma tabela customizada criada só para o teste. Cobre incident, change_request e sc_req_item. Inclui gravações em que vários campos mudam juntos, regras disputando o mesmo campo e um teste às cegas montado por outro agente.</p></div>
+  <div class="nums">
+    <div class="num rv"><b data-count="441" data-suffix="/441">0/441</b><span>Casos com tipo e grau corretos</span></div>
+    <div class="num rv"><b data-count="2.2" data-dec="1" data-suffix=" s">0,0 s</b><span>Mediana por investigação, sem cache</span></div>
+    <div class="num rv"><b data-count="20">0</b><span>Chamadas GET por investigação (mediana)</span></div>
+    <div class="num rv"><b data-count="131">0</b><span>Testes unitários do motor</span></div>
+  </div>
+
+  <div class="tbl rv" id="tbl"><table>
+    <thead><tr><th>Caso</th><th>Cenário criado na PDI</th><th>Campo</th><th>Tipo detectado</th><th>Grau</th><th style="text-align:right">ms</th></tr></thead>
+    <tbody>
+      <tr><td class="m">C1</td><td>BR async que resolve incidente por palavra-chave</td><td class="m">state</td><td>BR assíncrona</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">1750</td></tr>
+      <tr><td class="m">C2</td><td>BR before define impacto, salva via REST (sem formulário)</td><td class="m">impact</td><td>BR before</td><td><span class="g d">CANDIDATO 30</span></td><td class="ms">1692</td></tr>
+      <tr><td class="m">C2-FORM</td><td>Mesma BR, salva pelo formulário: enviado 3, gravado 1</td><td class="m">impact</td><td>BR before</td><td><span class="g">CONFIRMADO 95</span></td><td class="ms">1856</td></tr>
+      <tr><td class="m">C2-FORM-urg</td><td>Usuário muda a urgência pelo formulário, sem automação</td><td class="m">urgency</td><td>Ação do usuário</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">1589</td></tr>
+      <tr><td class="m">C3</td><td>BR after que chama um script include</td><td class="m">category</td><td>BR → script include</td><td><span class="g p">PROVÁVEL 50</span></td><td class="ms">1678</td></tr>
+      <tr><td class="m">C4</td><td>Evento disparado + script action que altera o campo</td><td class="m">contact_type</td><td>Script action</td><td><span class="g">CONFIRMADO 70</span></td><td class="ms">1558</td></tr>
+      <tr><td class="m">C5</td><td>Scripts - Background altera o campo</td><td class="m">severity</td><td>Script de fundo</td><td><span class="g p">PROVÁVEL 50</span></td><td class="ms">1654</td></tr>
+      <tr><td class="m">C5b</td><td>Job agendado ajusta severidade</td><td class="m">severity</td><td>Job agendado</td><td><span class="g">CONFIRMADO 70</span></td><td class="ms">1669</td></tr>
+      <tr><td class="m">C6</td><td>Flow Designer altera notificação</td><td class="m">notify</td><td>Flow · passo 1 (Update Record)</td><td><span class="g">CONFIRMADO 85</span></td><td class="ms">1579</td></tr>
+      <tr><td class="m">C8</td><td>UI action "Marcar perícia" escreve na descrição</td><td class="m">description</td><td>UI action</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">1725</td></tr>
+      <tr><td class="m">C9</td><td>Gravação com setWorkflow(false), sem auditoria</td><td class="m">impact</td><td>Atualização sem auditoria</td><td><span class="g d">DETECTADO</span></td><td class="ms">1615</td></tr>
+      <tr><td class="m">C2-ITIL</td><td>Caso C2 lido com perfil itil (sem acesso a transações)</td><td class="m">impact</td><td>BR before</td><td><span class="g d">CANDIDATO 30</span></td><td class="ms">1550</td></tr>
+      <tr><td class="m">F1-ASSIGN</td><td>Regra de atribuição grava o grupo como "system" no salvamento de outra pessoa</td><td class="m">assignment_group</td><td>Regra de atribuição</td><td><span class="g">CONFIRMADO 95</span></td><td class="ms">1894</td></tr>
+      <tr><td class="m">F1-SEQ</td><td>BR before e BR async mexem no mesmo campo, uma depois da outra</td><td class="m">impact</td><td>BR before, depois BR async</td><td><span class="g">CONFIRMADO 110 · 80</span></td><td class="ms">1722</td></tr>
+      <tr><td class="m">F1-MANY</td><td>60 gravações REST seguidas no mesmo registro</td><td class="m">state</td><td>Ação do usuário (API)</td><td><span class="g d">CANDIDATO 30</span></td><td class="ms">1919</td></tr>
+      <tr><td class="m">F2-REST</td><td>Um PATCH muda 3 campos, sem nenhuma automação concorrente</td><td class="m">3 campos</td><td>Ação do usuário (API)</td><td><span class="g">CONFIRMADO 75</span></td><td class="ms">1823</td></tr>
+      <tr><td class="m">F1-LOOKUP</td><td>Data lookup recalcula a prioridade no navegador</td><td class="m">priority</td><td>Data lookup</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">1887</td></tr>
+      <tr><td class="m">F1-OTHER</td><td>BR before numa tabela que não é incident (problem)</td><td class="m">impact</td><td>BR before</td><td><span class="g">CONFIRMADO 110</span></td><td class="ms">1573</td></tr>
+      <tr><td class="m">F2-CLIENT</td><td>Pessoa troca o canal; client script preenche descrição e impacto</td><td class="m">3 campos</td><td>Client script ×2 · usuário</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">1744</td></tr>
+      <tr><td class="m">F2-AFTER</td><td>BR after grava dois campos com update() logo depois do salvamento</td><td class="m">3 campos</td><td>BR after ×2 · usuário</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">1713</td></tr>
+      <tr><td class="m">F2-ASYNC</td><td>BR async_always grava dois campos 1 s depois</td><td class="m">3 campos</td><td>BR assíncrona ×2 · usuário</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">1703</td></tr>
+      <tr><td class="m">F2-MIXED</td><td>Um único salvamento, três causas: pessoa, client script e BR before</td><td class="m">3 campos</td><td>Usuário · client script · BR before</td><td><span class="g">CONFIRMADO</span></td><td class="ms">1711</td></tr>
+      <tr><td class="m">F3-SAVE</td><td>Pessoa edita a descrição curta e clica em Salvar</td><td class="m">short_description</td><td>Ação do usuário</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">1674</td></tr>
+      <tr><td class="m">F3-SCRIPT</td><td>Pessoa edita o script de uma UI action</td><td class="m">script</td><td>Ação do usuário · com diferença linha a linha</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">2651</td></tr>
+      <tr><td class="m">F4-IMPORT</td><td>Import Set API com transform map, coalesce no identificador</td><td class="m">severity</td><td>Importação · transform map</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">1660</td></tr>
+      <tr><td class="m">F5-ORDER</td><td>Duas BRs before gravam o mesmo campo; vence a de order maior</td><td class="m">impact</td><td>BR before · a outra aparece como sobrescrita</td><td><span class="g">CONFIRMADO</span></td><td class="ms">1720</td></tr>
+      <tr><td class="m">F5-CASCADE</td><td>BR after com update() dispara outra BR before na gravação aninhada</td><td class="m">2 campos</td><td>BR after · BR before</td><td><span class="g">CONFIRMADO</span></td><td class="ms">1720</td></tr>
+      <tr><td class="m">F5-EVENT</td><td>Evento, depois script action, depois BR before, em cadeia</td><td class="m">3 campos</td><td>Script action · BR before · usuário</td><td><span class="g">CONFIRMADO</span></td><td class="ms">1890</td></tr>
+      <tr><td class="m">F7-FLOWMULTI</td><td>Flow do Flow Designer muda 3 campos num único passo Update Record</td><td class="m">3 campos</td><td>Flow, passo 1 · usuário no gatilho</td><td><span class="g">CONFIRMADO 85</span></td><td class="ms">1900</td></tr>
+      <tr><td class="m">F7-CHG</td><td>change_request: BR before, after, async, client script, botão e API</td><td class="m">6 campos</td><td>6 de 6 com o tipo certo</td><td><span class="g">CONFIRMADO</span></td><td class="ms">1750</td></tr>
+      <tr><td class="m">F7-RITM</td><td>sc_req_item: mesmas 6 causas, com booleano e data/hora no fuso do usuário</td><td class="m">6 campos</td><td>6 de 6 com o tipo certo</td><td><span class="g">CONFIRMADO</span></td><td class="ms">1600</td></tr>
+      <tr><td class="m">F7-CUSTOM</td><td>Tabela customizada criada para o teste, com auditoria ligada</td><td class="m">6 campos</td><td>6 de 6 com o tipo certo</td><td><span class="g">CONFIRMADO</span></td><td class="ms">1200</td></tr>
+      <tr><td class="m">M8</td><td>Matriz: 12 mecanismos × 6 tipos de campo × 2 tabelas, cada registro com iscas</td><td class="m">132 casos</td><td>Pessoa, API, BR before/after/async, script action, botão, client script, job, ordem, script include</td><td><span class="g">CONFIRMADO</span></td><td class="ms">2000</td></tr>
+      <tr><td class="m">W9-WORKSPACE</td><td>Registros salvos pela interface do Service Operations Workspace</td><td class="m">8 casos</td><td>Pessoa · BR before · client script "All"</td><td><span class="g">CONFIRMADO</span></td><td class="ms">1900</td></tr>
+      <tr><td class="m">F9-BLIND</td><td>Teste às cegas 2: 30 alvos montados por outro agente, com cadeias e iscas</td><td class="m">30 alvos</td><td>19 de primeira; 30 depois das correções</td><td><span class="g">CONFIRMADO</span></td><td class="ms">2100</td></tr>
+      <tr><td class="m">F10-BLIND</td><td>Teste às cegas 3: problem, sc_task, change_task, incident e change, com saves pelo Workspace</td><td class="m">30 alvos</td><td>25 de primeira; 30 depois das correções</td><td><span class="g">CONFIRMADO</span></td><td class="ms">2000</td></tr>
+      <tr><td class="m">F11-HISTÓRICO</td><td>Teste às cegas 4: o mesmo campo muda de 3 a 5 vezes por causas diferentes; cada mudança é um alvo</td><td class="m">30 alvos</td><td>30 de 30 de primeira</td><td><span class="g">CONFIRMADO</span></td><td class="ms">2000</td></tr>
+      <tr><td class="m">F12-INTEGRAÇÃO</td><td>Conta de integração (só web service): PATCH, lote da Batch API, regras que reagem, regra de atribuição</td><td class="m">17 casos</td><td>13 de primeira; 17 depois das correções</td><td><span class="g">CONFIRMADO</span></td><td class="ms">2100</td></tr>
+      <tr><td class="m">F13-IMPORT/POLÍTICAS</td><td>Importação por transform map (staging, scripts do mapa), UI policy com script, data policy, "Update Selected" e edição na célula da lista</td><td class="m">25 casos</td><td>Importação · BR before · BR after · UI policy · Pessoa</td><td><span class="g">CONFIRMADO</span></td><td class="ms">2100</td></tr>
+      <tr><td class="m">F14-SUBFLOW</td><td>Flow cujo passo que grava está dentro de um subflow</td><td class="m">2 casos</td><td>Flow · subflow · passo 1.1</td><td><span class="g">CONFIRMADO</span></td><td class="ms">2100</td></tr>
+      <tr><td class="m">F15-BLIND</td><td>Teste às cegas 5: 14 mecanismos misturados com iscas em incident, problem e change</td><td class="m">35 alvos</td><td>33 de primeira; 35 depois das correções</td><td><span class="g">CONFIRMADO</span></td><td class="ms">2100</td></tr>
+      <tr><td class="m">F16-BLIND</td><td>Teste às cegas 6: sc_task, sc_req_item, CMDB (computador e servidor) e base de conhecimento</td><td class="m">27 alvos válidos</td><td>23 de primeira; 27 depois da correção</td><td><span class="g">CONFIRMADO</span></td><td class="ms">2300</td></tr>
+      <tr><td class="m">F17-PINGUE-PONGUE</td><td>Duas regras trocando a urgência do mesmo incidente; alerta de pingue-pongue</td><td class="m">2 casos</td><td>BR before · BR async</td><td><span class="g">CONFIRMADO</span></td><td class="ms">2300</td></tr>
+      <tr><td class="m">F18-CONTEXTO</td><td>Protótipo: a instância grava o contexto de cada escrita e o Trail confirma a origem</td><td class="m">5 casos</td><td>Pessoa · BR before · data lookup · job</td><td><span class="g">CONFIRMADO</span></td><td class="ms">2300</td></tr>
+      <tr><td class="m">F6-BLIND</td><td>11 cenários montados por outro agente, sem a resposta</td><td class="m">16 alvos</td><td>16 de 16 certos (15 de primeira)</td><td><span class="g">CONFIRMADO</span></td><td class="ms">1757</td></tr>
+    </tbody></table></div>
+  <p class="sub rv" style="margin-top:18px;font-size:14px;color:var(--mu)">Resumo da tabela: 45 linhas de 441 casos. Os outros são variações (cada campo de um salvamento com várias causas, as situações de concorrência, a matriz de mecanismos por tipo de campo e os alvos dos testes às cegas, todos certos). Os testes às cegas foram montados por outros agentes sem dizer a resposta: o placar de primeira foi 15 de 16, 19 de 30, 25 de 30, 30 de 30, 33 de 35 e 23 de 27; cada erro virou correção no motor e caso permanente da bateria.</p>
+</div></section>
+
+<section id="telas"><div class="wrap">
+  <div class="rv"><span class="eyebrow">Em todo lugar</span><h2>Painel lateral, janela própria, popup e opções.</h2><p class="sub">Escuro por padrão, claro se quiser. Português por padrão, inglês num clique. Chrome e Edge.</p></div>
+  <div class="gal rv">
+    <div class="seg" id="galseg"><button class="on" data-u="/demo/panel.html?theme=light" data-w="400" data-c="Painel lateral · tema claro · role e clique, é a interface real">Painel · claro</button><button data-u="/demo/panel.html?theme=dark" data-w="400" data-c="Painel lateral · tema escuro">Painel · escuro</button><button data-u="/demo/popup.html?theme=dark" data-w="340" data-c="Popup · liga e desliga por instância, testa autenticação e acesso">Popup</button><button data-u="/demo/options.html?theme=dark" data-w="820" data-c="Opções · tema, idioma, onde abrir o painel, instâncias e privacidade">Opções</button></div>
+    <div class="shot"><div class="chrome"><i></i><i></i><i></i><span id="galurl">chrome-extension://…/sidepanel</span></div><div class="galbox"><iframe id="galimg" src="/demo/panel.html?theme=light" title="Tela real da extensão" loading="lazy" width="400" height="620"></iframe></div></div>
+    <div class="cap" id="galcap">Painel lateral · tema claro · role e clique, é a interface real</div>
+  </div>
+</div></section>
+
+<section id="acesso"><div class="wrap">
+  <div class="rv"><span class="eyebrow">Acesso</span><h2>Sem admin, sem escrita, sem telemetria.</h2><p class="sub">Antes de prometer, o Trail testa cada fonte com uma chamada mínima. Troque o perfil para ver o que muda.</p></div>
+  <div class="access">
+    <div class="rv">
+      <div class="seg" id="seg" role="tablist"><button class="on" data-p="admin">Admin</button><button data-p="reader">x_trail_reader</button><button data-p="itil">ITIL</button><button data-p="basic">Usuário básico</button></div>
+      <div class="srcs" id="srcs"></div>
+    </div>
+    <div class="verdict rv" id="verdict"><div class="lvl">Acesso completo</div><h3>Perícia completa.</h3><p>Todas as fontes leem. O painel não mostra nenhum aviso.</p><code></code></div>
+  </div>
+</div></section>
+
+
+<section id="quem"><div class="wrap">
+  <div class="rv"><span class="eyebrow">Para quem</span><h2>Três pessoas, a mesma pergunta.</h2></div>
+  <div class="who">
+    <div class="rv"><h3>Dev ServiceNow</h3><q class="q">Juro que não foi minha BR.</q><p>Prova em segundos qual artefato tocou o campo, com o <b>link direto para o script</b>. Serve pra debugar o que você escreveu e pra descobrir o que herdou de quem saiu.</p></div>
+    <div class="rv"><h3>Admin da plataforma</h3><q class="q">Quem está mexendo em prioridade sem passar pelo processo?</q><p>Separa <b>ação de pessoa</b> de automação, detecta gravações sem auditoria e mostra quais fontes cada perfil consegue ler, com a receita do papel <b>x_trail_reader</b> para conceder leitura sem dar admin.</p></div>
+    <div class="rv"><h3>Suporte N2 / gestor de incidentes</h3><q class="q">Por que esse chamado voltou pra fila?</q><p>Resposta em linguagem de gente, sem abrir tabela de sistema: <b>o que mudou, quando, por qual regra</b>. Dá pra colar no chamado como justificativa.</p></div>
+  </div>
+</div></section>
+
+<section id="faq"><div class="wrap">
+  <div class="rv"><span class="eyebrow">Perguntas</span><h2>O que todo mundo pergunta antes de instalar.</h2></div>
+  <div class="faq rv">
+    <details open><summary>Algum dado sai da instância?</summary><div class="a">Não. A extensão fala só com a instância que está aberta na aba, usando a sua própria sessão. Não há servidor do Trail, não há telemetria, não há conta.</div></details>
+    <details><summary>Ela escreve alguma coisa?</summary><div class="a">Nunca. Todas as chamadas são <code>GET</code> na Table API. O cliente REST do motor só sabe fazer GET: não existe no código um caminho que faça POST, PUT ou DELETE.</div></details>
+    <details><summary>Preciso ser admin?</summary><div class="a">Não para usar. Precisa ler <code>sys_audit</code>, <code>syslog_transaction</code> e os artefatos. A documentação traz a receita do papel <code>x_trail_reader</code>, só leitura em 11 tabelas, para o admin criar e conceder. Sem ele, o painel mostra exatamente o que falta.</div></details>
+    <details><summary>Funciona no Workspace e no Service Operations Workspace?</summary><div class="a">Sim. O content script percorre o shadow DOM dos componentes <code>sn-record-input-connected</code> e coloca o ícone ao lado do rótulo. UI16 clássico também, incluindo formulários em iframe.</div></details>
+    <details><summary>Por que às vezes a certeza é média e não alta?</summary><div class="a">Porque o rastro não nomeia o artefato. Um script de fundo não registra o código; um flow deixa contexto, não a ação exata. O grau reflete a prova que existe, não um chute. Os fatos listados dizem o que pesou.</div></details>
+    <details><summary>E mudanças antigas?</summary><div class="a">A auditoria fica, mas os rastros de execução expiram: transações em 56 dias, eventos em 7, flows em 14 (padrão do <code>sys_auto_flush</code>). O painel declara a lacuna e mantém os suspeitos estáticos. A fase 2 resolve isso gravando o contexto na hora da escrita.</div></details>
+    <details><summary>Chrome e Edge?</summary><div class="a">Mesmo pacote (Manifest V3). O painel abre no painel lateral do navegador ou numa janela separada, que você escolhe nas opções; a janela funciona igual nos dois e pode ficar em outro monitor.</div></details>
+    <details><summary>Como sei que não está inventando?</summary><div class="a">Cada fato aponta a tabela de origem e o registro. A bateria de regressão acima roda contra artefatos criados de propósito numa PDI, com o resultado esperado declarado antes de rodar. 441 de 441, incluindo 168 alvos de seis testes às cegas: outros agentes montaram os cenários sem dizer a resposta.</div></details>
+  </div>
+</div></section>
+
+<section id="roadmap"><div class="wrap">
+  <div class="rv"><span class="eyebrow">Caminho</span><h2>Onde está e para onde vai.</h2></div>
+  <div class="road rv">
+    <div class="done"><div class="n">FASE 0 · FEITO</div><h3>Protótipo e prova</h3><ul><li>Motor de perícia em TypeScript, 45 testes</li><li>Modelo de pontuação com 16 tipos</li><li>12 casos reais na PDI, 12 acertos</li></ul></div>
+    <div class="now"><div class="n">FASE 1 · AGORA</div><h3>Extensão pronta pra uso</h3><ul><li>✓ Painel lateral e janela destacável</li><li>✓ Escuro por padrão, claro num clique; PT e EN</li><li>✓ Bateria ampliada: atribuição, REST, data lookup, client script, encadeadas e vários campos por gravação</li><li>✓ Histórico do registro inteiro, com filtros por pessoa, API e automação</li><li>✓ Diferença linha a linha quando o campo é um script</li><li>✓ Flow aponta o passo exato; importações pelo transform map</li><li>✓ Exportar a análise em texto ou PDF</li><li>✓ Lê o script: só lê × grava, condições, valor calculado e ordem das regras</li><li>✓ Teste às cegas: 16 de 16</li><li>✓ change_request, sc_req_item e tabelas customizadas</li><li>✓ Comparar duas gravações do registro</li><li>✓ Alerta de regras em conflito no mesmo campo</li><li>✓ Frase sem termos técnicos para o chamado</li><li>✓ Service Operations Workspace</li><li>✓ Varredura de conflitos da tabela inteira</li><li>✓ Conta de integração e Batch API</li><li>✓ UI policies com script, Update Selected e edição na lista</li><li>✓ Importação conferida pela linha de staging; subflows</li><li>✓ Seis testes às cegas, 168 alvos (inclui CMDB, catálogo e base de conhecimento)</li><li>✓ "E se eu mudar?": o que muda de verdade antes de salvar</li><li>✓ Investigação em lote pela lista, com CSV</li><li>✓ Mapa de automações do campo e alerta de pingue-pongue</li><li>✓ Service Portal e Employee Center</li><li>✓ Protótipo da gravação de contexto dentro da instância</li><li>Papel x_trail_reader criado e testado</li></ul></div>
+    <div><div class="n">FASE 2 · DEPOIS</div><h3>Trail dentro da instância</h3><ul><li>App escopado que grava o contexto na hora da escrita</li><li>Fim da lacuna de retenção</li><li>Histórico consultável por qualquer registro</li></ul></div>
+  </div>
+</div></section>
+
+<div class="wrap end rv" id="instalar">
+  <svg class="ring" viewBox="0 0 128 128" aria-hidden="true"><circle cx="64" cy="64" r="38" fill="none" stroke="#244f63" stroke-width="12"/><path class="arc" d="M64 26a38 38 0 1 1-36.4 27" fill="none" stroke="#62d84e" stroke-width="12" stroke-linecap="round"/><path d="M18 40l10 15 15-9" fill="none" stroke="#62d84e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M64 44v22l14 9" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <h2>Abra um registro, clique no campo, leia o porquê.</h2>
+  <p class="sub">UI16, Workspace e Service Portal · Chrome e Edge · português e inglês · somente leitura · MIT</p>
+  <div class="cta" style="justify-content:center;opacity:1;animation:none"><span class="btn soon" aria-disabled="true">Em breve na Chrome Web Store</span><a class="btn ghost" href="#passos">Testar a demonstração</a></div>
+</div>
+<footer><span>Trail · MIT</span><a href="#faq">Perguntas</a><a href="#acesso">Papel de leitura</a><a href="#roadmap">Caminho</a><a href="/">← outras direções</a></footer>
+</main>
+
+<script src="/b3/app.js"></script>
+</body>
+</html>

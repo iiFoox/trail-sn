@@ -1,0 +1,59 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Trail Form Demo</title><style>
+body{margin:0;overflow:hidden;background:#f4f5f7;font:13px/1.4 "Helvetica Neue",Arial,sans-serif;color:#2e3a42}
+.nav{height:48px;background:#293e40;color:#fff;display:flex;align-items:center;gap:16px;padding:0 16px;font-size:14px}
+.nav .logo{font-weight:700;letter-spacing:.02em}
+.nav .srch{margin-left:auto;background:#3b5255;border-radius:3px;padding:6px 10px;width:260px;color:#b6c6c8;font-size:12px}
+.nav .av{width:28px;height:28px;border-radius:50%;background:#62d84e;color:#0b2a0f;display:grid;place-items:center;font-weight:700;font-size:12px}
+.hdr{background:#fff;border-bottom:1px solid #d5dbe0;padding:10px 16px;display:flex;align-items:center;gap:10px}
+.hdr b{font-size:15px}.hdr .ctx{color:#6b7780}.hdr .btns{margin-left:auto;display:flex;gap:6px}
+.hdr .btn{border:1px solid #c7ced4;background:#fff;border-radius:3px;padding:5px 10px;font-size:12px}
+.hdr .btn.p{background:#278efc;border-color:#278efc;color:#fff}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:10px 28px;padding:18px 20px;background:#fff;margin:14px 16px;border:1px solid #d5dbe0;border-radius:3px}
+.f{display:grid;grid-template-columns:150px 1fr;align-items:center;gap:8px}
+label{text-align:right;color:#2e3a42;font-weight:600;display:flex;justify-content:flex-end;align-items:center;gap:6px}
+label .req{color:#c83c3c}
+input,.sel{height:30px;border:1px solid #c7ced4;border-radius:3px;padding:0 8px;background:#fff;color:#2e3a42;font:13px Arial}
+.sel{display:flex;align-items:center;justify-content:space-between}
+.sel:after{content:"▾";color:#6b7780}
+.ref{display:flex;gap:4px}.ref input{flex:1}.ref i{width:30px;height:30px;border:1px solid #c7ced4;border-radius:3px;display:grid;place-items:center;color:#6b7780;font-style:normal}
+.hot input,.hot .sel{border-color:#1f8476;box-shadow:0 0 0 3px rgba(31,132,118,.22)}
+.wide{grid-column:1/-1}
+textarea{width:100%;height:64px;border:1px solid #c7ced4;border-radius:3px;padding:6px 8px;font:13px Arial;resize:none}
+.tabs{margin:0 16px;display:flex;gap:4px;border-bottom:1px solid #d5dbe0}
+.tabs span{padding:8px 12px;font-weight:600;color:#6b7780;border-bottom:3px solid transparent}
+.tabs span.on{color:#2e3a42;border-color:#278efc}
+.trail-host{cursor:pointer}
+</style><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20128%20128%22%3E%3Crect%20width%3D%22128%22%20height%3D%22128%22%20rx%3D%2264%22%20fill%3D%22%23032d42%22/%3E%3Ccircle%20cx%3D%2264%22%20cy%3D%2264%22%20r%3D%2238%22%20fill%3D%22none%22%20stroke%3D%22%23244f63%22%20stroke-width%3D%2212%22/%3E%3Cpath%20d%3D%22M64%2026a38%2038%200%201%201-36.4%2027%22%20fill%3D%22none%22%20stroke%3D%22%2362d84e%22%20stroke-width%3D%2212%22%20stroke-linecap%3D%22round%22/%3E%3Cpath%20d%3D%22M18%2040l10%2015%2015-9%22%20fill%3D%22none%22%20stroke%3D%22%2362d84e%22%20stroke-width%3D%229%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3Cpath%20d%3D%22M64%2044v22l14%209%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%229%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E%0A">
+</head><body>
+<div class="nav"><span class="logo">sua-instancia</span><span style="opacity:.7">Incidents</span><div class="srch">Search</div><div class="av">GA</div></div>
+<div class="hdr"><span style="color:#6b7780">≡</span><b>Incident</b><span class="ctx">INC0010001</span><div class="btns"><span class="btn">Follow</span><span class="btn">Update</span><span class="btn p">Resolve</span><span class="btn">Delete</span></div></div>
+<div class="form">
+ <div class="f"><label for="incident.number">Number</label><input id="incident.number" value="INC0010001" readonly></div>
+ <div class="f"><label for="incident.contact_type">Contact type</label><div class="sel" id="incident.contact_type">Email</div></div>
+ <div class="f"><label for="incident.caller_id"><span class="req">*</span>Caller</label><div class="ref"><input id="incident.caller_id" value="Beth Anglin"><i>🔍</i></div></div>
+ <div class="f "><label for="incident.state">State</label><div class="sel" id="incident.state">Resolved</div></div>
+ <div class="f"><label for="incident.category">Category</label><div class="sel" id="incident.category">Network</div></div>
+ <div class="f "><label for="incident.impact"><span class="req">*</span>Impact</label><div class="sel" id="incident.impact">1 - High</div></div>
+ <div class="f"><label for="incident.severity">Severity</label><div class="sel" id="incident.severity">1 - High</div></div>
+ <div class="f"><label for="incident.urgency"><span class="req">*</span>Urgency</label><div class="sel" id="incident.urgency">2 - Medium</div></div>
+ <div class="f"><label for="incident.cmdb_ci">Configuration item</label><div class="ref"><input id="incident.cmdb_ci" value="PRN-3A-01"><i>🔍</i></div></div>
+ <div class="f"><label for="incident.priority">Priority</label><div class="sel" id="incident.priority">2 - High</div></div>
+ <div class="f"><label for="incident.assignment_group">Assignment group</label><div class="ref"><input id="incident.assignment_group" value="Network"><i>🔍</i></div></div>
+ <div class="f"><label for="incident.assigned_to">Assigned to</label><div class="ref"><input id="incident.assigned_to" value="Howard Johnson"><i>🔍</i></div></div>
+ <div class="f wide"><label for="incident.short_description"><span class="req">*</span>Short description</label><input id="incident.short_description" value="Impressora do 3º andar sem rede"></div>
+ <div class="f wide"><label for="incident.description" style="align-self:start;padding-top:6px">Description</label><textarea id="incident.description">Impressora PRN-3A-01 não responde no ping desde as 08:40. Já reiniciada pelo usuário. [marcado para perícia]</textarea></div>
+</div>
+<div class="tabs"><span class="on">Notes</span><span>Related Records</span><span>Resolution Information</span></div>
+<script>window.g_ck='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';window.NOW={user_name:'admin'};window.g_form={getTableName:()=>'incident',getUniqueValue:()=>'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'};</script>
+<script>
+// Formulário UI16 simulado + content script real do Trail. O clique no ícone avisa a página pai.
+window.chrome={runtime:{sendMessage:(m)=>{try{if(m&&m.type==='investigate')parent.postMessage({trail:'investigate',field:m.target&&m.target.field},'*')}catch(e){}return Promise.resolve()}}};
+const q=new URLSearchParams(location.search);const hot=q.get('hot');
+addEventListener('message',(e)=>{if(e.data&&e.data.trailHot)mark(e.data.trailHot)});
+function mark(f){document.querySelectorAll('.f').forEach(x=>x.classList.remove('hot'));const el=document.getElementById('incident.'+f);if(el)el.closest('.f').classList.add('hot');document.querySelectorAll('.trail-host').forEach(h=>{const b=h.shadowRoot&&h.shadowRoot.querySelector('button');if(b){const on=h.closest('label')&&h.closest('label').getAttribute('for')==='incident.'+f;b.style.background=on?'#1f8476':'';b.style.color=on?'#fff':'';b.style.borderColor=on?'#1f8476':'';b.style.boxShadow=on?'0 0 0 4px rgba(31,132,118,.25)':''}})}
+</script>
+<script src="page.js"></script>
+<script src="content.js"></script>
+<script>const w=()=>document.querySelector('.trail-host')?(hot&&mark(hot)):setTimeout(w,60);w();
+document.addEventListener('click',e=>{const h=e.target.closest&&e.target.closest('.trail-host');if(h){const f=h.closest('label').getAttribute('for').replace('incident.','');mark(f)}},true);</script>
+</body></html>

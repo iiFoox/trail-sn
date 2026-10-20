@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trail Popup Demo</title>
+<script>
+// O painel real do Trail em modo demonstração, fora da extensão: stub mínimo das APIs do Chrome.
+// Tema e idioma vêm da URL (?theme=dark|light, ?lang=pt|en); nada é gravado, nada sai daqui.
+(() => {
+  const noop = () => {};
+  const ev = { addListener: noop, removeListener: noop };
+  const none = () => Promise.resolve({});
+  window.chrome = {
+    runtime: { sendMessage: () => Promise.resolve(), getURL: (p) => p, onMessage: ev, openOptionsPage: noop },
+    storage: { sync: { get: none, set: none }, session: { get: none, set: none }, local: { get: none, set: none }, onChanged: ev },
+    tabs: { query: () => Promise.resolve([]), onActivated: ev, onUpdated: ev },
+    permissions: { request: () => Promise.resolve(true), remove: () => Promise.resolve(true), contains: () => Promise.resolve(true) },
+  };
+  const q = new URLSearchParams(location.search);
+  if (!q.has('demo')) { q.set('demo', '1'); history.replaceState(null, '', '?' + q); }
+  document.documentElement.dataset.theme = q.get('theme') === 'light' ? 'light' : 'dark';
+
+})();
+</script>
+<script type="module" crossorigin src="/assets/popup.js"></script>
+<link rel="stylesheet" crossorigin href="/assets/icons-DUW3af8y.css">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20128%20128%22%3E%3Crect%20width%3D%22128%22%20height%3D%22128%22%20rx%3D%2264%22%20fill%3D%22%23032d42%22/%3E%3Ccircle%20cx%3D%2264%22%20cy%3D%2264%22%20r%3D%2238%22%20fill%3D%22none%22%20stroke%3D%22%23244f63%22%20stroke-width%3D%2212%22/%3E%3Cpath%20d%3D%22M64%2026a38%2038%200%201%201-36.4%2027%22%20fill%3D%22none%22%20stroke%3D%22%2362d84e%22%20stroke-width%3D%2212%22%20stroke-linecap%3D%22round%22/%3E%3Cpath%20d%3D%22M18%2040l10%2015%2015-9%22%20fill%3D%22none%22%20stroke%3D%22%2362d84e%22%20stroke-width%3D%229%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3Cpath%20d%3D%22M64%2044v22l14%209%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%229%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E%0A">
+</head>
+<body>
+<div id="app"></div>
+</body>
+</html>
