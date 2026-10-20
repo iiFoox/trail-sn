@@ -1,4 +1,4 @@
-import type { AccessReport, Investigation, Target } from '@trail/core';
+import type { AccessReport, BatchItem, Investigation, Target } from '@trail/core';
 
 /** Contexto que o page/ e o content/ extraem da página. Nenhum dado de negócio, só endereço. */
 export interface PageContext {
@@ -17,6 +17,7 @@ export type Message =
   | { type: 'toggle-icons' }
   | { type: 'timeline'; origin: string; target: { table: string; sysId: string } }
   | { type: 'scan-conflicts'; origin: string; table: string }
+  | { type: 'batch'; origin: string; table: string; field: string; sysIds: string[]; token?: string; mode?: import('./prefs').PanelMode }
   | { type: 'preview'; origin: string; target: { table: string; sysId: string; field: string; value: string } }
   | { type: 'open-panel'; mode?: import('./prefs').PanelMode }
   | { type: 'probe-auth'; origin: string }
@@ -42,6 +43,8 @@ export interface TabState {
   result?: Investigation;
   error?: string;
   access?: AccessReport;
+  /** Investigação em lote (vários registros, um campo), iniciada pela lista. */
+  batch?: { table: string; field: string; items: BatchItem[]; status: 'running' | 'done'; startedAt: string; ms?: number };
 }
 
 /** Chaves do chrome.storage.session. */

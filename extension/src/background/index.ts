@@ -3,7 +3,7 @@
  * guarda estado em chrome.storage.session e abre o painel. Não toca no DOM.
  * Nenhum estado em memória que importe: o worker pode ser encerrado a qualquer momento.
  */
-import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, previewChange, recordTimeline, scanTableConflicts, type AccessReport, type MetaCache, type TableMeta } from '@trail/core';
+import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, batchItemFrom, previewChange, recordTimeline, scanTableConflicts, type AccessReport, type BatchItem, type MetaCache, type TableMeta } from '@trail/core';
 import { addInstance, listInstances, removeInstance } from '../shared/instances';
 import { loadPrefs, PREFS_KEY, type PanelMode } from '../shared/prefs';
 import { storageKey, type Message, type PageContext, type ProbeResult, type TabState } from '../shared/messages';
@@ -218,10 +218,36 @@ async function retentionFor(origin: string, client: FetchRestClient) {
 }
 
 // ---------- investigação ----------
+/** Investiga o mesmo campo em vários registros (selecionados na lista), três de cada vez, com o cache da tabela. */
+async function runBatch(tabId: number, origin: string, table: string, field: string, sysIds: string[], token?: string): Promise<void> {
+  await rememberToken(origin, token);
+  const started = Date.now();
+  const items: BatchItem[] = sysIds.map((sysId) => ({ sysId, display: sysId, status: 'pending' }));
+  const save = async (status: 'running' | 'done') => setTab({ ...(await getTab(tabId)), tabId, status: 'idle', result: undefined, error: undefined, batch: { table, field, items: [...items], status, startedAt: new Date(started).toISOString(), ...(status === 'done' ? { ms: Date.now() - started } : {}) } });
+  await save('running');
+  const client = makeClient(origin);
+  const retention = await retentionFor(origin, client);
+  let next = 0;
+  let last = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next++;
+      try {
+        const r = await investigate(client, { table, sysId: items[i]!.sysId, field }, { retention }, metaCache(origin));
+        items[i] = batchItemFrom(r);
+      } catch (e) { items[i] = { ...items[i]!, status: 'error', error: (e as Error).message }; }
+      // Atualiza o painel no máximo a cada 700 ms (cada gravação no storage redesenha o painel).
+      if (Date.now() - last > 700) { last = Date.now(); await save('running'); }
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+  await save('done');
+}
+
 async function runInvestigation(tabId: number, origin: string, target: { table: string; sysId?: string; number?: string; field: string }, token?: string): Promise<void> {
   await rememberToken(origin, token);
   const prev = await getTab(tabId);
-  await setTab({ ...prev, tabId, status: 'running', startedAt: new Date().toISOString(), result: undefined, error: undefined });
+  await setTab({ ...prev, tabId, status: 'running', startedAt: new Date().toISOString(), result: undefined, error: undefined, batch: undefined });
   try {
     const client = makeClient(origin);
     const retention = await retentionFor(origin, client);
@@ -261,6 +287,13 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
         if (id === undefined) return;
         await openPanel(id, msg.mode);
         await runInvestigation(id, msg.origin, msg.target, msg.token);
+        return;
+      }
+      case 'batch': {
+        const id = tabId ?? (await activeTabId());
+        if (id === undefined) return;
+        await openPanel(id, msg.mode);
+        await runBatch(id, msg.origin, msg.table, msg.field, msg.sysIds.slice(0, 200), msg.token);
         return;
       }
       case 'open-panel': {

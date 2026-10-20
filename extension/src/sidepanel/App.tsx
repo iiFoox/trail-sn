@@ -5,6 +5,7 @@ import { fmt, t } from '../shared/i18n';
 import { applyTheme, getPrefs, resolvedTheme, savePrefs } from '../shared/prefs';
 import { EmptyIllustration, Glyph, TrailMark } from '../shared/icons';
 import { Result } from './Result';
+import { Batch } from './Batch';
 import { setTrackedTab } from '../shared/tabRef';
 import { send, storageKey, type TabState } from '../shared/messages';
 import { isEnabled, looksLikeServiceNow } from '../shared/instances';
@@ -39,7 +40,7 @@ function ThemeToggle() {
 
 export function App() {
   const [tabId, setTabId] = useState<number>();
-  const [state, setState] = useState<TabState | undefined>(isDemo ? demoState(params.get('field') ?? 'state') : undefined);
+  const [state, setState] = useState<TabState | undefined>(isDemo ? (params.has('batch') ? demoBatch() : demoState(params.get('field') ?? 'state')) : undefined);
   const [fallbackOrigin, setFallbackOrigin] = useState<string>();
   const [toast, setToast] = useState<string>();
   const toastTimer = useRef<number>();
@@ -106,7 +107,7 @@ export function App() {
         const id = Number(m[1]);
         const st = ch.newValue as TabState | undefined;
         if (id === tracked.current) setState(st);
-        else if (id === active.current && st?.status === 'running') { tracked.current = id; setTabId(id); setTrackedTab(id); setState(st); }
+        else if (id === active.current && (st?.status === 'running' || st?.batch?.status === 'running')) { tracked.current = id; setTabId(id); setTrackedTab(id); setState(st); }
       }
     };
     chrome.storage.onChanged.addListener(onChange);
@@ -116,7 +117,7 @@ export function App() {
       void refreshConnected(tab.url);
       const key = storageKey.tab(tab.id);
       const st = (await chrome.storage.session.get(key))[key] as TabState | undefined;
-      if (st?.result || st?.status === 'running') follow(tab.id, st, tab.url);
+      if (st?.result || st?.batch || st?.status === 'running') follow(tab.id, st, tab.url);
       else if (!tracked.current || !shown.current?.result) follow(tab.id, st, tab.url);
     };
     const onActivated = (info: chrome.tabs.TabActiveInfo) => {
@@ -184,8 +185,9 @@ export function App() {
         {state?.access && !state.result && <AccessNotice report={state.access} />}
         {state?.status === 'running' && <Loading />}
         {state?.status === 'error' && <div class="notice bad"><div class="title">{s.errorTitle}</div>{state.error}</div>}
+        {state?.batch && !state.result && origin && state.status !== 'running' && <Batch b={state.batch} origin={origin} onOpen={(id) => { void send({ type: 'investigate', origin, target: { table: state.batch!.table, sysId: id, field: state.batch!.field } }); }} />}
         {state?.result && origin && state.status !== 'running' && <Result r={state.result} origin={origin} access={state.access} toast={(m) => showToast(m)} onField={investigateField} />}
-        {!needsConnect && !state?.result && state?.status !== 'running' && (
+        {!needsConnect && !state?.result && !state?.batch && state?.status !== 'running' && (
           <div class="empty">
             <EmptyIllustration />
             <div class="title">{s.emptyTitle}</div>
@@ -193,7 +195,7 @@ export function App() {
           </div>
         )}
       </main>
-      <ManualDrawer origin={origin} table={state?.ctx?.table ?? state?.result?.target.table} sysId={state?.ctx?.sysId ?? state?.result?.target.sysId} field={state?.result?.target.field} tabId={tabId} open={!state?.result}
+      <ManualDrawer origin={origin} table={state?.ctx?.table ?? state?.result?.target.table} sysId={state?.ctx?.sysId ?? state?.result?.target.sysId} field={state?.result?.target.field} tabId={tabId} open={!state?.result && !state?.batch}
         onDemo={(f) => { showToast(); setState({ ...demoState(f), status: 'running' }); setTimeout(() => setState(demoState(f)), 650); }} />
       {toast && <div class="toast" role="status" onClick={() => showToast()}>{toast}</div>}
     </>
@@ -264,3 +266,16 @@ function ManualDrawer({ origin, table, sysId, field, tabId, open, onDemo }: { or
   );
 }
 
+
+/** Demonstração do lote: 12 incidentes, a categoria mudou por três causas. */
+function demoBatch(): TabState {
+  const mk = (n: number, type: string, name: string, grade: string, user = 'system') => ({ sysId: n.toString(16).padStart(32, '0'), display: `INC00${10100 + n}`, title: ['Impressora sem rede', 'VPN cai toda hora', 'Notebook lento', 'E-mail não sincroniza'][n % 4], status: 'done' as const,
+    at: `2026-10-${10 + (n % 9)} 1${n % 9}:2${n % 6}:00`, oldValue: 'inquiry', newValue: n % 3 ? 'network' : 'hardware', user, changes: 1 + (n % 2), cause: { type, name, grade, score: grade === 'confirmed' ? 85 : 55, sysId: 'demo', table: 'sys_script' } });
+  const items = [
+    ...[1, 2, 3, 4, 5, 6, 7].map((n) => mk(n, 'br_before', 'Categoria pelo grupo de suporte', 'confirmed')),
+    ...[8, 9, 10].map((n) => mk(n, 'user_action', 'beth.anglin', 'confirmed', 'beth.anglin')),
+    mk(11, 'import_set', 'Chamados do parceiro', 'confirmed'),
+    { sysId: '0'.repeat(31) + 'c', display: 'INC0010112', title: 'Monitor piscando', status: 'unchanged' as const, changes: 0 },
+  ];
+  return { tabId: 0, status: 'idle', ctx: { origin: 'https://sua-instancia.service-now.com', surface: 'ui16' }, batch: { table: 'incident', field: 'category', items, status: 'done', startedAt: new Date().toISOString(), ms: 8400 } };
+}

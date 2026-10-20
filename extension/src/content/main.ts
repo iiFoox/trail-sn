@@ -145,7 +145,7 @@ function decorateForm(): void {
   }
 }
 
-function makeIcon(field: string): HTMLElement {
+function makeIcon(field: string, title?: string, onClick?: () => void): HTMLElement {
   const host = document.createElement('span');
   host.className = 'trail-host';
   host.style.cssText = `display:${showIcons ? 'inline-block' : 'none'};margin-left:5px;vertical-align:middle;line-height:0;`;
@@ -158,13 +158,13 @@ function makeIcon(field: string): HTMLElement {
       button:hover,button:focus-visible{opacity:1;color:#62d84e;background:#032d42;border-color:#032d42;box-shadow:0 0 0 3px rgba(98,216,78,.22)}
       svg{width:12px;height:12px;display:block}
     </style>
-    <button type="button" title="${strings.whyChanged} · ${field}" aria-label="${strings.whyChanged} (${field})">
+    <button type="button" title="${title ?? `${strings.whyChanged} · ${field}`}" aria-label="${title ?? strings.whyChanged} (${field})">
       ${TRAIL_GLYPH('currentColor', 2.8)}
     </button>`;
   root.querySelector('button')!.addEventListener('click', (ev) => {
     ev.preventDefault();
     ev.stopPropagation();
-    investigate(field);
+    if (onClick) onClick(); else investigate(field);
   });
   return host;
 }
@@ -179,6 +179,33 @@ function investigate(field: string): void {
     ...(panelMode ? { mode: panelMode } : {}),
     target: { table: ctx.table, sysId: ctx.sysId, field },
   }).catch(() => { /* noop */ });
+}
+
+// ---------- ícone nas colunas da lista (UI16): investigação em lote ----------
+function listTable(): string | undefined {
+  const g = document.querySelector('table.list_table[glide_table], [glide_table]')?.getAttribute('glide_table');
+  if (g) return g;
+  return location.pathname.match(/^\/([a-z0-9_]+)_list\.do$/)?.[1];
+}
+
+function decorateList(): void {
+  const table = listTable();
+  if (!table || !/_list\.do$/.test(location.pathname)) return;
+  for (const th of document.querySelectorAll<HTMLElement>('th.list_header_cell[name]')) {
+    if (decorated.has(th)) continue;
+    const field = th.getAttribute('name') ?? '';
+    if (!/^[a-z0-9_]+$/.test(field)) continue;
+    decorated.add(th);
+    const icon = makeIcon(field, strings.p.btIcon as string, () => batch(table, field));
+    (th.querySelector('.column_head, a') ?? th).after(icon);
+  }
+}
+
+function batch(table: string, field: string): void {
+  const checked = [...document.querySelectorAll<HTMLInputElement>(`input[id^="check_${table}_"]:checked`)].map((c) => c.id.slice(`check_${table}_`.length)).filter((x) => /^[0-9a-f]{32}$/.test(x));
+  const ids = checked.length ? checked : [...document.querySelectorAll<HTMLElement>('tr.list_row[sys_id]')].map((r) => r.getAttribute('sys_id') ?? '').filter((x) => /^[0-9a-f]{32}$/.test(x));
+  if (!ids.length) return;
+  chrome.runtime.sendMessage({ type: 'batch', origin, table, field, sysIds: [...new Set(ids)], token: ctx.token, ...(panelMode ? { mode: panelMode } : {}) }).catch(() => { /* noop */ });
 }
 
 // ---------- ícone nos campos (Workspace / Next Experience) ----------
@@ -228,9 +255,11 @@ const mo = new MutationObserver(() => {
     scheduleWorkspaceScan();
   }
   decorateForm();
+  decorateList();
 });
 mo.observe(document.documentElement, { childList: true, subtree: true });
 decorateForm();
+decorateList();
 
 // Janela "lado a lado" pedida pelo painel: desenhada só no quadro de cima, por cima da página inteira.
 chrome.runtime?.onMessage?.addListener((m: { type?: string } & Partial<DiffWindowRequest>, _s, reply) => {
