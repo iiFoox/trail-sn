@@ -666,3 +666,8 @@ table.cmpt tr.rev { opacity: .7; }
 /* Mapa de automações */
 .fmap .lane { border-top: 1px solid var(--line); }
 .fmap .lane-h { padding: 8px 14px 2px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+/* Painel: o navegador já mostra "Trail" acima; a barra fica só com a instância e os botões. */
+.topbar { padding: 7px 12px; }
+.topbar .host { margin-left: 0; max-width: 70%; }
+.topbar .actions { margin-left: auto !important; }
+.manual-mode { margin-bottom: 10px; }

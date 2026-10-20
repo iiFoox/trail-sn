@@ -135,6 +135,13 @@ declare const dict: {
             fmLane: Record<string, string>;
             ppTitle: string;
             ppText: string;
+            btRecTitle: string;
+            btRecLoading: string;
+            btRecEmpty: string;
+            btNotFound: string;
+            manualField: string;
+            manualRecord: string;
+            manualRecordHint: string;
             btTitle: string;
             btProgress: string;
             btDone: string;
@@ -486,6 +493,13 @@ declare const dict: {
             fmLane: Record<string, string>;
             ppTitle: string;
             ppText: string;
+            btRecTitle: string;
+            btRecLoading: string;
+            btRecEmpty: string;
+            btNotFound: string;
+            manualField: string;
+            manualRecord: string;
+            manualRecordHint: string;
             btTitle: string;
             btProgress: string;
             btDone: string;

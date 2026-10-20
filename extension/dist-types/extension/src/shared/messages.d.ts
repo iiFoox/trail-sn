@@ -40,6 +40,13 @@ export type Message = {
     token?: string;
     mode?: import('./prefs').PanelMode;
 } | {
+    type: 'record';
+    origin: string;
+    table: string;
+    record: string;
+    token?: string;
+    mode?: import('./prefs').PanelMode;
+} | {
     type: 'field-map';
     origin: string;
     table: string;
@@ -104,6 +111,11 @@ export interface TabState {
         status: 'running' | 'done';
         startedAt: string;
         ms?: number;
+        error?: string;
+        /** 'fields': o registro inteiro (cada item é um campo); padrão: vários registros, um campo. */
+        kind?: 'records' | 'fields';
+        sysId?: string;
+        display?: string;
     };
 }
 /** Chaves do chrome.storage.session. */

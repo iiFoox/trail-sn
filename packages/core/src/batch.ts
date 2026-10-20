@@ -7,6 +7,8 @@ import type { Investigation } from './types';
 
 export interface BatchItem {
   sysId: string;
+  /** No modo "registro inteiro": o campo investigado (cada item é um campo do mesmo registro). */
+  field?: string;
   display: string;
   title?: string;
   status: 'pending' | 'done' | 'error' | 'unchanged' | 'unaudited';
@@ -48,7 +50,7 @@ export function groupBatch(items: BatchItem[]): BatchGroup[] {
     let g = groups.get(key);
     if (!g) groups.set(key, (g = { key, type, name: person ? '' : it.cause?.name ?? '?', ...(!person && it.cause?.sysId ? { sysId: it.cause.sysId } : {}), ...(!person && it.cause?.table ? { table: it.cause.table } : {}), count: 0, items: [], grades: {} }));
     g.count++;
-    g.items.push(it.sysId);
+    g.items.push(it.field ?? it.sysId); // no modo registro inteiro, o item é o campo
     const grade = it.cause?.grade ?? 'none';
     g.grades[grade] = (g.grades[grade] ?? 0) + 1;
   }
@@ -62,6 +64,6 @@ const csvCell = (v: string | number | undefined) => {
 
 /** CSV (separador ;, para abrir direto no Excel em português). */
 export function batchCsv(items: BatchItem[], header: string[] = ['registro', 'sys_id', 'titulo', 'quando (UTC)', 'antes', 'depois', 'usuario', 'causa', 'tipo', 'certeza', 'pontos', 'mudancas', 'situacao']): string {
-  const rows = items.map((i) => [i.display, i.sysId, i.title, i.at, i.oldValue, i.newValue, i.user, i.cause?.name, i.cause?.type, i.cause?.grade, i.cause?.score, i.changes, i.status === 'error' ? `erro: ${i.error ?? ''}` : i.status]);
+  const rows = items.map((i) => [i.field ? `${i.display}.${i.field}` : i.display, i.sysId, i.title, i.at, i.oldValue, i.newValue, i.user, i.cause?.name, i.cause?.type, i.cause?.grade, i.cause?.score, i.changes, i.status === 'error' ? `erro: ${i.error ?? ''}` : i.status]);
   return '\uFEFF' + [header, ...rows].map((r) => r.map(csvCell).join(';')).join('\n') + '\n';
 }

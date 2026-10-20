@@ -18,6 +18,7 @@ export type Message =
   | { type: 'timeline'; origin: string; target: { table: string; sysId: string } }
   | { type: 'scan-conflicts'; origin: string; table: string }
   | { type: 'batch'; origin: string; table: string; field: string; sysIds: string[]; token?: string; mode?: import('./prefs').PanelMode }
+  | { type: 'record'; origin: string; table: string; record: string; token?: string; mode?: import('./prefs').PanelMode }
   | { type: 'field-map'; origin: string; table: string; field: string }
   | { type: 'preview'; origin: string; target: { table: string; sysId: string; field: string; value: string } }
   | { type: 'open-panel'; mode?: import('./prefs').PanelMode }
@@ -45,7 +46,9 @@ export interface TabState {
   error?: string;
   access?: AccessReport;
   /** Investigação em lote (vários registros, um campo), iniciada pela lista. */
-  batch?: { table: string; field: string; items: BatchItem[]; status: 'running' | 'done'; startedAt: string; ms?: number };
+  batch?: { table: string; field: string; items: BatchItem[]; status: 'running' | 'done'; startedAt: string; ms?: number; error?: string;
+    /** 'fields': o registro inteiro (cada item é um campo); padrão: vários registros, um campo. */
+    kind?: 'records' | 'fields'; sysId?: string; display?: string };
 }
 
 /** Chaves do chrome.storage.session. */

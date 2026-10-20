@@ -139,13 +139,40 @@ function toggleIcons(): void {
 }
 chrome.commands?.onCommand.addListener((cmd) => { if (cmd === 'toggle-icons') toggleIcons(); });
 
-chrome.runtime.onInstalled.addListener(() => {
-  void syncRegistrations();
-  chrome.contextMenus.create({ id: 'trail-open', title: 'Trail', contexts: ['page'] });
-});
-chrome.runtime.onStartup.addListener(() => void syncRegistrations());
-chrome.contextMenus.onClicked.addListener((_info, tab) => {
-  void openPanel(tab?.id);
+// ---------- clique no ícone da barra ----------
+// Botão esquerdo: abre direto o painel (lateral, ou a janela separada se for a preferência).
+// Botão direito: o menu do navegador com as opções do Trail (antes ficavam num popup).
+async function applyActionBehavior(): Promise<void> {
+  const mode = (await loadPrefs()).panelMode;
+  await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: mode !== 'window' }).catch(() => undefined);
+}
+chrome.action.onClicked.addListener(() => { void openWindow(); }); // só dispara quando o painel lateral não abre sozinho (modo janela)
+chrome.storage.onChanged.addListener((ch, area) => { if (area === 'sync' && ch[PREFS_KEY]) void applyActionBehavior(); });
+
+function createMenus(): void {
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({ id: 'trail-open', title: 'Trail', contexts: ['page'] });
+    chrome.contextMenus.create({ id: 'trail-side', title: menuText('side'), contexts: ['action'] });
+    chrome.contextMenus.create({ id: 'trail-window', title: menuText('window'), contexts: ['action'] });
+    chrome.contextMenus.create({ id: 'trail-icons', title: menuText('icons'), contexts: ['action'] });
+    chrome.contextMenus.create({ id: 'trail-options', title: menuText('options'), contexts: ['action'] });
+  });
+}
+function menuText(k: 'side' | 'window' | 'icons' | 'options'): string {
+  const pt = { side: 'Abrir no painel lateral', window: 'Abrir em janela separada', icons: 'Mostrar ou esconder os ícones nos campos (Alt+Shift+T)', options: 'Opções do Trail' };
+  const en = { side: 'Open in the side panel', window: 'Open in a separate window', icons: 'Show or hide the field icons (Alt+Shift+T)', options: 'Trail options' };
+  return (chrome.i18n?.getUILanguage?.().startsWith('pt') ? pt : en)[k];
+}
+chrome.runtime.onInstalled.addListener(() => { void syncRegistrations(); createMenus(); void applyActionBehavior(); });
+chrome.runtime.onStartup.addListener(() => { void syncRegistrations(); createMenus(); void applyActionBehavior(); });
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  switch (info.menuItemId) {
+    case 'trail-side': if (tab?.id !== undefined) void chrome.sidePanel.open({ tabId: tab.id }).catch(() => undefined); return;
+    case 'trail-window': void openWindow(); return;
+    case 'trail-icons': toggleIcons(); return;
+    case 'trail-options': void chrome.runtime.openOptionsPage(); return;
+    default: void openPanel(tab?.id);
+  }
 });
 
 // ---------- probe de autenticação ----------
@@ -244,6 +271,40 @@ async function runBatch(tabId: number, origin: string, table: string, field: str
   await save('done');
 }
 
+/** Registro inteiro: investiga cada campo que mudou no registro (os mais recentes primeiro, até 25 campos). */
+async function runRecord(tabId: number, origin: string, table: string, record: string, token?: string): Promise<void> {
+  await rememberToken(origin, token);
+  const started = Date.now();
+  const client = makeClient(origin);
+  const base = { table, field: '*', kind: 'fields' as const, startedAt: new Date(started).toISOString() };
+  const fail = async (error: string) => setTab({ ...(await getTab(tabId)), tabId, status: 'idle', result: undefined, batch: { ...base, items: [], status: 'done', error } });
+  await setTab({ ...(await getTab(tabId)), tabId, status: 'idle', result: undefined, error: undefined, batch: { ...base, items: [], status: 'running' } });
+  try {
+    const isId = /^[0-9a-f]{32}$/.test(record);
+    const rec = (await client.query({ table, query: isId ? `sys_id=${record}` : `number=${record}`, fields: ['sys_id', 'number', 'name', 'short_description'], limit: 1 })).rows[0];
+    if (!rec?.sys_id) return fail(record);
+    const display = rec.number || rec.name || rec.sys_id;
+    const audit = (await client.query({ table: 'sys_audit', query: `documentkey=${rec.sys_id}^ORDERBYDESCsys_created_on`, fields: ['fieldname'], limit: 400 })).rows;
+    const journal = new Set(['comments', 'work_notes', 'comments_and_work_notes', 'approval_history']);
+    const fields = [...new Set(audit.map((a) => a.fieldname ?? '').filter((f) => f && !f.startsWith('sys_') && !journal.has(f)))].slice(0, 25);
+    const items: BatchItem[] = fields.map((f) => ({ sysId: rec.sys_id!, display, field: f, status: 'pending' }));
+    const save = async (status: 'running' | 'done') => setTab({ ...(await getTab(tabId)), tabId, status: 'idle', result: undefined, batch: { ...base, sysId: rec.sys_id, display, items: [...items], status, ...(status === 'done' ? { ms: Date.now() - started } : {}) } });
+    await save('running');
+    const retention = await retentionFor(origin, client);
+    let next = 0, last = 0;
+    const worker = async () => {
+      while (next < items.length) {
+        const i = next++;
+        try { items[i] = { ...batchItemFrom(await investigate(client, { table, sysId: rec.sys_id!, field: items[i]!.field! }, { retention }, metaCache(origin))), field: items[i]!.field! }; }
+        catch (e) { items[i] = { ...items[i]!, status: 'error', error: (e as Error).message }; }
+        if (Date.now() - last > 700) { last = Date.now(); await save('running'); }
+      }
+    };
+    await Promise.all([worker(), worker(), worker()]);
+    await save('done');
+  } catch (e) { await fail((e as Error).message); }
+}
+
 async function runInvestigation(tabId: number, origin: string, target: { table: string; sysId?: string; number?: string; field: string }, token?: string): Promise<void> {
   await rememberToken(origin, token);
   const prev = await getTab(tabId);
@@ -289,6 +350,13 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
         if (id === undefined) return;
         await openPanel(id, msg.mode);
         await runInvestigation(id, msg.origin, msg.target, msg.token);
+        return;
+      }
+      case 'record': {
+        const id = tabId ?? (await activeTabId());
+        if (id === undefined) return;
+        await openPanel(id, msg.mode);
+        await runRecord(id, msg.origin, msg.table, msg.record, msg.token);
         return;
       }
       case 'batch': {

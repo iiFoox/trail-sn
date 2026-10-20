@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { demoState, describeLink } from '../shared/demo';
 import { fmt, t } from '../shared/i18n';
 import { applyTheme, getPrefs, resolvedTheme, savePrefs } from '../shared/prefs';
-import { EmptyIllustration, Glyph, TrailMark } from '../shared/icons';
+import { EmptyIllustration, Glyph } from '../shared/icons';
 import { Result } from './Result';
 import { Batch } from './Batch';
 import { setTrackedTab } from '../shared/tabRef';
@@ -160,7 +160,7 @@ export function App() {
   return (
     <>
       <header class="topbar">
-        <div class="brand"><span class="mark"><TrailMark /></span>Trail</div>
+        {/* O navegador já mostra "Trail" no cabeçalho do painel: aqui fica só a instância e os botões. */}
         {origin && <span class="host" title={origin}>{origin.replace(/^https?:\/\//, '')}</span>}
         {level && <span class={`dot ${level === 'full' ? '' : level}`} title={level} />}
         <div class="actions">
@@ -185,7 +185,7 @@ export function App() {
         {state?.access && !state.result && <AccessNotice report={state.access} />}
         {state?.status === 'running' && <Loading />}
         {state?.status === 'error' && <div class="notice bad"><div class="title">{s.errorTitle}</div>{state.error}</div>}
-        {state?.batch && !state.result && origin && state.status !== 'running' && <Batch b={state.batch} origin={origin} onOpen={(id) => { void send({ type: 'investigate', origin, target: { table: state.batch!.table, sysId: id, field: state.batch!.field } }); }} />}
+        {state?.batch && !state.result && origin && state.status !== 'running' && <Batch b={state.batch} origin={origin} onOpen={(id, f) => { void send({ type: 'investigate', origin, target: { table: state.batch!.table, sysId: id, field: f ?? state.batch!.field } }); }} />}
         {state?.result && origin && state.status !== 'running' && <Result r={state.result} origin={origin} access={state.access} toast={(m) => showToast(m)} onField={investigateField} />}
         {!needsConnect && !state?.result && !state?.batch && state?.status !== 'running' && (
           <div class="empty">
@@ -236,6 +236,7 @@ function ManualDrawer({ origin, table, sysId, field, tabId, open, onDemo }: { or
   const [tbl, setTbl] = useState(table ?? 'incident');
   const [rec, setRec] = useState(sysId ?? '');
   const [fld, setFld] = useState(field ?? 'state');
+  const [whole, setWhole] = useState(false);
   useEffect(() => { if (table) setTbl(table); if (sysId) setRec(sysId); if (field) setFld(field); }, [table, sysId, field]);
   // Aberto/fechado sob controle: a pessoa fecha pelo X (ou pelo título) e reabre pelo título.
   const [isOpen, setOpen] = useState(open);
@@ -243,6 +244,7 @@ function ManualDrawer({ origin, table, sysId, field, tabId, open, onDemo }: { or
   const go = async () => {
     if (isDemo) { onDemo(fld); return; }
     if (!origin || tabId === undefined) return;
+    if (whole) { await send({ type: 'record', origin, table: tbl, record: rec }); return; }
     const target = /^[0-9a-f]{32}$/.test(rec) ? { table: tbl, sysId: rec, field: fld } : { table: tbl, number: rec, field: fld };
     await send({ type: 'investigate', origin, target });
   };
@@ -252,13 +254,18 @@ function ManualDrawer({ origin, table, sysId, field, tabId, open, onDemo }: { or
         {isOpen && <button class="drawer-x" aria-label={s.p.close} title={s.p.close} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); }}>✕</button>}
       </summary>
       <div class="body">
-        <div class="grid2">
-          <div class="field"><label>{s.table}</label><input value={tbl} onInput={(e) => setTbl((e.target as HTMLInputElement).value.trim())} /></div>
-          <div class="field"><label>{s.field}</label><input value={fld} onInput={(e) => setFld((e.target as HTMLInputElement).value.trim())} /></div>
+        <div class="seg2 manual-mode" role="group">
+          <button aria-pressed={!whole} onClick={() => setWhole(false)}>{s.p.manualField}</button>
+          <button aria-pressed={whole} onClick={() => setWhole(true)}>{s.p.manualRecord}</button>
         </div>
+        <div class={whole ? '' : 'grid2'}>
+          <div class="field"><label>{s.table}</label><input value={tbl} onInput={(e) => setTbl((e.target as HTMLInputElement).value.trim())} /></div>
+          {!whole && <div class="field"><label>{s.field}</label><input value={fld} onInput={(e) => setFld((e.target as HTMLInputElement).value.trim())} /></div>}
+        </div>
+        {whole && <div class="muted small">{s.p.manualRecordHint}</div>}
         <div class="field"><label>{s.record}</label><input value={rec} placeholder="INC0010001" onInput={(e) => setRec((e.target as HTMLInputElement).value.trim())} /></div>
         <div class="row">
-          <button class="btn primary" onClick={go} disabled={!isDemo && (!origin || !tbl || !rec || !fld)}>{Glyph.search} {s.investigate}</button>
+          <button class="btn primary" onClick={go} disabled={!isDemo && (!origin || !tbl || !rec || (!whole && !fld))}>{Glyph.search} {s.investigate}</button>
           {!origin && <span class="muted small">{s.notServiceNow}</span>}
         </div>
       </div>
