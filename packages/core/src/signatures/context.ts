@@ -51,7 +51,7 @@ export interface Traces {
   stageRows?: Row[];
   /** Usuários da auditoria: nome e se é conta de integração (só API / integração interna). */
   users?: Record<string, { name: string; integration: boolean; sysId?: string }>;
-  flowSteps?: { flow: string; order: string; action: string; table: string; writes: Record<string, string> }[];
+  flowSteps?: { flow: string; order: string; action: string; table: string; writes: Record<string, string>; subflow?: string }[];
   dataLookups: {
     name: string; sysId: string; runOnForm: boolean; runOnUpdate: boolean; inputs: string[];
     /** Campos de entrada: no registro (source) e na tabela do lookup (matcher); exact=false aceita coluna vazia como curinga. */

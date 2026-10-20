@@ -3298,5 +3298,23 @@
     "expectedType": "user_action",
     "expectedName": "admin",
     "minGrade": "confirmed"
+  },
+  {
+    "id": "F14-SUB1-description",
+    "table": "incident",
+    "sd": "[PT] F14-SUB1 Flow com subflow",
+    "field": "description",
+    "expectedType": "flow",
+    "expectedName": "[PT] F14 flow chama subflow · subflow [PT] F14 subflow descricao",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "F14-SUB1-urgency",
+    "table": "incident",
+    "sd": "[PT] F14-SUB1 Flow com subflow",
+    "field": "urgency",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "minGrade": "confirmed"
   }
 ]

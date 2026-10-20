@@ -921,3 +921,25 @@ describe('lista: atualizar selecionados e edição na célula (Fase 13)', () => 
     expect(e.grade).toBe('probable');
   });
 });
+
+describe('flow que chama subflow (Fase 14)', () => {
+  it('o passo que grava o campo está dentro do subflow: o flow continua sendo a causa, apontando o subflow', async () => {
+    const s = scenario();
+    const flowId = id(), subId = id();
+    s.flows.push({ sys_id: id(), name: '[PT] Flow pai', state: 'COMPLETE', flow: flowId, sys_created_on: T0, sys_updated_on: T0 });
+    audit(s, 'description', '', 'Preenchido pelo subflow', shiftStr(T0, 2), 'admin', 2);
+    audit(s, 'urgency', '3', '2', T0, 'admin', 1);
+    tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
+    const c = build(s);
+    c.rows('sys_hub_action_instance_v2', [
+      { flow: flowId, order: '2', 'action_type.name': 'Update Record', values: JSON.stringify([{ name: 'values', value: 'close_notes=Nota' }]) },
+      { flow: subId, order: '1', 'action_type.name': 'Update Record', values: JSON.stringify([{ name: 'values', value: 'description=Preenchido pelo subflow' }]) },
+    ]);
+    c.rows('sys_hub_sub_flow_instance_v2', [{ flow: flowId, order: '1', subflow: subId, 'subflow.name': '[PT] Subflow descrição' }]);
+    const e = top(await investigate(c, { table: 'incident', number: INC.number, field: 'description' }));
+    expect(e.type).toBe('flow');
+    expect(e.grade).toBe('confirmed');
+    expect(e.artifact.name).toContain('subflow [PT] Subflow descrição');
+    expect(e.artifact.name).toContain('passo 1.1');
+  });
+});

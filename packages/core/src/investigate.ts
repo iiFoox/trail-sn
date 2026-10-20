@@ -131,7 +131,21 @@ export async function investigate(
     // Só para a lista de "outras regras": UI actions da hierarquia que citam o campo.
     quiet('sys_ui_action', `tableIN${meta.tables.join(',')}^active=true^scriptLIKE${target.field}`, ['sys_id', 'name', 'table', 'script'], 30),
     // Passos dos flows que rodaram no registro: dizem qual ação grava o campo.
-    flowIds.length ? quiet('sys_hub_action_instance_v2', `flowIN${flowIds.join(',')}^ORDERBYorder`, ['flow', 'order', 'comment', 'values', 'action_type.name'], 100) : Promise.resolve([]),
+    flowIds.length ? (async () => {
+      const fields = ['flow', 'order', 'comment', 'values', 'action_type.name'];
+      const rows = await quiet('sys_hub_action_instance_v2', `flowIN${flowIds.join(',')}^ORDERBYorder`, fields, 100);
+      // Subflows chamados pelo flow (até 2 níveis): os passos deles também gravam no registro.
+      let parents = flowIds.map((id) => ({ id, root: id, prefix: '', via: '' }));
+      for (let depth = 0; depth < 2 && parents.length; depth++) {
+        const subs = await quiet('sys_hub_sub_flow_instance_v2', `flowIN${parents.map((x) => x.id).join(',')}^ORDERBYorder`, ['flow', 'order', 'subflow', 'subflow.name'], 50);
+        const next = subs.filter((x) => x.subflow).map((x) => { const p = parents.find((y) => y.id === x.flow) ?? parents[0]!; return { id: x.subflow!, root: p.root, prefix: `${p.prefix}${x.order ?? ''}.`, via: x['subflow.name'] || 'subflow' }; });
+        if (!next.length) break;
+        const acts = await quiet('sys_hub_action_instance_v2', `flowIN${unique(next.map((x) => x.id)).join(',')}^ORDERBYorder`, fields, 100);
+        for (const n of next) for (const a of acts.filter((x) => x.flow === n.id)) rows.push({ ...a, flow: n.root, order: n.prefix + (a.order ?? ''), subflow: n.via });
+        parents = next;
+      }
+      return rows;
+    })() : Promise.resolve([] as Row[]),
     mapIds.length ? quiet('sys_transform_entry', `mapIN${mapIds.join(',')}^target_field=${target.field}`, ['map', 'source_field', 'target_field', 'use_source_script', 'source_script'], 30) : Promise.resolve([]),
     // UI policies com "Run scripts" cujo script cita o campo (rodam no navegador, como client scripts).
     // Scripts do transform map (onBefore, onAfter...) e o script do próprio mapa que citam o campo.
@@ -190,7 +204,7 @@ export async function investigate(
   const flowSteps = await Promise.all(flowActionRows.map(async (a) => {
     const params = (await decodeFlowValues(a.values)) ?? [];
     const pick = (n: string) => params.find((p) => p.name === n)?.value ?? '';
-    return { flow: a.flow ?? '', order: a.order ?? '', action: a['action_type.name'] || a.comment || 'Ação', table: pick('table_name'), writes: parseFieldValues(pick('values') || pick('fields')) };
+    return { flow: a.flow ?? '', order: a.order ?? '', action: a['action_type.name'] || a.comment || 'Ação', table: pick('table_name'), writes: parseFieldValues(pick('values') || pick('fields')), ...(a.subflow ? { subflow: a.subflow } : {}) };
   }));
   const clientScripts = clientRows.filter((c) => new RegExp(`setValue\\(\\s*['"]${target.field}['"]`).test(c.script ?? ''));
   const setsField = (sc: string | undefined) => new RegExp(`setValue\\(\\s*['"]${target.field}['"]`).test(sc ?? '');
