@@ -1,0 +1,244 @@
+[
+  {
+    "id": "B1",
+    "number": "SCTASK0010004",
+    "field": "knowledge",
+    "expectedType": "br_async",
+    "expectedName": "[PT] F10 Conhecimento para tarefas urgentes",
+    "why": "Pessoa mudou priority 4→2 pela API; BR async (filtro priority VALCHANGES, Condition priority <= 2) grava knowledge=true e chama current.update() (checkpoint 2). Isca: '[PT] F10 Desmarca conhecimento' (before, Condition priority == 5, falsa)."
+  },
+  {
+    "id": "B2",
+    "number": "PRB0040004",
+    "field": "workaround",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F10 Contorno para DNS",
+    "why": "Cadeia: pessoa mudou category para network no formulário; o client script preencheu cause_notes com texto citando DNS; a BR before ordem 200 reage a cause_notes e grava workaround. Isca: '[PT] F10 Contorno padrão de rede' (ordem 100, Condition subcategory == vpn, falsa)."
+  },
+  {
+    "id": "B3",
+    "number": "INC0010112",
+    "field": "assigned_to",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F10 Técnico presencial do auditório",
+    "why": "Pessoa mudou contact_type para walk-in no Workspace; três BRs before disputam: ordem 100 grava Beth, ordem 250 grava Don Goodliffe e vence; ordem 700 ('Técnico remoto') tem return antecipado (contact_type != email). O state 1→2 é OOB por causa do assigned_to."
+  },
+  {
+    "id": "B4",
+    "number": "CTASK0010004",
+    "field": "close_code",
+    "expectedType": "ui_action",
+    "expectedName": "[PT] F10 Concluir teste com ressalvas",
+    "why": "Botão do formulário grava close_code=successful_issues. Isca: botão '[PT] F10 Concluir teste sem ressalvas' (não clicado)."
+  },
+  {
+    "id": "B5",
+    "number": "PRB0040008",
+    "field": "assignment_group",
+    "expectedType": "assignment_rule",
+    "expectedName": "[PT] F10 Problemas de banco de dados",
+    "why": "Cadeia: job de execução única '[PT] F10 Reclassifica problemas de armazenamento' muda category para database; a regra de atribuição grava assignment_group=Database (usuário system). Isca: '[PT] F10 Grupo de banco para prioridade alta' (return se priority != 1)."
+  },
+  {
+    "id": "B6",
+    "number": "CHG0030064",
+    "field": "category",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "why": "Pessoa (admin) mudou category Other→Hardware no formulário clássico."
+  },
+  {
+    "id": "B7",
+    "number": "CTASK0010002",
+    "field": "planned_end_date",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F10 Fim planejado pela duração",
+    "why": "Valor calculado: o client script preencheu planned_start_date; a BR before soma 4h e grava planned_end_date na mesma gravação."
+  },
+  {
+    "id": "B8",
+    "number": "PRB0040006",
+    "field": "due_date",
+    "expectedType": "script_action",
+    "expectedName": "[PT] F10 Define prazo de correção",
+    "why": "Cadeia: UI action marca known_error → BR after '[PT] F10 Avisa erro conhecido' dispara pt.f10.problema → script action grava due_date = agora + 7 dias (usuário system, checkpoint 2). Isca: '[PT] F10 Prazo para problema grave' (Condition major_problem == true, falsa)."
+  },
+  {
+    "id": "B9",
+    "number": "INC0010111",
+    "field": "impact",
+    "expectedType": "client_script",
+    "expectedName": "[PT] F10 Impacto sugerido para hardware",
+    "why": "Pessoa mudou category para hardware no Service Operations Workspace; o client script UI type All preencheu impact=2 antes do Save. Isca: '[PT] F10 Urgência sugerida para hardware' (UI type Desktop, não roda no Workspace — urgency ficou 3)."
+  },
+  {
+    "id": "B10",
+    "number": "SCTASK0010003",
+    "field": "description",
+    "expectedType": "br_after",
+    "expectedName": "[PT] F10 Registra encaminhamento",
+    "why": "UI action mudou assignment_group; BR after (filtro assignment_group VALCHANGES) grava description e chama current.update() (checkpoint 2)."
+  },
+  {
+    "id": "B11",
+    "number": "PRB0040010",
+    "field": "cause_notes",
+    "expectedType": "br_via_script_include",
+    "expectedName": "[PT] F10 Registra responsável pela análise",
+    "why": "Pessoa mudou assigned_to pela API; BR after chama PTF10Rotinas.anotarAnalise, que grava cause_notes via GlideRecord (checkpoint 2). Isca: método encerrarAnalise (nunca chamado). state 101→102 é OOB."
+  },
+  {
+    "id": "B12",
+    "number": "CTASK0010003",
+    "field": "on_hold",
+    "changeIndex": 1,
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "why": "Pessoa (admin) mudou on_hold para true pela API (PATCH). A segunda linha de auditoria (checkpoint 2) é repetição causada pelo current.update() da BR after."
+  },
+  {
+    "id": "B13",
+    "number": "SCTASK0010006",
+    "field": "description",
+    "expectedType": "scheduled_job",
+    "expectedName": "[PT] F10 Ativação de licenças pendentes",
+    "why": "Job de execução única grava description. Isca: '[PT] F10 Descrição padrão de licença' (Condition description.nil(), falsa)."
+  },
+  {
+    "id": "B14",
+    "number": "PRB0040003",
+    "field": "priority",
+    "expectedType": "data_lookup",
+    "expectedName": "Priority Problem Lookup",
+    "why": "Pessoa mudou urgency 3→1 pela API; o Data Lookup nativo de problem (dl_problem_priority) recalcula priority 5→3. Isca: '[PT] F10 Prioridade de problema grave' (Condition major_problem == true, falsa)."
+  },
+  {
+    "id": "B15",
+    "number": "CHG0030065",
+    "field": "end_date",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F10 Fim da janela",
+    "why": "Cadeia: UI action '[PT] F10 Agendar janela de sábado' grava start_date; a BR before ordem 100 soma 6h e grava end_date. Isca: '[PT] F10 Janela estendida' (ordem 500, Condition risk == 2, falsa)."
+  },
+  {
+    "id": "B16",
+    "number": "SCTASK0010002",
+    "field": "due_date",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F10 Prazo pelo técnico designado",
+    "why": "Pessoa mudou assigned_to (David Loo) no formulário; BR before ordem 100 calcula due_date = agora + 3 dias. Isca: '[PT] F10 Prazo encurtado para urgentes' (ordem 400, Condition priority == 1, falsa)."
+  },
+  {
+    "id": "B17",
+    "number": "PRB0040005",
+    "field": "assignment_group",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F10 Grupo para falhas de memória",
+    "why": "Pessoa mudou category para hardware pela API; três BRs before disputam: ordem 100 grava Hardware, ordem 300 (Condition subcategory == memory, verdadeira) grava Database e vence; ordem 600 tem return (impact != 1)."
+  },
+  {
+    "id": "B18",
+    "number": "INC0010110",
+    "field": "urgency",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "why": "Pessoa (admin) mudou urgency 3→2 no Service Operations Workspace (aba Details → Save). Isca: '[PT] F10 Urgência para salas de reunião' (Condition contact_type == walk-in, falsa)."
+  },
+  {
+    "id": "B19",
+    "number": "CTASK0010005",
+    "field": "description",
+    "expectedType": "br_via_script_include",
+    "expectedName": "[PT] F10 Instruções para o responsável",
+    "why": "Pessoa mudou assigned_to pela API; BR after chama PTF10Rotinas.instruirTarefa, que grava description via GlideRecord (checkpoint 2). Isca: '[PT] F10 Descrição de tarefa de revisão' (Condition change_task_type == review, falsa)."
+  },
+  {
+    "id": "B20",
+    "number": "PRB0040009",
+    "field": "major_problem",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F10 Problema grave por impacto",
+    "why": "Pessoa mudou impact para 1 no formulário; BR before ordem 100 grava major_problem=true. Isca: '[PT] F10 Rebaixa problemas de banco' (ordem 500, Condition category == database, falsa). priority 5→3 na mesma gravação é do data lookup."
+  },
+  {
+    "id": "B21",
+    "number": "SCTASK0010005",
+    "field": "assignment_group",
+    "expectedType": "script_action",
+    "expectedName": "[PT] F10 Fila de suprimentos",
+    "why": "Pessoa mudou assigned_to pela API; BR after '[PT] F10 Avisa suprimentos' dispara pt.f10.tarefa; a script action grava assignment_group=Hardware (usuário system). Isca: regra de atribuição '[PT] F10 Suprimentos de impressão' (priority=1, falsa)."
+  },
+  {
+    "id": "B22",
+    "number": "CTASK0010004",
+    "field": "close_notes",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F10 Notas de encerramento",
+    "why": "Mesma gravação da UI action (que só grava close_code): a BR before reage a close_code e monta close_notes. Isca: o botão não clicado também grava close_notes."
+  },
+  {
+    "id": "B23",
+    "number": "PRB0040007",
+    "field": "fix_notes",
+    "expectedType": "br_async",
+    "expectedName": "[PT] F10 Plano de correção por impacto",
+    "why": "Pessoa mudou impact 3→2 pela API; BR async grava fix_notes com current.update() (checkpoint 2). Iscas: '[PT] F10 Plano de correção urgente' (before, Condition impact == 1, falsa) e '[PT] F10 Confere plano de correção' (after, só lê)."
+  },
+  {
+    "id": "B24",
+    "number": "CHG0030064",
+    "field": "production_system",
+    "expectedType": "br_before",
+    "expectedName": "[PT] F10 Sistema de produção por categoria",
+    "why": "Mesma gravação em que a pessoa mudou category para Hardware: BR before ordem 100 grava production_system=true. Isca: '[PT] F10 Ambiente de homologação' (ordem 300, Condition type == emergency, falsa)."
+  },
+  {
+    "id": "B25",
+    "number": "PRB0040006",
+    "field": "known_error",
+    "expectedType": "ui_action",
+    "expectedName": "[PT] F10 Marcar como erro conhecido",
+    "why": "Botão do formulário grava known_error=true. Isca: botão '[PT] F10 Retirar erro conhecido' (não clicado)."
+  },
+  {
+    "id": "B26",
+    "number": "CTASK0010003",
+    "field": "assignment_group",
+    "expectedType": "br_after",
+    "expectedName": "[PT] F10 Escala tarefa em espera",
+    "why": "Pessoa pôs on_hold=true pela API; BR after grava assignment_group=Database e chama current.update() (checkpoint 2). Iscas: '[PT] F10 Grupo de storage' (before, Condition change_task_type == testing, falsa) e '[PT] F10 Log de espera' (after, só lê)."
+  },
+  {
+    "id": "B27",
+    "number": "INC0010112",
+    "field": "contact_type",
+    "expectedType": "user_action",
+    "expectedName": "admin",
+    "why": "Pessoa (admin) mudou contact_type phone→walk-in no Service Operations Workspace."
+  },
+  {
+    "id": "B28",
+    "number": "SCTASK0010003",
+    "field": "assignment_group",
+    "changeIndex": 1,
+    "expectedType": "ui_action",
+    "expectedName": "[PT] F10 Encaminhar para redes",
+    "why": "Botão do formulário grava assignment_group=Network (checkpoint 1); a linha repetida no checkpoint 2 vem do current.update() da BR after. Isca: botão '[PT] F10 Encaminhar para service desk' (não clicado; condição exige grupo preenchido)."
+  },
+  {
+    "id": "B29",
+    "number": "CTASK0010002",
+    "field": "planned_start_date",
+    "expectedType": "client_script",
+    "expectedName": "[PT] F10 Sugere início da implementação",
+    "why": "Pessoa mudou change_task_type para implementation no formulário; o client script onChange preencheu planned_start_date antes do envio. Isca: '[PT] F10 Lembra janela de mudança' (só mostra mensagem)."
+  },
+  {
+    "id": "B30",
+    "number": "PRB0040004",
+    "field": "cause_notes",
+    "expectedType": "client_script",
+    "expectedName": "[PT] F10 Sugere causa provável",
+    "why": "Pessoa mudou category para network no formulário; o client script onChange preencheu cause_notes. Isca: '[PT] F10 Avisa mudança de categoria' (só mostra mensagem)."
+  }
+]

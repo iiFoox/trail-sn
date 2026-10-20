@@ -2025,5 +2025,595 @@
     "expectedType": "user_action",
     "minGrade": "probable",
     "expectedName": "admin"
+  },
+  {
+    "id": "M8-INB-PAPI-date",
+    "table": "incident",
+    "sd": "[PT] M8-INB-PAPI-date",
+    "field": "follow_up",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INB-BBA-date",
+    "table": "incident",
+    "sd": "[PT] M8-INB-BBA-date",
+    "field": "follow_up",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 INB before date"
+  },
+  {
+    "id": "M8-INB-BAF-date",
+    "table": "incident",
+    "sd": "[PT] M8-INB-BAF-date",
+    "field": "follow_up",
+    "expectedType": "br_after",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 INB after date"
+  },
+  {
+    "id": "M8-INB-BAS-date",
+    "table": "incident",
+    "sd": "[PT] M8-INB-BAS-date",
+    "field": "follow_up",
+    "expectedType": "br_async",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 INB async date"
+  },
+  {
+    "id": "M8-INB-SA-date",
+    "table": "incident",
+    "sd": "[PT] M8-INB-SA-date",
+    "field": "follow_up",
+    "expectedType": "script_action",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 INB script action"
+  },
+  {
+    "id": "M8-INB-UI-date",
+    "table": "incident",
+    "sd": "[PT] M8-INB-UI-date",
+    "field": "follow_up",
+    "expectedType": "ui_action",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 INB botão date"
+  },
+  {
+    "id": "M8-INB-JOB-date",
+    "table": "incident",
+    "sd": "[PT] M8-INB-JOB-date",
+    "field": "follow_up",
+    "expectedType": "scheduled_job",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 INB job date"
+  },
+  {
+    "id": "M8-INB-ORD-date",
+    "table": "incident",
+    "sd": "[PT] M8-INB-ORD-date",
+    "field": "follow_up",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 INB ordem 300 date"
+  },
+  {
+    "id": "M8-INB-SI-date",
+    "table": "incident",
+    "sd": "[PT] M8-INB-SI-date",
+    "field": "follow_up",
+    "expectedType": "br_via_script_include",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 INB chama SI date"
+  },
+  {
+    "id": "M8-INB-PAPI-int",
+    "table": "incident",
+    "sd": "[PT] M8-INB-PAPI-int",
+    "field": "order",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-INB-BBA-int",
+    "table": "incident",
+    "sd": "[PT] M8-INB-BBA-int",
+    "field": "order",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 INB before int"
+  },
+  {
+    "id": "M8-INB-BAF-int",
+    "table": "incident",
+    "sd": "[PT] M8-INB-BAF-int",
+    "field": "order",
+    "expectedType": "br_after",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 INB after int"
+  },
+  {
+    "id": "M8-INB-BAS-int",
+    "table": "incident",
+    "sd": "[PT] M8-INB-BAS-int",
+    "field": "order",
+    "expectedType": "br_async",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 INB async int"
+  },
+  {
+    "id": "M8-INB-SA-int",
+    "table": "incident",
+    "sd": "[PT] M8-INB-SA-int",
+    "field": "order",
+    "expectedType": "script_action",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 INB script action"
+  },
+  {
+    "id": "M8-INB-UI-int",
+    "table": "incident",
+    "sd": "[PT] M8-INB-UI-int",
+    "field": "order",
+    "expectedType": "ui_action",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 INB botão int"
+  },
+  {
+    "id": "M8-INB-JOB-int",
+    "table": "incident",
+    "sd": "[PT] M8-INB-JOB-int",
+    "field": "order",
+    "expectedType": "scheduled_job",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 INB job int"
+  },
+  {
+    "id": "M8-INB-ORD-int",
+    "table": "incident",
+    "sd": "[PT] M8-INB-ORD-int",
+    "field": "order",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 INB ordem 300 int"
+  },
+  {
+    "id": "M8-INB-SI-int",
+    "table": "incident",
+    "sd": "[PT] M8-INB-SI-int",
+    "field": "order",
+    "expectedType": "br_via_script_include",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 INB chama SI int"
+  },
+  {
+    "id": "M8-CHB-PAPI-date",
+    "table": "change_request",
+    "sd": "[PT] M8-CHB-PAPI-date",
+    "field": "expected_start",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHB-BBA-date",
+    "table": "change_request",
+    "sd": "[PT] M8-CHB-BBA-date",
+    "field": "expected_start",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 CHB before date"
+  },
+  {
+    "id": "M8-CHB-BAF-date",
+    "table": "change_request",
+    "sd": "[PT] M8-CHB-BAF-date",
+    "field": "expected_start",
+    "expectedType": "br_after",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 CHB after date"
+  },
+  {
+    "id": "M8-CHB-BAS-date",
+    "table": "change_request",
+    "sd": "[PT] M8-CHB-BAS-date",
+    "field": "expected_start",
+    "expectedType": "br_async",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 CHB async date"
+  },
+  {
+    "id": "M8-CHB-SA-date",
+    "table": "change_request",
+    "sd": "[PT] M8-CHB-SA-date",
+    "field": "expected_start",
+    "expectedType": "script_action",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 CHB script action"
+  },
+  {
+    "id": "M8-CHB-UI-date",
+    "table": "change_request",
+    "sd": "[PT] M8-CHB-UI-date",
+    "field": "expected_start",
+    "expectedType": "ui_action",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 CHB botão date"
+  },
+  {
+    "id": "M8-CHB-JOB-date",
+    "table": "change_request",
+    "sd": "[PT] M8-CHB-JOB-date",
+    "field": "expected_start",
+    "expectedType": "scheduled_job",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 CHB job date"
+  },
+  {
+    "id": "M8-CHB-ORD-date",
+    "table": "change_request",
+    "sd": "[PT] M8-CHB-ORD-date",
+    "field": "expected_start",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 CHB ordem 300 date"
+  },
+  {
+    "id": "M8-CHB-SI-date",
+    "table": "change_request",
+    "sd": "[PT] M8-CHB-SI-date",
+    "field": "expected_start",
+    "expectedType": "br_via_script_include",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 CHB chama SI date"
+  },
+  {
+    "id": "M8-CHB-PAPI-int",
+    "table": "change_request",
+    "sd": "[PT] M8-CHB-PAPI-int",
+    "field": "order",
+    "expectedType": "user_action",
+    "minGrade": "confirmed"
+  },
+  {
+    "id": "M8-CHB-BBA-int",
+    "table": "change_request",
+    "sd": "[PT] M8-CHB-BBA-int",
+    "field": "order",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 CHB before int"
+  },
+  {
+    "id": "M8-CHB-BAF-int",
+    "table": "change_request",
+    "sd": "[PT] M8-CHB-BAF-int",
+    "field": "order",
+    "expectedType": "br_after",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 CHB after int"
+  },
+  {
+    "id": "M8-CHB-BAS-int",
+    "table": "change_request",
+    "sd": "[PT] M8-CHB-BAS-int",
+    "field": "order",
+    "expectedType": "br_async",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 CHB async int"
+  },
+  {
+    "id": "M8-CHB-SA-int",
+    "table": "change_request",
+    "sd": "[PT] M8-CHB-SA-int",
+    "field": "order",
+    "expectedType": "script_action",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 CHB script action"
+  },
+  {
+    "id": "M8-CHB-UI-int",
+    "table": "change_request",
+    "sd": "[PT] M8-CHB-UI-int",
+    "field": "order",
+    "expectedType": "ui_action",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 CHB botão int"
+  },
+  {
+    "id": "M8-CHB-JOB-int",
+    "table": "change_request",
+    "sd": "[PT] M8-CHB-JOB-int",
+    "field": "order",
+    "expectedType": "scheduled_job",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 CHB job int"
+  },
+  {
+    "id": "M8-CHB-ORD-int",
+    "table": "change_request",
+    "sd": "[PT] M8-CHB-ORD-int",
+    "field": "order",
+    "expectedType": "br_before",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 CHB ordem 300 int"
+  },
+  {
+    "id": "M8-CHB-SI-int",
+    "table": "change_request",
+    "sd": "[PT] M8-CHB-SI-int",
+    "field": "order",
+    "expectedType": "br_via_script_include",
+    "minGrade": "confirmed",
+    "expectedName": "[PT] M8 CHB chama SI int"
+  },
+  {
+    "id": "F10-B1",
+    "table": "sc_task",
+    "sysId": "ee37fb9dc38813101cbdb8e1b401318a",
+    "field": "knowledge",
+    "expectedType": "br_async",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Conhecimento para tarefas urgentes"
+  },
+  {
+    "id": "F10-B2",
+    "table": "problem",
+    "sysId": "b537bb9dc38813101cbdb8e1b40131d1",
+    "field": "workaround",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Contorno para DNS"
+  },
+  {
+    "id": "F10-B3",
+    "table": "incident",
+    "sysId": "48477f9dc38813101cbdb8e1b401315b",
+    "field": "assigned_to",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Técnico presencial do auditório"
+  },
+  {
+    "id": "F10-B4",
+    "table": "change_task",
+    "sysId": "df377f9dc38813101cbdb8e1b4013117",
+    "field": "close_code",
+    "expectedType": "ui_action",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Concluir teste com ressalvas"
+  },
+  {
+    "id": "F10-B5",
+    "table": "problem",
+    "sysId": "4a37bb9dc38813101cbdb8e1b40131e9",
+    "field": "assignment_group",
+    "expectedType": "assignment_rule",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Problemas de banco de dados"
+  },
+  {
+    "id": "F10-B6",
+    "table": "change_request",
+    "sysId": "48477f9dc38813101cbdb8e1b4013151",
+    "field": "category",
+    "expectedType": "user_action",
+    "minGrade": "probable",
+    "expectedName": "admin"
+  },
+  {
+    "id": "F10-B7",
+    "table": "change_task",
+    "sysId": "8b373f9dc38813101cbdb8e1b40131f0",
+    "field": "planned_end_date",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Fim planejado pela duração"
+  },
+  {
+    "id": "F10-B8",
+    "table": "problem",
+    "sysId": "7537bb9dc38813101cbdb8e1b40131de",
+    "field": "due_date",
+    "expectedType": "script_action",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Define prazo de correção"
+  },
+  {
+    "id": "F10-B9",
+    "table": "incident",
+    "sysId": "fb377f9dc38813101cbdb8e1b40131a3",
+    "field": "impact",
+    "expectedType": "client_script",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Impacto sugerido para hardware"
+  },
+  {
+    "id": "F10-B10",
+    "table": "sc_task",
+    "sysId": "6637fb9dc38813101cbdb8e1b401317d",
+    "field": "description",
+    "expectedType": "br_after",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Registra encaminhamento"
+  },
+  {
+    "id": "F10-B11",
+    "table": "problem",
+    "sysId": "d637fb9dc38813101cbdb8e1b401313f",
+    "field": "cause_notes",
+    "expectedType": "br_via_script_include",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Registra responsável pela análise"
+  },
+  {
+    "id": "F10-B12",
+    "table": "change_task",
+    "sysId": "5f373f9dc38813101cbdb8e1b40131f7",
+    "field": "on_hold",
+    "expectedType": "user_action",
+    "minGrade": "probable",
+    "expectedName": "admin"
+  },
+  {
+    "id": "F10-B13",
+    "table": "sc_task",
+    "sysId": "f2373f9dc38813101cbdb8e1b401317f",
+    "field": "description",
+    "expectedType": "scheduled_job",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Ativação de licenças pendentes"
+  },
+  {
+    "id": "F10-B14",
+    "table": "problem",
+    "sysId": "2937bb9dc38813101cbdb8e1b40131b1",
+    "field": "priority",
+    "expectedType": "data_lookup",
+    "minGrade": "probable",
+    "expectedName": "Priority Problem Lookup"
+  },
+  {
+    "id": "F10-B15",
+    "table": "change_request",
+    "sysId": "8447bf9dc38813101cbdb8e1b4013108",
+    "field": "end_date",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Fim da janela"
+  },
+  {
+    "id": "F10-B16",
+    "table": "sc_task",
+    "sysId": "5237fb9dc38813101cbdb8e1b4013145",
+    "field": "due_date",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Prazo pelo técnico designado"
+  },
+  {
+    "id": "F10-B17",
+    "table": "problem",
+    "sysId": "7937bb9dc38813101cbdb8e1b40131d8",
+    "field": "assignment_group",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Grupo para falhas de memória"
+  },
+  {
+    "id": "F10-B18",
+    "table": "incident",
+    "sysId": "2b377f9dc38813101cbdb8e1b401317f",
+    "field": "urgency",
+    "expectedType": "user_action",
+    "minGrade": "probable",
+    "expectedName": "admin"
+  },
+  {
+    "id": "F10-B19",
+    "table": "change_task",
+    "sysId": "ef377f9dc38813101cbdb8e1b4013178",
+    "field": "description",
+    "expectedType": "br_via_script_include",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Instruções para o responsável"
+  },
+  {
+    "id": "F10-B20",
+    "table": "problem",
+    "sysId": "c237bb9dc38813101cbdb8e1b40131ef",
+    "field": "major_problem",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Problema grave por impacto"
+  },
+  {
+    "id": "F10-B21",
+    "table": "sc_task",
+    "sysId": "7237fb9dc38813101cbdb8e1b40131bb",
+    "field": "assignment_group",
+    "expectedType": "script_action",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Fila de suprimentos"
+  },
+  {
+    "id": "F10-B22",
+    "table": "change_task",
+    "sysId": "df377f9dc38813101cbdb8e1b4013117",
+    "field": "close_notes",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Notas de encerramento"
+  },
+  {
+    "id": "F10-B23",
+    "table": "problem",
+    "sysId": "ce37bb9dc38813101cbdb8e1b40131e3",
+    "field": "fix_notes",
+    "expectedType": "br_async",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Plano de correção por impacto"
+  },
+  {
+    "id": "F10-B24",
+    "table": "change_request",
+    "sysId": "48477f9dc38813101cbdb8e1b4013151",
+    "field": "production_system",
+    "expectedType": "br_before",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Sistema de produção por categoria"
+  },
+  {
+    "id": "F10-B25",
+    "table": "problem",
+    "sysId": "7537bb9dc38813101cbdb8e1b40131de",
+    "field": "known_error",
+    "expectedType": "ui_action",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Marcar como erro conhecido"
+  },
+  {
+    "id": "F10-B26",
+    "table": "change_task",
+    "sysId": "5f373f9dc38813101cbdb8e1b40131f7",
+    "field": "assignment_group",
+    "expectedType": "br_after",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Escala tarefa em espera"
+  },
+  {
+    "id": "F10-B27",
+    "table": "incident",
+    "sysId": "48477f9dc38813101cbdb8e1b401315b",
+    "field": "contact_type",
+    "expectedType": "user_action",
+    "minGrade": "probable",
+    "expectedName": "admin"
+  },
+  {
+    "id": "F10-B28",
+    "table": "sc_task",
+    "sysId": "6637fb9dc38813101cbdb8e1b401317d",
+    "field": "assignment_group",
+    "expectedType": "ui_action",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Encaminhar para redes"
+  },
+  {
+    "id": "F10-B29",
+    "table": "change_task",
+    "sysId": "8b373f9dc38813101cbdb8e1b40131f0",
+    "field": "planned_start_date",
+    "expectedType": "client_script",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Sugere início da implementação"
+  },
+  {
+    "id": "F10-B30",
+    "table": "problem",
+    "sysId": "b537bb9dc38813101cbdb8e1b40131d1",
+    "field": "cause_notes",
+    "expectedType": "client_script",
+    "minGrade": "probable",
+    "expectedName": "[PT] F10 Sugere causa provável"
   }
 ]

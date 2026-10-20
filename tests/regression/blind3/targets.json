@@ -1,0 +1,214 @@
+[
+  {
+    "id": "B1",
+    "table": "sc_task",
+    "sysId": "ee37fb9dc38813101cbdb8e1b401318a",
+    "number": "SCTASK0010004",
+    "field": "knowledge"
+  },
+  {
+    "id": "B2",
+    "table": "problem",
+    "sysId": "b537bb9dc38813101cbdb8e1b40131d1",
+    "number": "PRB0040004",
+    "field": "workaround"
+  },
+  {
+    "id": "B3",
+    "table": "incident",
+    "sysId": "48477f9dc38813101cbdb8e1b401315b",
+    "number": "INC0010112",
+    "field": "assigned_to"
+  },
+  {
+    "id": "B4",
+    "table": "change_task",
+    "sysId": "df377f9dc38813101cbdb8e1b4013117",
+    "number": "CTASK0010004",
+    "field": "close_code"
+  },
+  {
+    "id": "B5",
+    "table": "problem",
+    "sysId": "4a37bb9dc38813101cbdb8e1b40131e9",
+    "number": "PRB0040008",
+    "field": "assignment_group"
+  },
+  {
+    "id": "B6",
+    "table": "change_request",
+    "sysId": "48477f9dc38813101cbdb8e1b4013151",
+    "number": "CHG0030064",
+    "field": "category"
+  },
+  {
+    "id": "B7",
+    "table": "change_task",
+    "sysId": "8b373f9dc38813101cbdb8e1b40131f0",
+    "number": "CTASK0010002",
+    "field": "planned_end_date"
+  },
+  {
+    "id": "B8",
+    "table": "problem",
+    "sysId": "7537bb9dc38813101cbdb8e1b40131de",
+    "number": "PRB0040006",
+    "field": "due_date"
+  },
+  {
+    "id": "B9",
+    "table": "incident",
+    "sysId": "fb377f9dc38813101cbdb8e1b40131a3",
+    "number": "INC0010111",
+    "field": "impact"
+  },
+  {
+    "id": "B10",
+    "table": "sc_task",
+    "sysId": "6637fb9dc38813101cbdb8e1b401317d",
+    "number": "SCTASK0010003",
+    "field": "description"
+  },
+  {
+    "id": "B11",
+    "table": "problem",
+    "sysId": "d637fb9dc38813101cbdb8e1b401313f",
+    "number": "PRB0040010",
+    "field": "cause_notes"
+  },
+  {
+    "id": "B12",
+    "table": "change_task",
+    "sysId": "5f373f9dc38813101cbdb8e1b40131f7",
+    "number": "CTASK0010003",
+    "field": "on_hold",
+    "changeIndex": 1
+  },
+  {
+    "id": "B13",
+    "table": "sc_task",
+    "sysId": "f2373f9dc38813101cbdb8e1b401317f",
+    "number": "SCTASK0010006",
+    "field": "description"
+  },
+  {
+    "id": "B14",
+    "table": "problem",
+    "sysId": "2937bb9dc38813101cbdb8e1b40131b1",
+    "number": "PRB0040003",
+    "field": "priority"
+  },
+  {
+    "id": "B15",
+    "table": "change_request",
+    "sysId": "8447bf9dc38813101cbdb8e1b4013108",
+    "number": "CHG0030065",
+    "field": "end_date"
+  },
+  {
+    "id": "B16",
+    "table": "sc_task",
+    "sysId": "5237fb9dc38813101cbdb8e1b4013145",
+    "number": "SCTASK0010002",
+    "field": "due_date"
+  },
+  {
+    "id": "B17",
+    "table": "problem",
+    "sysId": "7937bb9dc38813101cbdb8e1b40131d8",
+    "number": "PRB0040005",
+    "field": "assignment_group"
+  },
+  {
+    "id": "B18",
+    "table": "incident",
+    "sysId": "2b377f9dc38813101cbdb8e1b401317f",
+    "number": "INC0010110",
+    "field": "urgency"
+  },
+  {
+    "id": "B19",
+    "table": "change_task",
+    "sysId": "ef377f9dc38813101cbdb8e1b4013178",
+    "number": "CTASK0010005",
+    "field": "description"
+  },
+  {
+    "id": "B20",
+    "table": "problem",
+    "sysId": "c237bb9dc38813101cbdb8e1b40131ef",
+    "number": "PRB0040009",
+    "field": "major_problem"
+  },
+  {
+    "id": "B21",
+    "table": "sc_task",
+    "sysId": "7237fb9dc38813101cbdb8e1b40131bb",
+    "number": "SCTASK0010005",
+    "field": "assignment_group"
+  },
+  {
+    "id": "B22",
+    "table": "change_task",
+    "sysId": "df377f9dc38813101cbdb8e1b4013117",
+    "number": "CTASK0010004",
+    "field": "close_notes"
+  },
+  {
+    "id": "B23",
+    "table": "problem",
+    "sysId": "ce37bb9dc38813101cbdb8e1b40131e3",
+    "number": "PRB0040007",
+    "field": "fix_notes"
+  },
+  {
+    "id": "B24",
+    "table": "change_request",
+    "sysId": "48477f9dc38813101cbdb8e1b4013151",
+    "number": "CHG0030064",
+    "field": "production_system"
+  },
+  {
+    "id": "B25",
+    "table": "problem",
+    "sysId": "7537bb9dc38813101cbdb8e1b40131de",
+    "number": "PRB0040006",
+    "field": "known_error"
+  },
+  {
+    "id": "B26",
+    "table": "change_task",
+    "sysId": "5f373f9dc38813101cbdb8e1b40131f7",
+    "number": "CTASK0010003",
+    "field": "assignment_group"
+  },
+  {
+    "id": "B27",
+    "table": "incident",
+    "sysId": "48477f9dc38813101cbdb8e1b401315b",
+    "number": "INC0010112",
+    "field": "contact_type"
+  },
+  {
+    "id": "B28",
+    "table": "sc_task",
+    "sysId": "6637fb9dc38813101cbdb8e1b401317d",
+    "number": "SCTASK0010003",
+    "field": "assignment_group",
+    "changeIndex": 1
+  },
+  {
+    "id": "B29",
+    "table": "change_task",
+    "sysId": "8b373f9dc38813101cbdb8e1b40131f0",
+    "number": "CTASK0010002",
+    "field": "planned_start_date"
+  },
+  {
+    "id": "B30",
+    "table": "problem",
+    "sysId": "b537bb9dc38813101cbdb8e1b40131d1",
+    "number": "PRB0040004",
+    "field": "cause_notes"
+  }
+]

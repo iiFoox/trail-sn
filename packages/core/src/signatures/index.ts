@@ -2,7 +2,7 @@ import type { Evidence } from '../types';
 import { asyncBusinessRule } from './asyncBusinessRule';
 import { backgroundScript } from './backgroundScript';
 import { isSystemUser, type ChangeContext } from './context';
-import { toMs } from '../util';
+import { isRecordWrite, toMs } from '../util';
 import { flow, workflow } from './flowAndWorkflow';
 import { importSet } from './importSet';
 import { backgroundBefores, backgroundChain, sameTransaction } from './sameTransaction';
@@ -39,9 +39,9 @@ export function runSignatures(full: ChangeContext): Evidence[] {
   const ruledOut = (e: Evidence) => e.facts.some((f) => f.kind === 'no_step_writes_field' || f.kind === 'sets_other_value' || f.kind === 'condition_false' || f.kind === 'reads_only');
   const strong = out.some((e) => !ruledOut(e) && e.facts.some((f) => f.kind === 'trace_names_artifact' || f.kind === 'trace_identifies_mechanism'));
   // Só transações DESTE registro: a mesma pessoa navegando em outras telas na hora não é uma gravação dela aqui.
-  const anyUserTx = ctx.traces.transactions.some((t) => t.sys_created_by === ctx.user && !/^JOB: /.test(t.url ?? '') && (t.url ?? '').includes(ctx.sysId))
+  const anyUserTx = ctx.traces.transactions.some((t) => t.sys_created_by === ctx.user && !/^JOB: /.test(t.url ?? '') && isRecordWrite(t.url, ctx.sysId))
     // Regras de atribuição e alguns motores gravam como "system" DENTRO da transação de outra pessoa no mesmo registro.
-    || (isSystemUser(ctx.user) && ctx.traces.transactions.some((t) => !/^JOB: /.test(t.url ?? '') && (t.url ?? '').includes(ctx.sysId) && Math.abs(toMs(t.sys_created_on ?? '') - toMs(ctx.at)) <= 2000));
+    || (isSystemUser(ctx.user) && ctx.traces.transactions.some((t) => !/^JOB: /.test(t.url ?? '') && isRecordWrite(t.url, ctx.sysId) && Math.abs(toMs(t.sys_created_on ?? '') - toMs(ctx.at)) <= 2000));
   const anySubmit = ctx.traces.transactions.some((t) => t.type === 'form' && (t.url ?? '').includes(`sys_uniqueValue=${ctx.sysId}`));
   if (!strong && !anyUserTx && !anySubmit) {
     out.push(...scheduledJobWithoutTransaction(ctx));

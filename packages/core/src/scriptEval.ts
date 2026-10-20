@@ -284,7 +284,8 @@ export function evalExpr(expr: string, env: Env): Val {
     if (isObj(n)) {
       if (n.name === 'current' || n.name === 'previous') {
         if (!call) return { kind: 'field', obj: n.name, name };
-        if (name === 'getValue' || name === 'getDisplayValue') return a[0] !== undefined ? value({ kind: 'field', obj: n.name, name: String(a[0]) }) : U;
+        if (name === 'getValue') return a[0] !== undefined ? value({ kind: 'field', obj: n.name, name: String(a[0]) }) : U;
+        if (name === 'getDisplayValue') return U;
         if (name === 'isNewRecord') return false;
         if (name === 'getUniqueValue') return env.rec.sys_id ?? U;
         if (name === 'operation') return 'update';
@@ -310,7 +311,9 @@ export function evalExpr(expr: string, env: Env): Val {
       if (name === 'changesTo') return n.obj === 'current' ? (env.changed.has(n.name) ? (fieldVal(n) === U ? U : str(fieldVal(n)) === str(a[0])) : false) : U;
       if (name === 'changesFrom') return n.obj === 'current' ? (env.changed.has(n.name) ? (n.name in env.old ? env.old[n.name] === str(a[0]) : U) : false) : U;
       if (name === 'nil') { const v = fieldVal(n); return v === U ? U : str(v) === ''; }
-      if (name === 'getValue' || name === 'toString' || name === 'getDisplayValue') return fieldVal(n);
+      // getDisplayValue() devolve o rótulo ("2 - Medium", nome do grupo), que não temos aqui: desconhecido, nunca o valor cru.
+      if (name === 'getDisplayValue') return U;
+      if (name === 'getValue' || name === 'toString') return fieldVal(n);
       return stringMethod(fieldVal(n), name, a);
     }
     if (!call) return name === 'length' && typeof n === 'string' ? n.length : U;
@@ -365,7 +368,9 @@ export function evalExpr(expr: string, env: Env): Val {
       const op = toks[p++]!.v; const r = relational();
       if (l === U || r === U) { l = U; continue; }
       // No ServiceNow os campos chegam como texto: '1' == 1 vale. Comparamos como texto.
-      const eq = String(l ?? '') === String(r ?? '');
+      // Campo booleano: GlideElement == true compara com '1'/'true'.
+      const asBool = (v: Val) => (v === true || v === '1' || v === 'true' ? 'true' : v === false || v === '0' || v === 'false' || v === '' ? 'false' : String(v));
+      const eq = typeof l === 'boolean' || typeof r === 'boolean' ? asBool(l) === asBool(r) : String(l ?? '') === String(r ?? '');
       l = op.startsWith('!') ? !eq : eq;
     }
     return l;

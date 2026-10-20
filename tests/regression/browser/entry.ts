@@ -57,3 +57,4 @@ export async function runRegression(list: any[] = cases as any[]): Promise<unkno
   const ms = results.map((r) => r.ms).sort((a, b) => a - b);
   return { access: access.level, denied: access.denied, results, median: ms[Math.floor(ms.length / 2)] };
 }
+export const allCases = cases as any[];

@@ -16,7 +16,7 @@ import {
   type TraceItem,
 } from './types';
 import { isSaveButton } from './signatures/uiAction';
-import { decodeFlowValues, isWorkspaceAction, parseFieldValues, uiActionMatches, uiActionQuery, uiActionRef } from './util';
+import { decodeFlowValues, isRecordWrite, isWorkspaceAction, parseFieldValues, uiActionMatches, uiActionQuery, uiActionRef } from './util';
 import { conditionFields, mergeWindows, refsField, shift, toMs, withTimeout } from './util';
 
 /** Cache de metadados por tabela (hierarquia, BRs, script includes). A extensão guarda em chrome.storage.session. */
@@ -115,7 +115,7 @@ export async function investigate(
   const eventNames = unique(evAll.map((e) => e.name ?? '').filter(Boolean));
   const uiActionIds = unique(txAll.filter((t) => (t.url ?? '').includes(sysId)).map((t) => uiActionRef(t.url) ?? '').filter(Boolean));
   // Só transações DESTE registro contam: o mesmo usuário mexendo em outras telas na hora não explica a mudança.
-  const needsJobScan = fieldChanges.some((c) => !txAll.some((t) => t.sys_created_by === c.user && !/^JOB: /.test(t.url ?? '') && (t.url ?? '').includes(sysId) && inWindow(t, c, opts)));
+  const needsJobScan = fieldChanges.some((c) => !txAll.some((t) => t.sys_created_by === c.user && !/^JOB: /.test(t.url ?? '') && isRecordWrite(t.url, sysId) && inWindow(t, c, opts)));
 
   const isAssignmentField = target.field === 'assignment_group' || target.field === 'assigned_to';
   const flowIds = unique(flowsAll.map((f) => f.flow ?? '').filter(Boolean));
@@ -292,7 +292,8 @@ export async function investigate(
   async function loadMeta(table: string, field: string): Promise<TableMeta> {
     const cached = await cache.get(table);
     const base = cached ?? (await loadMetaBase(table));
-    if (!cached) await cache.set(table, base);
+    // Metadados incompletos (consulta de regras estourou o tempo) não vão para o cache: senão o erro se repetiria.
+    if (!cached && !base.incomplete) await cache.set(table, base);
     // O que depende do campo é recalculado a partir do cache (barato, sem rede).
     const brField = base.businessRules.filter((b) => refsField(b.script, field) || refsField(b.template, field));
     const siField = base.scriptIncludes.filter((s) => refsField(s.script, field));
@@ -318,12 +319,18 @@ export async function investigate(
       const o: Row | undefined = (await q('sys_db_object', `name=${cur}`, ['super_class.name'], 1))[0];
       cur = o?.['super_class.name'] || undefined;
     }
-    const businessRules = await q('sys_script', `collectionIN${tables.join(',')}^active=true`, ['sys_id', 'name', 'when', 'order', 'collection', 'script', 'template', 'condition', 'filter_condition', 'action_insert', 'action_update'], 500);
+    const brReq = { table: 'sys_script', query: `collectionIN${tables.join(',')}^active=true`, fields: ['sys_id', 'name', 'when', 'order', 'collection', 'script', 'template', 'condition', 'filter_condition', 'action_insert', 'action_update'], limit: 500 };
+    // As regras são a base de tudo: se a consulta estourar o tempo, tenta de novo com mais folga antes de seguir sem elas.
+    let brRes = await withTimeout(client.query(brReq), opts.sourceTimeoutMs, { rows: [] as Row[], status: 0, access: 'timeout' as AccessState });
+    if (brRes.access === 'timeout') brRes = await withTimeout(client.query(brReq), opts.sourceTimeoutMs * 3, { rows: [] as Row[], status: 0, access: 'timeout' as AccessState });
+    if (!access.sys_script || access.sys_script === 'timeout') access.sys_script = brRes.access;
+    const businessRules = brRes.rows;
+    const incomplete = brRes.access === 'timeout';
     // Script includes citados pelas BRs (por nome; buscar por conteúdo traz centenas de scripts nativos).
     const siNames = new Set<string>();
     for (const b of businessRules) (b.script ?? '').replace(/new\s+(?:global\.)?([A-Z][A-Za-z0-9_]+)\s*\(/g, (_m, n: string) => { siNames.add(n); return _m; });
     const scriptIncludes = siNames.size ? await q('sys_script_include', `active=true^nameIN${[...siNames].join(',')}`, ['sys_id', 'name', 'script'], 200) : [];
-    return { tables, businessRules, scriptIncludes, brField: [], siField: [], brViaSi: [] };
+    return { tables, businessRules, scriptIncludes, brField: [], siField: [], brViaSi: [], ...(incomplete ? { incomplete } : {}) };
   }
 }
 

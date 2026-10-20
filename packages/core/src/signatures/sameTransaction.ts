@@ -2,7 +2,7 @@ import { fact } from '../scoring';
 import { evalCondition, refsField, toMs } from '../util';
 import { evalExpr, scriptVerdict, writesOf } from '../scriptEval';
 import { envFor, reactsFacts, resolveOrder, scriptFacts, UNKNOWN_VALUE } from './scriptFacts';
-import { parseFieldValues, sameVal, uiActionMatches, uiActionRef } from '../util';
+import { conditionFields as conditionFieldsOf, isRecordWrite, parseFieldValues, sameVal, uiActionMatches, uiActionRef } from '../util';
 import { isSaveButton } from './uiAction';
 import { evidence, isSystemUser, type ChangeContext, type Signature } from './context';
 import type { Evidence, Fact, Row } from '../types';
@@ -101,7 +101,21 @@ export const backgroundBefores = (ctx: ChangeContext): Evidence[] => {
     ...(traceless ? [fact('no_trace', 'syslog_transaction', 'nenhum registro de execução no instante da mudança (pode ter expirado)')] : []),
   ]);
   resolveOrder(evs);
-  return evs.map((x) => x.e);
+  const out = evs.map((x) => x.e);
+  // Regras de atribuição também rodam na gravação de fundo (job, script action) e gravam como "system".
+  for (const rule of ctx.traces.assignmentRules) {
+    const target = rule.group || rule.user;
+    if (!target) continue;
+    const facts = [fact('references_table', 'sysrule_assignment', `regra da tabela ${rule.table}`), ...conditionFacts(ctx, rule.condition, 'sysrule_assignment')];
+    if (target !== (ctx.audit.newvalue ?? '')) facts.push(fact('sets_other_value', 'sysrule_assignment', 'a regra atribui outro valor'));
+    else {
+      facts.push(fact('references_field', 'sysrule_assignment', 'a regra atribui exatamente o valor gravado'));
+      const others = (ctx.checkpoints[String(ctx.checkpoint)] ?? []).map((r) => r.fieldname ?? '').filter((f) => f && f !== ctx.field);
+      if (others.some((f) => conditionFieldsOf(rule.condition).includes(f))) facts.push(fact('trace_identifies_mechanism', 'sys_audit', 'o campo da condição da regra mudou na mesma gravação'));
+    }
+    out.push(evidence('assignment_rule', { name: rule.name ?? '?', sysId: rule.sys_id, table: 'sysrule_assignment' }, facts));
+  }
+  return out;
 };
 
 /**
@@ -177,9 +191,9 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
   });
   const isStrong = (es: Evidence[]) => es.some((e) => e.facts.some((f) => f.kind === 'trace_identifies_mechanism') && !e.facts.some((f) => f.kind === 'condition_false' || f.kind === 'sets_other_value' || f.kind === 'reads_only'));
   const tx = ctx.traces.transactions;
-  let userTx = tx.filter((t) => t.sys_created_by === ctx.user && (t.url ?? '').includes(ctx.sysId));
+  let userTx = tx.filter((t) => t.sys_created_by === ctx.user && isRecordWrite(t.url, ctx.sysId));
   // Gravado como "system" dentro do salvamento de outra pessoa (regra de atribuição): a transação é a dessa pessoa.
-  if (!userTx.length && isSystemUser(ctx.user)) userTx = tx.filter((t) => !/^JOB: /.test(t.url ?? '') && (t.url ?? '').includes(ctx.sysId) && Math.abs(toMs(t.sys_created_on ?? '') - toMs(ctx.at)) <= 2000);
+  if (!userTx.length && isSystemUser(ctx.user)) userTx = tx.filter((t) => !/^JOB: /.test(t.url ?? '') && isRecordWrite(t.url, ctx.sysId) && Math.abs(toMs(t.sys_created_on ?? '') - toMs(ctx.at)) <= 2000);
 
   let verdict: 'user' | 'server' | null = null;
   let formAt = '';
@@ -189,7 +203,12 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
     const p = new URLSearchParams((t.url ?? '').split('?')[1] ?? '');
     const sent = p.get(`${ctx.table}.${ctx.field}`);
     if (sent === null) continue;
-    verdict = sameVal(sent, ctx.audit.newvalue ?? '') ? 'user' : 'server';
+    // A URL da transação é cortada (tamanho da coluna ou caractere acentuado): valor enviado incompleto.
+    // Se ele é o começo do valor novo e não do antigo, o formulário mandou o novo; se é o começo dos dois, não dá para saber.
+    const nv = ctx.audit.newvalue ?? '', ov = ctx.audit.oldvalue ?? '';
+    const cut = sent.length >= 3 && sent.length < nv.length && nv.startsWith(sent);
+    if (cut && ov.startsWith(sent)) continue;
+    verdict = sameVal(sent, nv) || cut ? 'user' : 'server';
     sentValue = sent;
     formAt = t.sys_created_on ?? '';
     formUser = t.sys_created_by ?? ctx.user;
@@ -323,12 +342,12 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
       const who = ctx.traces.users?.[ctx.user];
       if (api && who?.integration) facts.push(fact('integration_user', 'sys_user', `${who.name} é uma conta de integração (só API)`));
       if (onWs) {
-        if (!rivals.length) {
+        if (!rivals.length && !ctx.meta.incomplete) {
           facts.push(fact('api_write_on_record', 'syslog_transaction', `${ctx.user} salvou este registro pelo Workspace no mesmo instante`));
           facts.push(fact('no_competing_automation', 'sys_script', server.length || wsClient.length ? 'as regras e client scripts que citam o campo não se aplicam a este registro' : 'nenhuma automação ativa grava este campo'));
         } else if (isStrong(wsClient)) facts.push(fact('client_side_possible', 'sys_script_client', 'um client script do Workspace pode ter preenchido o campo antes de salvar'));
         gaps = ['o Workspace não registra os valores enviados; a conclusão vem das regras que poderiam ter gravado este valor'];
-      } else if (onRecord && !rivals.length) {
+      } else if (onRecord && !rivals.length && !ctx.meta.incomplete) {
         facts.push(fact('api_write_on_record', 'syslog_transaction', `${ctx.user} gravou este registro pela API no mesmo instante`));
         facts.push(fact('no_competing_automation', 'sys_script', server.length ? 'as regras que citam o campo não se aplicam a este registro' : 'nenhuma automação ativa grava este campo'));
         gaps = ['o corpo da requisição não fica registrado; a conclusão vem de não haver outra automação capaz de gravar este valor'];

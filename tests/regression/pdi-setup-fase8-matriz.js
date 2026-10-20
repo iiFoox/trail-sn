@@ -57,18 +57,20 @@ async function trailM8Values() {
     text: (m) => ({ ok: 'M8 ' + m, low: 'M8 baixa', bait: 'M8 isca' }),
     ref: { ok: g1, low: g2, bait: g3 },
     bool: { ok: 'true', low: 'false', bait: 'false' },
+    date: { ok: '2026-12-24 15:00:00', low: '2026-12-20 10:00:00', bait: '2026-12-31 23:00:00' },
+    int: { ok: '7', low: '5', bait: '9' },
   };
 }
 
 function m8Val(V, type, mech) { return type === 'text' ? V.text(mech) : V[type]; }
 
-async function trailSetupM8() {
+async function trailSetupM8(cfg = M8) {
   const { api, find, upsert } = await trailM8Api();
   const V = await trailM8Values();
   const wrap = (s) => `(function executeRule(current, previous) {\n${s}\n})(current, previous);`;
   const q = (s) => s.replace(/'/g, "\\'");
   const out = { values: { choice: V.choice, ref: V.ref, bool: V.bool }, recs: {} };
-  for (const [table, T] of Object.entries(M8.TABLES)) {
+  for (const [table, T] of Object.entries(cfg.TABLES)) {
     const sd = (mech, type) => `[PT] M8-${T.key}-${mech}-${type}`;
     const br = (name, when, order, filter, script, extra = {}) => upsert('sys_script', { name, collection: table, active: 'true', when, order: String(order), action_update: 'true', action_insert: 'false', advanced: 'true', filter_condition: filter + '^EQ', script: wrap(script), ...extra }, `name=${name}^collection=${table}`);
     // evento e script include da tabela
@@ -100,34 +102,35 @@ async function trailSetupM8() {
 
     // registros
     out.recs[table] = {};
-    for (const type of Object.keys(T.types)) for (const mech of M8.MECHS) {
+    for (const type of Object.keys(T.types)) for (const mech of cfg.MECHS) {
       const s = sd(mech, type);
       const r = (await find(table, `short_description=${s}`)) ?? await api('POST', `table/${table}`, { short_description: s, ...T.base });
       out.recs[table][`${mech}-${type}`] = r.sys_id;
     }
     // client scripts: um por tipo (preenche) e uma isca que só lê
     for (const [type, field] of Object.entries(T.types)) {
+      if (!cfg.MECHS.includes('CS')) break;
       await upsert('sys_script_client', { name: `[PT] M8 ${T.key} client ${type}`, table, active: 'true', type: 'onChange', field: T.trig, ui_type: '0',
         script: `function onChange(control, oldValue, newValue, isLoading) {\n  if (isLoading || newValue === '') return;\n  if (g_form.getUniqueValue() != '${out.recs[table]['CS-' + type]}') return;\n  g_form.setValue('${field}', '${q(m8Val(V, type, 'CS').ok)}');\n}` }, `name=[PT] M8 ${T.key} client ${type}^table=${table}`);
     }
-    await upsert('sys_script_client', { name: `[PT] M8 ${T.key} client só lê`, table, active: 'true', type: 'onChange', field: T.trig, ui_type: '0',
+    if (cfg.MECHS.includes('CS')) await upsert('sys_script_client', { name: `[PT] M8 ${T.key} client só lê`, table, active: 'true', type: 'onChange', field: T.trig, ui_type: '0',
       script: `function onChange(control, oldValue, newValue, isLoading) {\n  if (isLoading) return;\n  var s = g_form.getValue('short_description');\n  if (s.indexOf('[PT] M8-') != 0) return;\n  var x = [${Object.values(T.types).map((f) => `g_form.getValue('${f}')`).join(', ')}];\n  if (x.length > 99) jslog(x.join());\n}` }, `name=[PT] M8 ${T.key} client só lê^table=${table}`);
   }
   return out;
 }
 
 /** Dispara todos os cenários. Formulário num iframe; job de execução única ~90 s à frente. */
-async function trailTriggerM8(setup) {
+async function trailTriggerM8(setup, cfg = M8) {
   const { api, upsert } = await trailM8Api();
   const V = await trailM8Values();
   const log = [];
   const jobs = [];
-  for (const [table, T] of Object.entries(M8.TABLES)) {
+  for (const [table, T] of Object.entries(cfg.TABLES)) {
     const R = setup.recs[table];
     for (const [type, field] of Object.entries(T.types)) {
       const id = (m) => R[`${m}-${type}`];
       const v = (m) => m8Val(V, type, m).ok;
-      const step = async (m, fn) => { try { await fn(); log.push(`${table} ${m}-${type} ok`); } catch (e) { log.push(`${table} ${m}-${type} ERRO ${e.message}`); } };
+      const step = async (m, fn) => { if (!cfg.MECHS.includes(m)) return; try { await fn(); log.push(`${table} ${m}-${type} ok`); } catch (e) { log.push(`${table} ${m}-${type} ERRO ${e.message}`); } };
       await step('PFORM', () => trailM8Form(table, id('PFORM'), { [field]: v('PFORM') }, 'sysverb_update_and_stay'));
       await step('PAPI', () => api('PATCH', `table/${table}/${id('PAPI')}`, { [field]: v('PAPI') }));
       await step('BBF', () => trailM8Form(table, id('BBF'), { [T.trig]: T.trigTo }, 'sysverb_update_and_stay'));
@@ -136,7 +139,7 @@ async function trailTriggerM8(setup) {
       await step('BAS', () => api('PATCH', `table/${table}/${id('BAS')}`, { [T.trig]: T.trigTo }));
       await step('UI', () => trailM8Form(table, id('UI'), {}, `pt_m8_${T.key.toLowerCase()}_${type}`));
       await step('CS', () => trailM8Form(table, id('CS'), { [T.trig]: T.trigTo }, 'sysverb_update_and_stay'));
-      jobs.push({ table, field, id: id('JOB'), value: m8Val(V, type, 'JOB').ok, name: `[PT] M8 ${T.key} job ${type}` });
+      if (cfg.MECHS.includes('JOB')) jobs.push({ table, field, id: id('JOB'), value: m8Val(V, type, 'JOB').ok, name: `[PT] M8 ${T.key} job ${type}` });
     }
   }
   // jobs de execução única, espaçados 20 s, começando em ~90 s (UTC)
@@ -174,12 +177,21 @@ async function trailM8Form(table, sysId, values, action) {
 }
 
 /** Casos para a regressão (resposta declarada antes de rodar). */
-function trailM8Cases(setup) {
+function trailM8Cases(setup, cfg = M8) {
   const T = { PFORM: 'user_action', PAPI: 'user_action', BBF: 'br_before', BBA: 'br_before', BAF: 'br_after', BAS: 'br_async', SA: 'script_action', UI: 'ui_action', CS: 'client_script', JOB: 'scheduled_job', ORD: 'br_before', SI: 'br_via_script_include' };
   const out = [];
-  for (const [table, TT] of Object.entries(M8.TABLES)) for (const [type, field] of Object.entries(TT.types)) for (const mech of M8.MECHS) {
+  for (const [table, TT] of Object.entries(cfg.TABLES)) for (const [type, field] of Object.entries(TT.types)) for (const mech of cfg.MECHS) {
     const name = { BBF: `before ${type}`, BBA: `before ${type}`, BAF: `after ${type}`, BAS: `async ${type}`, SA: 'script action', UI: `botão ${type}`, CS: `client ${type}`, JOB: `job ${type}`, ORD: `ordem 300 ${type}`, SI: `chama SI ${type}` }[mech];
     out.push({ id: `M8-${TT.key}-${mech}-${type}`, table, sysId: setup.recs[table][`${mech}-${type}`], field, expectedType: T[mech], ...(name ? { expectedName: `[PT] M8 ${TT.key} ${name}` } : {}), minGrade: mech === 'JOB' || mech === 'SI' ? 'probable' : 'confirmed' });
   }
   return out;
 }
+
+/** Fase 8b: tipos data/hora e inteiro, só mecanismos de servidor (os campos não estão no formulário). */
+const M8B = {
+  MECHS: ['PAPI', 'BBA', 'BAF', 'BAS', 'SA', 'UI', 'JOB', 'ORD', 'SI'],
+  TABLES: {
+    incident: { key: 'INB', trig: 'contact_type', trigFrom: 'phone', trigTo: 'email', types: { date: 'follow_up', int: 'order' }, base: { caller_id: '6816f79cc0a8016401c5a33be04be441', contact_type: 'phone', impact: '3', urgency: '3', order: '1' } },
+    change_request: { key: 'CHB', trig: 'description', trigFrom: 'inicial', trigTo: 'gatilho M8', types: { date: 'expected_start', int: 'order' }, base: { type: 'normal', impact: '3', description: 'inicial', order: '1' } },
+  },
+};

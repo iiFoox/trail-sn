@@ -208,3 +208,15 @@ export function siCallsWithField(script: string | undefined, field: string): { s
   }
   return out;
 }
+
+/**
+ * Transação que GRAVA neste registro: envio do formulário, Table API no próprio registro ou botão do Workspace.
+ * Leituras que só citam o sys_id (listas, auditoria, a própria análise do Trail) não contam.
+ */
+export function isRecordWrite(url: string | undefined, sysId: string): boolean {
+  const u = url ?? '';
+  if (!sysId || !u.includes(sysId)) return false;
+  if (u.includes(`sys_uniqueValue=${sysId}`)) return true;
+  if (new RegExp(`/api/now/(?:v\\d+/)?table/[a-z0-9_]+/${sysId}(?:[?/]|$)`).test(u)) return true;
+  return isWorkspaceAction(u);
+}

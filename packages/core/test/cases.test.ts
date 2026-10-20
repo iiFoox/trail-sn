@@ -732,3 +732,41 @@ describe('achados do teste às cegas 2', () => {
     expect(r.changes[0]!.evidence.find((e) => e.artifact.name === 'PT auditoria')!.facts.some((f) => f.kind === 'reads_only')).toBe(true);
   });
 });
+
+describe('leituras e tempo esgotado', () => {
+  it('consulta que só cita o sys_id (auditoria, lista) não é gravação da pessoa: job de execução única continua sendo a causa', async () => {
+    const s = scenario();
+    audit(s, 'follow_up', '', '2026-12-24 15:00:00', T0, 'admin', 1);
+    tx(s, T0, 'rest', `/api/now/table/sys_audit?sysparm_query=documentkey=${INC.sysId}`, 'admin');
+    s.jobs.push({ sys_id: id(), name: 'PT job data', script: "var gr = new GlideRecord('incident'); if (gr.get('x')) { gr.setValue('follow_up', '2026-12-24 15:00:00'); gr.update(); }", run_type: 'once', run_start: T0, 'run_as.user_name': 'admin', active: 'true' });
+    const e = top(await run(s, 'follow_up'));
+    expect(e.type).toBe('scheduled_job');
+  });
+
+  it('se as regras da tabela não carregam (tempo esgotado), a gravação pela API não sai como certeza alta', async () => {
+    const s = scenario();
+    audit(s, 'impact', '3', '1', T0, 'admin', 1);
+    tx(s, T0, 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
+    const c = build(s);
+    c.respond('sys_script', () => new Promise(() => undefined) as never);
+    const r = await investigate(c, { table: 'incident', number: INC.number, field: 'impact' }, { sourceTimeoutMs: 30 });
+    const e = r.changes[0]!.evidence[0]!;
+    expect(e.type).toBe('user_action');
+    expect(e.grade).not.toBe('confirmed');
+    expect(r.gaps.some((g) => g.startsWith('sys_script'))).toBe(true);
+  });
+});
+
+describe('URL da transação cortada', () => {
+  it('valor enviado truncado que é o começo do novo conta como enviado; client script que preenche continua sendo a causa', async () => {
+    const s = scenario();
+    audit(s, 'cause_notes', '', '<p>Possível falha de replicação</p>', T0, 'admin', 1);
+    audit(s, 'category', 'software', 'network', T0, 'admin', 1);
+    formTx(s, T0, 'admin', { cause_notes: '<p>Poss', category: 'network' });
+    const c = build(s);
+    c.rows('dl_definition_rel_set', []);
+    c.rows('sys_script_client', [{ sys_id: id(), name: 'PT causa', type: 'onChange', field: 'category', table: 'incident', active: 'true', script: "function onChange(c, o, newValue) { if (newValue == 'network') g_form.setValue('cause_notes', '<p>Possível falha de replicação</p>'); }" }]);
+    const r = await investigate(c, { table: 'incident', number: INC.number, field: 'cause_notes' });
+    expect(r.changes[0]!.evidence[0]!.type).toBe('client_script');
+  });
+});

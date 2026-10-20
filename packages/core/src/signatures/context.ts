@@ -11,6 +11,8 @@ export interface TableMeta {
   siField: Row[];
   /** Pares BR → script include quando a BR instancia um SI que escreve no campo. */
   /** `arg`: a BR passa o nome do campo como texto para um método genérico do SI (que grava por nome dinâmico). */
+  /** As regras da tabela não carregaram por inteiro (tempo esgotado): "nenhuma automação concorrente" não pode ser afirmado. */
+  incomplete?: boolean;
   brViaSi: { br: Row; si: Row; arg?: { call: string; value?: string } }[];
 }
 
