@@ -1,5 +1,6 @@
 import type { QueryRequest, RestClient } from './client/RestClient';
 import { documentation, fieldLabels } from './display';
+import { historyToAudit } from './history';
 import { RecordNotFoundError, type AccessState, type Row, type Target } from './types';
 import { isFormSubmitFor, isWorkspaceAction, shift, toMs, uiActionMatches, uiActionQuery, uiActionRef, withTimeout } from './util';
 
@@ -37,6 +38,9 @@ export interface Timeline {
   saves: TimelineSave[];
   /** Mais gravações existem do que as carregadas. */
   truncated: boolean;
+  /** Mudanças lidas do histórico do formulário (quem não lê sys_audit); só os campos de `historyFields`. */
+  auditFrom?: 'history';
+  historyFields?: string[];
   timing: { totalMs: number; calls: number };
 }
 
@@ -64,8 +68,15 @@ export async function recordTimeline(client: RestClient, target: Omit<Target, 'f
   const sysId = rec.sys_id ?? '';
 
   // ---------- auditoria completa (mais recentes primeiro) ----------
-  const audit = await q('sys_audit', `tablename=${target.table}^documentkey=${sysId}^ORDERBYDESCsys_created_on`,
-    ['fieldname', 'oldvalue', 'newvalue', 'user', 'sys_created_on', 'record_checkpoint'], MAX_AUDIT);
+  const auditRes = await withTimeout(client.query({ table: 'sys_audit', query: `tablename=${target.table}^documentkey=${sysId}^ORDERBYDESCsys_created_on`,
+    fields: ['fieldname', 'oldvalue', 'newvalue', 'user', 'sys_created_on', 'record_checkpoint'], limit: MAX_AUDIT }), timeout, { rows: [], status: 0, access: 'timeout' as AccessState });
+  let audit = auditRes.rows;
+  // Quem não lê sys_audit vê o histórico no formulário: a linha do tempo sai dele (mais recentes primeiro, como a auditoria).
+  let fromHistory: { auditFrom: 'history'; historyFields: string[] } | undefined;
+  if (auditRes.access === 'denied' && client.history) {
+    const h = await client.history(target.table, sysId).catch(() => null);
+    if (h) { audit = (await historyToAudit(h, tables, q)).reverse(); fromHistory = { auditFrom: 'history', historyFields: h.fields }; }
+  }
   const truncated = audit.length >= MAX_AUDIT;
   const byCp = new Map<number, Row[]>();
   for (const a of audit) {
@@ -172,6 +183,7 @@ export async function recordTimeline(client: RestClient, target: Omit<Target, 'f
     target: { table: target.table, sysId, display: rec.number || rec.name || sysId, ...(rec.short_description ? { title: rec.short_description } : {}) },
     saves,
     truncated,
+    ...(fromHistory ?? {}),
     timing: { totalMs: Date.now() - started, calls: client.calls - callsBefore },
   };
 

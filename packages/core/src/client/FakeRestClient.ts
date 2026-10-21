@@ -1,4 +1,4 @@
-import type { QueryRequest, QueryResult, RestClient } from './RestClient';
+import type { HistoryResult, QueryRequest, QueryResult, RestClient } from './RestClient';
 import type { Row } from '../types';
 
 export type Responder = (req: QueryRequest) => QueryResult | Row[] | undefined;
@@ -26,6 +26,13 @@ export class FakeRestClient implements RestClient {
 
   deny(table: string): this {
     this.denied.add(table);
+    return this;
+  }
+
+  /** Histórico do formulário (só existe se o teste declarar, como num cliente sem esse endpoint). */
+  history?: RestClient['history'];
+  withHistory(h: HistoryResult | null): this {
+    this.history = async () => h;
     return this;
   }
 

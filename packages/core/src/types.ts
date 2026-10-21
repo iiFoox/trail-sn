@@ -200,6 +200,14 @@ export interface Investigation {
   access: Record<string, AccessState>;
   /** Fontes negadas ou vazias que limitam o resultado, por nome técnico. */
   gaps: string[];
+  /**
+   * De onde vieram as mudanças quando não foi da auditoria: 'history' = histórico do formulário (quem não lê
+   * sys_audit). `historyFields` são os campos que esse histórico mostra; fora deles, o Trail não vê mudança nenhuma.
+   */
+  auditFrom?: 'history';
+  historyFields?: string[];
+  /** O campo investigado não aparece no histórico do formulário: sem auditoria, não há como ver as mudanças dele. */
+  fieldNotInHistory?: boolean;
   /** Regras ativas que gravam este campo com valores diferentes e podem rodar juntas. */
   conflicts?: import('./conflicts').RuleConflict[];
   /** Duas automações trocando o valor do campo entre si. */

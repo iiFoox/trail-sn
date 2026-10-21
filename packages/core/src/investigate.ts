@@ -2,6 +2,7 @@ import { findConflicts } from './conflicts';
 import { detectPingPong } from './pingpong';
 import { documentation, fieldLabels, resolveDisplay } from './display';
 import type { QueryRequest, RestClient } from './client/RestClient';
+import { historyToAudit } from './history';
 import { scoreAll } from './scoring';
 import { fieldsRead, writesOf } from './scriptEval';
 import { siCallsWithField } from './util';
@@ -71,7 +72,7 @@ export async function investigate(
   const meta = metaOrNull;
 
   // Rótulo do campo junto com a auditoria: não acrescenta rodada.
-  const [audit, dict, docs] = await Promise.all([
+  const [auditRows, dict, docs] = await Promise.all([
     q(
       'sys_audit',
       `tablename=${target.table}^documentkey=${sysId}^ORDERBYsys_created_on`,
@@ -81,6 +82,18 @@ export async function investigate(
     quiet('sys_dictionary', `element=${target.field}^nameIN${meta.tables.join(',')}`, ['name', 'internal_type', 'reference', 'column_label', 'element'], 30),
     documentation(quiet, meta.tables, [target.field], opts.language),
   ]);
+  // Quem não é admin quase nunca lê sys_audit, mas vê o histórico no formulário: usa esse histórico.
+  let audit = auditRows;
+  let auditFrom: 'audit' | 'history' = 'audit';
+  let historyFields: string[] | undefined;
+  if (access.sys_audit === 'denied' && client.history) {
+    const h = await client.history(target.table, sysId).catch(() => null);
+    if (h) {
+      audit = await historyToAudit(h, meta.tables, quiet);
+      auditFrom = 'history';
+      historyFields = h.fields;
+    }
+  }
   const checkpoints: Record<string, Row[]> = {};
   for (const a of audit) (checkpoints[a.record_checkpoint ?? '0'] ??= []).push(a);
   const maxCheckpoint = Math.max(0, ...Object.keys(checkpoints).map(Number));
@@ -284,6 +297,7 @@ export async function investigate(
       // Criação do registro (insert) ou atualização: decide quais BRs rodaram (action_insert / action_update).
       // Um PATCH logo depois da criação ainda é atualização: na criação a auditoria não tem valor anterior.
       operation: rec.sys_created_on && Math.abs(toMs(rec.sys_created_on) - toMs(at)) <= 2000 && !(c.oldvalue ?? '') ? 'insert' : 'update',
+      ...(access.syslog_transaction === 'denied' ? { txDenied: true } : {}),
     };
     const notes: string[] = [];
     const ageSec = (Date.now() - toMs(at)) / 1000;
@@ -326,7 +340,9 @@ export async function investigate(
   for (const c of changes) for (const t of c.trace ?? []) for (const f of t.fields ?? []) (wanted[f.field] ??= []).push(f.oldValue, f.newValue);
   const display = Object.keys(wanted).length ? await resolveDisplay(quiet, meta.tables, wanted, opts.language) : undefined;
 
-  const gaps = Object.entries(access).filter(([, s]) => s === 'denied' || s === 'timeout' || s === 'no_filter').map(([k, s]) => `${k}: ${s}`);
+  const gaps = Object.entries(access)
+    .filter(([k, s]) => (s === 'denied' || s === 'timeout' || s === 'no_filter') && !(k === 'sys_audit' && auditFrom === 'history'))
+    .map(([k, s]) => `${k}: ${s}`);
 
   return {
     target: { ...target, sysId, display: rec.number || rec.name || sysId, ...(rec.short_description ? { title: rec.short_description } : rec.number && rec.name ? { title: rec.name } : {}) },
@@ -348,6 +364,7 @@ export async function investigate(
     },
     access,
     gaps,
+    ...(auditFrom === 'history' ? { auditFrom, historyFields, ...(historyFields && !historyFields.includes(target.field) ? { fieldNotInHistory: true } : {}) } : {}),
     conflicts: findConflicts(target.field, meta.brField, clientRows, { ...record, sys_id: sysId }),
     ...(() => { const pp = detectPingPong(changes); return pp ? { pingPong: pp } : {}; })(),
     timing: { totalMs: Date.now() - started, calls: client.calls - callsBefore },
@@ -495,3 +512,4 @@ function inWindow(t: Row, c: Row, opts: InvestigationOptions): boolean {
   const at = c.sys_created_on ?? '';
   return between(t.sys_created_on, shift(at, -opts.windowBefore), shift(at, opts.windowAfter));
 }
+

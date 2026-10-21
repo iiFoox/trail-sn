@@ -99,7 +99,7 @@ function Compare({ data, a, b, onClose }: { data: TL; a: number; b: number; onCl
       <div class="cmp-hd">
         <div class="grow"><b>{fmt(P.cmpTitle, { a: `${pa.date} ${pa.full}`, b: `${pb.date} ${pb.full}` })}</b>
           <div class="muted small">{d.from.user} → {d.to.user} · {fmt(P.cmpSaves, { n: d.saves })}</div></div>
-        <button class="drawer-x" style="position:static" aria-label={P.cmpClose} title={P.cmpClose} onClick={onClose}>✕</button>
+        <button class="drawer-x inline" aria-label={P.cmpClose} title={P.cmpClose} onClick={onClose}>✕</button>
       </div>
       {!d.rows.length ? <div class="muted small">{P.cmpSame}</div> : (
         <table class="cmpt"><tbody>{d.rows.map((r) => (

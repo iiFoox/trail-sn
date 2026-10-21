@@ -1,4 +1,4 @@
-import { classifyAccess, type QueryRequest, type QueryResult, type RestClient } from './RestClient';
+import { classifyAccess, type HistoryResult, type QueryRequest, type QueryResult, type RestClient } from './RestClient';
 import type { Row } from '../types';
 
 export interface FetchRestClientOptions {
@@ -43,6 +43,31 @@ export class FetchRestClient implements RestClient {
     await this.acquire();
     try {
       return await this.doQuery(req, true);
+    } finally {
+      this.release();
+    }
+  }
+
+  /**
+   * Histórico do formulário: o mesmo endpoint que o Activity Stream do UI16 usa (`angular.do?sysparm_type=list_history`).
+   * Responde com as ACLs de quem está logado; no PDI, um usuário só com `itil` recebe 403 em `sys_audit` e 200 aqui.
+   */
+  async history(table: string, sysId: string): Promise<HistoryResult | null> {
+    await this.acquire();
+    try {
+      if (!this.token) this.token = await this.opts.getToken();
+      const headers: Record<string, string> = { Accept: 'application/json' };
+      if (this.token) headers['X-UserToken'] = this.token;
+      const base = this.opts.baseUrl.replace(/\/$/, '');
+      const get = (url: string) => { this.calls++; return this.fetchImpl(url, { method: 'GET', headers, credentials: 'include' }).then((r) => (r.status === 200 ? r.json() : null), () => null).catch(() => null); };
+      // Junto com o histórico, as opções das listas da tabela (o que o formulário usa para mostrar os rótulos).
+      const [hist, meta] = await Promise.all([
+        get(`${base}/angular.do?${new URLSearchParams({ sysparm_type: 'list_history', table, sys_id: sysId })}`),
+        get(`${base}/api/now/ui/meta/${encodeURIComponent(table)}`),
+      ]);
+      const h = parseHistory(hist);
+      if (h) { const choices = parseMetaChoices(meta); if (choices) h.choices = choices; }
+      return h;
     } finally {
       this.release();
     }
@@ -111,6 +136,40 @@ export class FetchRestClient implements RestClient {
     const next = this.queue.shift();
     if (next) next();
   }
+}
+
+type RawHistory = { entries?: { sys_timestamp?: number; sys_created_on?: string; user_id?: string; sys_created_by?: string; entries?: { changes?: { field_name?: string; field_label?: string; field_type?: string; old_value?: string; new_value?: string }[] } }[]; fields?: { name?: string; isJournal?: boolean }[] };
+
+/** Converte a resposta do list_history. Gravações sem mudança de campo (só nota, anexo) ficam de fora. */
+export function parseHistory(json: unknown): HistoryResult | null {
+  const j = json as RawHistory | null;
+  if (!j || !Array.isArray(j.entries)) return null;
+  const at = (e: NonNullable<RawHistory['entries']>[number]) =>
+    typeof e.sys_timestamp === 'number' ? new Date(e.sys_timestamp).toISOString().slice(0, 19).replace('T', ' ') : (e.sys_created_on ?? '');
+  const entries = j.entries
+    .map((e) => ({
+      at: at(e),
+      userId: e.user_id,
+      userName: e.sys_created_by,
+      changes: (e.entries?.changes ?? []).filter((c) => c.field_name).map((c) => ({
+        field: c.field_name!, label: c.field_label, type: c.field_type, oldValue: c.old_value ?? '', newValue: c.new_value ?? '',
+      })),
+    }))
+    .filter((e) => e.changes.length && e.at)
+    .sort((a, b) => a.at.localeCompare(b.at));
+  const fields = (j.fields ?? []).filter((f) => f.name && !f.isJournal && !f.name.startsWith('*')).map((f) => f.name!);
+  return { entries, fields };
+}
+
+/** Opções das listas de /api/now/ui/meta/<tabela>: campo → rótulo → valor. */
+export function parseMetaChoices(json: unknown): Record<string, Record<string, string>> | null {
+  const cols = (json as { result?: { columns?: Record<string, { choices?: { label?: string; value?: string }[] }> } } | null)?.result?.columns;
+  if (!cols) return null;
+  const out: Record<string, Record<string, string>> = {};
+  for (const [name, col] of Object.entries(cols)) {
+    for (const c of col.choices ?? []) if (c.label && c.value !== undefined && c.value !== '') (out[name] ??= {})[c.label] = c.value;
+  }
+  return out;
 }
 
 function sleep(ms: number): Promise<void> {

@@ -828,3 +828,41 @@ table.cmpt tr.rev { opacity: .7; }
 
 /* Animações desligadas nas configurações */
 :root[data-motion="off"] *, :root[data-motion="off"] *::before, :root[data-motion="off"] *::after { animation-duration: 0s !important; animation-iteration-count: 1 !important; transition-duration: 0s !important; }
+
+/* Aviso de capacidades: o que os papéis de quem está logado deixam ver. */
+.notice.caps { border-color: var(--teal); }
+.caplist { list-style: none; margin: 6px 0 8px; padding: 0; display: grid; gap: 5px; font-size: 12.5px; }
+.caplist li { display: flex; gap: 8px; align-items: flex-start; }
+.caplist .mk { flex: none; width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; font-weight: 800; margin-top: 1px; }
+.caplist li.ok .mk { background: color-mix(in srgb, var(--ok) 22%, transparent); color: var(--ok); }
+.caplist li.part .mk { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--warn); }
+.caplist li.no { color: var(--muted); }
+.caplist li.no .mk { background: var(--surface-2); color: var(--muted); }
+.caplist small { display: block; font-size: 11px; color: var(--muted); }
+.captech { margin-top: 6px; font-size: 11px; color: var(--muted); }
+.captech summary { cursor: pointer; }
+.captech code { display: block; margin-top: 4px; white-space: normal; }
+
+/* Ajustes da inspeção visual em 340–420 px (Antigravity, 2026-10-20). */
+.dot { flex: none; }
+ol.rtl .hd > .grow, ol.rtl .hd .by { min-width: 0; }
+ol.rtl .hd .via { box-sizing: border-box; }
+.seg-tabs .wdot { top: 2px; right: 2px; }
+.seg-tabs button:has(.wdot) { padding-right: 10px; }
+.drawer-x.inline { position: static; transform: none; flex: none; }
+/* Contraste: tokens que faltavam no escuro (teal-2, ok, bad, warn ficavam quase invisíveis). */
+:root[data-theme="dark"] { --teal-2: #7ad3c4; --ok: #4fd18b; --bad: #ff7b88; --warn: #f0b45a; }
+/* Claro: cinza de texto secundário um pouco mais escuro (passa de 4,5:1 sobre --surface-2). */
+:root:not([data-theme="dark"]) { --muted: #5c6670; }
+/* Claro: os tons pastel (feitos para o fundo escuro) viram tons escuros. */
+:root:not([data-theme="dark"]) .when.w-before { color: #1d5bbf; }
+:root:not([data-theme="dark"]) .when.w-after { color: #6b3fa0; }
+:root:not([data-theme="dark"]) .when.w-async { color: #b45309; }
+:root:not([data-theme="dark"]) ol.rtl li.via-api .ti, :root:not([data-theme="dark"]) ol.rtl li.via-system .ti { color: #b45309; }
+:root:not([data-theme="dark"]) ol.rtl li.via-async .ti, :root:not([data-theme="dark"]) ol.rtl li.via-chained .ti,
+:root:not([data-theme="dark"]) ol.rtl li.via-job .ti, :root:not([data-theme="dark"]) ol.rtl li.via-background .ti { color: #6b3fa0; }
+.pill.w { background: var(--probable-bg); color: var(--probable); }
+/* Filtros da linha do tempo em 340 px: lista de usuários e busca sem cortar. */
+.tlf input[type="search"], .tlf select { padding: 6px 8px; font-size: 12px; }
+.tlf select { flex: 0 0 auto; max-width: 48%; }
+details.grp > .li { padding-left: 52px; }

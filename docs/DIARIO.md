@@ -10,6 +10,28 @@ Convenções:
 
 ---
 
+## 2026-10-20 (noite) — 0.13.0: perícia para quem não é admin
+
+Pedido do dono: quem trabalha com App Engine ou sustentação muitas vezes não tem admin. **Decisão:** nada instalado na instância, nenhum papel ou app novo. O Trail usa a sessão de quem está logado, pede cada fonte, e a instância aplica as ACLs; o que vier entra, o que for negado fica de fora e é dito. **Não há lógica por papel no código.** Detalhes e medições em `docs/sem-admin.md`.
+- **Medição no PDI** com usuários de teste sem senha, `pt.trail.itil` (itil) e `pt.trail.aes` (App Engine + flow_designer), por personificação (`/api/now/ui/impersonate/<sys_id>`), voltando ao admin no fim:
+  - o itil recebe 403 em `sys_audit`, nas transações, nos eventos e nos scripts;
+  - o App Engine vê os flows.
+- **Histórico do formulário:** quando `sys_audit` é negada, o motor lê `/angular.do?sysparm_type=list_history` (o Activity Stream do formulário, com as ACLs do usuário).
+  - Os valores de lista voltam ao valor interno pelas opções de `/api/now/ui/meta/<tabela>`: o itil só lê o `label` de `sys_choice`.
+  - O usuário vem de `sys_user` pelo `user_id`.
+  - Só cobre os campos configurados no Activity Stream; fora deles, a investigação marca `fieldNotInHistory` e o painel diz isso.
+  - Vale também para a linha do tempo do registro inteiro.
+
+  Código: `RestClient.history`, `FetchRestClient.history` / `parseHistory` / `parseMetaChoices`, `core/src/history.ts`. Testes em `history.test.ts`.
+- **Fato falso corrigido:** com `syslog_transaction` negada, o motor tomava "sem transação" como prova de processo em segundo plano. Agora, se nada mais explicar a mudança, a evidência é o autor da gravação (candidato), com a lacuna dita (`ChangeContext.txDenied`).
+- **No PDI como itil:** INC0010172 impacto 3 → 1 e prioridade 4 → 1, por admin, em grau candidato; urgência: "o histórico do formulário não mostra este campo". Antes, o itil não via nada.
+- **Aviso de acesso por capacidade:** "quem mudou e quando", regras automáticas, flows, jobs, eventos, botões e transações, cada um com ✓, ◐ ou –. As tabelas ficam em "detalhes técnicos".
+- **Inspeção visual do Antigravity** (60 prints em 340–420 px, nos dois temas), 8 achados corrigidos:
+  - tokens `--teal-2`, `--ok`, `--bad` e `--warn` que faltavam no escuro;
+  - tons pastel trocados no tema claro;
+  - `--muted` do claro mais escuro;
+  - bolinha de status amassada, cabeçalhos do registro inteiro estourando, pontinho de "Provas", X da comparação, filtros em 340 px e recuo de "Outras regras".
+
 ## 2026-10-20 (noite) — 0.12.9
 
 - **Estado do painel flutuante** (aberto ou minimizado, por aba) foi do `storage.session` para o `storage.local`, com a chave `float:<tabId>`. O session é apagado quando a extensão recarrega, e o painel aberto voltava como bolinha (achado médio do Codex). Os ids de aba só valem enquanto o navegador está aberto: `clearFloatStates()` limpa tudo no `onStartup`.

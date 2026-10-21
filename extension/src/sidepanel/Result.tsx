@@ -167,10 +167,17 @@ export function Result({ r, origin, access, toast, onField }: { r: Investigation
             : c.oldValue && looksLong(c.oldValue, c.newValue) ? <DiffSummary oldText={c.oldValue} newText={c.newValue} onOpen={(x, y) => setDiffOpen({ x, y })} />
             : c.oldValue || c.checkpoint > 1 ? <><Val cls="old" raw={c.oldValue} text={valueLabel(r, c.oldValue)} refTable={r.refTable} origin={origin} empty={P.empty} /><span class="arr">→</span><Val cls="new" raw={c.newValue} text={valueLabel(r, c.newValue)} refTable={r.refTable} origin={origin} empty={P.empty} /></>
               : <><span class="muted small">{P.createdAs}</span><Val cls="new" raw={c.newValue} text={valueLabel(r, c.newValue)} refTable={r.refTable} origin={origin} empty={P.empty} /></>
-          ) : <span class="muted small">{s.noChanges}</span>}
+          ) : <span class="muted small">{r.fieldNotInHistory ? s.notInHistory : s.noChanges}</span>}
         </div>
         {c && <div class="when2">{when(c.at)}{(() => { const d = traceDaysLeft(c); return d !== null ? <span class="expire" title={P.expireHint}>{fmt(d === 0 ? P.expireToday : P.expireIn, { n: d })}</span> : null; })()}</div>}
       </div>
+      {/* Sem leitura de sys_audit: as mudanças vêm do histórico do formulário (o que a pessoa já vê na instância). */}
+      {r.auditFrom === 'history' && (
+        <div class={`notice ${r.fieldNotInHistory ? '' : 'info'} small`}>
+          <div class="title">{r.fieldNotInHistory ? s.notInHistoryTitle : s.fromHistoryTitle}</div>
+          <div>{r.fieldNotInHistory ? s.notInHistoryHint : s.fromHistoryHint}</div>
+        </div>
+      )}
       {c && diffOpen && <DiffOverlay at={diffOpen} title={`${r.target.display} · ${field}`} sub={when(c.at)} oldText={c.oldValue} newText={c.newValue} onClose={() => setDiffOpen(false)} />}
 
       {c && (

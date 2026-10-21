@@ -85,6 +85,8 @@ export interface ChangeContext {
   record: Record<string, string>;
   /** A gravação criou o registro (insert) ou alterou (update). */
   operation?: 'insert' | 'update';
+  /** Quem investiga não lê syslog_transaction: a falta de transação não prova nada (não é "segundo plano"). */
+  txDenied?: boolean;
 }
 
 /** Uma assinatura recebe os dados carregados e devolve evidências. Nunca faz chamada própria. */

@@ -1,7 +1,7 @@
 import type { Evidence } from '../types';
 import { asyncBusinessRule } from './asyncBusinessRule';
 import { backgroundScript } from './backgroundScript';
-import { isSystemUser, type ChangeContext } from './context';
+import { evidence, isSystemUser, type ChangeContext } from './context';
 import { fact } from '../scoring';
 import { isFormSubmitFor, isRecordWrite, toMs } from '../util';
 import { flow, workflow } from './flowAndWorkflow';
@@ -89,7 +89,16 @@ function runSignaturesInner(full: ChangeContext): Evidence[] {
     const explained = out.some((e) => !ruledOut(e) && e.facts.reduce((a, f) => a + f.points, 0) >= 40);
     const batch = batchWrite(ctx, explained);
     out.push(...batch, ...(batch.length ? [] : listEdit(ctx, explained)));
-    if (!out.some((e) => !ruledOut(e))) out.push(...unknownBackground(ctx));
+    if (!out.some((e) => !ruledOut(e))) {
+      // Sem leitura das transações (quem não é admin), a falta delas não prova nada: fica o autor da gravação,
+      // com a lacuna dita, em vez de um "processo em segundo plano" que ninguém viu.
+      if (ctx.txDenied) {
+        const system = isSystemUser(ctx.user);
+        out.push(evidence(system ? 'unknown_background' : 'user_action', { name: system ? '(automação)' : ctx.user },
+          [fact('user_matches', 'sys_audit', `gravado em nome de ${ctx.user || 'system'}`)],
+          ['seus papéis não leem as transações (syslog_transaction): não dá para confirmar se foi pelo formulário, pela API ou por uma regra']));
+      } else out.push(...unknownBackground(ctx));
+    }
     return out;
   }
   if (!strong) out.push(...sameTransaction(ctx));

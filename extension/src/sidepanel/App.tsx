@@ -264,10 +264,23 @@ export function App() {
 }
 
 /** Enquanto investiga: o rastro se desenha e uma lupa percorre o caminho, com o passo atual da perícia. */
+/**
+ * O que os papéis de quem está logado deixam o Trail ver, em palavras e não em nomes de tabela.
+ * O Trail usa a sessão da pessoa: o que ela lê entra como prova; o resto fica de fora e é dito aqui.
+ */
+const CAPS: { key: string; sources: string[] }[] = [
+  { key: 'who', sources: ['sys_audit'] },
+  { key: 'rules', sources: ['sys_script', 'sys_script_include'] },
+  { key: 'flows', sources: ['sys_flow_context', 'wf_context'] },
+  { key: 'jobs', sources: ['sysauto_script'] },
+  { key: 'events', sources: ['sysevent', 'sysevent_script_action'] },
+  { key: 'actions', sources: ['sys_ui_action'] },
+  { key: 'tx', sources: ['syslog_transaction'] },
+];
 function AccessNotice({ report }: { report: AccessReport }) {
   if (report.level === 'full') return null;
-  // Só demorou a responder (não é 401/403): aviso leve, sem pedir papel a ninguém.
-  if (report.level === 'partial' && !report.denied.length && report.slow?.length) {
+  // Só demorou a responder (não é 401/403): aviso leve, sem lista.
+  if (!report.denied.length && report.slow?.length) {
     return (
       <div class="notice">
         <div class="title">{s.accessSlowTitle}</div>
@@ -275,12 +288,22 @@ function AccessNotice({ report }: { report: AccessReport }) {
       </div>
     );
   }
-  const sources = report.denied.join(', ');
+  const denied = new Set<string>(report.denied);
+  const caps = CAPS.map((c) => ({ ...c, ok: !c.sources.some((x) => denied.has(x)) }));
+  const capText = s.cap as Record<string, string>;
   return (
-    <div class={`notice ${report.level === 'none' ? 'bad' : ''}`}>
-      <div class="title">{report.level === 'none' ? s.accessNoneTitle : s.accessPartialTitle}</div>
-      <div class="small">{report.level === 'none' ? s.accessNone : fmt(s.accessPartial, { sources })}</div>
-      <div class="small muted" style="margin-top:4px"><code>{sources}</code></div>
+    <div class="notice caps">
+      <div class="title">{s.capTitle}</div>
+      <ul class="caplist">
+        {caps.map((c) => (
+          <li class={c.ok ? 'ok' : c.key === 'who' ? 'part' : 'no'}>
+            <span class="mk" aria-hidden="true">{c.ok ? '✓' : c.key === 'who' ? '◐' : '–'}</span>
+            <span>{capText[c.key]}{!c.ok && <small>{c.key === 'who' ? s.capWhoHistory : s.capNo}</small>}</span>
+          </li>
+        ))}
+      </ul>
+      <div class="small muted">{s.capHint}</div>
+      <details class="captech"><summary>{s.capTech}</summary><code>{report.denied.join(', ')}</code></details>
     </div>
   );
 }
