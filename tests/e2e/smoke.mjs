@@ -63,14 +63,15 @@ await record.waitForSelector('.batch .bt-group');
 const allGroups = await record.locator('.bt-group').count();
 if (allGroups < 4) errors.push('registro inteiro esperava grupos separados, achou ' + allGroups);
 const openGroups = await record.locator('.bt-group').evaluateAll((els) => els.filter((el) => el.open).length);
-if (openGroups !== Math.min(3, allGroups)) errors.push('esperava os 3 grupos mais recentes abertos, achou ' + openGroups);
+// Os grupos começam todos recolhidos (pedido do dono: menos poluído); a pessoa abre o que quer.
+if (openGroups !== 0) errors.push('esperava todos os grupos recolhidos, achou abertos: ' + openGroups);
 const firstGroup = record.locator('.bt-group').first();
 const firstHeader = (await firstGroup.locator('summary').textContent())?.trim() ?? '';
 if (!firstHeader.includes('salvou') || !firstHeader.includes('campo')) errors.push('cabeçalho do grupo inesperado: ' + firstHeader);
 await firstGroup.locator('summary').click();
-if (await firstGroup.evaluate((el) => el.open) || await firstGroup.locator('.bt-row').first().isVisible()) errors.push('grupo não recolheu');
-await firstGroup.locator('summary').click();
 if (!(await firstGroup.evaluate((el) => el.open)) || !(await firstGroup.locator('.bt-row').first().isVisible())) errors.push('grupo não expandiu');
+await firstGroup.locator('summary').click();
+if (await firstGroup.evaluate((el) => el.open) || await firstGroup.locator('.bt-row').first().isVisible()) errors.push('grupo não recolheu');
 await record.locator('.bt-chips button').filter({ hasText: 'Pessoas' }).click();
 const peopleGroups = await record.locator('.bt-group').count();
 const peopleHeaders = await record.locator('.bt-group summary').allTextContents();

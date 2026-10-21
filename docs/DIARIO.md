@@ -10,6 +10,12 @@ Convenções:
 
 ---
 
+## 2026-10-21 — 0.14.3 e 0.14.4: busca e grupos recolhidos
+
+- **0.14.3:** busca em "O que roda neste registro" (procura em nome, quando roda, tabela, escopo e **campos que grava**, sem acento; "priority" acha tudo que mexe na prioridade) e o filtro "Só o que rodou aqui". Com busca, os grupos com resultado abrem e as partes vazias somem. Testado no e2e `flows.mjs`.
+- **0.14.4** (pedido do dono, "pra não ficar muito poluído"): os grupos do registro inteiro (por momento) e os de "O que roda neste registro" começam **todos recolhidos**. O `smoke.mjs` confere isso.
+- **0.14.2:** de 370 a 420 px as 6 abas cabem; abaixo disso rolam.
+
 ## 2026-10-21 — 0.14.1: "O que roda neste registro"
 
 Pedido do dono: no registro inteiro, ver tudo o que roda para aquele registro (flows, BRs etc.), com link clicável.

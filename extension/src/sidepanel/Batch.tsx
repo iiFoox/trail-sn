@@ -112,7 +112,7 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
       <div class="hist bt-list">
         {saves.map((group, i) => {
           const when = parts(group.at);
-          return <details class="bt-group" key={group.key} open={i < 3}>
+          return <details class="bt-group" key={group.key}>
             <summary class="bt-group-head">
               <span class="bt-group-arrow" aria-hidden="true" />
               <span class="bt-group-title"><time dateTime={group.at.replace(' ', 'T') + 'Z'}>{when.date} {when.time}</time> · {saveTitle(group, rec)}

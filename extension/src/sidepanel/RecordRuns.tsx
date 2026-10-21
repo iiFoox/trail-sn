@@ -87,7 +87,7 @@ export function RecordRuns({ table, sysId, origin, items }: { table: string; sys
       )}
       {!res && <div class="li"><span class="spin" /><span class="grow muted small">{P.rrLoading}</span></div>}
       {groups.map((g, gi) => (
-        <details class="grp" open={filtering || gi === 0} key={`${g.key}-${filtering}`}>
+        <details class="grp" open={filtering} key={`${g.key}-${filtering}`}>
           <summary><span class="ic sm">{g.icon}</span><b class="grow">{g.title}</b><i>{g.denied ? '–' : g.count}</i><span class="chev">{Glyph.chevron}</span></summary>
           {g.denied ? <div class="li muted small">{P.rrDenied}</div> : g.body}
         </details>
