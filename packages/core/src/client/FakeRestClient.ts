@@ -1,7 +1,7 @@
 import type { HistoryResult, QueryRequest, QueryResult, RestClient } from './RestClient';
 import type { Row } from '../types';
 
-export type Responder = (req: QueryRequest) => QueryResult | Row[] | undefined;
+export type Responder = (req: QueryRequest) => QueryResult | Row[] | undefined | Promise<QueryResult | Row[] | undefined>;
 
 /**
  * Cliente para testes: devolve fixtures por tabela. Cada tabela pode ter
@@ -42,7 +42,7 @@ export class FakeRestClient implements RestClient {
     if (this.denied.has(req.table)) return { rows: [], status: 403, access: 'denied' };
     const fn = this.tables.get(req.table);
     if (!fn) return { rows: [], status: 403, access: 'denied' };
-    const out = fn(req);
+    const out = await fn(req);
     if (!out) return { rows: [], status: 200, access: 'empty' };
     if (Array.isArray(out)) return { rows: out, status: 200, access: out.length ? 'ok' : 'empty' };
     return out;
@@ -50,17 +50,20 @@ export class FakeRestClient implements RestClient {
 }
 
 /**
- * Avaliador mínimo de encoded query para fixtures: suporta =, IN, LIKE, >=, <=,
- * ORDERBY (ignorado), ^ como AND e ^OR como OU. Suficiente para as consultas do motor.
+ * Avaliador mínimo de encoded query para fixtures: suporta =, !=, IN, LIKE, STARTSWITH, >=, <=,
+ * ORDERBY (ignorado), ^ como AND, ^OR como OU e ^NQ como OU entre consultas. Suficiente para as consultas do motor.
  */
 export function filterRows(rows: Row[], query: string): Row[] {
-  // "a^ORb" junta b ao termo anterior como alternativa (a OU b).
-  const groups: string[][] = [];
-  for (const t of query.split('^').filter((t) => t && !t.startsWith('ORDERBY'))) {
-    if (t.startsWith('OR') && groups.length && !/^ORDERBY/.test(t)) groups[groups.length - 1]!.push(t.slice(2));
-    else groups.push([t]);
-  }
-  return rows.filter((row) => groups.every((g) => g.some((t) => matchTerm(row, t))));
+  const blocks = query.split('^NQ').map((q) => {
+    // "a^ORb" junta b ao termo anterior como alternativa (a OU b).
+    const groups: string[][] = [];
+    for (const t of q.split('^').filter((t) => t && !t.startsWith('ORDERBY'))) {
+      if (t.startsWith('OR') && groups.length) groups[groups.length - 1]!.push(t.slice(2));
+      else groups.push([t]);
+    }
+    return groups;
+  });
+  return rows.filter((row) => blocks.some((groups) => groups.every((g) => g.some((t) => matchTerm(row, t)))));
 }
 
 function matchTerm(row: Row, term: string): boolean {
@@ -69,9 +72,11 @@ function matchTerm(row: Row, term: string): boolean {
     const set = new Set(m[2]!.split(','));
     return set.has(row[m[1]!] ?? '');
   }
+  if ((m = term.match(/^([\w.]+)STARTSWITH(.*)$/))) return (row[m[1]!] ?? '').startsWith(m[2]!);
   if ((m = term.match(/^([\w.]+)LIKE(.*)$/))) return (row[m[1]!] ?? '').includes(m[2]!);
   if ((m = term.match(/^([\w.]+)>=(.*)$/))) return (row[m[1]!] ?? '') >= m[2]!;
   if ((m = term.match(/^([\w.]+)<=(.*)$/))) return (row[m[1]!] ?? '') <= m[2]!;
+  if ((m = term.match(/^([\w.]+)!=(.*)$/))) return (row[m[1]!] ?? '') !== m[2]!;
   if ((m = term.match(/^([\w.]+)=(.*)$/))) return (row[m[1]!] ?? '') === m[2]!;
   return true;
 }

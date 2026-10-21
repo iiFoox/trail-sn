@@ -338,3 +338,50 @@ describe('Quem enxerga este registro: base de conhecimento (user criteria)', () 
     expect(describeVisibility(d)).toContain('O artigo não está publicado (draft)');
   });
 });
+
+describe('P6: a pessoa pedida é a própria sessão', () => {
+  // PDI 21/10/2026: como itil, sys_security_acl e sys_script dão 403; o GET de INC0010187 deu 200 e o de um registro do
+  // app escopado deu 404 (vazio pela Table API).
+  const itil = () => {
+    const c = base({ roles: [hasRole(ABEL, 'itil')] });
+    c.deny('sys_security_acl').deny('sys_script');
+    return c;
+  };
+
+  it('GET do registro voltou: vê, com certeza, e explica', async () => {
+    const c = itil();
+    c.respond('sys_user', (req) => (req.query === 'sys_id=javascript:gs.getUserID()' ? [{ sys_id: ABEL, user_name: 'abel.tuter' }] : req.query === `sys_id=${ABEL}` ? [{ sys_id: ABEL, user_name: 'abel.tuter', name: 'Abel Tuter', active: 'true' }] : []));
+    const v = await run(c, ABEL);
+    expect(v.session).toEqual({ sysId: ABEL, userName: 'abel.tuter', get: 'ok', rulesVerdict: 'nao_da_para_afirmar' });
+    expect(v.combined.verdict).toBe('ve');
+    expect(v.combined.why[0]).toBe('session_get:ok');
+    expect(v.notes).toContain('session_get');
+    const t = describeVisibility(v);
+    expect(t).toContain('Abel Tuter vê este registro.');
+    expect(t).toContain('é o seu login, e a instância entregou o registro');
+  });
+
+  it('GET vazio (404 no formulário): não vê; regras que diziam o contrário viram aviso', async () => {
+    const c = base({ ...OPEN_ACLS, roles: [hasRole(ABEL, 'itil')] });
+    c.rows('incident', []);
+    const v = await visibility(c, { table: 'incident', sysId: ID, user: 'abel.tuter' }, { sessionUser: ABEL });
+    expect(v.session).toMatchObject({ get: 'empty', rulesVerdict: 've' });
+    expect(v.combined.verdict).toBe('nao_ve');
+    expect(v.notes).toEqual(expect.arrayContaining(['session_get', 'session_rules_disagree']));
+    expect(v.notes).not.toContain('record_unreadable');
+    expect(describeVisibility(v)).toContain('não entregou o registro para você');
+    // Com sessionUser dado, não pergunta à instância quem está logado.
+    expect(c.log.some((r) => r.query.includes('javascript:'))).toBe(false);
+  });
+
+  it('outra pessoa, ou sessão que não dá para saber: segue pelas regras', async () => {
+    const c = itil();
+    const v = await visibility(c, { table: 'incident', sysId: ID, user: ABEL }, { sessionUser: BETH });
+    expect(v.session).toBeUndefined();
+    expect(v.combined.verdict).toBe('nao_da_para_afirmar');
+    // A instância devolveu mais de uma linha para gs.getUserID(): não usa.
+    const c2 = itil();
+    c2.respond('sys_user', (req) => (req.query.includes('javascript:') ? [{ sys_id: ABEL }, { sys_id: BETH }] : [{ sys_id: ABEL, user_name: 'abel.tuter', active: 'true' }]));
+    expect((await run(c2, ABEL)).session).toBeUndefined();
+  });
+});

@@ -63,54 +63,84 @@ export function mergeWindows(windows: { from: string; to: string }[]): { from: s
   return out;
 }
 
+type Tri = boolean | undefined;
+type Changes = { set: Set<string>; old: Record<string, string> };
+
+/** E de três valores: um falso decide; senão, um "não sei" contamina. */
+function and3(vals: Tri[]): Tri {
+  if (vals.some((v) => v === false)) return false;
+  return vals.some((v) => v === undefined) ? undefined : true;
+}
+/** OU de três valores: um verdadeiro decide; senão, um "não sei" contamina. */
+function or3(vals: Tri[]): Tri {
+  if (vals.some((v) => v === true)) return true;
+  return vals.some((v) => v === undefined) ? undefined : false;
+}
+
+/** Marca de termo que o motor não sabe ler (operador ou formato desconhecido). Torna a condição inteira não avaliável. */
+const UNKNOWN = Symbol('unknown');
+
+function evalTerm(term: string, rec: Record<string, string>, skipField: string | undefined, changes: Changes | undefined): Tri | typeof UNKNOWN {
+  if (/javascript:/.test(term)) return UNKNOWN;
+  const c = term.match(/^([a-z0-9_]+)(VALCHANGES|CHANGESTO|CHANGESFROM)(.*)$/);
+  if (c) {
+    if (!changes) return undefined;
+    const [, f, op, val] = c as unknown as [string, string, string, string];
+    if (!changes.set.has(f)) return false;
+    if (op === 'VALCHANGES') return true;
+    if (op === 'CHANGESTO') { if (f === skipField || !(f in rec)) return undefined; return rec[f] === val; }
+    if (!(f in changes.old)) return undefined;
+    return changes.old[f] === val;
+  }
+  const m = term.match(/^([a-z0-9_]+)(ISNOTEMPTY|ISEMPTY|STARTSWITH|ENDSWITH|NOTLIKE|LIKE|NOT IN|IN|!=|=)(.*)$/);
+  if (!m) return UNKNOWN;
+  const [, field, op, raw] = m as unknown as [string, string, string, string];
+  if (field === skipField || !(field in rec)) return undefined;
+  const v = rec[field] ?? '';
+  const val = raw ?? '';
+  switch (op) {
+    case 'ISEMPTY': return v === '';
+    case 'ISNOTEMPTY': return v !== '';
+    case 'STARTSWITH': return v.startsWith(val);
+    case 'ENDSWITH': return v.endsWith(val);
+    case 'LIKE': return v.includes(val);
+    case 'NOTLIKE': return !v.includes(val);
+    case 'IN': return val.split(',').includes(v);
+    case 'NOT IN': return !val.split(',').includes(v);
+    case '!=': return v !== val;
+    default: return v === val;
+  }
+}
+
 /**
- * Avalia uma encoded query simples contra os valores ATUAIS do registro.
- * Devolve true/false quando todos os termos são avaliáveis; undefined quando há OR, NQ,
- * operadores desconhecidos ou campos que não temos (nesses casos o motor não usa a condição).
- */
-/**
- * Avalia uma encoded query simples (só AND) contra o registro. `changes` diz o que mudou na gravação avaliada
+ * Avalia uma encoded query contra o registro, com a semântica da ServiceNow:
+ * - `^` é E; `^OR` é OU com o termo anterior (o OU liga mais forte que o E: `a^b^ORc` = a E (b OU c));
+ * - `^NQ` começa uma nova consulta, e o resultado é o OU dos blocos;
+ * - `^EQ` e `ORDERBY…` são ignorados.
+ *
+ * Lógica de três valores: true/false quando dá para decidir, undefined quando depende de algo que não sabemos
+ * (campo ausente do registro, `skipField`, mudança sem `changes`). Um termo com operador ou formato desconhecido (ou
+ * `javascript:`) deixa a condição inteira não avaliável, como antes. `changes` diz o que mudou na gravação avaliada
  * (para VALCHANGES, CHANGESTO e CHANGESFROM); sem ele, esses termos ficam "não avaliados".
  */
-export function evalCondition(cond: string | undefined, rec: Record<string, string>, skipField?: string, changes?: { set: Set<string>; old: Record<string, string> }): boolean | undefined {
+export function evalCondition(cond: string | undefined, rec: Record<string, string>, skipField?: string, changes?: Changes): boolean | undefined {
   if (!cond) return undefined;
-  if (/\^NQ|\^OR|javascript:/.test(cond)) return undefined;
-  const terms = cond.split('^').filter((t) => t && t !== 'EQ' && !t.startsWith('ORDERBY'));
-  if (!terms.length) return undefined;
-  for (const term of terms) {
-    const c = term.match(/^([a-z0-9_]+)(VALCHANGES|CHANGESTO|CHANGESFROM)(.*)$/);
-    if (c) {
-      if (!changes) return undefined;
-      const [, f, op, val] = c as unknown as [string, string, string, string];
-      if (!changes.set.has(f)) return false;
-      if (op === 'VALCHANGES') continue;
-      if (op === 'CHANGESTO') { if (f === skipField || !(f in rec)) return undefined; if (rec[f] !== val) return false; continue; }
-      if (!(f in changes.old)) return undefined;
-      if (changes.old[f] !== val) return false;
-      continue;
+  const blocks: Tri[] = [];
+  for (const q of cond.split('^NQ')) {
+    const groups: Tri[][] = [];
+    for (const part of q.split('^')) {
+      if (!part || part === 'EQ' || part.startsWith('ORDERBY')) continue;
+      // Campos são minúsculos: "OR" maiúsculo no começo é sempre o OU da encoded query.
+      const isOr = part.startsWith('OR') && groups.length > 0;
+      const r = evalTerm(isOr ? part.slice(2) : part, rec, skipField, changes);
+      if (r === UNKNOWN) return undefined;
+      if (isOr) groups[groups.length - 1]!.push(r);
+      else groups.push([r]);
     }
-    const m = term.match(/^([a-z0-9_]+)(ISNOTEMPTY|ISEMPTY|STARTSWITH|ENDSWITH|NOTLIKE|LIKE|NOT IN|IN|!=|=)(.*)$/);
-    if (!m) return undefined;
-    const [, field, op, raw] = m as unknown as [string, string, string, string];
-    if (field === skipField || !(field in rec)) return undefined;
-    const v = rec[field] ?? '';
-    const val = raw ?? '';
-    let ok: boolean;
-    switch (op) {
-      case 'ISEMPTY': ok = v === ''; break;
-      case 'ISNOTEMPTY': ok = v !== ''; break;
-      case 'STARTSWITH': ok = v.startsWith(val); break;
-      case 'ENDSWITH': ok = v.endsWith(val); break;
-      case 'LIKE': ok = v.includes(val); break;
-      case 'NOTLIKE': ok = !v.includes(val); break;
-      case 'IN': ok = val.split(',').includes(v); break;
-      case 'NOT IN': ok = !val.split(',').includes(v); break;
-      case '!=': ok = v !== val; break;
-      default: ok = v === val;
-    }
-    if (!ok) return false;
+    if (groups.length) blocks.push(and3(groups.map(or3)));
   }
-  return true;
+  if (!blocks.length) return undefined;
+  return or3(blocks);
 }
 
 /** Campos citados numa encoded query (para buscar só o necessário do registro). */

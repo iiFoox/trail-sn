@@ -26,6 +26,8 @@ export interface FieldObserved {
   visible?: boolean;
   /** O campo está no formulário (há elemento para ele). */
   onForm?: boolean;
+  /** O campo está vazio no formulário agora (pode diferir do registro gravado). undefined = usa o valor do registro. */
+  empty?: boolean;
 }
 
 export type StateRuleKind = 'dictionary' | 'dictionary_override' | 'client_script' | 'ui_policy' | 'data_policy';
@@ -46,7 +48,8 @@ export type StateWhy =
   | 'onload_unknown' // client script ao abrir, com condição que o Trail não avalia (ex.: papel)
   | 'onchange' // client script que só roda quando outro campo muda
   | 'value_unknown' // o valor passado não é fixo (variável, expressão)
-  | 'policy_script'; // vem do script da UI policy (executar script)
+  | 'policy_script' // vem do script da UI policy (executar script)
+  | 'mandatory_empty'; // trava o campo, mas no UI16 g_form.setReadOnly não trava campo obrigatório e vazio
 
 export interface StateRule {
   kind: StateRuleKind;
@@ -74,6 +77,8 @@ export interface StateRule {
   serverOnly?: boolean;
   /** Índice (em `rules`) da regra posterior que desfaz esta. */
   overriddenBy?: number;
+  /** Motivo original quando `why` virou `mandatory_empty`. */
+  whyBefore?: StateWhy;
 }
 
 export interface StateSkip { kind: StateRuleKind; name: string; table: string; sysId?: string; condition?: string; now?: Record<string, string>; why: 'cond_false' | 'not_inherited' }
@@ -94,6 +99,16 @@ export interface AspectSummary {
   unexplained: boolean;
   /** O formulário mostra diferente do que as regras confirmadas dizem. */
   mismatch: boolean;
+  /**
+   * Só em `read_only`: o campo é obrigatório e está vazio, e o formulário (UI16) ignora `setReadOnly(true)` nesse caso.
+   * As travas das regras do formulário viram "pode ser" (`why: 'mandatory_empty'`): travam depois que o campo é preenchido.
+   */
+  mandatoryEmpty?: boolean;
+  /**
+   * Só em `hidden`: campo de diário (comments, work_notes). O UI16 esconde o elemento de cada um e mostra um campo de
+   * notas combinado; o "escondido" lido do formulário não é regra e fica de fora (`observed` some).
+   */
+  journalCombined?: boolean;
 }
 
 export interface FieldStateResult {
@@ -127,6 +142,8 @@ export interface FieldStateResult {
 const FORM_SOURCES = ['sys_dictionary', 'sys_dictionary_override', 'sys_ui_policy', 'sys_ui_policy_action', 'sys_data_policy2', 'sys_data_policy_rule', 'sys_script_client'];
 const CALL = /g_form\.(setReadOnly|setReadonly|setDisabled|setMandatory|setDisplay|setVisible)\(\s*(['"])([a-z0-9_.]+)\2\s*,/g;
 const PSEUDO: Record<StateAspect, string> = { read_only: '__trail_ro__', mandatory: '__trail_mand__', hidden: '__trail_vis__' };
+/** Campos de diário OOB que o UI16 mostra no campo de notas combinado. */
+const JOURNAL_FIELDS = ['comments', 'work_notes'];
 const truth = (v: string | undefined): boolean | undefined => (v === 'true' ? true : v === 'false' ? false : undefined);
 
 /** Um campo. `sysId` pode ser o número do registro (INC0010001). */
@@ -338,14 +355,31 @@ export async function fieldStates(
   // ---------- veredito por aspecto, na ordem em que o formulário aplica ----------
   const layer = (r: StateRule) => (r.kind === 'dictionary' ? 0 : r.kind === 'dictionary_override' ? 1 : r.kind === 'client_script' ? (r.why === 'onchange' ? 6 : 2) : r.kind === 'ui_policy' ? 3 : 5);
   const seq = rules.map((r, i) => ({ r, i })).sort((a, b) => layer(a.r) - layer(b.r) || a.r.order - b.r.order || a.i - b.i);
+  // Diário (journal): no UI16, comments e work_notes aparecem juntos no campo de notas e o elemento de cada um fica
+  // escondido. Sem ler o dicionário (itil), vale pelo nome.
+  const journal = d?.internal_type ? /^journal/.test(d.internal_type) : JOURNAL_FIELDS.includes(field);
+  const journalCombined = journal && observed?.visible === false && observed.onForm !== false;
   const obsOf: Record<StateAspect, boolean | undefined> = {
     read_only: observed?.readOnly,
     mandatory: observed?.mandatory,
-    // Fora do layout do formulário não é regra: fica sem estado observado.
-    hidden: observed?.visible === undefined || observed.onForm === false ? undefined : !observed.visible,
+    // Fora do layout do formulário não é regra: fica sem estado observado. Diário escondido também (campo combinado).
+    hidden: observed?.visible === undefined || observed.onForm === false || journalCombined ? undefined : !observed.visible,
   };
   const aspects = {} as Record<StateAspect, AspectSummary>;
-  for (const aspect of STATE_ASPECTS) {
+  // Valor vazio agora: o do formulário quando lido; senão o do registro gravado.
+  const empty = observed?.empty ?? (recordReadable && field in record ? (record[field] ?? '') === '' : undefined);
+  // Obrigatório primeiro: no UI16, g_form.setReadOnly(campo, true) não trava campo obrigatório e vazio (visto no PDI em
+  // 21/10/2026 com o Caller). Vale para o que passa pelo g_form (client script, UI policy, data policy no formulário);
+  // o somente leitura do dicionário vem do servidor e continua valendo.
+  for (const aspect of ['mandatory', 'read_only', 'hidden'] as StateAspect[]) {
+    let mandatoryEmpty = false;
+    if (aspect === 'read_only' && empty === true && (aspects.mandatory.observed ?? aspects.mandatory.rules)) {
+      for (const r of rules) {
+        if (r.aspect !== 'read_only' || r.sets !== true || r.grade !== 'confirmed' || layer(r) <= 1 || r.serverOnly) continue;
+        mandatoryEmpty = true;
+        r.whyBefore = r.why; r.why = 'mandatory_empty'; r.grade = 'maybe';
+      }
+    }
     let state: boolean | undefined; let winner: number | undefined;
     const maybe: number[] = []; const conflicts: AspectSummary['conflicts'] = [];
     for (const { r, i } of seq) {
@@ -365,6 +399,8 @@ export async function fieldStates(
       aspect, ...(obs !== undefined ? { observed: obs } : {}), rules: ruleState, ...(winner !== undefined ? { winner } : {}), maybe, conflicts,
       unexplained: obs === true && !ruleState && !maybeSets,
       mismatch: obs !== undefined && obs !== ruleState && maybe.length === 0,
+      ...(mandatoryEmpty ? { mandatoryEmpty } : {}),
+      ...(aspect === 'hidden' && journalCombined ? { journalCombined } : {}),
     };
   }
 

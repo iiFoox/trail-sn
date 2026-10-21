@@ -31,6 +31,19 @@ describe('FetchRestClient', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
+  it('500 não é repetido (sys_choice dá 500 sempre para escopo.user); 503 é', async () => {
+    const f500 = vi.fn(async () => json(500, { error: { message: 'Internal' }, status: 'failure' })) as unknown as typeof fetch;
+    const c = new FetchRestClient({ baseUrl: 'https://dev.example.com', getToken: async () => 't', fetchImpl: f500 });
+    const r = await c.query({ table: 'sys_choice', query: 'name=incident', fields: ['value'], limit: 1 });
+    expect(r).toMatchObject({ status: 500, access: 'unknown' });
+    expect(f500).toHaveBeenCalledTimes(1);
+    let n = 0;
+    const f503 = vi.fn(async () => (n++ ? json(200, { result: [{ sys_id: 'x' }] }) : json(503, {}))) as unknown as typeof fetch;
+    const c2 = new FetchRestClient({ baseUrl: 'https://dev.example.com', getToken: async () => 't', fetchImpl: f503 });
+    expect((await c2.query({ table: 'incident', query: '', fields: ['sys_id'], limit: 1 })).status).toBe(200);
+    expect(f503).toHaveBeenCalledTimes(2);
+  });
+
   it('detectAccess não reporta "full" quando as chamadas falham', async () => {
     const fetchImpl = vi.fn(async () => { throw new TypeError('Illegal invocation'); }) as unknown as typeof fetch;
     const c = new FetchRestClient({ baseUrl: 'https://dev.example.com', getToken: async () => 't', fetchImpl });
