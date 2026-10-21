@@ -88,6 +88,18 @@ describe('saveTiming', () => {
     expect(describeSaveTiming(t, 'en')).toContain('Saved in 4.2 s — 3.1 s in business rules and 41 database queries (0.9 s).');
   });
 
+  it('mediana que estoura o prazo (filtro por url, lento no PDI): avisa baseline_slow, não "poucos salvamentos"', async () => {
+    const c = base();
+    const rows = [tx({ sys_id: 'T1', sys_created_on: shift(AT, 1), response_time: '2500' })];
+    c.respond('syslog_transaction', (req) => (req.query.startsWith('urlLIKE') ? { rows: [], status: 0, access: 'timeout' } : rows));
+    const t = await saveTiming(c, { table: 'incident', sysId: ID, checkpoint: 3 });
+    expect(t.txSysId).toBe('T1');
+    expect(t.notes).toContain('baseline_slow');
+    expect(t.notes.some((n) => n.startsWith('baseline_few'))).toBe(false);
+    expect(t).toMatchObject({ verdict: 'lento', verdictBasis: 'absolute' });
+    expect(describeSaveTiming(t)).toContain('demorou demais para comparar');
+  });
+
   it('campos de tempo ausentes na versão: usa só os que o dicionário tem e avisa', async () => {
     const c = base({ dict: dict(['response_time', 'sql_time']), tx: [tx({ sys_id: 'T1', sys_created_on: shift(AT, 1), response_time: '2500', sql_time: '1800', business_rule_time: '999' })] });
     const t = await saveTiming(c, { table: 'incident', sysId: ID, checkpoint: 3 });
