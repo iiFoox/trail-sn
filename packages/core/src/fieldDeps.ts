@@ -86,6 +86,11 @@ export interface Dependent {
   jsCond?: string;
   /** SLA: condição de cada etapa que cita o campo. */
   stages?: { stage: SlaStage; cond: string }[];
+  /**
+   * SLA, quando a consulta é de um registro e `task_sla` foi lida: true = anexada (task_sla ativa); false = a definição
+   * existe, mas não está anexada a este registro. Ausente = não deu para saber.
+   */
+  attached?: boolean;
   /** UI policy: desfaz as ações quando a condição deixa de valer. */
   reverse?: boolean;
   /** Client script: tipo (onChange, onLoad, onSubmit) e campo do onChange. */
@@ -108,6 +113,8 @@ export interface FieldDeps {
   /** Tipos em que se vê QUEM depende, mas não O QUE faz (fonte secundária negada ou lenta). */
   effectsUnknown: DepKind[];
   fieldLabels?: Record<string, string>;
+  /** SLAs anexadas ao registro (task_sla ativas), quando a consulta é de um registro e task_sla foi lida. */
+  attachedSlas?: { sla: string; name?: string; stage?: string }[];
   timing: { totalMs: number; calls: number };
 }
 
@@ -127,6 +134,7 @@ export const DEP_SOURCES: Record<string, { main: DepKind[]; detail: DepKind[] }>
   sys_hub_action_instance_v2: { main: [], detail: ['flow'] },
   sysevent_email_action: { main: ['notification'], detail: [] },
   contract_sla: { main: ['sla'], detail: [] },
+  task_sla: { main: [], detail: ['sla'] },
   sysrule_assignment: { main: ['assignment_rule'], detail: [] },
   sys_dictionary: { main: ['reference'], detail: [] },
 };
@@ -230,7 +238,7 @@ export interface FieldDepsOptions {
   language?: string;
 }
 
-export async function fieldDeps(client: RestClient, target: { table: string; field: string }, opts: FieldDepsOptions = {}): Promise<FieldDeps> {
+export async function fieldDeps(client: RestClient, target: { table: string; field: string; sysId?: string }, opts: FieldDepsOptions = {}): Promise<FieldDeps> {
   const started = Date.now();
   const sc = shared(client, opts.timeoutMs);
   const calls0 = sc.calls;
@@ -247,8 +255,11 @@ export async function fieldDeps(client: RestClient, target: { table: string; fie
   const run = (x: { table: string; query: string; fields: string[]; limit: number }) => q(x.table, x.query, x.fields, x.limit);
   const wantRefs = opts.references ?? field === 'sys_id';
   const slaLike = SLA_COLS.map(([, c]) => `${c}LIKE${field}`).join('^OR');
+  // Registro: quais SLAs estão de fato anexadas (task_sla; o itil lê). Sem registro ou sem leitura: não se sabe.
+  // Só sys_id: um número (INC0010001) como task= daria "nenhuma anexada" sem ser verdade.
+  const recId = target.sysId && /^\w+$/.test(target.sysId) && !/^[A-Z]{2,}[A-Z0-9]*\d{3,}$/.test(target.sysId) ? target.sysId : undefined;
 
-  const [brs, cs, pols, dps, lookups, uas, sis, rules, triggers, mails, slas, refs] = await Promise.all([
+  const [brs, cs, pols, dps, lookups, uas, sis, rules, triggers, mails, slas, refs, taskSlas] = await Promise.all([
     run(S.businessRules),
     run(S.clientScripts),
     run(S.uiPolicies),
@@ -261,7 +272,10 @@ export async function fieldDeps(client: RestClient, target: { table: string; fie
     q('sysevent_email_action', `collection${inT}^active=true^conditionLIKE${field}^ORadvanced_conditionLIKE${field}`, ['sys_id', 'name', 'collection', 'condition', 'advanced_condition', 'action_insert', 'action_update', 'generation_type', 'event_name', 'order'], 200),
     q('contract_sla', `collection${inT}^active=true^${slaLike}`, ['sys_id', 'name', 'collection', ...SLA_COLS.map(([, c]) => c)], 200),
     wantRefs ? q('sys_dictionary', `reference${inT}^active=true`, ['sys_id', 'name', 'element', 'column_label', 'reference'], 300) : Promise.resolve([] as Row[]),
+    recId ? sc.query({ table: 'task_sla', query: `task=${recId}^active=true`, fields: ['sys_id', 'sla', 'sla.name', 'stage'], limit: 100 }) : Promise.resolve(undefined),
   ]);
+  const slaRead = !!taskSlas && (taskSlas.access === 'ok' || taskSlas.access === 'empty');
+  const attachedSlas = slaRead ? taskSlas!.rows.filter((r) => r.sla).map((r) => ({ sla: r.sla!, ...(r['sla.name'] ? { name: r['sla.name'] } : {}), ...(r.stage ? { stage: r.stage } : {}) })) : undefined;
 
   const out: Dependent[] = [];
   const link = (t: string, id: string | undefined) => ({ table: t, ...(id ? { sysId: id } : {}) });
@@ -369,7 +383,8 @@ export async function fieldDeps(client: RestClient, target: { table: string; fie
     if (!stages.length) continue;
     const how: DepHow[] = stages.map((x) => ({ code: `sla_${x.stage}` as DepHowCode, detail: short(humanQuery(x.cond)) }));
     out.push({ phase: 'after', kind: 'sla', name: s.name ?? '?', ...link('contract_sla', s.sys_id), on: s.collection ?? '', order: 1000,
-      when: stages.map((x) => `${x.stage}: ${short(humanQuery(x.cond), 60)}`).join(' · '), how, does: stages.map((x) => ({ type: 'sla', stage: x.stage })), stages });
+      when: stages.map((x) => `${x.stage}: ${short(humanQuery(x.cond), 60)}`).join(' · '), how, does: stages.map((x) => ({ type: 'sla', stage: x.stage })), stages,
+      ...(attachedSlas ? { attached: attachedSlas.some((a) => a.sla === s.sys_id) } : {}) });
   }
 
   // ---------- segundo plano: notificações ----------
@@ -444,7 +459,7 @@ export async function fieldDeps(client: RestClient, target: { table: string; fie
     fieldLabels = (await resolveDisplay(q, tables, wanted, opts.language).catch(() => undefined))?.fields;
   }
   const access = Object.fromEntries(Object.entries(sc.access).filter(([t]) => t in DEP_SOURCES || t === 'sys_db_object'));
-  return { table, field, tables, dependents: out, references: wantRefs, access, denied, slow, notSeen, effectsUnknown, ...(fieldLabels ? { fieldLabels } : {}), timing: { totalMs: Date.now() - started, calls: sc.calls - calls0 } };
+  return { table, field, tables, dependents: out, references: wantRefs, access, denied, slow, notSeen, effectsUnknown, ...(fieldLabels ? { fieldLabels } : {}), ...(attachedSlas ? { attachedSlas } : {}), timing: { totalMs: Date.now() - started, calls: sc.calls - calls0 } };
 }
 
 // ---------------------------------------------------------------- a aba "Regras do campo"
@@ -472,7 +487,7 @@ export interface FieldRules {
  * "Quem grava" + "Quem depende" em paralelo, com as consultas em comum (hierarquia, sys_script, client scripts,
  * UI policies, UI actions, script includes, atribuição, flows) lidas uma vez só.
  */
-export async function fieldRules(client: RestClient, target: { table: string; field: string }, opts: FieldDepsOptions = {}): Promise<FieldRules> {
+export async function fieldRules(client: RestClient, target: { table: string; field: string; sysId?: string }, opts: FieldDepsOptions = {}): Promise<FieldRules> {
   const started = Date.now();
   const sc = new SharedClient(client, opts.timeoutMs !== undefined ? { timeoutMs: opts.timeoutMs } : {});
   const [map, deps] = await Promise.all([fieldMap(sc, target), fieldDeps(sc, target, opts)]);
@@ -503,6 +518,9 @@ export type SimWhy =
   | 'policy_true' | 'policy_false_reverse' | 'policy_unchanged' // UI policy: passa a valer, deixa de valer, não muda
   | 'field_not_empty' // regra de atribuição: o campo já está preenchido
   | 'sla_stage' | 'sla_none' // SLA: alguma etapa passa a valer / nenhuma
+  | 'sla_not_attached' // SLA: a etapa (parar, pausar...) valeria, mas a definição não está anexada a este registro
+  | 'sla_already_attached' // SLA: a condição de início valeria, mas a SLA já está anexada
+  | 'sla_attach_unknown' // SLA: a etapa valeria, mas não deu para ler task_sla (anexada ou não?)
   | 'not_simulated'; // não se aplica a uma gravação (referências)
 
 export interface SimItem {
@@ -522,6 +540,8 @@ export interface SimItem {
   dependent?: Dependent;
   /** O passo da previsão, quando há. */
   step?: PreviewStep;
+  /** SLA: anexada a este registro (task_sla ativa)? Ausente = não deu para saber. */
+  slaAttached?: boolean;
 }
 
 export interface ValueSimulation {
@@ -563,7 +583,7 @@ export async function simulateValue(
   const { table, sysId, field, value } = target;
   const [preview, deps, recRows] = await Promise.all([
     previewChange(sc, target),
-    fieldDeps(sc, { table, field }, { references: false }),
+    fieldDeps(sc, { table, field, sysId }, { references: false }),
     // Mesma consulta que a previsão faz: o SharedClient lê uma vez só.
     sc.query({ table, query: `sys_id=${sysId}`, fields: [], limit: 1 }).then((r) => r.rows),
   ]);
@@ -624,10 +644,21 @@ export async function simulateValue(
         break;
       case 'sla': {
         const hit = (d.stages ?? []).map((s) => ({ s, before: evalCondition(s.cond, record), now: evalCondition(s.cond, rec, undefined, changes) }));
+        // A etapa só se aplica conforme a SLA esteja anexada (task_sla): começar só se não estiver; parar, pausar,
+        // voltar, recomeçar e cancelar só se estiver. Sem task_sla, não se sabe.
+        const att = d.attached;
+        const applies = (st: SlaStage): boolean | undefined => (att === undefined ? undefined : st === 'start' ? !att : att);
         const fires = hit.filter((h) => h.now === true && h.before !== true);
-        const unsure = hit.filter((h) => h.now === undefined);
-        effects = fires.length ? fires.map((h) => ({ type: 'sla', stage: h.s.stage }) as DepEffect) : unsure.map((h) => ({ type: 'sla', stage: h.s.stage }) as DepEffect);
-        r = fires.length ? { will: 'yes', why: 'sla_stage' } : unsure.length ? { will: 'maybe', why: 'cond_unknown' } : { will: 'no', why: 'sla_none' };
+        const sure = fires.filter((h) => applies(h.s.stage) === true);
+        const attUnknown = fires.filter((h) => applies(h.s.stage) === undefined);
+        const blocked = fires.filter((h) => applies(h.s.stage) === false);
+        const unsure = hit.filter((h) => h.now === undefined && applies(h.s.stage) !== false);
+        const eff = (xs: typeof hit) => xs.map((h) => ({ type: 'sla', stage: h.s.stage }) as DepEffect);
+        if (sure.length) { effects = eff(sure); r = { will: 'yes', why: 'sla_stage' }; }
+        else if (attUnknown.length) { effects = eff(attUnknown); r = { will: 'maybe', why: 'sla_attach_unknown' }; }
+        else if (unsure.length) { effects = eff(unsure); r = { will: 'maybe', why: 'cond_unknown' }; }
+        else if (blocked.length) { effects = eff(blocked); r = { will: 'no', why: att ? 'sla_already_attached' : 'sla_not_attached' }; }
+        else { effects = []; r = { will: 'no', why: 'sla_none' }; }
         break;
       }
       case 'ui_action': {
@@ -648,7 +679,7 @@ export async function simulateValue(
     // A previsão já sabe o que esta regra grava (e se roda): ela manda.
     if (stepHit) { used.add(stepHit.s); r = { will: stepHit.sure ? 'yes' : 'maybe', why: 'preview' }; }
     items.push({ phase: d.phase, kind: d.kind, name: d.name, table: d.table, ...(d.sysId ? { sysId: d.sysId } : {}), order: d.order, will: r.will, why: r.why,
-      writes: stepHit?.s.writes ?? [], effects, dependent: d, ...(stepHit ? { step: stepHit.s } : {}) });
+      writes: stepHit?.s.writes ?? [], effects, dependent: d, ...(stepHit ? { step: stepHit.s } : {}), ...(d.kind === 'sla' && d.attached !== undefined ? { slaAttached: d.attached } : {}) });
   }
   // Passos da previsão que não são dependentes diretos do campo (reagem a algo que a mudança causou).
   for (const { s, sure } of steps) {
@@ -683,6 +714,7 @@ const T = {
     md: (f: string, b?: boolean) => `${b === false ? 'tira a obrigação de' : 'obriga'} ${f}`, hd: (f: string, b?: boolean) => `${b === false ? 'mostra' : 'esconde'} ${f}`,
     notifyDo: 'envia a notificação', slaDo: (s: string) => `SLA: ${({ start: 'começa', pause: 'pausa', resume: 'volta a contar', stop: 'para', reset: 'recomeça', cancel: 'cancela' } as Record<string, string>)[s]}`,
     abort: 'impede a gravação', event: (n: string) => `dispara o evento ${n}`, show: 'o botão aparece',
+    slaAttached: 'está anexada a este registro', slaNotAttached: 'a definição existe, mas não está anexada a este registro',
   },
   en: {
     condition: 'the condition uses the field', changes: 'fires when the field changes', changes_to: (v: string) => `fires when the field changes to ${v}`,
@@ -697,11 +729,12 @@ const T = {
     md: (f: string, b?: boolean) => `${b === false ? 'makes optional' : 'requires'} ${f}`, hd: (f: string, b?: boolean) => `${b === false ? 'shows' : 'hides'} ${f}`,
     notifyDo: 'sends the notification', slaDo: (s: string) => `SLA: ${({ start: 'starts', pause: 'pauses', resume: 'resumes', stop: 'stops', reset: 'resets', cancel: 'cancels' } as Record<string, string>)[s]}`,
     abort: 'blocks the save', event: (n: string) => `fires event ${n}`, show: 'the button shows',
+    slaAttached: 'is attached to this record', slaNotAttached: 'the definition exists, but it is not attached to this record',
   },
 };
 
 /** Uma linha de "como depende" por relação, e uma por efeito, em texto simples. */
-export function describeDependent(d: Pick<Dependent, 'kind' | 'how' | 'does'>, lang: Lang = 'pt', labels: Record<string, string> = {}): { how: string[]; does: string[] } {
+export function describeDependent(d: Pick<Dependent, 'kind' | 'how' | 'does'> & { attached?: boolean }, lang: Lang = 'pt', labels: Record<string, string> = {}): { how: string[]; does: string[] } {
   const t = T[lang];
   const how = d.how.map((h) => {
     const base = (() => {
@@ -719,6 +752,7 @@ export function describeDependent(d: Pick<Dependent, 'kind' | 'how' | 'does'>, l
     })();
     return base;
   });
+  if (d.kind === 'sla' && d.attached !== undefined) how.push(d.attached ? t.slaAttached : t.slaNotAttached);
   const lbl = (f: string) => labels[f] || f;
   const does = d.does.map((e) => {
     switch (e.type) {

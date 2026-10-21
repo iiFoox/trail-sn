@@ -270,6 +270,7 @@ describe('Simular um valor', () => {
       { sys_id: 'n5', name: 'Só ao criar', collection: 'incident', active: 'true', condition: 'state=6^EQ', action_insert: 'true', action_update: 'false', generation_type: 'engine' },
     ]);
     c.rows('contract_sla', [{ sys_id: 's1', name: 'Resolução', collection: 'incident', active: 'true', start_condition: 'priority=1^EQ', stop_condition: 'stateIN6,7^EQ' }]);
+    c.rows('task_sla', [{ sys_id: 'ts1', task: ID, sla: 's1', 'sla.name': 'Resolução', stage: 'in_progress', active: 'true' }]);
     c.rows('sys_ui_policy', [{ sys_id: 'p1', short_description: 'Resolvido esconde', table: 'incident', active: 'true', conditions: 'state=6^EQ', run_scripts: 'false', reverse_if_false: 'true', ui_type: '0', order: '100' }]);
     c.rows('sys_ui_policy_action', [{ sys_id: 'a1', ui_policy: 'p1', field: 'work_notes', visible: 'false', disabled: 'ignore', mandatory: 'ignore' }]);
     return c;
@@ -325,5 +326,60 @@ describe('Simular um valor', () => {
     const strip = (p: typeof direct) => ({ ...p, timing: undefined });
     expect(strip(viaShared)).toEqual(strip(direct));
     expect(direct.steps.map((x) => x.name)).toEqual(['Nota ao resolver']);
+  });
+
+  describe('P4: SLAs anexadas (task_sla)', () => {
+    // PDI 21/10/2026, INC0010187 state→6: "Priority 3 resolution (1 day)" está em task_sla; as duas "ATF – …" não.
+    function slas() {
+      const c = sim();
+      c.rows('contract_sla', [
+        { sys_id: 'p3', name: 'Priority 3 resolution (1 day)', collection: 'incident', active: 'true', start_condition: 'priority=3^EQ', stop_condition: 'incident_stateIN6,7^EQ', pause_condition: 'incident_state=3^EQ' },
+        { sys_id: 'atf1', name: 'ATF – Resolution', collection: 'incident', active: 'true', start_condition: 'short_descriptionSTARTSWITHATF^EQ', stop_condition: 'stateIN6,7^EQ' },
+        { sys_id: 'atf2', name: 'ATF – Restart', collection: 'incident', active: 'true', start_condition: 'state=6^EQ' },
+      ]);
+      c.rows('task_sla', [{ sys_id: 'ts1', task: ID, sla: 'p3', 'sla.name': 'Priority 3 resolution (1 day)', stage: 'in_progress', active: 'true' }]);
+      return c;
+    }
+
+    it('só para a SLA anexada; as outras dizem "definição existe, não anexada"', async () => {
+      const c = slas();
+      const s = await simulateValue(c, { table: 'incident', sysId: ID, field: 'state', value: '6' });
+      expect(s.runs.find((x) => x.name === 'Priority 3 resolution (1 day)')).toMatchObject({ why: 'sla_stage', slaAttached: true, effects: [{ type: 'sla', stage: 'stop' }] });
+      expect(s.wontRun.find((x) => x.name === 'ATF – Resolution')).toMatchObject({ why: 'sla_not_attached', slaAttached: false });
+      // Começaria pela condição, e não está anexada: começa.
+      expect(s.runs.find((x) => x.name === 'ATF – Restart')).toMatchObject({ why: 'sla_stage', slaAttached: false, effects: [{ type: 'sla', stage: 'start' }] });
+      expect(c.log.filter((x) => x.table === 'task_sla')).toEqual([expect.objectContaining({ query: `task=${ID}^active=true` })]);
+    });
+
+    it('início de SLA já anexada não roda', async () => {
+      const c = slas();
+      c.rows('task_sla', [{ sys_id: 'ts2', task: ID, sla: 'atf2', active: 'true' }]);
+      const s = await simulateValue(c, { table: 'incident', sysId: ID, field: 'state', value: '6' });
+      expect(s.wontRun.find((x) => x.name === 'ATF – Restart')).toMatchObject({ why: 'sla_already_attached', slaAttached: true });
+    });
+
+    it('sem leitura de task_sla: a SLA fica em "pode rodar"', async () => {
+      const c = slas();
+      c.deny('task_sla');
+      const s = await simulateValue(c, { table: 'incident', sysId: ID, field: 'state', value: '6' });
+      expect(s.maybe.find((x) => x.name === 'Priority 3 resolution (1 day)')).toMatchObject({ why: 'sla_attach_unknown' });
+      expect(s.maybe.find((x) => x.name === 'ATF – Resolution')!.slaAttached).toBeUndefined();
+      expect(s.denied).toContain('task_sla');
+    });
+
+    it('fieldDeps de um registro marca anexada / não anexada, com texto', async () => {
+      const c = slas();
+      const d = await fieldDeps(c, { table: 'incident', field: 'state', sysId: ID });
+      expect(d.attachedSlas).toEqual([{ sla: 'p3', name: 'Priority 3 resolution (1 day)', stage: 'in_progress' }]);
+      const p3 = d.dependents.find((x) => x.sysId === 'p3')!, atf = d.dependents.find((x) => x.sysId === 'atf1')!;
+      expect(p3.attached).toBe(true);
+      expect(atf.attached).toBe(false);
+      expect(describeDependent(atf).how).toContain('a definição existe, mas não está anexada a este registro');
+      expect(describeDependent(p3, 'en').how).toContain('is attached to this record');
+      // Sem registro: não lê task_sla e não marca nada.
+      const plain = await fieldDeps(slas(), { table: 'incident', field: 'state' });
+      expect(plain.attachedSlas).toBeUndefined();
+      expect(plain.dependents.find((x) => x.sysId === 'p3')!.attached).toBeUndefined();
+    });
   });
 });
