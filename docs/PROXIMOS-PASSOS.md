@@ -21,6 +21,14 @@ O Codex #2 e o Antigravity #2 pararam por limite de uso; o Claude fechou a rodad
 - Antigravity #2: livre. Entregou o tile 440×280 e a política revisada.
 - O sandbox do Codex não alcança o GitHub nem roda esbuild. Por isso a integração final (build, zip, push) deve ser feita por quem tiver acesso: Claude ou o dono.
 
+## Ideias de funcionalidades guardadas (backlog, 21/10/2026 — não implementar sem o dono escolher)
+- **Comparar instâncias (DEV × PROD)** — o dono pediu para NÃO perder esta ideia. Para o mesmo campo/tabela, lado a lado o que pode gravá-lo em cada instância conectada (regras, policies, flows, data lookups, client scripts): o que só existe numa, o que está diferente (condição, ordem, script). Responde "por que funciona em DEV e não em PROD?". Precisa estar logado nas duas; só leitura.
+- Novidades no registro (desde a última visita + aviso quando alguém salva com o formulário aberto).
+- O que está esperando neste registro (aprovações, SLA, flows parados) — medir leitura sem admin antes.
+- Ícone do Trail em cada entrada do Activity Stream do formulário.
+- "A regra foi alterada?" (versões da automação via `sys_update_version`).
+- E-mails do registro (`sys_email`) — exige ajuste na política de privacidade.
+
 ## Ajustes pendentes no SITE (anotados em 21/10/2026, noite — o dono pediu para não mexer no site agora)
 Quem for mexer no site (`site/`, deploy Vercel do dono) deve fazer, nesta ordem:
 1. **Política de privacidade** (`site/privacidade/index.html`), exigência da loja (revisão de 21/10):
