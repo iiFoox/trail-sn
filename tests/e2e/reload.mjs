@@ -97,6 +97,37 @@ try {
   await page.waitForFunction(() => document.querySelectorAll('.trail-host').length > 0 && !!document.getElementById('trail-float'), null, { timeout: 10000 });
   out.reinjected = await count();
   if (out.reinjected.icons !== out.before.icons || out.reinjected.hosts !== 1 || out.reinjected.bubble !== 1) errors.push('reinjeção não recuperou uma interface única: ' + JSON.stringify(out.reinjected));
+  // O painel flutuante e a janela "lado a lado" são iframes da extensão numa página https: dependem de
+  // web_accessible_resources. Confere que carregam e que a conversa por postMessage (origem da extensão) funciona.
+  const floatFrame = async () => { for (let i = 0; i < 50; i++) { const f = page.frames().find((x) => x.url().includes('float=1')); if (f) return f; await page.waitForTimeout(100); } return undefined; };
+  const ff = await floatFrame();
+  out.floatIframe = !!ff && !!(await ff.waitForSelector('header.topbar', { timeout: 8000 }).catch(() => null));
+  if (!out.floatIframe) errors.push('o iframe do painel flutuante não carregou na página https');
+  if (ff) {
+    await ff.press('body', 'Escape');
+    out.floatEscClosed = await page.waitForFunction(() => !document.getElementById('trail-float'), null, { timeout: 5000 }).then(() => true, () => false);
+    if (!out.floatEscClosed) errors.push('Esc dentro do iframe não fechou o painel (postMessage da extensão recusado?)');
+    await sw.evaluate(async () => {
+      const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      await chrome.tabs.sendMessage(tab.id, { type: 'float-open', tabId: tab.id }, { frameId: 0 });
+    });
+    await page.waitForFunction(() => !!document.getElementById('trail-float'));
+  }
+  await sw.evaluate(async () => {
+    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    await chrome.tabs.sendMessage(tab.id, { type: 'diff-window', key: 'e2e', title: 'Diferença' }, { frameId: 0 });
+  });
+  await page.waitForSelector('#trail-diff-window', { state: 'attached', timeout: 5000 }).catch(() => undefined);
+  await page.waitForTimeout(4500); // sem o aviso "pronto" do iframe em 4 s, a janela fecha e vira popup
+  out.diffIframe = await page.evaluate(() => !!document.getElementById('trail-diff-window')) && page.frames().some((x) => x.url().includes('diff/index.html'));
+  if (!out.diffIframe) errors.push('a janela lado a lado não carregou o iframe da extensão na página https');
+  // use_dynamic_url: a própria página (mundo MAIN) não consegue embutir a URL fixa da extensão; só o content script.
+  out.pageBlockedStaticUrl = await page.evaluate(async (i) => {
+    const fr = document.createElement('iframe'); fr.id = 'e2e-static'; fr.src = `chrome-extension://${i}/src/diff/index.html?k=x`;
+    document.body.appendChild(fr); await new Promise((r) => setTimeout(r, 1500)); fr.remove(); return true;
+  }, id).then(() => !page.frames().some((x) => x.url().startsWith(`chrome-extension://${id}/src/diff/index.html?k=x`)));
+  if (!out.pageBlockedStaticUrl) errors.push('a página conseguiu embutir a URL fixa da extensão (use_dynamic_url sem efeito)');
+  await page.keyboard.press('Escape');
   await sw.evaluate(async () => {
     const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
     await chrome.tabs.sendMessage(tab.id, { type: 'float-toggle', tabId: tab.id }, { frameId: 0 });

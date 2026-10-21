@@ -36,21 +36,14 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "page.js"
-      ],
-      "matches": [
-        "<all_urls>"
-      ]
-    },
-    {
-      "resources": [
         "src/diff/index.html",
         "src/sidepanel/index.html",
         "assets/*"
       ],
       "matches": [
-        "<all_urls>"
-      ]
+        "https://*/*"
+      ],
+      "use_dynamic_url": true
     }
   ],
   "commands": {
