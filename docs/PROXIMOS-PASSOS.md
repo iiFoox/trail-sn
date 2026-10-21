@@ -21,6 +21,19 @@ O Codex #2 e o Antigravity #2 pararam por limite de uso; o Claude fechou a rodad
 - Antigravity #2: livre. Entregou o tile 440×280 e a política revisada.
 - O sandbox do Codex não alcança o GitHub nem roda esbuild. Por isso a integração final (build, zip, push) deve ser feita por quem tiver acesso: Claude ou o dono.
 
+## Ajustes pendentes no SITE (anotados em 21/10/2026, noite — o dono pediu para não mexer no site agora)
+Quem for mexer no site (`site/`, deploy Vercel do dono) deve fazer, nesta ordem:
+1. **Política de privacidade** (`site/privacidade/index.html`), exigência da loja (revisão de 21/10):
+   - dizer que `storage.sync` (preferências e lista de instâncias) passa pela sincronização da conta Google/Microsoft do navegador;
+   - dizer que os textos da "diferença lado a lado" e do relatório PDF ficam em `storage.session` até o navegador fechar;
+   - "Contato" com link (`https://github.com/iiFoox/trail-sn/issues`);
+   - conferir as mudanças da branch `fix-revisao` que afetam a política (ex.: registros com boas-vindas já mostradas deixam de ficar guardados para sempre) — o relatório do agente de correções lista quais.
+2. **Funcionalidades novas da extensão que precisam entrar no site** (regra do projeto: toda funcionalidade nova vai para `site/b3`):
+   - "Por que este campo está bloqueado, obrigatório ou escondido?" (em desenvolvimento, branch `dev-bloqueado`);
+   - janela separada que abre mesmo quando o navegador recusa a posição (só nota de versão);
+   - mensagens de erro em linguagem simples ("a instância não respondeu", "sem permissão").
+3. Atualizar números da página (`site/b3`) depois da bateria escopada v2 (`tests/regression/escopo/RELATORIO-v2.md`).
+
 ## Passagem anterior (21/10/2026, manhã: Claude → Codex)
 
 O Claude saiu por limite de tokens. O **Codex #2 coordena** a partir daqui: passa tarefas ao Antigravity #2, integra, testa e faz o commit.
