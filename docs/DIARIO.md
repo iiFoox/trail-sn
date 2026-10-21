@@ -10,6 +10,17 @@ Convenções:
 
 ---
 
+## 2026-10-21 (noite) — Claude (coordenação com subagentes): e2e completo, 11 erros do itil explicados, correção da janela separada
+
+- **e2e completo passando (item 4 da fila):** a cadeia `npm run e2e` (10 suítes) passou inteira no Linux. Causa real da falha do `prefs-window`: não era "headless sem janela". O Chromium headless simula tela 800×600 e `panelWindowBounds()` alinhava a janela destacada à borda direita da janela normal (1280 px), quase toda fora da tela; `chrome.windows.create` recusava ("Bounds must be at least 50% within visible screen space"). O teste agora usa `--screen-info={1920x1080}`, espera o evento de página e falha se `open-panel` devolver erro.
+- **Bug de produto corrigido (`background/index.ts`, `openWindow`):** a mesma recusa acontece com usuários reais (janela do navegador maior que o monitor, segundo monitor desligado) e o "Abrir em janela separada" não fazia nada. Agora tenta de novo sem posição. O teste antigo, sem `--screen-info`, também passa com a correção.
+- **Os 11 "Record not found or not readable" da rodada itil (item 3 da fila): todos são negação esperada, nenhum é falha do Trail.** Refeito só leitura (2 POSTs de impersonate, sessão devolvida ao admin): F3-SCRIPT (`sys_ui_action`, ACL de tabela), F7-CUSTOM-* ×6 (`u_pt_trail_teste`, tabela [PT] sem ACL que o itil satisfaça) e F16-X32..X35 ×4 (`kb_knowledge`, permissão do artigo). Em todos o itil também não abre o formulário ("Security constraints…"). As 294 demais chaves resolveram para o mesmo registro que o admin vê, inclusive as 186 por `short_description`.
+- **Problema latente visto nessa rodada:** HTTP 500 passageiros na Table API com 6 consultas em paralelo (5 em 608). Um 500/timeout persistente na consulta do registro vira "Record not found or not readable", escondendo a causa técnica. Correção em andamento (erro próprio "a instância não respondeu").
+- **Commits:** a partir daqui os commits do Claude saem como `Claude <noreply@anthropic.com>` (como os 36 anteriores do Claude no histórico). Este ambiente não tem permissão de push no `iiFoox/trail-sn`: os commits vão para o dono num git bundle.
+- **Em andamento (subagentes):** recurso "Por que este campo está bloqueado, obrigatório ou escondido?" (branch `dev-bloqueado`); correções da revisão de loja (branch `fix-revisao`); bateria escopada v2 para não admin (corpus diverso, vários perfis); revisão de UX.
+
+---
+
 ## 2026-10-21 — rechecagem das lacunas de escopo e retirada de `security_admin`
 
 - A sessão autenticada do PDI estava em `admin` com `security_admin` elevado. Removi a elevação pelo menu do usuário e confirmei que a caixa `security_admin` ficou desmarcada. Ao final, `g_user.roles` e `g_user.allRoles` não contêm `security_admin`; o usuário é `admin` e o seletor de aplicativo voltou a `Global`.
