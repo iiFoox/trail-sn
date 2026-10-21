@@ -795,3 +795,8 @@ table.cmpt tr.rev { opacity: .7; }
 .bt-group .bt-row:not(.wait):hover { background: var(--surface-2); transform: none; }
 .bt-group .bt-row .vals { margin-bottom: 0; }
 @media (prefers-reduced-motion: reduce) { .bt-group, .bt-group-arrow { animation: none !important; transition: none !important; } }
+
+/* Abas do resultado: cada uma do tamanho do texto mais uma folga igual; o realce segue a aba ativa. */
+.seg-tabs { grid-template-columns: repeat(5, auto); }
+.seg-tabs button { padding: 7px 8px; }
+.seg-tabs .ind { left: 0; width: var(--iw, 0); transform: translateX(var(--ix, 0)); transition: transform .38s cubic-bezier(.3,1.35,.5,1), width .3s cubic-bezier(.3,1.2,.5,1); }

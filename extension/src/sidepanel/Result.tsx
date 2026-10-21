@@ -4,7 +4,7 @@
  * Princípio: a resposta primeiro, em linguagem de gente; o detalhe técnico continua lá, um clique abaixo.
  */
 import type { TableConflictScan, AccessReport, Change, Evidence, Grade, Investigation, TraceItem } from '@trail/core';
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { fmt, t } from '../shared/i18n';
 import { Glyph, typeGlyph } from '../shared/icons';
 import { recordLink } from '../shared/instances';
@@ -97,6 +97,21 @@ export function factText(kind: string, field: string): string {
 // ---------- componente principal ----------
 export function Result({ r, origin, access, toast, onField }: { r: Investigation; origin: string; access?: AccessReport; toast: (m: string) => void; onField: (field: string) => void }) {
   const [tab, setTab] = useState<Tab>(() => tabFor(r.changes[0]));
+  // O realce verde acompanha a largura de cada aba (cada uma tem o tamanho do próprio texto).
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const [ind, setInd] = useState({ x: 0, w: 0 });
+  useLayoutEffect(() => {
+    const box = tabsRef.current;
+    if (!box) return;
+    const measure = () => {
+      const b = box.querySelector<HTMLElement>('button[aria-selected="true"]');
+      if (b) setInd({ x: b.offsetLeft, w: b.offsetWidth });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(box);
+    return () => ro.disconnect();
+  }, [tab]);
   const [histMode, setHistMode] = useState<'field' | 'record'>(forcedHist);
   const [diffOpen, setDiffOpen] = useState<false | { x: number; y: number }>(false);
   const [sel, setSel] = useState(0);
@@ -159,7 +174,7 @@ export function Result({ r, origin, access, toast, onField }: { r: Investigation
       {c && diffOpen && <DiffOverlay at={diffOpen} title={`${r.target.display} · ${field}`} sub={when(c.at)} oldText={c.oldValue} newText={c.newValue} onClose={() => setDiffOpen(false)} />}
 
       {c && (
-        <div class="seg-tabs" role="tablist" style={`--x:${TABS.indexOf(tab)}`}>
+        <div class="seg-tabs" role="tablist" ref={tabsRef} style={`--ix:${ind.x}px;--iw:${ind.w}px`}>
           <span class="ind" aria-hidden="true" />
           {([['answer', P.tabAnswer, 0], ['trace', P.tabTrace, c.trace?.length ?? 0], ['proof', P.tabProof, c.evidence[0]?.facts.length ?? 0], ['history', P.tabHistory, r.changes.length + (r.unaudited ? 1 : 0)], ['whatif', P.wiTab, 0]] as [Tab, string, number][]).map(([k, label, n]) => (
             <button role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>
