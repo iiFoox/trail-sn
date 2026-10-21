@@ -184,13 +184,19 @@ export interface Visibility {
   labels: DisplayNames;
   /** Valores do registro lidos (campos das condições). */
   record?: Record<string, string>;
+  /**
+   * A pessoa pedida é a própria sessão: o GET do registro feito agora, com o login dela, é a resposta (200 com a linha =
+   * vê; vazio ou 403 = não vê). `rulesVerdict` guarda o que as regras lidas diziam.
+   */
+  session?: { sysId: string; userName?: string; get: 'ok' | 'empty' | 'denied'; rulesVerdict: VisibilityVerdict };
   access: Record<string, AccessState>;
   denied: string[];
   slow: string[];
   /**
    * Códigos: acl_denied, acl_empty, acl_roles_denied, rules_denied, record_unreadable, user_not_found, user_unreadable,
    * user_inactive, roles_denied, groups_denied, no_table_acl, interactive_assumed, domain_differs, deny_unless,
-   * generic (sem pessoa), acl_op_unknown (ACL sem o nome da operação: fica de fora).
+   * generic (sem pessoa), acl_op_unknown (ACL sem o nome da operação: fica de fora), session_get (a pessoa é a sessão:
+   * vale o GET do registro), session_rules_disagree (as regras lidas diziam outra coisa).
    */
   notes: string[];
   timing: { totalMs: number; calls: number };
@@ -202,6 +208,11 @@ export interface VisibilityOptions {
   timeoutMs?: number;
   /** Idioma dos rótulos (padrão en). */
   language?: string;
+  /**
+   * Quem está logado (sys_id ou user_name). Sem ele, quando há pessoa pedida, o Trail pergunta à instância
+   * (`sys_user` com `sys_id=javascript:gs.getUserID()`); false não pergunta.
+   */
+  sessionUser?: string | false;
 }
 
 // ---------------------------------------------------------------- contexto da pessoa
@@ -684,10 +695,17 @@ export async function visibility(
   const isKb = tables.includes('kb_knowledge');
   const keys = [...new Set([...tables, '*'].flatMap((t) => [t, `${t}.*`, ...extraFields.map((f) => `${t}.${f}`)]))];
   const userQ = input.user ? (isSysId(input.user) ? `sys_id=${input.user}` : `user_name=${input.user}`) : '';
-  const [brRes, aclRes, userRes] = await Promise.all([
+  // Quem está logado: para saber se a pessoa pedida é a própria sessão (aí o GET do registro responde).
+  const sessionP = !input.user || opts.sessionUser === false ? Promise.resolve(undefined)
+    : typeof opts.sessionUser === 'string' && opts.sessionUser ? Promise.resolve(isSysId(opts.sessionUser) ? { sysId: opts.sessionUser } : { userName: opts.sessionUser })
+    : sc.query({ table: 'sys_user', query: 'sys_id=javascript:gs.getUserID()', fields: ['sys_id', 'user_name'], limit: 2 })
+      // Uma linha só: se o filtro não for avaliado, a instância pode devolver outra coisa (ou tudo); aí não usamos.
+      .then((r) => (r.rows.length === 1 && r.rows[0]!.sys_id ? { sysId: r.rows[0]!.sys_id, ...(r.rows[0]!.user_name ? { userName: r.rows[0]!.user_name } : {}) } : undefined));
+  const [brRes, aclRes, userRes, sessionWho] = await Promise.all([
     sc.query({ table: 'sys_script', query: `collectionIN${[...tables, 'global'].join(',')}^when=before^action_query=true^active=true^ORDERBYorder`, fields: ['sys_id', 'name', 'collection', 'order', 'condition', 'script'], limit: 100 }),
     sc.query({ table: 'sys_security_acl', query: `nameIN${keys.join(',')}^active=true`, fields: ['sys_id', 'name', 'operation', 'operation.name', 'type', 'type.name', 'condition', 'script', 'advanced', 'admin_overrides', 'decision_type', 'active'], limit: 500 }),
     userQ ? sc.query({ table: 'sys_user', query: userQ, fields: ['sys_id', 'user_name', 'name', 'active', 'sys_domain', 'company', 'department', 'location'], limit: 1 }) : Promise.resolve(undefined),
+    sessionP as Promise<{ sysId?: string; userName?: string } | undefined>,
   ]);
 
   // Regras before query.
@@ -827,6 +845,23 @@ export async function visibility(
   }
   if (!ctx && input.user) why.unshift(notes.includes('user_not_found') ? 'user_not_found' : 'user_unreadable');
 
+  // A pessoa é a sessão: o GET do registro (feito acima, com o login dela) é a verdade; as regras ficam como explicação.
+  let session: Visibility['session'];
+  const isSession = !!user && !!sessionWho && ((!!sessionWho.sysId && sessionWho.sysId === user.sysId) || (!sessionWho.sysId && !!sessionWho.userName && sessionWho.userName === user.userName));
+  const get = recRes.access === 'ok' && rec ? 'ok' : recRes.access === 'empty' ? 'empty' : recRes.access === 'denied' || recRes.access === 'no_filter' ? 'denied' : undefined;
+  if (isSession && get) {
+    const rulesVerdict = verdict;
+    verdict = get === 'ok' ? 've' : 'nao_ve';
+    session = { sysId: user!.sysId, ...(user!.userName ? { userName: user!.userName } : {}), get, rulesVerdict };
+    notes.push('session_get');
+    why.unshift(`session_get:${get}`);
+    const agrees = get === 'ok' ? rulesVerdict === 've' || rulesVerdict === 'provavel_ve' : rulesVerdict === 'nao_ve' || rulesVerdict === 'provavel_nao_ve';
+    if (!agrees && rulesVerdict !== 'nao_da_para_afirmar') notes.push('session_rules_disagree');
+    // O registro não veio: "não deu para ler" aqui é a própria resposta, não uma lacuna.
+    const i = notes.indexOf('record_unreadable');
+    if (i >= 0) notes.splice(i, 1);
+  }
+
   // ---------- 5: rótulos ----------
   const wanted: Record<string, (string | undefined)[]> = {};
   for (const f of condFields) if (/^[a-z0-9_]+$/.test(f) && f !== 'sys_id') wanted[f] = [rec?.[f]];
@@ -837,7 +872,7 @@ export async function visibility(
   return {
     table, sysId, tables, ...(input.user ? { asked: input.user } : {}), ...(user ? { user } : {}), ...(userRoles ? { userRoles } : {}),
     filters, acls, levels: { table: tableLevel, field: fieldLevel, fields: fieldsLevels }, ...(domain ? { domain } : {}), ...(kb ? { kb } : {}),
-    combined: { verdict, why }, labels, ...(rec ? { record: rec } : {}),
+    combined: { verdict, why }, labels, ...(rec ? { record: rec } : {}), ...(session ? { session } : {}),
     access: { ...sc.access }, denied: sc.denied(main), slow: sc.slow(main), notes: [...new Set(notes)],
     timing: { totalMs: Date.now() - started, calls: sc.calls - calls0 },
   };
@@ -984,6 +1019,15 @@ export function describeVisibility(v: Visibility, lang: Lang = 'pt'): string {
       nao_da_para_afirmar: [`Não dá para afirmar se ${name} vê este registro.`, `It's not possible to say whether ${name} can see this record.`],
     };
     out.push(verdicts[v.combined.verdict][pt ? 0 : 1]);
+    if (v.session) {
+      out.push(v.session.get === 'ok'
+        ? (pt ? 'Conferido agora: é o seu login, e a instância entregou o registro para você.' : 'Checked just now: it is your login, and the instance returned the record to you.')
+        : v.session.get === 'denied'
+          ? (pt ? 'Conferido agora: é o seu login, e a instância negou a leitura da tabela.' : 'Checked just now: it is your login, and the instance denied reading the table.')
+          : (pt ? 'Conferido agora: é o seu login, e a instância não entregou o registro para você (como se não existisse).' : "Checked just now: it is your login, and the instance didn't return the record to you (as if it didn't exist)."));
+      if (v.notes.includes('session_rules_disagree')) out.push(pt ? 'As regras que o Trail leu sugeriam outra coisa: deve haver uma regra que ele não vê ou não avalia (script).' : 'The rules Trail read suggested otherwise: there must be a rule it cannot see or evaluate (script).');
+      else if (v.session.rulesVerdict === 'nao_da_para_afirmar') out.push(pt ? 'Abaixo, o que o Trail conseguiu ler das regras, que sozinho não bastaria para afirmar.' : 'Below, what Trail could read of the rules, which alone would not be enough to say.');
+    }
     if (v.notes.includes('user_inactive')) out.push(pt ? 'Atenção: este usuário está inativo (não consegue entrar).' : 'Note: this user is inactive (cannot log in).');
     if (v.userRoles) {
       if (!v.userRoles.known) out.push(pt ? 'Seus papéis não deixam ler os papéis dessa pessoa (sys_user_has_role).' : "Your roles can't read this user's roles (sys_user_has_role).");
