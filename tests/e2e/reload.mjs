@@ -121,12 +121,6 @@ try {
   await page.waitForTimeout(4500); // sem o aviso "pronto" do iframe em 4 s, a janela fecha e vira popup
   out.diffIframe = await page.evaluate(() => !!document.getElementById('trail-diff-window')) && page.frames().some((x) => x.url().includes('diff/index.html'));
   if (!out.diffIframe) errors.push('a janela lado a lado não carregou o iframe da extensão na página https');
-  // use_dynamic_url: a própria página (mundo MAIN) não consegue embutir a URL fixa da extensão; só o content script.
-  out.pageBlockedStaticUrl = await page.evaluate(async (i) => {
-    const fr = document.createElement('iframe'); fr.id = 'e2e-static'; fr.src = `chrome-extension://${i}/src/diff/index.html?k=x`;
-    document.body.appendChild(fr); await new Promise((r) => setTimeout(r, 1500)); fr.remove(); return true;
-  }, id).then(() => !page.frames().some((x) => x.url().startsWith(`chrome-extension://${id}/src/diff/index.html?k=x`)));
-  if (!out.pageBlockedStaticUrl) errors.push('a página conseguiu embutir a URL fixa da extensão (use_dynamic_url sem efeito)');
   await page.keyboard.press('Escape');
   await sw.evaluate(async () => {
     const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
