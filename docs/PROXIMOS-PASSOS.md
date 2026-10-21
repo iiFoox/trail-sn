@@ -30,8 +30,8 @@ O pacote `0.14.6` foi copiado para `../trail-extensao` e zipado manualmente (a e
 
 ## Fila depois disso (em ordem)
 1. Repetir a validação acima como itil (impersonar `pt.trail.itil`, sys_id `3fc011fdc3c4d3101cbdb8e1b401311c`) e como um usuário de escopo. Conferir que as fontes negadas aparecem como "–" / "Seus papéis não mostram…" e que nada é inventado. Voltar ao admin no fim.
-2. Rodar os 441 casos da bateria como itil (antes só como admin) e registrar as diferenças.
-3. Textos neutros para o Chrome ("painel lateral do Edge" → "painel lateral do navegador") em `i18n.ts` e no site.
+2. **Concluído em 21/10/2026:** rodar os 441 casos como `pt.trail.itil`. Resultado: 2 causas esperadas; 317 casos sem evidência, 111 com causa candidata e 11 erros de leitura. Fontes negadas incluem `sys_audit`, logs/eventos, workflows, regras, script includes e UI actions. A leitura é compatível com as restrições desse perfil; conferir os números e a análise em `docs/DIARIO.md`. Sessão restaurada e confirmada como admin.
+3. **Concluído em 21/10/2026:** texto neutro para navegadores em `extension/src/shared/i18n.ts` (PT/EN), `site/b3/index.html`, bundles de demonstração `site/assets/icons-BktSENMu.js` e `site/demo/content.js`; expectativa ajustada em `tests/e2e/float.mjs`. Teste `float.mjs` passou. Checks completos e limitações em `docs/DIARIO.md`.
 4. Preparar o pacote 1.0.0 para as lojas (Edge e Chrome): `docs/loja-edge.md`, capturas e descrição. **Quem envia é o dono.**
 5. Site em inglês (`site/b3`, alternador PT/EN).
 6. Lacunas conhecidas: flows escopados (o Flow Designer do PDI dá erro 500) e o papel de desenvolvedor delegado não foram testados.

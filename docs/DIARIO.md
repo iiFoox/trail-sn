@@ -10,6 +10,18 @@ Convenções:
 
 ---
 
+## 2026-10-21 — bateria de regressão como `pt.trail.itil` concluída
+
+- Execução somente de leitura dos **441 casos**, no mesmo registro [PT] `INC0010156`, como `pt.trail.itil`; mediana reportada pelo runner: **1.773 ms**. Foram encontrados 2 resultados com a causa esperada; 439 diferiram da causa de referência.
+- Categorias das diferenças: **317 sem evidência**, **111 apenas com causa candidata** e **11 erros “Record not found or not readable”**. O runner marcou como negadas `sys_audit`, `syslog_transaction`, `sysevent`, `sysevent_script_action`, `wf_context`, `sys_script`, `sys_script_include` e `sys_ui_action`. Isso explica a maior parte das lacunas: como ITIL, a API restringiu os dados de auditoria e automação usados para atribuir as causas; em alguns casos o registro base também não era legível. O Trail não deve inferir a automação esperada quando as fontes não estão disponíveis.
+- A bateria concluiu sem interromper/recarregar a página. Ao final, a impersonação foi removida pelo endpoint de impersonação; após recarga, confirmei `g_user.userName === 'admin'` e `g_user.hasRole('admin') === true`. Nenhum registro foi gravado ou alterado.
+- Os 441 detalhes ficaram apenas na memória da aba do portal; não foram persistidos como artefato. O diário guarda somente contagens, fontes negadas e conclusão agregada, sem dados pessoais.
+- **Item 3 da fila — texto neutro para navegadores:** em `extension/src/shared/i18n.ts`, substituí o rótulo do painel lateral e o caminho `edge://extensions/shortcuts` por instruções genéricas em PT/EN. Atualizei as menções correspondentes em `site/b3/index.html`, `site/assets/icons-BktSENMu.js` e `site/demo/content.js`, além da expectativa em `tests/e2e/float.mjs`. O Antigravity #2 iniciou o trabalho, mas atingiu a cota durante os checks; revisei e completei a integração.
+- **Validação desta rodada:** `npm run typecheck` passou; os testes via Vitest programático passaram (18 arquivos, 150 testes). O build Vite programático (`configLoader: runner`) das páginas e scripts content/page passou. Os comandos padrão `npm test` e `npm run build` foram bloqueados pelo esbuild ao tentar ler diretórios acima do workspace (`Acesso negado`). `float.mjs`, `reload.mjs`, `flows.mjs` e `settings.mjs` passaram isoladamente. `npm run e2e` parou em `prefs-window.mjs` porque a janela destacada não abriu no Chromium headless (`windowOpened: false`). `_site-demo.mjs` validou conteúdo, imagens e overflow, mas retornou 1 porque o sandbox bloqueou Google Fonts (`ERR_NETWORK_ACCESS_DENIED`).
+- Próximo passo: item 4 da fila — preparar materiais de loja para 1.0.0; o dono continua responsável por enviar às lojas. Push dos commits locais ainda depende de conectividade com `github.com:443` neste ambiente.
+
+---
+
 ## 2026-10-21 — 0.14.6: subflows aninhados na aba Flows (Codex #2 + Antigravity #2)
 
 - **Motor (`packages/core/src/flows.ts`):** além das execuções ligadas ao registro, busca os contextos-filhos com `source_recordIN<sys_ids dos flows pais>`, em lotes e por até três níveis. Insere cada subflow logo após o flow que o chamou e expõe `parentSysId`; o teste unitário verifica três níveis encadeados.
