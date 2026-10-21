@@ -384,7 +384,9 @@ export async function fieldStates(
       table, sysId, field, tables, ...(fieldLabel ? { fieldLabel } : {}),
       ...(names ? { fieldLabels: names.fields, valueLabels: names.values, refTables: names.refs } : {}),
       ...(observed ? { observed } : {}),
-      rules, skipped, aspects, access, denied, slow, dictionaryHidden, limited, aclNote: aspects.read_only.unexplained, recordReadable, timing,
+      rules, skipped, aspects, access, denied, slow, dictionaryHidden, limited,
+      // Sem ler as regras do formulário (itil), o bloqueio sem explicação é tão provável de ser uma UI policy quanto uma ACL.
+      aclNote: aspects.read_only.unexplained && !limited, recordReadable, timing,
     };
   });
 }
