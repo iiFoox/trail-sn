@@ -4,6 +4,7 @@ import { demoTimeline } from '../shared/demo';
 import { fmt, t } from '../shared/i18n';
 import { Glyph } from '../shared/icons';
 import { send } from '../shared/messages';
+import { trackedTab } from '../shared/tabRef';
 import { getPrefs } from '../shared/prefs';
 import { parts, plural, refLink } from './Result';
 import { Val } from './Val';
@@ -41,7 +42,7 @@ export function RecordTimeline({ origin, table, sysId, onField }: { origin: stri
   useEffect(() => {
     setData(undefined); setErr(undefined); setShown(PAGE);
     if (isDemo) { const id = setTimeout(() => setData(demoTimeline()), 450); return () => clearTimeout(id); }
-    send<TL & { error?: string }>({ type: 'timeline', origin, target: { table, sysId } })
+    send<TL & { error?: string }>({ type: 'timeline', origin, tabId: trackedTab(), target: { table, sysId } })
       .then((r) => (r?.error ? setErr(r.error) : setData(r)))
       .catch((e: Error) => setErr(e.message));
     return undefined;

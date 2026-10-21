@@ -5,6 +5,7 @@ import { fmt, t } from '../shared/i18n';
 import { Glyph, typeGlyph } from '../shared/icons';
 import { recordLink } from '../shared/instances';
 import { send } from '../shared/messages';
+import { trackedTab } from '../shared/tabRef';
 import { getPrefs } from '../shared/prefs';
 import { fieldName } from './Result';
 import { Val } from './Val';
@@ -28,7 +29,7 @@ export function WhatIf({ r, origin }: { r: Investigation; origin: string; field?
     if (v === current) { setErr(P.wiSame); setSt('err'); return; }
     setSt('run');
     try {
-      const out = isDemo ? demoPreview(r, field, v) : await send<ChangePreview & { error?: string }>({ type: 'preview', origin, target: { table: r.target.table, sysId: r.target.sysId, field, value: v } });
+      const out = isDemo ? demoPreview(r, field, v) : await send<ChangePreview & { error?: string }>({ type: 'preview', origin, tabId: trackedTab(), target: { table: r.target.table, sysId: r.target.sysId, field, value: v } });
       if (isDemo) await new Promise((x) => setTimeout(x, 500));
       if ((out as { error?: string }).error) throw new Error((out as { error?: string }).error);
       setRes(out); setSt('done');

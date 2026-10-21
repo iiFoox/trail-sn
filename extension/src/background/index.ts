@@ -601,6 +601,19 @@ async function runInvestigation(tabId: number, origin: string, target: { table: 
 }
 
 // ---------- mensagens ----------
+/**
+ * Aba a que o pedido se refere. Do content script, a própria aba. De uma página da extensão (painel na janela
+ * separada, no iframe flutuante ou no painel lateral), a aba que o painel diz acompanhar: na janela separada,
+ * sender.tab é a aba da própria janela do Trail, e o resultado ia para tab:<id errado>.
+ */
+function fromExtensionPage(sender: chrome.runtime.MessageSender): boolean {
+  return sender.id === chrome.runtime.id && !!sender.url?.startsWith(chrome.runtime.getURL(''));
+}
+async function requestTab(msg: { tabId?: number }, sender: chrome.runtime.MessageSender): Promise<number | undefined> {
+  if (fromExtensionPage(sender) && typeof msg.tabId === 'number') return msg.tabId;
+  return sender.tab?.id ?? (await activeTabId());
+}
+
 chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
   (async () => {
     const tabId = sender.tab?.id;
@@ -628,7 +641,7 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
         toggleIcons();
         return true;
       case 'timeline':
-        return recordTimeline(makeClient(msg.origin), msg.target, { language: await languageFor(msg.origin, tabId ?? (await activeTabId()), msg.language) });
+        return recordTimeline(makeClient(msg.origin), msg.target, { language: await languageFor(msg.origin, await requestTab(msg, sender), msg.language) });
       case 'scan-conflicts':
         return scanTableConflicts(makeClient(msg.origin), msg.table);
       case 'automations':
@@ -640,23 +653,23 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
       case 'field-map':
         return fieldMap(makeClient(msg.origin), { table: msg.table, field: msg.field });
       case 'preview':
-        return previewChange(makeClient(msg.origin), { ...msg.target, language: await languageFor(msg.origin, tabId ?? (await activeTabId()), msg.language) });
+        return previewChange(makeClient(msg.origin), { ...msg.target, language: await languageFor(msg.origin, await requestTab(msg, sender), msg.language) });
       case 'investigate': {
-        const id = tabId ?? (await activeTabId());
+        const id = await requestTab(msg, sender);
         if (id === undefined) return;
         await openPanel(id, msg.mode);
         await runInvestigation(id, msg.origin, msg.target, await languageFor(msg.origin, id, msg.language), msg.token);
         return;
       }
       case 'record': {
-        const id = tabId ?? (await activeTabId());
+        const id = await requestTab(msg, sender);
         if (id === undefined) return;
         await openPanel(id, msg.mode);
         await runRecord(id, msg.origin, msg.table, msg.record, await languageFor(msg.origin, id, msg.language), msg.token);
         return;
       }
       case 'batch': {
-        const id = tabId ?? (await activeTabId());
+        const id = await requestTab(msg, sender);
         if (id === undefined) return;
         await openPanel(id, msg.mode);
         await runBatch(id, msg.origin, msg.table, msg.field, msg.sysIds.slice(0, 200), await languageFor(msg.origin, id, msg.language), msg.token);
