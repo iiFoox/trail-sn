@@ -67,11 +67,17 @@ async function openWindow(): Promise<void> {
   if (typeof id === 'number') {
     try {
       await chrome.windows.update(id, { state: 'normal' });
-      await chrome.windows.update(id, { ...bounds, focused: true });
+      // Posição recusada (janela normal maior que o monitor ou fora dele): só traz para a frente.
+      await chrome.windows.update(id, { ...bounds, focused: true }).catch(() => chrome.windows.update(id, { focused: true }));
       return;
     } catch { /* foi fechada */ }
   }
-  const w = await chrome.windows.create({ url: chrome.runtime.getURL('src/sidepanel/index.html?window=1'), type: 'popup', ...bounds, focused: true });
+  const url = chrome.runtime.getURL('src/sidepanel/index.html?window=1');
+  // O navegador recusa posições com menos de metade da janela visível (ex.: depois de desligar um segundo monitor).
+  // Nesse caso abre sem posição, onde o navegador escolher, em vez de não abrir nada.
+  const w = await chrome.windows.create({ url, type: 'popup', ...bounds, focused: true })
+    .catch(() => chrome.windows.create({ url, type: 'popup', width: bounds.width, height: bounds.height, focused: true }))
+    .catch(() => chrome.windows.create({ url, type: 'popup', focused: true }));
   if (w?.id !== undefined) await session.set({ [WINDOW_KEY]: w.id });
 }
 /**

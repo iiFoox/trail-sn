@@ -9,9 +9,13 @@ import { tmpdir } from 'node:os';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const dist = resolve(here, '../../extension/dist');
+// O headless do Chromium simula uma tela de 800x600, menor que a janela de 1280x720 criada pelo Playwright.
+// O Trail posiciona a janela destacada na borda direita da janela normal (left = 850), mais da metade fora
+// dessa tela, e chrome.windows.create recusa ("Bounds must be at least 50% within visible screen space").
+// --screen-info dá ao headless uma tela do tamanho de um monitor comum; no modo com interface é ignorado.
 const ctx = await chromium.launchPersistentContext(mkdtempSync(resolve(tmpdir(), 'trail-prefs-')), {
   headless: true, channel: 'chromium', colorScheme: 'light',
-  args: [`--disable-extensions-except=${dist}`, `--load-extension=${dist}`],
+  args: [`--disable-extensions-except=${dist}`, `--load-extension=${dist}`, '--screen-info={1920x1080}'],
 });
 let [sw] = ctx.serviceWorkers();
 if (!sw) sw = await ctx.waitForEvent('serviceworker', { timeout: 15000 });
@@ -42,13 +46,15 @@ await panel.reload(); await panel.waitForSelector('.topbar');
 out.panelEnglish = (await panel.textContent('body')).includes('No investigation in this tab');
 // 5. janela separada
 const before = ctx.pages().length;
-await opts.evaluate(() => chrome.runtime.sendMessage({ type: 'open-panel', mode: 'window' }));
-await opts.waitForTimeout(1200);
-const win = ctx.pages().find((p) => p.url().includes('sidepanel/index.html?window=1'));
+const isPanelWindow = (p) => p.url().includes('sidepanel/index.html?window=1');
+const winEvent = ctx.waitForEvent('page', { predicate: isPanelWindow, timeout: 10000 }).catch(() => undefined);
+out.openReply = await opts.evaluate(() => chrome.runtime.sendMessage({ type: 'open-panel', mode: 'window' }));
+const win = (await winEvent) ?? ctx.pages().find(isPanelWindow);
+if (win) await win.waitForSelector('.topbar').catch(() => undefined);
 out.windowOpened = !!win;
 out.windowUrl = win?.url().replace(/chrome-extension:\/\/[^/]+/, '');
 out.windowHasDetachBtn = win ? await win.evaluate(() => !!document.querySelector('[aria-label="Open in a separate window"]')) : null;
-await opts.evaluate(() => chrome.runtime.sendMessage({ type: 'open-panel', mode: 'window' }));
+out.secondReply = await opts.evaluate(() => chrome.runtime.sendMessage({ type: 'open-panel', mode: 'window' }));
 await opts.waitForTimeout(800);
 out.windowsAfterSecondCall = ctx.pages().filter((p) => p.url().includes('window=1')).length;
 out.pagesDelta = ctx.pages().length - before;
@@ -58,5 +64,5 @@ await opts.click('text=Português'); await opts.waitForTimeout(400); await opts.
 await ctx.close();
 console.log(JSON.stringify({ ...out, errors }, null, 1));
 const ok = out.defaultTheme === 'dark' && out.afterLight === 'light' && out.synced?.theme === 'light' && out.panelTheme === 'light'
-  && out.panelEnglish && out.windowOpened && out.windowHasDetachBtn === false && out.windowsAfterSecondCall === 1 && errors.length === 0;
+  && out.panelEnglish && !out.openReply?.error && !out.secondReply?.error && out.windowOpened && out.windowHasDetachBtn === false && out.windowsAfterSecondCall === 1 && errors.length === 0;
 process.exit(ok ? 0 : 1);
