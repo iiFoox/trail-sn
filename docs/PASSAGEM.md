@@ -91,7 +91,7 @@ A alternativa em Node com usuário e senha (`npm run regression`) existe, mas **
 | Testes cegos | blind5: 35/35. blind6: 27/27 alvos válidos (8 excluídos porque os campos não estão no formulário) |
 | Unitários | **144** passando (138 do motor + 6 da extensão) |
 | e2e | **9 de 9** passando (`smoke`, `ui16`, `list`, `portal`, `workspace`, `prefs-window`, `float`, `reload`, `settings`) |
-| Fase 2 (app escopado) | Protótipo funcionando no PDI de testes (fase 18, 5/5 com certeza alta). Desenho em `docs/fase2-app-escopado.md` |
+| Fase 2 (app escopado) | **Arquivada** (decisão do dono, 2026-10-21): o Trail fica só no navegador, como o SN Utils, sem nada instalado na instância. Histórico em `docs/fase2-app-escopado.md` |
 
 ### O que entrou da 0.12.8 à 0.13.0
 
@@ -130,7 +130,7 @@ A alternativa em Node com usuário e senha (`npm run regression`) existe, mas **
    - Confirmar no navegador real que o painel aberto continua aberto após um auto-reload (`chrome.runtime.reload()` encerra a extensão no Playwright).
    - Testar o modo **"Sempre visível"** (Document Picture-in-Picture) e a tecla `Esc` dentro da janela PiP (o Chromium headless não abre PiP).
    - Testar no Edge real com o PDI de testes: painel flutuante sobre UI16 / Workspace / Portal e rótulos em português (`pb`).
-3. **Fase 2 (app escopado `x_trail`):** os próximos passos estão em `docs/fase2-app-escopado.md`.
+3. **Nada instalado na instância:** a Fase 2 (app escopado) foi arquivada. Próximos passos: testes manuais no Edge, textos neutros para o Chrome, publicação nas lojas (o dono envia), uso em instância real.
 4. **Publicação na Edge Add-ons:** textos e capturas `1280×800` prontos em `docs/loja-edge.md` e `docs/store/`. **O envio e o aceite dos termos são ação exclusiva do dono.**
 
 ## 6. PDI de testes e itens criados nele

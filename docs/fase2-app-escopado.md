@@ -1,4 +1,6 @@
-# Fase 2: o Trail dentro da instância
+# Fase 2: o Trail dentro da instância (ARQUIVADO)
+
+> **Arquivado em 2026-10-21 por decisão do dono:** o Trail fica só no navegador, como o SN Utils, sem nada instalado na instância. Este documento fica como histórico do protótipo. O motor ainda lê a tabela de contexto se ela existir (`x_trail_context` / `u_pt_trail_contexto`), o que não custa nada quando ela não existe.
 
 Status: protótipo funcionando no PDI (fase 18 da bateria). O motor da extensão já lê o contexto gravado
 quando a tabela existe.

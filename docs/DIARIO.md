@@ -10,6 +10,10 @@ Convenções:
 
 ---
 
+## 2026-10-21 — decisão: só no navegador
+
+O dono não quer nada instalado na instância de quem usa ("igual o SN Utils"). A **Fase 2 (app escopado) está arquivada**: o documento ficou só como histórico, e o roteiro do site trocou "Trail dentro da instância" por "nas lojas e no dia a dia". A extensão continua usando a sessão e as ACLs de quem está logado.
+
 ## 2026-10-21 — bateria de 2000 e 0.13.1
 
 - **Bateria de 2000** (Antigravity, `tests/regression/bateria2000/RELATORIO.md`):
