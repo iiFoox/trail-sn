@@ -49,11 +49,12 @@ try {
   const b0 = await bubble.boundingBox();
   await page.mouse.move(b0.x + 23, b0.y + 23);
   await page.mouse.down();
-  await page.mouse.move(90, 220, { steps: 12 });
+  // Solta no meio de baixo (ao lado de outro botão flutuante, como o virtual agent): fica ali, sem grudar na lateral.
+  await page.mouse.move(640, 740, { steps: 12 });
   await page.mouse.up();
   await page.waitForTimeout(500);
   const moved = await bubble.boundingBox();
-  if (Math.abs(moved.x - 20) > 2 || Math.abs(moved.y - 197) > 20) errors.push('bolinha não encaixou à esquerda mantendo a altura: ' + JSON.stringify(moved));
+  if (Math.abs(moved.x + 23 - 640) > 4 || Math.abs(moved.y + 23 - 740) > 4) errors.push('bolinha não ficou onde foi solta: ' + JSON.stringify(moved));
   await page.reload();
   await bubble.waitFor({ state: 'visible' });
   await page.waitForTimeout(450);
@@ -62,7 +63,8 @@ try {
   await page.setViewportSize({ width: 900, height: 600 });
   await page.waitForTimeout(450);
   const resized = await bubble.boundingBox();
-  if (Math.abs(resized.x - 20) > 2 || resized.y < 20 || resized.y + resized.height > 580) errors.push('bolinha saiu da tela após resize: ' + JSON.stringify(resized));
+  // Janela menor: continua na mesma proporção da tela (meio de baixo), inteira dentro dela.
+  if (resized.x < 300 || resized.x > 560 || resized.y < 20 || resized.y + resized.height > 580) errors.push('bolinha saiu do lugar ou da tela após resize: ' + JSON.stringify(resized));
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.waitForTimeout(450);
   await bubble.click();

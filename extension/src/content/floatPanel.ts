@@ -108,7 +108,8 @@ interface State {
 }
 let st: State | null = null;
 let bubble: HTMLButtonElement | null = null;
-let assistant: { host: HTMLElement; balloon: HTMLElement; edge: 'left' | 'right'; y: number; origin: string; tabId: number; enabled: boolean; tip: string } | null = null;
+/** Posição da bolinha em proporção da área livre (0 a 1), em x e y: fica onde a pessoa soltou, sem grudar nas laterais. */
+let assistant: { host: HTMLElement; balloon: HTMLElement; edge: 'left' | 'right'; x: number; y: number; origin: string; tabId: number; enabled: boolean; tip: string } | null = null;
 let balloonTimer: number | undefined;
 let tipLeaveTimer: number | undefined;
 let balloonKind: 'tip' | 'message' | null = null;
@@ -135,10 +136,15 @@ const extOrigin = (() => { try { return new URL(chrome.runtime.getURL('')).origi
 const bubbleKey = (origin: string) => `trail.bubble:${origin}`;
 const maxBubbleTop = () => Math.max(BUBBLE_MARGIN, innerHeight - BUBBLE_MARGIN - BUBBLE_SIZE);
 const bubbleTop = (y: number) => BUBBLE_MARGIN + y * (maxBubbleTop() - BUBBLE_MARGIN);
+const maxBubbleLeft = () => Math.max(BUBBLE_MARGIN, innerWidth - BUBBLE_MARGIN - BUBBLE_SIZE);
+const bubbleLeft = (x: number) => BUBBLE_MARGIN + x * (maxBubbleLeft() - BUBBLE_MARGIN);
+/** O balão abre para o lado com mais espaço: bolinha na metade esquerda, balão à direita dela. */
+const sideOf = (x: number): 'left' | 'right' => (x < 0.5 ? 'left' : 'right');
 
 function placeBubble(): void {
   if (!bubble || !assistant) return;
-  bubble.style.left = `${assistant.edge === 'left' ? BUBBLE_MARGIN : Math.max(BUBBLE_MARGIN, innerWidth - BUBBLE_MARGIN - BUBBLE_SIZE)}px`;
+  assistant.edge = sideOf(assistant.x);
+  bubble.style.left = `${bubbleLeft(assistant.x)}px`;
   bubble.style.top = `${bubbleTop(assistant.y)}px`;
   placeBalloon();
 }
@@ -228,11 +234,13 @@ function ensureBubble(): void {
     if (!drag || e.pointerId !== drag.id) return;
     if (drag.moved) {
       suppressClick = true;
-      a.edge = b.getBoundingClientRect().left + BUBBLE_SIZE / 2 < innerWidth / 2 ? 'left' : 'right';
-      a.y = (parseFloat(b.style.top) - BUBBLE_MARGIN) / Math.max(1, maxBubbleTop() - BUBBLE_MARGIN);
+      // Fica onde foi solto (sem encostar na borda); a posição vira proporção para sobreviver a mudar o tamanho da janela.
+      a.x = Math.max(0, Math.min(1, (parseFloat(b.style.left) - BUBBLE_MARGIN) / Math.max(1, maxBubbleLeft() - BUBBLE_MARGIN)));
+      a.y = Math.max(0, Math.min(1, (parseFloat(b.style.top) - BUBBLE_MARGIN) / Math.max(1, maxBubbleTop() - BUBBLE_MARGIN)));
+      a.edge = sideOf(a.x);
       b.classList.remove('dragging');
       placeBubble();
-      void chrome.storage.local.set({ [bubbleKey(a.origin)]: { edge: a.edge, y: a.y } }).catch(() => undefined);
+      void chrome.storage.local.set({ [bubbleKey(a.origin)]: { x: a.x, y: a.y, edge: a.edge } }).catch(() => undefined);
     }
     drag = null;
   };
@@ -259,14 +267,16 @@ export async function initAssistant(tabId: number, origin: string, enabled: bool
   const stored: Record<string, unknown> = await chrome.storage.local.get(key).catch(() => ({}));
   if (disposed) return;
   try { if (!chrome.runtime.id) return; } catch { return; }
-  const p = stored[key] as { edge?: string; y?: number } | undefined;
+  const p = stored[key] as { x?: number; edge?: string; y?: number } | undefined;
+  // Posição antiga (só a lateral) continua valendo: esquerda = 0, direita = 1.
+  const px = typeof p?.x === 'number' && Number.isFinite(p.x) ? Math.max(0, Math.min(1, p.x)) : p?.edge === 'left' ? 0 : 1;
   const host = document.createElement('div');
   host.id = ASSISTANT_ID;
   if (!motionOn) host.dataset.motion = 'off';
   const root = host.attachShadow({ mode: 'open' });
   root.innerHTML = `<style>${ASSISTANT_CSS}</style><button class="bub" type="button" aria-label="Trail" hidden>${TRAIL_MINI(3)}</button><div class="balloon" role="status" hidden><button class="close" type="button" aria-label="Fechar">×</button><b></b><span class="text"></span></div>`;
   document.documentElement.appendChild(host);
-  assistant = { host, balloon: root.querySelector('.balloon')!, edge: p?.edge === 'left' ? 'left' : 'right', y: typeof p?.y === 'number' && Number.isFinite(p.y) ? Math.max(0, Math.min(1, p.y)) : 1, origin, tabId, enabled, tip };
+  assistant = { host, balloon: root.querySelector('.balloon')!, edge: sideOf(px), x: px, y: typeof p?.y === 'number' && Number.isFinite(p.y) ? Math.max(0, Math.min(1, p.y)) : 1, origin, tabId, enabled, tip };
   root.querySelector('.close')!.addEventListener('click', hideBalloon);
   assistant.balloon.addEventListener('pointerenter', () => { if (tipLeaveTimer) clearTimeout(tipLeaveTimer); });
   assistant.balloon.addEventListener('pointerleave', scheduleTipHide);
@@ -371,7 +381,7 @@ function minimize(instant = false): void {
   if (assistant && !assistant.enabled) { closeFloat(); return; }
   minimized = true;
   const r = s.pane.getBoundingClientRect();
-  const bx = assistant?.edge === 'left' ? BUBBLE_MARGIN : innerWidth - BUBBLE_MARGIN - BUBBLE_SIZE;
+  const bx = bubbleLeft(assistant?.x ?? 1);
   s.pane.style.setProperty('--gx', `${bx + BUBBLE_SIZE / 2 - (r.left + r.width / 2)}px`);
   s.pane.style.setProperty('--gy', `${bubbleTop(assistant?.y ?? 1) + BUBBLE_SIZE / 2 - (r.top + r.height / 2)}px`);
   const done = () => {
