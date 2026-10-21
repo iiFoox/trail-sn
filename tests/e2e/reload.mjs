@@ -70,6 +70,21 @@ try {
   await page.waitForFunction(() => document.querySelectorAll('.trail-host').length > 0 && !!document.getElementById('trail-assistant'));
   await page.waitForTimeout(400);
   if (await balloon.isVisible()) errors.push('boas-vindas repetidas ao voltar ao primeiro registro');
+  // Os registros saudados não viram histórico: só um resumo, sem URL nem sys_id, e no máximo os 200 últimos.
+  const welcomedKeys = () => sw.evaluate(async () => Object.keys(await chrome.storage.local.get(null)).filter((k) => k.startsWith('welcomed:')));
+  out.welcomedKeys = (await welcomedKeys()).length;
+  if ((await welcomedKeys()).some((k) => k.includes('://') || k.includes('incident') || k.includes('bbbb'))) errors.push('boas-vindas guardaram a URL ou o registro em texto');
+  await sw.evaluate(async () => {
+    const seed = { ['welcomed:https://antigo.service-now.com:incident:' + 'e'.repeat(32)]: 1 };
+    for (let i = 0; i < 250; i++) seed['welcomed:' + i.toString(16).padStart(32, '0')] = i + 1;
+    await chrome.storage.local.set(seed);
+  });
+  await page.goto(`${ORIGIN}/incident.do?sys_id=${'d'.repeat(32)}`);
+  await balloon.waitFor({ state: 'visible', timeout: 5000 });
+  await page.waitForTimeout(300);
+  const pruned = await welcomedKeys();
+  out.welcomedAfterPrune = pruned.length;
+  if (pruned.length > 200 || pruned.some((k) => k.includes('://'))) errors.push('limpeza das boas-vindas não aconteceu: ' + pruned.length);
 
   // Simula a falha de resposta do content sem recarregar a extensão: o worker deve
   // reinjetar na aba autorizada e abrir o painel, sem duplicar ícones ou a bolinha.

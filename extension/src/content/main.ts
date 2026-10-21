@@ -132,25 +132,45 @@ function onFrameKey(e: MessageEvent): void {
 }
 addEventListener('message', onFrameKey);
 
-/** Boas-vindas uma vez para cada registro, quando a bolinha está visível. */
+/**
+ * Boas-vindas uma vez para cada registro, quando a bolinha está visível.
+ * Para não virar histórico de navegação, o storage guarda só um resumo (SHA-256) de origem+tabela+registro,
+ * e apenas os últimos WELCOME_MAX: os mais antigos são apagados a cada gravação.
+ */
+const WELCOME_MAX = 200;
 const welcomePending = new Set<string>();
+async function welcomeKey(id: string): Promise<string> {
+  const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(id)));
+  return 'welcomed:' + [...bytes.slice(0, 16)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+async function pruneWelcomed(): Promise<void> {
+  const all = await chrome.storage.local.get(null);
+  const entries = Object.entries(all).filter(([k]) => k.startsWith('welcomed:'));
+  // Chaves antigas (até a 1.0.0) traziam a URL e o sys_id em texto: saem todas.
+  const legacy = entries.filter(([k]) => k.includes('://')).map(([k]) => k);
+  const kept = entries.filter(([k]) => !k.includes('://')).sort((a, b) => Number(b[1]) - Number(a[1]));
+  const remove = [...legacy, ...kept.slice(WELCOME_MAX).map(([k]) => k)];
+  if (remove.length) await chrome.storage.local.remove(remove);
+}
 function welcome(): void {
-  if (window !== window.top || !ctx.table || !ctx.sysId || !chrome.storage?.local) return;
-  const k = `welcomed:${origin}:${ctx.table}:${ctx.sysId}`;
-  if (welcomePending.has(k)) return;
-  welcomePending.add(k);
+  if (window !== window.top || !ctx.table || !ctx.sysId || !chrome.storage?.local || !globalThis.crypto?.subtle) return;
+  const id = `${origin}:${ctx.table}:${ctx.sysId}`;
+  if (welcomePending.has(id)) return;
+  welcomePending.add(id);
   const claim = async () => {
-    if (!checkContext() || k !== `welcomed:${origin}:${ctx.table}:${ctx.sysId}` || !canShowAssistantMessage()) return false;
+    if (!checkContext() || id !== `${origin}:${ctx.table}:${ctx.sysId}` || !canShowAssistantMessage()) return false;
+    const k = await welcomeKey(id);
     const o = await chrome.storage.local.get(k);
     if (o[k] || !canShowAssistantMessage()) return false;
     await chrome.storage.local.set({ [k]: Date.now() });
+    await pruneWelcomed().catch(() => undefined);
     return true;
   };
   // A trava evita que duas abas abertas no mesmo registro mostrem a saudação juntas.
-  const reserved = navigator.locks ? navigator.locks.request(k, claim) : claim();
+  const reserved = navigator.locks ? navigator.locks.request(`trail-welcome:${id}`, claim) : claim();
   void reserved.then((ok) => {
-    if (ok && checkContext() && k === `welcomed:${origin}:${ctx.table}:${ctx.sysId}`) showAssistantMessage(strings.bubbleWelcome, strings.welcomeTitle);
-  }).catch(() => undefined).finally(() => welcomePending.delete(k));
+    if (ok && checkContext() && id === `${origin}:${ctx.table}:${ctx.sysId}`) showAssistantMessage(strings.bubbleWelcome, strings.welcomeTitle);
+  }).catch(() => undefined).finally(() => welcomePending.delete(id));
 }
 const origin = location.origin;
 document.addEventListener('trail:bubble-visible', welcome);

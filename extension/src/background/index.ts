@@ -415,8 +415,14 @@ function menuText(k: 'float' | 'side' | 'window' | 'icons' | 'options'): string 
 }
 chrome.runtime.onInstalled.addListener((details) => {
   void syncRegistrations(); createMenus(); void applyActionBehavior();
-  if (details.reason === 'update') void notifyOpenTabs();
+  if (details.reason === 'update') { void notifyOpenTabs(); void dropLegacyWelcomed(); }
 });
+/** Até a 1.0.0 as boas-vindas guardavam origem, tabela e sys_id em texto, sem limite; a atualização apaga essas chaves. */
+async function dropLegacyWelcomed(): Promise<void> {
+  const all = await chrome.storage.local.get(null).catch(() => ({} as Record<string, unknown>));
+  const keys = Object.keys(all).filter((k) => k.startsWith('welcomed:') && k.includes('://'));
+  if (keys.length) await chrome.storage.local.remove(keys).catch(() => undefined);
+}
 chrome.runtime.onStartup.addListener(() => { void clearFloatStates(); void syncRegistrations(); createMenus(); void applyActionBehavior(); });
 
 /**
