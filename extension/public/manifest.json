@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "description": "__MSG_description__",
   "default_locale": "pt_BR",
+  "minimum_chrome_version": "120",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
