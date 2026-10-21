@@ -134,6 +134,8 @@ When opening any form or list in ServiceNow (classic UI16, Workspace, Service Op
 | **Tile promocional pequeno** | PNG ou JPEG (obrigatório) | **440 × 280 px** | Não preparado |
 | **Tile promocional marquee** | PNG ou JPEG (opcional) | **1400 × 560 px** | Opcional |
 
+*Nota Chrome:* são aceitas de 1 a 5 capturas de 1280×800 ou 640×400 px. O tile promocional pequeno de 440×280 px é obrigatório; o marquee de 1400×560 px é opcional. [Requisitos oficiais de imagens](https://developer.chrome.com/docs/webstore/images) e [campos da listagem](https://developer.chrome.com/docs/webstore/cws-dashboard-listing).
+
 ---
 
 ## 7. Informações de privacidade e justificativas para revisores
