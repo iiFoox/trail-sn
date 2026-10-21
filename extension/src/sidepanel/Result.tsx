@@ -15,6 +15,7 @@ import { FlowsTab } from './Flows';
 import { RecordTimeline } from './Timeline';
 import { WhatIf } from './WhatIf';
 import { FieldMapBox } from './FieldMap';
+import { FieldLock, FormStates, LockCard, useObserved } from './FieldLock';
 import { fullReport, plainSummary, savePdf } from './export';
 import { diffLines, looksLong } from '../shared/diff';
 import { DiffView, type DiffLabels } from '../shared/DiffView';
@@ -25,8 +26,8 @@ const s = t(lang);
 const P = s.p;
 const WINDOW = { before: 3, after: 15 };
 
-type Tab = 'answer' | 'trace' | 'proof' | 'history' | 'flows' | 'whatif';
-const TABS: Tab[] = ['answer', 'trace', 'proof', 'history', 'flows', 'whatif'];
+type Tab = 'answer' | 'trace' | 'proof' | 'history' | 'flows' | 'whatif' | 'lock';
+const TABS: Tab[] = ['answer', 'trace', 'proof', 'history', 'flows', 'whatif', 'lock'];
 const demoParams = new URLSearchParams(location.search);
 const isDemo = demoParams.has('demo');
 const forcedHist: 'field' | 'record' = isDemo && demoParams.get('hist') === 'record' ? 'record' : 'field';
@@ -146,6 +147,11 @@ export function Result({ r, origin, access, toast, onField }: { r: Investigation
   }, [tab, histMode, diffOpen, r.changes.length]);
   const c: Change | undefined = r.changes[sel];
   const field = fieldName(r);
+  // Estado do campo no formulário (g_form): alimenta o cartão "No formulário agora" e a aba "Bloqueio?".
+  const observed = useObserved(r.target.table, r.target.sysId, r.target.field);
+  const [lockOpen, setLockOpen] = useState(false);
+  useEffect(() => setLockOpen(false), [r.target.field, r.target.sysId]);
+  const lockTarget = { table: r.target.table, sysId: r.target.sysId, field: r.target.field, label: field };
 
   const denied = useMemo(() => {
     const fromAccess = access?.denied ?? [];
@@ -183,12 +189,13 @@ export function Result({ r, origin, access, toast, onField }: { r: Investigation
           <div>{r.fieldNotInHistory ? s.notInHistoryHint : s.fromHistoryHint}</div>
         </div>
       )}
+      {tab !== 'lock' && <LockCard observed={observed} onOpen={() => { if (c) setTab('lock'); else setLockOpen(true); }} />}
       {c && diffOpen && <DiffOverlay at={diffOpen} title={`${r.target.display} · ${field}`} sub={when(c.at)} oldText={c.oldValue} newText={c.newValue} onClose={() => setDiffOpen(false)} />}
 
       {c && (
         <div class="seg-tabs" role="tablist" ref={tabsRef} style={`--ix:${ind.x}px;--iw:${ind.w}px`}>
           <span class="ind" aria-hidden="true" />
-          {([['answer', P.tabAnswer, 0], ['trace', P.tabTrace, c.trace?.length ?? 0], ['proof', P.tabProof, c.evidence[0]?.facts.length ?? 0], ['history', P.tabHistory, r.changes.length + (r.unaudited ? 1 : 0)], ['flows', P.tabFlows, 0], ['whatif', P.wiTab, 0]] as [Tab, string, number][]).map(([k, label, n]) => (
+          {([['answer', P.tabAnswer, 0], ['trace', P.tabTrace, c.trace?.length ?? 0], ['proof', P.tabProof, c.evidence[0]?.facts.length ?? 0], ['history', P.tabHistory, r.changes.length + (r.unaudited ? 1 : 0)], ['flows', P.tabFlows, 0], ['whatif', P.wiTab, 0], ['lock', P.lkTab, 0]] as [Tab, string, number][]).map(([k, label, n]) => (
             <button role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>
               {label}{k !== 'answer' && n > 0 && <i>{n}</i>}{k === 'proof' && (denied.length > 0 || r.unaudited || expired) && <span class="wdot" />}
             </button>
@@ -197,12 +204,15 @@ export function Result({ r, origin, access, toast, onField }: { r: Investigation
       )}
 
       {!c && <History r={r} origin={origin} sel={-1} onPick={() => undefined} />}
+      {!c && !lockOpen && <button class="link lk-open" onClick={() => setLockOpen(true)}>{Glyph.search} {P.lkCardOpen}</button>}
+      {!c && lockOpen && <FieldLock target={lockTarget} origin={origin} observed={observed} />}
       <div class="tabpane" key={`${tab}-${sel}-${r.target.field}`}>
       {c && tab === 'answer' && <Answer r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} goProof={() => setTab('proof')} copy={copy} toastFn={toast} />}
       {c && tab === 'trace' && <Trace r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} />}
       {c && tab === 'proof' && <Proof r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} access={access} copy={copy} />}
       {c && tab === 'flows' && <FlowsTab target={r.target} origin={origin} field={r.target.field} />}
       {c && tab === 'whatif' && <WhatIf r={r} origin={origin} field={field} />}
+      {c && tab === 'lock' && <><FieldLock target={lockTarget} origin={origin} observed={observed} /><FormStates table={r.target.table} sysId={r.target.sysId} origin={origin} /></>}
       {c && tab === 'history' && (
         <>
           <div class="seg2 hist-switch" role="group">

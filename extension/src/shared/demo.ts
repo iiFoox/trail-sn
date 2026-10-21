@@ -1,7 +1,8 @@
 import type { AccessReport, Change, Evidence, Investigation, StaticSuspects, Timeline, TimelineSave, TraceItem } from '@trail/core';
 
 type DemoChange = Omit<Change, 'trace'>;
-import type { TabState } from './messages';
+import type { ObservedField, TabState } from './messages';
+import { FakeRestClient, fieldStates, type FieldStateResult } from '@trail/core';
 
 /**
  * Dados de demonstração do painel (sidepanel/index.html?demo=1&field=<campo>).
@@ -401,4 +402,71 @@ export function demoTimeline(): Timeline {
   const saves = [...byCp.values()].sort((a, b) => b.checkpoint - a.checkpoint);
   for (const sv of saves) sv.fields.sort((a, b) => Number(a.journal) - Number(b.journal) || a.label.localeCompare(b.label));
   return { target: { table: 'incident', sysId: SYS_ID, display: 'INC0010001', title: 'Impressora do 3º andar sem rede' }, saves, truncated: false, timing: { totalMs: 1240, calls: 9 } };
+}
+
+// ---------- "Por que está bloqueado?" (demonstração) ----------
+// O demo roda o motor de verdade (fieldStates) contra uma instância falsa em memória: o que aparece é o que o
+// motor diria com estas regras. `lock=itil` simula quem não lê as regras do formulário.
+
+const LOCK_REC: Record<string, string> = {
+  sys_id: SYS_ID, number: 'INC0010001', state: '6', category: 'network', impact: '2', urgency: '2', priority: '2', assignment_group: ID.network,
+  assigned_to: ID.howard, caller_id: ID.beth, cmdb_ci: ID.printer, close_code: '', parent_incident: '', rfc: '', contact_type: 'phone', short_description: 'Impressora do 3º andar sem rede',
+};
+const LOCK_LABELS: Record<string, [string, string]> = {
+  number: ['Number', 'task'], caller_id: ['Caller', 'incident'], category: ['Category', 'incident'], state: ['State', 'incident'], impact: ['Impact', 'task'], urgency: ['Urgency', 'task'],
+  priority: ['Priority', 'task'], assignment_group: ['Assignment group', 'task'], assigned_to: ['Assigned to', 'task'], cmdb_ci: ['Configuration item', 'task'],
+  close_code: ['Resolution code', 'incident'], parent_incident: ['Parent Incident', 'incident'], rfc: ['Change Request', 'incident'], contact_type: ['Channel', 'incident'], short_description: ['Short description', 'task'],
+};
+/** O que o g_form mostraria neste incidente resolvido. */
+export function demoFormStates(): ObservedField[] {
+  const ro = new Set(['number', 'caller_id', 'assignment_group']), md = new Set(['category', 'close_code', 'short_description']), hid = new Set(['parent_incident', 'rfc']);
+  return Object.entries(LOCK_LABELS).map(([field, [label]]) => ({ field, label, onForm: true, readOnly: ro.has(field), mandatory: md.has(field), visible: !hid.has(field) }));
+}
+export function demoObserved(field: string): ObservedField | undefined {
+  return demoFormStates().find((x) => x.field === field);
+}
+const P_ = (o: Record<string, string>) => ({ active: 'true', table: 'incident', on_load: 'true', reverse_if_false: 'true', global: 'true', ui_type: '0', run_scripts: 'false', order: '100', ...o });
+const A_ = (o: Record<string, string>) => ({ disabled: 'ignore', mandatory: 'ignore', visible: 'ignore', 'ui_policy.active': 'true', 'ui_policy.table': 'incident', ...o });
+function lockInstance(itil: boolean): FakeRestClient {
+  const c = new FakeRestClient();
+  c.rows('sys_db_object', [{ name: 'incident', 'super_class.name': 'task' }, { name: 'task', 'super_class.name': '' }]);
+  c.rows('incident', [LOCK_REC]);
+  c.rows('sys_choice', [{ name: 'incident', element: 'state', value: '6', label: 'Resolved', language: 'en' }, { name: 'incident', element: 'category', value: 'network', label: 'Network', language: 'en' }]);
+  c.rows('sys_documentation', []);
+  c.rows('sys_user_group', [{ sys_id: ID.network, name: 'Network' }]);
+  if (itil) {
+    // itil no PDI: dicionário vem vazio e as regras do formulário dão 403.
+    c.rows('sys_dictionary', []);
+    return c;
+  }
+  c.rows('sys_dictionary', Object.entries(LOCK_LABELS).map(([element, [column_label, name]]) => ({ sys_id: `d0${element}`.padEnd(32, '0').slice(0, 32), name, element, column_label, active: 'true', mandatory: element === 'short_description' ? 'true' : 'false', read_only: element === 'number' ? 'true' : 'false', internal_type: element === 'assignment_group' ? 'reference' : 'string', ...(element === 'assignment_group' ? { reference: 'sys_user_group' } : {}) })));
+  c.rows('sys_dictionary_override', []);
+  c.rows('sys_ui_policy', [
+    P_({ sys_id: 'a0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5', short_description: 'Resolvido trava o grupo', conditions: 'state=6^EQ', order: '100' }),
+    P_({ sys_id: 'b0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5', short_description: 'Rede: categoria opcional', conditions: 'category=network^EQ', order: '100' }),
+    P_({ sys_id: 'c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5', short_description: 'Resolvido exige categoria', conditions: 'state=6^EQ', order: '200' }),
+    P_({ sys_id: 'd0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5', short_description: 'Esconde incidente pai vazio', conditions: 'parent_incidentISEMPTY^EQ', order: '100' }),
+    P_({ sys_id: 'e0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5', short_description: 'Fechado trava a descrição', conditions: 'state=7^EQ', order: '100', reverse_if_false: 'false' }),
+  ]);
+  c.rows('sys_ui_policy_action', [
+    A_({ ui_policy: 'a0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5', field: 'assignment_group', disabled: 'true' }),
+    A_({ ui_policy: 'b0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5', field: 'category', mandatory: 'false' }),
+    A_({ ui_policy: 'c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5', field: 'category', mandatory: 'true' }),
+    A_({ ui_policy: 'd0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5', field: 'parent_incident', visible: 'false' }),
+    A_({ ui_policy: 'e0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5', field: 'assignment_group', disabled: 'true' }),
+  ]);
+  c.rows('sys_data_policy_rule', [{ sys_id: 'r1', sys_data_policy: 'f0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5', field: 'close_code', mandatory: 'true', disabled: 'ignore', 'sys_data_policy.active': 'true', 'sys_data_policy.model_table': 'incident' }]);
+  c.rows('sys_data_policy2', [{ sys_id: 'f0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5', short_description: 'Resolvido exige código de fechamento', model_table: 'incident', conditions: 'state=6^EQ', enforce_ui: 'true', active: 'true' }]);
+  c.rows('sys_script_client', [
+    { sys_id: 'a1d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5', name: 'Só coordenador muda o grupo', type: 'onLoad', table: 'incident', active: 'true', ui_type: '0', global: 'true',
+      script: "function onLoad() {\n  if (!g_user.hasRole('itil_admin'))\n    g_form.setReadOnly('assignment_group', true);\n}" },
+    { sys_id: 'b1d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5', name: 'Esconde mudança fora de software', type: 'onLoad', table: 'incident', active: 'true', ui_type: '0', global: 'true',
+      script: "function onLoad() {\n  if (g_form.getValue('category') != 'software')\n    g_form.setDisplay('rfc', false);\n}" },
+  ]);
+  return c;
+}
+const isItilDemo = () => typeof location !== 'undefined' && new URLSearchParams(location.search).get('lock') === 'itil';
+export async function demoFieldStates(fields: string[]): Promise<FieldStateResult[]> {
+  const obs = demoFormStates();
+  return fieldStates(lockInstance(isItilDemo()), { table: 'incident', sysId: SYS_ID, fields: fields.map((field) => { const o = obs.find((x) => x.field === field); return { field, ...(o ? { observed: o } : {}) }; }) });
 }

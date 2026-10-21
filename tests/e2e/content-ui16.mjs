@@ -14,9 +14,10 @@ await page.route('https://dev000000.service-now.com/**', (route) => route.fulfil
   contentType: 'text/html',
   body: `<!doctype html><html><body>
     <script>window.g_ck='${'a'.repeat(72)}'; window.NOW={user_name:'admin'};
-      window.g_form={getTableName:()=>'incident',getUniqueValue:()=>'${'b'.repeat(32)}'};</script>
-    <label for="incident.state">State</label><input id="incident.state">
-    <label for="incident.impact">Impact</label><input id="incident.impact">
+      window.g_form={getTableName:()=>'incident',getUniqueValue:()=>'${'b'.repeat(32)}',isMandatory:(f)=>f==='impact',getLabelOf:(f)=>({state:'State',impact:'Impact',parent_incident:'Parent Incident'})[f]||f};</script>
+    <div id="element.incident.state"><label for="incident.state">State</label><input id="incident.state" readonly></div>
+    <div id="element.incident.impact"><label for="incident.impact">Impact</label><input id="incident.impact"></div>
+    <div id="element.incident.parent_incident" style="display:none"><input id="incident.parent_incident"></div>
     <label for="sys_display.incident.business_service">Service</label><input id="sys_display.incident.business_service">
     <label for="ni.incident.active">Active</label><input type="checkbox" id="ni.incident.active"><label for="ni.incident.active"></label>
     <label for="sys_readonly.sys_display.incident.universal_request">Universal request</label>
@@ -52,6 +53,16 @@ if (!refField?.includes('(business_service)')) errors.push('referência sem íco
 if (!ctx || ctx.ctx.table !== 'incident' || ctx.ctx.token?.length !== 72) errors.push('contexto não publicado com tabela e token: ' + JSON.stringify(ctx));
 const inv = msgs.find((m) => m.type === 'investigate');
 if (!inv || inv.target.field !== 'state' || inv.target.table !== 'incident' || inv.token?.length !== 72) errors.push('clique não gerou investigate correto: ' + JSON.stringify(inv));
+// "Por que está bloqueado?": o painel pede o estado de um campo e de todos (inclusive escondidos) ao content → g_form.
+const formState = await page.evaluate(() => {
+  const ask = (m) => { let r; for (const l of window.__runtimeListeners) l(m, {}, (x) => { r = x; }); return r; };
+  return { one: ask({ type: 'trail-field-state', field: 'state', table: 'incident' }), other: ask({ type: 'trail-field-state', field: 'state', table: 'problem' }), all: ask({ type: 'trail-form-states', table: 'incident' }) };
+});
+const one = formState.one;
+if (!one || one.readOnly !== true || one.mandatory !== false || one.visible !== true || one.label !== 'State') errors.push('estado do campo errado: ' + JSON.stringify(one));
+if (formState.other) errors.push('respondeu para outra tabela: ' + JSON.stringify(formState.other));
+const byName = Object.fromEntries((formState.all?.fields ?? []).map((f) => [f.field, f]));
+if (byName.impact?.mandatory !== true || byName.parent_incident?.visible !== false || byName.parent_incident?.label !== 'Parent Incident') errors.push('lista do formulário errada: ' + JSON.stringify(formState.all));
 // Reinjeção antes de o contexto antigo invalidar: a nova cópia desliga a anterior.
 await page.addScriptTag({ content });
 const whileAlive = await page.locator('.trail-host').count();

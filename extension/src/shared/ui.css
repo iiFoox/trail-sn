@@ -917,3 +917,46 @@ details.grp > .li { padding-left: 52px; }
 .rr-search input::placeholder { color: var(--muted); }
 .rr-tools .chip { all: unset; cursor: pointer; font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--fg-2); }
 .rr-tools .chip.on { background: var(--teal); border-color: var(--teal); color: #fff; }
+
+/* "Por que está bloqueado?" (FieldLock.tsx) */
+.lk-card { display: flex; align-items: center; gap: 10px; }
+.lk-card .btn { flex: none; }
+.lk-ic svg, .lk-row .ck svg { width: 14px; height: 14px; }
+.lk-ic { color: var(--teal-2); display: grid; place-items: center; flex: none; }
+.lk-chips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px 14px; }
+.lk-chip { display: flex; flex-direction: column; gap: 1px; padding: 8px 10px; border-radius: var(--r-sm); background: var(--surface-2); min-width: 0; }
+.lk-chip .lbl { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lk-chip b { font-size: 14px; color: var(--fg); }
+.lk-chip small { font-size: 10.5px; color: var(--muted); }
+.lk-chip.on { background: var(--probable-bg); }
+.lk-chip.on b { color: var(--probable); }
+.lk-state > .li { border-top: 1px solid var(--line); }
+.lk-head { background: var(--surface-2); }
+.lk-rule .lk-name { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.lk-rule a, .lk-list a { color: var(--fg); text-decoration: none; border-bottom: 1px dotted var(--muted); font-weight: 600; }
+.lk-rule.lost .lk-name a { text-decoration: line-through; color: var(--muted); }
+.lk-rule.win { box-shadow: inset 3px 0 0 var(--teal); }
+.lk-cond, .lk-now { margin-top: 3px; color: var(--fg-2); overflow-wrap: anywhere; }
+.lk-now b { color: var(--fg); font-weight: 600; }
+.pill.ok { background: var(--confirmed-bg); color: var(--confirmed); }
+.lk-sub { background: var(--surface-2); }
+.lk-foot { padding: 2px 2px 0; }
+.lk-open { margin: 10px 0; }
+.lk-back { margin: 0 0 8px; }
+.lk-limited code { font-size: 11px; overflow-wrap: anywhere; }
+.lk-list summary h4 .pill { flex: none; }
+button.li.lk-row { all: unset; box-sizing: border-box; display: flex; gap: 10px; width: 100%; padding: 10px 14px; border-top: 1px solid var(--line); cursor: pointer; font-size: 12.5px; color: var(--fg-2); align-items: flex-start; }
+button.li.lk-row:hover { background: var(--surface-2); }
+button.li.lk-row:focus-visible { outline: 2px solid var(--teal); outline-offset: -2px; }
+.lk-row b { color: var(--fg); }
+.lk-row .det { display: block; font-family: inherit; }
+.lk-row .cv { color: var(--muted); transition: transform .15s; flex: none; }
+.lk-row .cv svg { width: 14px; height: 14px; }
+.lk-row.open .cv { transform: rotate(90deg); }
+.lk-detail { padding: 8px 10px 12px; border-top: 1px solid var(--line); background: var(--bg); display: flex; flex-direction: column; gap: 8px; }
+.lk-check { flex: none; }
+@media (max-width: 360px) { .lk-chips { grid-template-columns: 1fr; } }
+/* Sete abas (com "Bloqueio?"): uma linha só; no estreito rolam para o lado (a aba ativa fica à vista). */
+.seg-tabs { display: flex; overflow-x: auto; scrollbar-width: none; }
+.seg-tabs::-webkit-scrollbar { display: none; }
+.seg-tabs button { flex: 1 0 auto; }

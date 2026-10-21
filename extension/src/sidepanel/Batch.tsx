@@ -13,6 +13,7 @@ import { recordLink } from '../shared/instances';
 import { getPrefs } from '../shared/prefs';
 import type { TabState } from '../shared/messages';
 import { RecordRuns } from './RecordRuns';
+import { FormStates } from './FieldLock';
 import { parts, humanField } from './Result';
 import { Loading } from './Loading';
 import { Val } from './Val';
@@ -139,6 +140,8 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
         </details>
       )}
       {/* Registro inteiro: os flows que rodaram neste registro e os configurados para a tabela. */}
+      {/* Campos travados, obrigatórios ou escondidos agora (a porta de entrada dos escondidos, que não têm ícone). */}
+      {rec && b.sysId && !running && b.error === undefined && <FormStates table={b.table} sysId={b.sysId} origin={origin} />}
       {rec && b.sysId && !running && b.error === undefined && <RecordRuns table={b.table} sysId={b.sysId} origin={origin} items={b.items} />}
     </div>
   );
