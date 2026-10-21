@@ -30,6 +30,14 @@ try {
   await page.waitForSelector('.rruns .grp', { timeout: 8000 }).catch(() => errors.push('registro inteiro sem "O que roda neste registro"'));
   out.rec = await page.evaluate(() => [...document.querySelectorAll('.rruns .grp > summary b')].map((b) => b.textContent));
   for (const g of ['Regras de negócio', 'Flows', 'Client scripts', 'Botões (UI actions)']) if (!out.rec.includes(g)) errors.push('faltou o grupo ' + g + ': ' + JSON.stringify(out.rec));
+  // Busca: "priority" deixa só o que grava a prioridade (a regra que calcula e o data lookup).
+  await page.fill('.rr-search input', 'priority');
+  await page.waitForTimeout(300);
+  out.search = await page.evaluate(() => [...document.querySelectorAll('.rruns .rr-row')].map((r) => r.querySelector('a, .lnk')?.textContent));
+  if (JSON.stringify(out.search) !== JSON.stringify(['Calcula prioridade', 'Priority Lookup'])) errors.push('busca por priority: ' + JSON.stringify(out.search));
+  await page.fill('.rr-search input', 'nada-que-exista');
+  await page.waitForTimeout(200);
+  if (!(await page.locator('.rruns', { hasText: 'Nada encontrado' }).count())) errors.push('busca sem resultado não avisou');
 } finally {
   console.log(JSON.stringify({ ...out, errors }, null, 1));
   await ctx.close();

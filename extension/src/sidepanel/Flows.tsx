@@ -39,12 +39,13 @@ export function FlowsTab({ target, origin, field = '' }: { target: { table: stri
 }
 
 /** Desenho das duas listas (rodaram / configurados); usado na aba e dentro de "O que roda neste registro". */
-export function FlowsView({ res, origin, field = '' }: { res: RecordFlows; origin: string; field?: string }) {
+/** `filtered`: a lista já veio de uma busca; parte vazia some em vez de dizer "nenhum flow". */
+export function FlowsView({ res, origin, field = '', filtered = false }: { res: RecordFlows; origin: string; field?: string; filtered?: boolean }) {
   const states = P.flState as Record<string, string>;
   const triggers = P.flTrigger as Record<string, string>;
   return (
     <div class="flows">
-      <div class="box">
+      {!(filtered && !res.runs.length) && <div class="box">
         <h4>{P.flRan}{res.runs.length > 0 && <span>{res.runs.length}</span>}</h4>
         {res.access.runs === 'denied' && <div class="li"><span class="ck w">!</span><span class="grow small">{P.flRunsDenied}</span></div>}
         {res.access.runs !== 'denied' && !res.runs.length && <div class="li"><span class="ck">{Glyph.check}</span><span class="grow small muted">{P.flNoRuns}</span></div>}
@@ -55,8 +56,8 @@ export function FlowsView({ res, origin, field = '' }: { res: RecordFlows; origi
             {!isDemo && <a class="see" href={`${origin}/$flow-designer.do#/operations/context/${x.sysId}`} target="_blank" rel="noreferrer" title={P.flOpenRun} aria-label={P.flOpenRun}>{Glyph.open}</a>}
           </div>
         ))}
-      </div>
-      <div class="box">
+      </div>}
+      {!(filtered && !res.definitions.length) && <div class="box">
         <h4>{fmt(P.flDefs, { table: res.table })}{res.definitions.length > 0 && <span>{res.definitions.length}</span>}</h4>
         {res.access.definitions === 'denied' && <div class="li"><span class="ck w">!</span><span class="grow small">{P.flDefsDenied}</span></div>}
         {res.access.definitions !== 'denied' && !res.definitions.length && <div class="li"><span class="ck">{Glyph.check}</span><span class="grow small muted">{P.flNoDefs}</span></div>}
@@ -71,7 +72,7 @@ export function FlowsView({ res, origin, field = '' }: { res: RecordFlows; origi
             {!isDemo && d.sysId && <a class="see" href={`${origin}/$flow-designer.do#/flow-designer/${d.sysId}`} target="_blank" rel="noreferrer" title={P.flOpenDef} aria-label={P.flOpenDef}>{Glyph.open}</a>}
           </div>
         ))}
-      </div>
+      </div>}
     </div>
   );
 }

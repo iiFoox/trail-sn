@@ -3,7 +3,7 @@
  * regras de negócio, script includes, flows, client scripts, UI policies, botões, data lookups, atribuição e jobs.
  * O que causou mudanças neste registro ganha a marca "rodou aqui".
  */
-import type { AutomationItem, BatchItem, TableAutomations } from '@trail/core';
+import type { AutomationItem, BatchItem, RecordFlows, TableAutomations } from '@trail/core';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { fmt, t } from '../shared/i18n';
@@ -19,6 +19,8 @@ const isDemo = new URLSearchParams(location.search).has('demo');
 export function RecordRuns({ table, sysId, origin, items }: { table: string; sysId: string; origin: string; items: BatchItem[] }) {
   const [res, setRes] = useState<TableAutomations>();
   const [err, setErr] = useState('');
+  const [query, setQuery] = useState('');
+  const [onlyRan, setOnlyRan] = useState(false);
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -36,6 +38,11 @@ export function RecordRuns({ table, sysId, origin, items }: { table: string; sys
   const ran = new Set(items.map((i) => i.cause?.sysId).filter(Boolean) as string[]);
   const ranNames = new Set(items.map((i) => i.cause?.name).filter(Boolean) as string[]);
   const hit = (a: AutomationItem) => ran.has(a.sysId) || ranNames.has(a.name);
+  // Busca em tudo: nome, quando roda, tabela, escopo e campos que grava ("priority" acha tudo que mexe na prioridade).
+  const terms = norm(query).split(/\s+/).filter(Boolean);
+  const filtering = terms.length > 0 || onlyRan;
+  const keep = (a: AutomationItem) => (!onlyRan || hit(a)) && terms.every((t) => norm([a.name, a.detail, a.table, a.scope ?? '', ...a.writes].join(' ')).includes(t));
+  const pick = (list: AutomationItem[]) => list.filter(keep);
 
   const row = (a: AutomationItem, linkTable: string) => (
     <div class={`li rr-row ${hit(a) ? 'hit' : ''}`}>
@@ -50,31 +57,56 @@ export function RecordRuns({ table, sysId, origin, items }: { table: string; sys
 
   if (err) return <div class="box"><div class="li"><span class="ck w">!</span><span class="grow">{err}</span></div></div>;
   const groups: { key: string; title: string; icon: ComponentChildren; denied: boolean; count: number; body: ComponentChildren }[] = !res ? [] : [
-    { key: 'br', title: P.rrBr, icon: Glyph.rule, denied: res.access.sys_script === 'denied', count: res.businessRules.length, body: res.businessRules.map((a) => row(a, 'sys_script')) },
-    { key: 'si', title: P.rrSi, icon: Glyph.include, denied: res.access.sys_script_include === 'denied', count: res.scriptIncludes.length, body: res.scriptIncludes.map((a) => row(a, 'sys_script_include')) },
-    { key: 'fl', title: P.rrFlows, icon: Glyph.flow, denied: false, count: (res.flows?.runs.length ?? 0) + (res.flows?.definitions.length ?? 0), body: res.flows ? <FlowsView res={res.flows} origin={origin} /> : null },
-    { key: 'cs', title: P.rrCs, icon: Glyph.terminal, denied: res.access.sys_script_client === 'denied', count: res.clientScripts.length, body: res.clientScripts.map((a) => row(a, 'sys_script_client')) },
-    { key: 'up', title: P.rrUp, icon: Glyph.shield, denied: res.access.sys_ui_policy === 'denied', count: res.uiPolicies.length, body: res.uiPolicies.map((a) => row(a, 'sys_ui_policy')) },
-    { key: 'ua', title: P.rrUa, icon: Glyph.click, denied: res.access.sys_ui_action === 'denied', count: res.uiActions.length, body: res.uiActions.map((a) => row(a, 'sys_ui_action')) },
-    { key: 'dl', title: P.rrDl, icon: Glyph.search, denied: res.access.dl_definition === 'denied', count: res.dataLookups.length, body: res.dataLookups.map((a) => row(a, 'dl_definition')) },
-    { key: 'as', title: P.rrAs, icon: Glyph.group, denied: res.access.sysrule_assignment === 'denied', count: res.assignmentRules.length, body: res.assignmentRules.map((a) => row(a, 'sysrule_assignment')) },
-    { key: 'jb', title: P.rrJobs, icon: Glyph.clock, denied: res.access.sysauto_script === 'denied', count: res.jobs.length, body: res.jobs.map((a) => row(a, 'sysauto_script')) },
-  ].filter((g) => g.count > 0 || g.denied);
+    ...([
+      ['br', P.rrBr, Glyph.rule, 'sys_script', res.businessRules],
+      ['si', P.rrSi, Glyph.include, 'sys_script_include', res.scriptIncludes],
+    ] as const).map(([key, title, icon, tbl, list]) => ({ key, title, icon, denied: res.access[tbl] === 'denied', count: pick(list).length, body: pick(list).map((a) => row(a, tbl)) })),
+    (() => {
+      const fl = res.flows ? filterFlows(res.flows, terms, onlyRan) : undefined;
+      return { key: 'fl', title: P.rrFlows, icon: Glyph.flow, denied: false, count: (fl?.runs.length ?? 0) + (fl?.definitions.length ?? 0), body: fl ? <FlowsView res={fl} origin={origin} filtered={filtering} /> : null };
+    })(),
+    ...([
+      ['cs', P.rrCs, Glyph.terminal, 'sys_script_client', res.clientScripts],
+      ['up', P.rrUp, Glyph.shield, 'sys_ui_policy', res.uiPolicies],
+      ['ua', P.rrUa, Glyph.click, 'sys_ui_action', res.uiActions],
+      ['dl', P.rrDl, Glyph.search, 'dl_definition', res.dataLookups],
+      ['as', P.rrAs, Glyph.group, 'sysrule_assignment', res.assignmentRules],
+      ['jb', P.rrJobs, Glyph.clock, 'sysauto_script', res.jobs],
+    ] as const).map(([key, title, icon, tbl, list]) => ({ key, title, icon, denied: res.access[tbl] === 'denied', count: pick(list).length, body: pick(list).map((a) => row(a, tbl)) })),
+  ].filter((g) => g.count > 0 || (g.denied && !filtering));
   const total = groups.reduce((n, g) => n + g.count, 0);
   return (
     <details class="box fold rruns" open>
       <summary><h4>{P.rrTitle}<span>{res ? total : ''} {Glyph.chevron}</span></h4></summary>
       <div class="muted small pad">{fmt(P.rrHint, { table })}</div>
+      {res && (
+        <div class="rr-tools">
+          <label class="rr-search">{Glyph.search}<input type="search" value={query} placeholder={P.rrSearch} aria-label={P.rrSearch} onInput={(e) => setQuery((e.target as HTMLInputElement).value)} /></label>
+          <button type="button" class={`chip ${onlyRan ? 'on' : ''}`} aria-pressed={onlyRan} onClick={() => setOnlyRan(!onlyRan)}>{P.rrOnlyRan}</button>
+        </div>
+      )}
       {!res && <div class="li"><span class="spin" /><span class="grow muted small">{P.rrLoading}</span></div>}
       {groups.map((g, gi) => (
-        <details class="grp" open={gi === 0}>
+        <details class="grp" open={filtering || gi === 0} key={`${g.key}-${filtering}`}>
           <summary><span class="ic sm">{g.icon}</span><b class="grow">{g.title}</b><i>{g.denied ? '–' : g.count}</i><span class="chev">{Glyph.chevron}</span></summary>
           {g.denied ? <div class="li muted small">{P.rrDenied}</div> : g.body}
         </details>
       ))}
-      {res && !groups.length && <div class="li muted">{P.rrNone}</div>}
+      {res && !groups.length && <div class="li muted">{filtering ? P.rrNoMatch : P.rrNone}</div>}
     </details>
   );
+}
+
+/** Sem acentos e em minúsculas, para "automação" achar "Automacao". */
+const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+function filterFlows(f: RecordFlows, terms: string[], onlyRan: boolean): RecordFlows {
+  const ok = (text: string) => terms.every((t) => norm(text).includes(t));
+  return {
+    ...f,
+    runs: f.runs.filter((r) => ok([r.name, r.state].join(' '))),
+    definitions: f.definitions.filter((d) => (!onlyRan || d.ranHere) && ok([d.name, d.trigger, d.table, d.condition, d.scope ?? '', ...d.writes].join(' '))),
+  };
 }
 
 function demoRuns(table: string): TableAutomations {
