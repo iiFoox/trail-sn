@@ -26,15 +26,15 @@ for (const scheme of shots ? ['light', 'dark'] : ['light']) {
 
     for (const w of shots ? [420] : [420, 340]) {
       await page.setViewportSize({ width: w, height: 900 });
-      // 1. Ícone do campo: cartão "No formulário agora" → aba Bloqueio?
+      // 1. Ícone do campo: cartão "No formulário agora" → aba Regras do campo
       await page.goto(`${base}&field=assignment_group`);
       await page.waitForSelector('.lk-card', { timeout: 8000 }).catch(() => errors.push('sem cartão de campo bloqueado'));
       out.card = await page.locator('.lk-card').textContent().catch(() => '');
       if (!/somente leitura/.test(out.card ?? '')) errors.push('cartão sem "somente leitura": ' + out.card);
       await page.click('.lk-card button');
       await page.waitForSelector('.lk-aspect', { timeout: 8000 });
-      out.tab = await page.locator('.seg-tabs button[aria-selected="true"]').textContent();
-      if (out.tab !== 'Bloqueio?') errors.push('aba ativa não é Bloqueio?: ' + out.tab);
+      out.tab = await page.locator('.seg-tabs button[aria-selected="true"]').getAttribute('data-tab');
+      if (out.tab !== 'rules') errors.push('aba ativa não é Regras do campo: ' + out.tab);
       out.group = await page.evaluate(() => ({
         head: document.querySelector('.lk-aspect .lk-head')?.textContent,
         maybe: [...document.querySelectorAll('.lk-aspect .lk-rule')].map((x) => x.querySelector('.lk-name')?.textContent),
@@ -44,11 +44,11 @@ for (const scheme of shots ? ['light', 'dark'] : ['light']) {
       if (!/Resolvido trava o grupo/.test(out.group.head ?? '')) errors.push('regra vencedora errada: ' + JSON.stringify(out.group));
       if (!out.group.maybe.some((x) => /Só coordenador muda o grupo.*Pode ser/.test(x ?? ''))) errors.push('faltou o "pode ser" do client script: ' + JSON.stringify(out.group));
       if (!/ACL/.test(out.group.foot ?? '')) errors.push('rodapé sem a menção a ACL');
-      await noOverflow(w, 'aba Bloqueio?');
+      await noOverflow(w, 'aba Regras do campo');
       if (w === 420) await shot('lock-tab');
 
       // 2. Conflito por ordem (categoria).
-      await page.goto(`${base}&field=category&tab=lock`);
+      await page.goto(`${base}&field=category&tab=rules`);
       await page.waitForSelector('.lk-conflict', { timeout: 8000 }).catch(() => errors.push('sem conflito na categoria'));
       out.conflict = await page.locator('.lk-conflict').first().textContent().catch(() => '');
       if (!/vale "Resolvido exige categoria".*ordem maior/.test(out.conflict ?? '')) errors.push('texto do conflito: ' + out.conflict);
@@ -71,7 +71,7 @@ for (const scheme of shots ? ['light', 'dark'] : ['light']) {
       if (w === 420) { await page.locator('.lk-list').scrollIntoViewIfNeeded(); await shot('lock-list'); }
 
       // 4. Sem acesso (itil): nada inventado, frase clara.
-      await page.goto(`${base}&field=assignment_group&tab=lock&lock=itil`);
+      await page.goto(`${base}&field=assignment_group&tab=rules&lock=itil`);
       await page.waitForSelector('.lk-limited', { timeout: 8000 }).catch(() => errors.push('sem aviso de papéis'));
       out.itil = await page.evaluate(() => ({ title: document.querySelector('.lk-limited .title')?.textContent, rules: document.querySelectorAll('.lk-rule').length, unexplained: document.querySelector('.lk-unexplained')?.textContent }));
       if (out.itil.title !== 'Seus papéis não deixam ver as regras do formulário' || out.itil.rules !== 0) errors.push('itil: ' + JSON.stringify(out.itil));
@@ -82,7 +82,8 @@ for (const scheme of shots ? ['light', 'dark'] : ['light']) {
       await page.waitForSelector('.res');
       await page.click('details.drawer > summary');
       await page.waitForFunction(() => document.querySelectorAll('#trail-field-sugg option').length > 5, null, { timeout: 5000 }).catch(() => errors.push('gaveta sem sugestões de campo'));
-      await page.fill('details.drawer .grid2 .field:nth-child(2) input', 'parent_incident');
+      // Campo pela lista com os rótulos do formulário (inclusive os escondidos).
+      await page.selectOption('details.drawer .md-field select', 'parent_incident');
       await page.click('details.drawer .lk-check');
       await page.waitForSelector('.lk-page .lk-aspect', { timeout: 8000 }).catch(() => errors.push('gaveta não abriu a vista de bloqueio'));
       out.drawer = await page.locator('.lk-page .lk-head').first().textContent().catch(() => '');

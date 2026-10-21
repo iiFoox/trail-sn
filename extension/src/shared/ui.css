@@ -1125,3 +1125,12 @@ details.tech-acc[open] > summary svg { transform: rotate(90deg); }
 /* Valor antigo sem risco (contraste melhor, principalmente no claro): "X → Y" com X em --fg-2. */
 ul.fl .fbtn .v .o, table.cmpt .o, .wi-ft .o, .bt-row .vals .o { text-decoration: none; opacity: 1; color: var(--fg-2); }
 .topbar .host { min-width: 64px; flex: 0 1 auto; }
+/* Painel estreito: o cabeçalho cabe sem rolar (a marca basta; o nome e a instância cedem espaço). */
+@media (max-width: 400px) {
+  .topbar { gap: 6px; padding-left: 10px; padding-right: 8px; }
+  .topbar .fname { display: none; }
+  .topbar .host { min-width: 0; }
+  .topbar .actions { gap: 0; }
+  .acc-chip { padding: 5px 7px; }
+}
+@media (max-width: 400px) { .tabs-wrap .seg-tabs.t4 button { padding: 8px 6px; font-size: 12px; } }
