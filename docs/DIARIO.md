@@ -9,6 +9,16 @@ Convenções:
 
 ---
 
+## 2026-10-20 (noite) — site: ajustes do dono
+
+Antigravity, na página b3:
+- fases com no máximo 5 itens e "Ver mais (+N)" / "Ver menos";
+- FAQ começando fechado;
+- tabela da bateria com 30 linhas e "Ver mais (+30)": os outros 411 casos ficam compactados no `app.js`, sem dados do PDI;
+- seção do painel sem rolagem presa: o painel fica parado e troca de passo sozinho a cada 5 s (pausa com o mouse em cima, clique vai direto ao passo, sem autoplay com `prefers-reduced-motion`), e os 9 passos viram uma linha do tempo vertical.
+
+`_site-demo.mjs` confere tudo isso: sem erros, sem rolagem horizontal em 1280 e 390 px.
+
 ## 2026-10-20 (noite) — 0.12.6: bolinha-assistente e conserto do auto-reload
 
 - **Problema que o dono viu:** depois do auto-reload, o clique no ícone não fazia nada. A aba ficava com o script de conteúdo órfão (sem ligação com a extensão nova). O F5 resolvia.
