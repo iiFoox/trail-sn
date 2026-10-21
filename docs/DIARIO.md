@@ -10,6 +10,10 @@ Convenções:
 
 ---
 
+## 2026-10-20 (23h30) — bateria de 2000 em andamento
+
+Pedido do dono: 1000 investigações como admin e as mesmas 1000 como sem admin (`pt.trail.itil`), para achar tudo que falta. O Antigravity roda pela aba do Maestri (conectada a ele pelo dono), seguindo `tests/regression/BATERIA2000-TAREFA.md`: alvos, invariantes A1–A4 e I1–I6, regras de segurança. Só mede e reporta; não corrige código. **Resultado esperado em `tests/regression/bateria2000/RELATORIO.md`.** Quem pegar o projeto depois: ler o relatório e corrigir os achados, rodar de novo o que falhou e confirmar que a aba do PDI voltou ao admin.
+
 ## 2026-10-20 (noite) — 0.13.0: perícia para quem não é admin
 
 Pedido do dono: quem trabalha com App Engine ou sustentação muitas vezes não tem admin. **Decisão:** nada instalado na instância, nenhum papel ou app novo. O Trail usa a sessão de quem está logado, pede cada fonte, e a instância aplica as ACLs; o que vier entra, o que for negado fica de fora e é dito. **Não há lógica por papel no código.** Detalhes e medições em `docs/sem-admin.md`.
