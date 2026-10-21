@@ -153,6 +153,12 @@ describe('Quem enxerga este registro: ACLs de leitura', () => {
     expect(describeVisibility(v)).toContain('falta o papel itil ✗');
   });
 
+  it('papel "public" (ACLs do KB): todo mundo tem, mesmo sem estar em sys_user_has_role', async () => {
+    const v = await run(base({ acls: [acl({ sys_id: 'p1', name: 'incident', admin_overrides: 'false' }), acl({ sys_id: 'f1', name: 'incident.*' })], aclRoles: [aclRole('p1', 'public')] }), ABEL);
+    expect(v.acls.find((x) => x.sysId === 'p1')).toMatchObject({ roles: ['public'], roleOk: true, passes: true });
+    expect(v.combined.verdict).toBe('ve');
+  });
+
   it('ACLs da mesma chave são OU: basta uma passar', async () => {
     const v = await run(base({ acls: [...roleAcl.acls, acl({ sys_id: 'a2', name: 'incident', condition: 'caller_id=javascript:gs.getUserID()', admin_overrides: 'false' })], aclRoles: roleAcl.aclRoles }), BETH);
     expect(v.acls.find((x) => x.sysId === 'a1')!.passes).toBe(false);
