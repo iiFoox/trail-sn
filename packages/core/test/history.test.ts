@@ -99,3 +99,16 @@ describe('fuso do usuário com horário de verão', () => {
     expect(localToUtc('2026-10-21 08:00:00', 'Fuso/Inexistente')).toBeNull();
   });
 });
+
+describe('mudanças do mesmo campo no mesmo segundo', () => {
+  it('o checkpoint desempata: a mais recente é a da regra (4→2), mesmo com as linhas fora de ordem', async () => {
+    const c = new FakeRestClient()
+      .rows('incident', [{ sys_id: SYS, number: 'INC0010001', sys_created_on: '2026-10-19 10:00:00' }])
+      .respond('sys_audit', () => [
+        { sys_id: 'y', fieldname: 'priority', oldvalue: '4', newvalue: '2', user: 'system', sys_created_on: '2026-10-20 12:00:00', record_checkpoint: '3' },
+        { sys_id: 'x', fieldname: 'priority', oldvalue: '2', newvalue: '4', user: 'admin', sys_created_on: '2026-10-20 12:00:00', record_checkpoint: '2' },
+      ].reverse());
+    const r = await investigate(c, { table: 'incident', sysId: SYS, field: 'priority' });
+    expect(r.changes.map((x) => `${x.oldValue}>${x.newValue}`)).toEqual(['4>2', '2>4']);
+  });
+});

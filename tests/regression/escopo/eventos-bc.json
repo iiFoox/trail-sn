@@ -1,0 +1,56 @@
+[
+  {
+    "key": "B",
+    "sysId": "d691c80ac38057101cbdb8e1b401314c",
+    "number": "TASK0020715",
+    "update": 200,
+    "record": {
+      "sys_id": "d691c80ac38057101cbdb8e1b401314c",
+      "number": "TASK0020715",
+      "short_description": "[PT] Evento teste B",
+      "u_categoria": "3",
+      "u_valor": "555"
+    },
+    "events": [
+      {
+        "sys_id": "7f91000ec38057101cbdb8e1b401310c",
+        "processed": "2026-10-21 14:38:22",
+        "instance": "d691c80ac38057101cbdb8e1b401314c",
+        "sys_created_on": "2026-10-21 14:38:22",
+        "name": "[PT] escopo.b.pedido.changed",
+        "state": "processed"
+      },
+      {
+        "sys_id": "9691cccac38057101cbdb8e1b40131d8",
+        "processed": "2026-10-21 14:38:22",
+        "instance": "d691c80ac38057101cbdb8e1b401314c",
+        "sys_created_on": "2026-10-21 14:38:16",
+        "name": "[PT] escopo.b.pedido.changed",
+        "state": "processed"
+      }
+    ],
+    "audit": [
+      {
+        "newvalue": "555",
+        "sys_created_on": "2026-10-21 14:38:22",
+        "tablename": "x_2270630_pttrailb_pedido",
+        "oldvalue": "10"
+      }
+    ]
+  },
+  {
+    "key": "C",
+    "sysId": "10a1cccac38057101cbdb8e1b40131df",
+    "number": "TASK0020716",
+    "update": 200,
+    "record": {
+      "sys_id": "10a1cccac38057101cbdb8e1b40131df",
+      "number": "TASK0020716",
+      "short_description": "[PT] Evento teste C",
+      "u_categoria": "3",
+      "u_valor": "10"
+    },
+    "events": [],
+    "audit": []
+  }
+]

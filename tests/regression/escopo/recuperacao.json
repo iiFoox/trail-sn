@@ -1,0 +1,52 @@
+{
+  "out": [
+    {
+      "rule": "7b23ff3dc3cc17101cbdb8e1b40131d4",
+      "disabled": 200
+    },
+    {
+      "rule": "3f23373dc3cc17101cbdb8e1b4013192",
+      "disabled": 200
+    },
+    {
+      "rule": "d033373dc3cc17101cbdb8e1b40131ee",
+      "disabled": 200
+    },
+    {
+      "rule": "7b23ff3dc3cc17101cbdb8e1b40131d4",
+      "enabled": 200
+    },
+    {
+      "rule": "3f23373dc3cc17101cbdb8e1b4013192",
+      "enabled": 200
+    },
+    {
+      "rule": "d033373dc3cc17101cbdb8e1b40131ee",
+      "enabled": 200
+    }
+  ],
+  "missingItem": [
+    {
+      "status": 201,
+      "result": {
+        "sys_id": "2bb37bfdc3cc17101cbdb8e1b4013135"
+      }
+    },
+    {
+      "status": 201,
+      "result": {
+        "sys_id": "fbb37bfdc3cc17101cbdb8e1b4013138"
+      }
+    }
+  ],
+  "record": {
+    "status": 201,
+    "result": {
+      "sys_id": "7fb37bfdc3cc17101cbdb8e1b401313b",
+      "number": "TASK0020493",
+      "u_categoria": "2"
+    }
+  },
+  "recId": "7fb37bfdc3cc17101cbdb8e1b401313b",
+  "updated": 200
+}

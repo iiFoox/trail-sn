@@ -1,0 +1,11 @@
+import { startInPortal, readPortalTask } from './portal.mjs';
+import { writeFileSync } from 'node:fs';
+startInPortal(`(async()=>{
+ const h={'X-UserToken':window.g_ck,'Content-Type':'application/json'};const rows=[
+  {key:'B',app:'b021f379c3cc17101cbdb8e1b401316a',table:'x_2270630_pttrailb_pedido',event:'[PT] escopo.b.pedido.changed'},
+  {key:'C',app:'c921f379c3cc17101cbdb8e1b401316e',table:'x_2270630_pttrailc_pedido',event:'[PT] escopo.c.pedido.changed'}];
+ async function req(url,method='GET',body){const r=await fetch(url,{method,headers:h,...(body?{body:JSON.stringify(body)}:{})});let t=await r.text(),j;try{j=JSON.parse(t)}catch{j={raw:t.slice(0,140)}}return {status:r.status,data:j}}
+ const out=[];for(const x of rows){await req('/api/now/ui/concoursepicker/application','PUT',{app_id:x.app});const m=await req('/api/now/table/'+x.table,'POST',{short_description:'[PT] Evento teste '+x.key,u_categoria:'2',u_valor:'10',priority:'4'});const rec=m.data?.result;if(!rec){out.push({key:x.key,create:m});continue;}const u=await req('/api/now/table/'+x.table+'/'+rec.sys_id,'PATCH',{u_categoria:'3'});await new Promise(r=>setTimeout(r,7000));const after=await req('/api/now/table/'+x.table+'/'+rec.sys_id+'?sysparm_fields=sys_id,number,short_description,u_categoria,u_valor');const events=await req('/api/now/table/sysevent?sysparm_query='+encodeURIComponent('name='+x.event+'^instance='+rec.sys_id)+'&sysparm_fields=sys_id,name,instance,state,sys_created_on,processed&sysparm_limit=5');const audit=await req('/api/now/table/sys_audit?sysparm_query='+encodeURIComponent('documentkey='+rec.sys_id+'^fieldname=u_valor')+'&sysparm_fields=oldvalue,newvalue,sys_created_on,tablename&sysparm_limit=5');out.push({key:x.key,sysId:rec.sys_id,number:rec.number,update:u.status,record:after.data?.result,events:events.data?.result,audit:audit.data?.result});}
+ return JSON.stringify(out);
+})()`, '_eventsBC');
+for(;;){await new Promise(r=>setTimeout(r,1000));const t=readPortalTask('_eventsBC');if(t?.done){if(t.error)throw new Error(t.error);const x=JSON.parse(t.result);writeFileSync('tests/regression/escopo/eventos-bc.json',JSON.stringify(x,null,2)+'\n');console.log(JSON.stringify(x.map(y=>({key:y.key,sysId:y.sysId,number:y.number,record:y.record,events:y.events,audit:y.audit})),null,2));break;}process.stdout.write('.');}

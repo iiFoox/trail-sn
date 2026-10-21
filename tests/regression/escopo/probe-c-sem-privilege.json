@@ -1,0 +1,21 @@
+{
+  "include": {
+    "id": "fc050c86c3c057101cbdb8e1b40131ba",
+    "api_name": "x_2270630_pttrail_.PTTrailScopeHelperSemPrivilege"
+  },
+  "created": 201,
+  "rulePatch": 200,
+  "sysId": "010500c6c3c057101cbdb8e1b401318b",
+  "number": "TASK0020719",
+  "update": 200,
+  "record": {
+    "sys_id": "010500c6c3c057101cbdb8e1b401318b",
+    "number": "TASK0020719",
+    "short_description": "[PT] Include sem privilégio executado",
+    "u_categoria": "2",
+    "u_valor": "333"
+  },
+  "logs": [],
+  "privileges": [],
+  "restore": 200
+}

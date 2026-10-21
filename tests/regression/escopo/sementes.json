@@ -1,0 +1,105 @@
+{
+  "initial": {
+    "pedido": [
+      {
+        "sys_id": "6b63373dc3cc17101cbdb8e1b40131a5",
+        "number": "TASK0020181"
+      },
+      {
+        "sys_id": "bb63373dc3cc17101cbdb8e1b40131ab",
+        "number": "TASK0020182"
+      },
+      {
+        "sys_id": "fb63ff7dc3cc17101cbdb8e1b40131a6",
+        "number": "TASK0020183"
+      },
+      {
+        "sys_id": "ff63ff7dc3cc17101cbdb8e1b40131aa",
+        "number": "TASK0020184"
+      },
+      {
+        "sys_id": "c073ff7dc3cc17101cbdb8e1b40131af",
+        "number": "TASK0020185"
+      },
+      {
+        "sys_id": "c073ff7dc3cc17101cbdb8e1b40131e5",
+        "number": "TASK0020186"
+      },
+      {
+        "sys_id": "c473ff7dc3cc17101cbdb8e1b40131e9",
+        "number": "TASK0020187"
+      },
+      {
+        "sys_id": "d873ff7dc3cc17101cbdb8e1b40131ed",
+        "number": "TASK0020188"
+      },
+      {
+        "sys_id": "d87333bdc3cc17101cbdb8e1b4013123",
+        "number": "TASK0020189"
+      },
+      {
+        "sys_id": "dc7333bdc3cc17101cbdb8e1b4013127",
+        "number": "TASK0020190"
+      },
+      {
+        "sys_id": "e07333bdc3cc17101cbdb8e1b401312c",
+        "number": "TASK0020191"
+      },
+      {
+        "sys_id": "647333bdc3cc17101cbdb8e1b4013149",
+        "number": "TASK0020192"
+      },
+      {
+        "sys_id": "787333bdc3cc17101cbdb8e1b401314d",
+        "number": "TASK0020193"
+      }
+    ],
+    "item": [
+      {
+        "sys_id": "347333bdc3cc17101cbdb8e1b4013150"
+      },
+      {
+        "sys_id": "f07333bdc3cc17101cbdb8e1b401315f"
+      },
+      {
+        "sys_id": "74733b7dc3cc17101cbdb8e1b401311f"
+      },
+      {
+        "sys_id": "b87333bdc3cc17101cbdb8e1b4013160"
+      },
+      {
+        "sys_id": "3c733b7dc3cc17101cbdb8e1b4013120"
+      },
+      {
+        "sys_id": "3473fb7dc3cc17101cbdb8e1b401314d"
+      },
+      {
+        "sys_id": "f0733b7dc3cc17101cbdb8e1b4013122"
+      },
+      {
+        "sys_id": "b8733b7dc3cc17101cbdb8e1b4013123"
+      }
+    ]
+  },
+  "errors": [
+    {
+      "seed": "[PT] Item A inicial 03",
+      "status": 500
+    },
+    {
+      "seed": "[PT] Item A inicial 06",
+      "status": 500
+    },
+    {
+      "app": "A",
+      "n": 5,
+      "phase": "insert",
+      "status": 500
+    }
+  ],
+  "counts": {
+    "cases": 299,
+    "pedido": 13,
+    "item": 8
+  }
+}

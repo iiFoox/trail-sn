@@ -1,0 +1,30 @@
+{
+  "setup": [
+    {
+      "key": "B",
+      "dict": {
+        "id": "80413f39c3cc17101cbdb8e1b401314b",
+        "before": "false",
+        "patch": 200
+      },
+      "reset": 200,
+      "schedule": 200,
+      "when": "2026-10-21 14:34:39",
+      "item": "89b4b771c30057101cbdb8e1b401314b",
+      "job": "2434b731c30057101cbdb8e1b4013197"
+    },
+    {
+      "key": "C",
+      "dict": {
+        "id": "d3413b79c3cc17101cbdb8e1b40131a8",
+        "before": "false",
+        "patch": 200
+      },
+      "reset": 200,
+      "schedule": 200,
+      "when": "2026-10-21 14:34:39",
+      "item": "44d4b771c30057101cbdb8e1b4013189",
+      "job": "c534f731c30057101cbdb8e1b4013149"
+    }
+  ]
+}

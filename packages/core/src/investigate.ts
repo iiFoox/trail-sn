@@ -75,7 +75,7 @@ export async function investigate(
   const [auditRows, dict, docs] = await Promise.all([
     q(
       'sys_audit',
-      `tablename=${target.table}^documentkey=${sysId}^ORDERBYsys_created_on`,
+      `tablename=${target.table}^documentkey=${sysId}^ORDERBYsys_created_on^ORDERBYrecord_checkpoint`,
       ['sys_id', 'fieldname', 'oldvalue', 'newvalue', 'user', 'sys_created_on', 'record_checkpoint'],
       1000,
     ),
@@ -99,7 +99,10 @@ export async function investigate(
   const maxCheckpoint = Math.max(0, ...Object.keys(checkpoints).map(Number));
   // Um update() numa BR after regrava na auditoria as mudanças que ainda estão em "previous": a mesma
   // mudança aparece de novo no checkpoint seguinte, segundos depois. Essa cópia não é uma mudança nova.
-  const ownAudit = audit.filter((a) => a.fieldname === target.field);
+  // Duas gravações do mesmo campo no mesmo segundo (a pessoa grava 2→4 e uma regra devolve 4→2): o horário empata e
+  // quem desempata é o checkpoint. Sem isso a ordem vinha ao acaso e a mudança da regra podia aparecer como a da pessoa.
+  const ownAudit = audit.filter((a) => a.fieldname === target.field)
+    .sort((a, b) => toMs(a.sys_created_on ?? '') - toMs(b.sys_created_on ?? '') || Number(a.record_checkpoint ?? 0) - Number(b.record_checkpoint ?? 0));
   const fieldChanges = ownAudit.filter((a, i) => !ownAudit.slice(0, i).some((p) =>
     p.oldvalue === a.oldvalue && p.newvalue === a.newvalue && Number(p.record_checkpoint) < Number(a.record_checkpoint)
     && Math.abs(toMs(a.sys_created_on ?? '') - toMs(p.sys_created_on ?? '')) <= 2000)).slice(-opts.maxChanges).reverse();

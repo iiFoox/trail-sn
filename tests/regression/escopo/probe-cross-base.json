@@ -1,0 +1,73 @@
+{
+  "b": {
+    "sys_id": "c1bfb739c38057101cbdb8e1b40131db",
+    "number": "TASK0020709",
+    "short_description": "[PT] Probe base B write",
+    "u_categoria": "2",
+    "u_valor": "700"
+  },
+  "cAllowed": {
+    "sys_id": "b5bff739c38057101cbdb8e1b4013192",
+    "number": "TASK0020710",
+    "short_description": "[PT] Probe base C include allowed",
+    "u_categoria": "2",
+    "u_valor": "700"
+  },
+  "cDenied": {
+    "sys_id": "06bff739c38057101cbdb8e1b40131d6",
+    "number": "TASK0020711",
+    "short_description": "[PT] Probe base C include denied",
+    "u_categoria": "2",
+    "u_valor": "700"
+  },
+  "includeRestore": {
+    "status": 200,
+    "data": {
+      "result": {
+        "target_name": "PTTrailScopeHelper",
+        "sys_mod_count": "8",
+        "target_type": "sys_db_object",
+        "target_scope": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_scope/3def6f75c3cc17101cbdb8e1b40131cf",
+          "value": "3def6f75c3cc17101cbdb8e1b40131cf"
+        },
+        "sys_updated_on": "2026-10-21 14:30:04",
+        "sys_tags": "",
+        "sys_class_name": "sys_scope_privilege",
+        "sys_id": "c433f77dc3cc17101cbdb8e1b40131f3",
+        "sys_package": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_package/c921f379c3cc17101cbdb8e1b401316e",
+          "value": "c921f379c3cc17101cbdb8e1b401316e"
+        },
+        "sys_update_name": "sys_scope_privilege_c433f77dc3cc17101cbdb8e1b40131f3",
+        "sys_updated_by": "admin",
+        "sys_created_on": "2026-10-21 13:35:18",
+        "sys_name": "PTTrailScopeHelper",
+        "source_scope": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_scope/c921f379c3cc17101cbdb8e1b401316e",
+          "value": "c921f379c3cc17101cbdb8e1b401316e"
+        },
+        "sys_scope": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_scope/c921f379c3cc17101cbdb8e1b401316e",
+          "value": "c921f379c3cc17101cbdb8e1b401316e"
+        },
+        "operation": "execute",
+        "sys_created_by": "admin",
+        "status": "allowed",
+        "sys_policy": ""
+      }
+    }
+  },
+  "cRestore": {
+    "status": 200,
+    "value": "true"
+  },
+  "bRestore": {
+    "status": 200,
+    "value": "true"
+  },
+  "globalRestore": {
+    "status": 200,
+    "value": "true"
+  }
+}

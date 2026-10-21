@@ -1,0 +1,5709 @@
+{
+  "profile": "admin",
+  "access": "full",
+  "denied": [],
+  "totalMs": 156536,
+  "medianMs": 1977,
+  "results": [
+    {
+      "id": "A-BR-001",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "8173f77dc3cc17101cbdb8e1b40131d9",
+      "field": "priority",
+      "ok": true,
+      "ms": 2688,
+      "calls": 58,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-003",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "097333bdc3cc17101cbdb8e1b4013183",
+      "field": "priority",
+      "ok": true,
+      "ms": 2885,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-006",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "4d73f77dc3cc17101cbdb8e1b40131d5",
+      "field": "priority",
+      "ok": true,
+      "ms": 3088,
+      "calls": 70,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-002",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "85733b7dc3cc17101cbdb8e1b4013125",
+      "field": "priority",
+      "ok": true,
+      "ms": 3587,
+      "calls": 80,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-004",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "8173f77dc3cc17101cbdb8e1b40131dc",
+      "field": "priority",
+      "ok": true,
+      "ms": 1810,
+      "calls": 52,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-007",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "097333bdc3cc17101cbdb8e1b4013186",
+      "field": "priority",
+      "ok": true,
+      "ms": 2053,
+      "calls": 59,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-008",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "817333bdc3cc17101cbdb8e1b40131b0",
+      "field": "priority",
+      "ok": true,
+      "ms": 2202,
+      "calls": 66,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-009",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "417333bdc3cc17101cbdb8e1b4013196",
+      "field": "priority",
+      "ok": true,
+      "ms": 2222,
+      "calls": 69,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-013",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "0d7333bdc3cc17101cbdb8e1b40131db",
+      "field": "priority",
+      "ok": true,
+      "ms": 2027,
+      "calls": 66,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-010",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "c57333bdc3cc17101cbdb8e1b40131b3",
+      "field": "priority",
+      "ok": true,
+      "ms": 1781,
+      "calls": 61,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-011",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "417333bdc3cc17101cbdb8e1b4013199",
+      "field": "priority",
+      "ok": true,
+      "ms": 1997,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-012",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "417333bdc3cc17101cbdb8e1b401319c",
+      "field": "priority",
+      "ok": true,
+      "ms": 1910,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-014",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "157333bdc3cc17101cbdb8e1b4013180",
+      "field": "priority",
+      "ok": true,
+      "ms": 1947,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-015",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "917373bdc3cc17101cbdb8e1b401311c",
+      "field": "priority",
+      "ok": true,
+      "ms": 1950,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-016",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "517373bdc3cc17101cbdb8e1b4013116",
+      "field": "priority",
+      "ok": true,
+      "ms": 2037,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-017",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "d57373bdc3cc17101cbdb8e1b401311f",
+      "field": "priority",
+      "ok": true,
+      "ms": 1845,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-018",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "5d7373bdc3cc17101cbdb8e1b4013125",
+      "field": "priority",
+      "ok": true,
+      "ms": 1760,
+      "calls": 58,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-019",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "e57373bdc3cc17101cbdb8e1b4013122",
+      "field": "priority",
+      "ok": true,
+      "ms": 2148,
+      "calls": 71,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-020",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "657373bdc3cc17101cbdb8e1b401313e",
+      "field": "priority",
+      "ok": true,
+      "ms": 1944,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-021",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "a17373bdc3cc17101cbdb8e1b4013158",
+      "field": "priority",
+      "ok": true,
+      "ms": 1943,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-022",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "e57373bdc3cc17101cbdb8e1b401315b",
+      "field": "priority",
+      "ok": true,
+      "ms": 2130,
+      "calls": 69,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-023",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "6d7373bdc3cc17101cbdb8e1b401314b",
+      "field": "priority",
+      "ok": true,
+      "ms": 1833,
+      "calls": 60,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-024",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "2d7373bdc3cc17101cbdb8e1b401315e",
+      "field": "priority",
+      "ok": true,
+      "ms": 1910,
+      "calls": 66,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-025",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "6d7373bdc3cc17101cbdb8e1b401314e",
+      "field": "priority",
+      "ok": true,
+      "ms": 1871,
+      "calls": 61,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-026",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "6d7373bdc3cc17101cbdb8e1b4013151",
+      "field": "priority",
+      "ok": true,
+      "ms": 1956,
+      "calls": 61,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-027",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "e17373bdc3cc17101cbdb8e1b401317e",
+      "field": "priority",
+      "ok": true,
+      "ms": 2071,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-028",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "297373bdc3cc17101cbdb8e1b4013181",
+      "field": "priority",
+      "ok": true,
+      "ms": 2148,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-029",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "e57373bdc3cc17101cbdb8e1b40131a9",
+      "field": "priority",
+      "ok": true,
+      "ms": 2136,
+      "calls": 67,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-030",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "6d7373bdc3cc17101cbdb8e1b4013184",
+      "field": "priority",
+      "ok": true,
+      "ms": 1992,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-031",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "e57373bdc3cc17101cbdb8e1b40131ac",
+      "field": "priority",
+      "ok": true,
+      "ms": 1942,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-032",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "e17373bdc3cc17101cbdb8e1b40131e1",
+      "field": "priority",
+      "ok": true,
+      "ms": 1900,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-033",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "717373bdc3cc17101cbdb8e1b40131eb",
+      "field": "priority",
+      "ok": true,
+      "ms": 1926,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-034",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "3173b3bdc3cc17101cbdb8e1b4013139",
+      "field": "priority",
+      "ok": true,
+      "ms": 1925,
+      "calls": 67,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-035",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "f973b3bdc3cc17101cbdb8e1b401312e",
+      "field": "priority",
+      "ok": true,
+      "ms": 1886,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-036",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "7573b3bdc3cc17101cbdb8e1b401313c",
+      "field": "priority",
+      "ok": true,
+      "ms": 1876,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-037",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "f973b3bdc3cc17101cbdb8e1b4013131",
+      "field": "priority",
+      "ok": true,
+      "ms": 1984,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-038",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "f973b3bdc3cc17101cbdb8e1b4013134",
+      "field": "priority",
+      "ok": true,
+      "ms": 1994,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-039",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "fd73b3bdc3cc17101cbdb8e1b4013163",
+      "field": "priority",
+      "ok": true,
+      "ms": 1878,
+      "calls": 60,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-040",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "3573b3bdc3cc17101cbdb8e1b4013167",
+      "field": "priority",
+      "ok": true,
+      "ms": 2089,
+      "calls": 68,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-041",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "fd73b3bdc3cc17101cbdb8e1b401318a",
+      "field": "priority",
+      "ok": true,
+      "ms": 1953,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-042",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "f173b3bdc3cc17101cbdb8e1b40131b5",
+      "field": "priority",
+      "ok": true,
+      "ms": 1933,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-043",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "b173b3bdc3cc17101cbdb8e1b40131cc",
+      "field": "priority",
+      "ok": true,
+      "ms": 1937,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-044",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "f173b3bdc3cc17101cbdb8e1b40131b8",
+      "field": "priority",
+      "ok": true,
+      "ms": 1976,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-045",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "7573b3bdc3cc17101cbdb8e1b4013116",
+      "field": "priority",
+      "ok": true,
+      "ms": 2110,
+      "calls": 69,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-046",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "fd73b3bdc3cc17101cbdb8e1b4013179",
+      "field": "priority",
+      "ok": true,
+      "ms": 1871,
+      "calls": 60,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-047",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "b973b3bdc3cc17101cbdb8e1b4013119",
+      "field": "priority",
+      "ok": true,
+      "ms": 1959,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-048",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "fd73b3bdc3cc17101cbdb8e1b401317c",
+      "field": "priority",
+      "ok": true,
+      "ms": 1896,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-049",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "b973b3bdc3cc17101cbdb8e1b401311c",
+      "field": "priority",
+      "ok": true,
+      "ms": 1930,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-050",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "4e73f3bdc3cc17101cbdb8e1b4013124",
+      "field": "priority",
+      "ok": true,
+      "ms": 2048,
+      "calls": 67,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-051",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "8273f3bdc3cc17101cbdb8e1b401315c",
+      "field": "priority",
+      "ok": true,
+      "ms": 1954,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-053",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "c673f3bdc3cc17101cbdb8e1b401315f",
+      "field": "priority",
+      "ok": true,
+      "ms": 1973,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-052",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "8e73b3bdc3cc17101cbdb8e1b40131f4",
+      "field": "priority",
+      "ok": true,
+      "ms": 1974,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-054",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "4673f3bdc3cc17101cbdb8e1b401317b",
+      "field": "priority",
+      "ok": true,
+      "ms": 1864,
+      "calls": 61,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-055",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "4673f3bdc3cc17101cbdb8e1b401317e",
+      "field": "priority",
+      "ok": true,
+      "ms": 1916,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-056",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "8e73b3bdc3cc17101cbdb8e1b40131f7",
+      "field": "priority",
+      "ok": true,
+      "ms": 1957,
+      "calls": 67,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-057",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "4273f3bdc3cc17101cbdb8e1b401318c",
+      "field": "priority",
+      "ok": true,
+      "ms": 1955,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-058",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "4673f3bdc3cc17101cbdb8e1b4013194",
+      "field": "priority",
+      "ok": true,
+      "ms": 1931,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-059",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "4a73f3bdc3cc17101cbdb8e1b401312c",
+      "field": "priority",
+      "ok": true,
+      "ms": 1915,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-060",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "4673f3bdc3cc17101cbdb8e1b4013197",
+      "field": "priority",
+      "ok": true,
+      "ms": 1957,
+      "calls": 60,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-063",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "ca73f3bdc3cc17101cbdb8e1b40131a4",
+      "field": "priority",
+      "ok": true,
+      "ms": 2206,
+      "calls": 58,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-061",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "ce73f3bdc3cc17101cbdb8e1b40131ab",
+      "field": "priority",
+      "ok": true,
+      "ms": 3158,
+      "calls": 86,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-062",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "4673f3bdc3cc17101cbdb8e1b401319a",
+      "field": "priority",
+      "ok": true,
+      "ms": 2834,
+      "calls": 75,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-065",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "5673f3bdc3cc17101cbdb8e1b40131b9",
+      "field": "priority",
+      "ok": true,
+      "ms": 2014,
+      "calls": 51,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-064",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "1273f3bdc3cc17101cbdb8e1b40131a8",
+      "field": "priority",
+      "ok": true,
+      "ms": 3589,
+      "calls": 93,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-066",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "1273f3bdc3cc17101cbdb8e1b40131ab",
+      "field": "priority",
+      "ok": true,
+      "ms": 2249,
+      "calls": 61,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-067",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "d273f3bdc3cc17101cbdb8e1b40131bc",
+      "field": "priority",
+      "ok": true,
+      "ms": 2249,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-068",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "9e73f3bdc3cc17101cbdb8e1b40131c6",
+      "field": "priority",
+      "ok": true,
+      "ms": 1659,
+      "calls": 49,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-069",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "5673f3bdc3cc17101cbdb8e1b40131de",
+      "field": "priority",
+      "ok": true,
+      "ms": 2129,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-070",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "1e73f3bdc3cc17101cbdb8e1b40131ea",
+      "field": "priority",
+      "ok": true,
+      "ms": 2117,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-071",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "9a73f3bdc3cc17101cbdb8e1b40131e1",
+      "field": "priority",
+      "ok": true,
+      "ms": 2116,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-072",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "1e73f3bdc3cc17101cbdb8e1b40131ed",
+      "field": "priority",
+      "ok": true,
+      "ms": 1967,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-073",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "1a73f3bdc3cc17101cbdb8e1b40131e4",
+      "field": "priority",
+      "ok": true,
+      "ms": 1840,
+      "calls": 61,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-074",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "1e73f3bdc3cc17101cbdb8e1b40131f0",
+      "field": "priority",
+      "ok": true,
+      "ms": 1971,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-076",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "9e7337bdc3cc17101cbdb8e1b401312e",
+      "field": "priority",
+      "ok": true,
+      "ms": 1955,
+      "calls": 58,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-075",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "de7337bdc3cc17101cbdb8e1b4013122",
+      "field": "priority",
+      "ok": true,
+      "ms": 3035,
+      "calls": 90,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-077",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "167337bdc3cc17101cbdb8e1b4013126",
+      "field": "priority",
+      "ok": true,
+      "ms": 1981,
+      "calls": 53,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-078",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "9e7337bdc3cc17101cbdb8e1b4013131",
+      "field": "priority",
+      "ok": true,
+      "ms": 2184,
+      "calls": 57,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-080",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "567337bdc3cc17101cbdb8e1b4013141",
+      "field": "priority",
+      "ok": true,
+      "ms": 2268,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-081",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "2a73f3bdc3cc17101cbdb8e1b40131ce",
+      "field": "priority",
+      "ok": true,
+      "ms": 2178,
+      "calls": 59,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-079",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "da7337bdc3cc17101cbdb8e1b4013135",
+      "field": "priority",
+      "ok": true,
+      "ms": 3149,
+      "calls": 87,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-082",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "ee7337bdc3cc17101cbdb8e1b4013151",
+      "field": "priority",
+      "ok": true,
+      "ms": 2226,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-083",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "aa7337bdc3cc17101cbdb8e1b401315a",
+      "field": "priority",
+      "ok": true,
+      "ms": 2002,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-084",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "aa7337bdc3cc17101cbdb8e1b401315d",
+      "field": "priority",
+      "ok": true,
+      "ms": 2121,
+      "calls": 66,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-085",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "e67337bdc3cc17101cbdb8e1b4013147",
+      "field": "priority",
+      "ok": true,
+      "ms": 2019,
+      "calls": 61,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-086",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "aa7337bdc3cc17101cbdb8e1b4013160",
+      "field": "priority",
+      "ok": true,
+      "ms": 2070,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-087",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "e27337bdc3cc17101cbdb8e1b4013173",
+      "field": "priority",
+      "ok": true,
+      "ms": 2029,
+      "calls": 66,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-088",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "a27337bdc3cc17101cbdb8e1b4013118",
+      "field": "priority",
+      "ok": true,
+      "ms": 2000,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-089",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "2a7337bdc3cc17101cbdb8e1b4013176",
+      "field": "priority",
+      "ok": true,
+      "ms": 1960,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-090",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "2a7337bdc3cc17101cbdb8e1b4013179",
+      "field": "priority",
+      "ok": true,
+      "ms": 1935,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-091",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "a27337bdc3cc17101cbdb8e1b401311b",
+      "field": "priority",
+      "ok": true,
+      "ms": 1970,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-092",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "2a7337bdc3cc17101cbdb8e1b401317c",
+      "field": "priority",
+      "ok": true,
+      "ms": 1954,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-093",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "a67337bdc3cc17101cbdb8e1b4013172",
+      "field": "priority",
+      "ok": true,
+      "ms": 2029,
+      "calls": 67,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-094",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "667337bdc3cc17101cbdb8e1b40131a7",
+      "field": "priority",
+      "ok": true,
+      "ms": 2008,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-095",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "ae7337bdc3cc17101cbdb8e1b40131b3",
+      "field": "priority",
+      "ok": true,
+      "ms": 1827,
+      "calls": 56,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-096",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "be7337bdc3cc17101cbdb8e1b40131b6",
+      "field": "priority",
+      "ok": true,
+      "ms": 2245,
+      "calls": 68,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-097",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "767337bdc3cc17101cbdb8e1b40131aa",
+      "field": "priority",
+      "ok": true,
+      "ms": 2123,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-098",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "be7337bdc3cc17101cbdb8e1b40131b9",
+      "field": "priority",
+      "ok": true,
+      "ms": 2124,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-099",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "3e7337bdc3cc17101cbdb8e1b401319f",
+      "field": "priority",
+      "ok": true,
+      "ms": 2059,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-100",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "327337bdc3cc17101cbdb8e1b40131d3",
+      "field": "priority",
+      "ok": true,
+      "ms": 2156,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-001",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "767337bdc3cc17101cbdb8e1b40131d9",
+      "field": "priority",
+      "ok": true,
+      "ms": 2055,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-002",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "7e7337bdc3cc17101cbdb8e1b40131f0",
+      "field": "priority",
+      "ok": true,
+      "ms": 2050,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-003",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "7e7337bdc3cc17101cbdb8e1b40131f4",
+      "field": "priority",
+      "ok": true,
+      "ms": 2148,
+      "calls": 66,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-004",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "b67337bdc3cc17101cbdb8e1b40131de",
+      "field": "priority",
+      "ok": true,
+      "ms": 2056,
+      "calls": 66,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-005",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "4b7337bdc3cc17101cbdb8e1b40131f7",
+      "field": "priority",
+      "ok": true,
+      "ms": 2161,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-006",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "077337bdc3cc17101cbdb8e1b40131e1",
+      "field": "priority",
+      "ok": true,
+      "ms": 2156,
+      "calls": 67,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-007",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "037377bdc3cc17101cbdb8e1b4013146",
+      "field": "priority",
+      "ok": true,
+      "ms": 1899,
+      "calls": 53,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-008",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "c37377bdc3cc17101cbdb8e1b401317b",
+      "field": "priority",
+      "ok": true,
+      "ms": 2038,
+      "calls": 60,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-009",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "437377bdc3cc17101cbdb8e1b401317e",
+      "field": "priority",
+      "ok": true,
+      "ms": 2171,
+      "calls": 68,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-010",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "cf7377bdc3cc17101cbdb8e1b4013163",
+      "field": "priority",
+      "ok": true,
+      "ms": 2229,
+      "calls": 70,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-011",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "4f7377bdc3cc17101cbdb8e1b4013193",
+      "field": "priority",
+      "ok": true,
+      "ms": 1998,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-012",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "4f7377bdc3cc17101cbdb8e1b4013166",
+      "field": "priority",
+      "ok": true,
+      "ms": 2038,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-013",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "037377bdc3cc17101cbdb8e1b4013177",
+      "field": "priority",
+      "ok": true,
+      "ms": 2002,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-014",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "c77377bdc3cc17101cbdb8e1b40131a0",
+      "field": "priority",
+      "ok": true,
+      "ms": 2130,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-015",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "4f7377bdc3cc17101cbdb8e1b40131c4",
+      "field": "priority",
+      "ok": true,
+      "ms": 1928,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-016",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "477377bdc3cc17101cbdb8e1b40131a3",
+      "field": "priority",
+      "ok": true,
+      "ms": 1982,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-018",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "cf7377bdc3cc17101cbdb8e1b4013183",
+      "field": "priority",
+      "ok": true,
+      "ms": 1960,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-017",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "4f7377bdc3cc17101cbdb8e1b40131ac",
+      "field": "priority",
+      "ok": true,
+      "ms": 1862,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-019",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "1b7377bdc3cc17101cbdb8e1b40131dd",
+      "field": "priority",
+      "ok": true,
+      "ms": 2105,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-020",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "937377bdc3cc17101cbdb8e1b40131db",
+      "field": "priority",
+      "ok": true,
+      "ms": 2070,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-021",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "db7377bdc3cc17101cbdb8e1b40131e0",
+      "field": "priority",
+      "ok": true,
+      "ms": 2157,
+      "calls": 68,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-022",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "9f7377bdc3cc17101cbdb8e1b40131f6",
+      "field": "priority",
+      "ok": true,
+      "ms": 2095,
+      "calls": 66,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-024",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "5f7377bdc3cc17101cbdb8e1b40131b0",
+      "field": "priority",
+      "ok": true,
+      "ms": 2071,
+      "calls": 67,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-023",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "1f7377bdc3cc17101cbdb8e1b40131f9",
+      "field": "priority",
+      "ok": true,
+      "ms": 1852,
+      "calls": 60,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-025",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "df73b7bdc3cc17101cbdb8e1b4013119",
+      "field": "priority",
+      "ok": true,
+      "ms": 1933,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-026",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "9373b7bdc3cc17101cbdb8e1b401311d",
+      "field": "priority",
+      "ok": true,
+      "ms": 1953,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-027",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "1373b7bdc3cc17101cbdb8e1b4013108",
+      "field": "priority",
+      "ok": true,
+      "ms": 1934,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-028",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "9f73b7bdc3cc17101cbdb8e1b401310a",
+      "field": "priority",
+      "ok": true,
+      "ms": 1910,
+      "calls": 61,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-030",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "1373b7bdc3cc17101cbdb8e1b4013120",
+      "field": "priority",
+      "ok": true,
+      "ms": 2080,
+      "calls": 69,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-029",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "9b73b7bdc3cc17101cbdb8e1b4013126",
+      "field": "priority",
+      "ok": true,
+      "ms": 2108,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-031",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "577377bdc3cc17101cbdb8e1b40131e7",
+      "field": "priority",
+      "ok": true,
+      "ms": 1878,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-032",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "5b73b7bdc3cc17101cbdb8e1b4013141",
+      "field": "priority",
+      "ok": true,
+      "ms": 1970,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-033",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "9373b7bdc3cc17101cbdb8e1b401313c",
+      "field": "priority",
+      "ok": true,
+      "ms": 1888,
+      "calls": 59,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-034",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "d773b7bdc3cc17101cbdb8e1b401314b",
+      "field": "priority",
+      "ok": true,
+      "ms": 2030,
+      "calls": 67,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-035",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "5773b7bdc3cc17101cbdb8e1b4013113",
+      "field": "priority",
+      "ok": true,
+      "ms": 2100,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-036",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "6773b7bdc3cc17101cbdb8e1b401314e",
+      "field": "priority",
+      "ok": true,
+      "ms": 1956,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-037",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "e773b7bdc3cc17101cbdb8e1b4013157",
+      "field": "priority",
+      "ok": true,
+      "ms": 1943,
+      "calls": 59,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-039",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "e373b7bdc3cc17101cbdb8e1b4013145",
+      "field": "priority",
+      "ok": true,
+      "ms": 1977,
+      "calls": 59,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-040",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "ef73b7bdc3cc17101cbdb8e1b4013169",
+      "field": "priority",
+      "ok": true,
+      "ms": 2368,
+      "calls": 61,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-038",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "6373b7bdc3cc17101cbdb8e1b4013167",
+      "field": "priority",
+      "ok": true,
+      "ms": 3548,
+      "calls": 97,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-041",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "6373b7bdc3cc17101cbdb8e1b4013148",
+      "field": "priority",
+      "ok": true,
+      "ms": 2905,
+      "calls": 77,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-042",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "6f73b7bdc3cc17101cbdb8e1b401316c",
+      "field": "priority",
+      "ok": true,
+      "ms": 2329,
+      "calls": 61,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-043",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "6f73b7bdc3cc17101cbdb8e1b401318e",
+      "field": "priority",
+      "ok": true,
+      "ms": 1925,
+      "calls": 56,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-044",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "2b73b7bdc3cc17101cbdb8e1b4013189",
+      "field": "priority",
+      "ok": true,
+      "ms": 1954,
+      "calls": 57,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-045",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "6f73b7bdc3cc17101cbdb8e1b4013198",
+      "field": "priority",
+      "ok": true,
+      "ms": 1998,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-046",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "2373b7bdc3cc17101cbdb8e1b4013192",
+      "field": "priority",
+      "ok": true,
+      "ms": 2229,
+      "calls": 73,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-047",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "af73b7bdc3cc17101cbdb8e1b4013194",
+      "field": "priority",
+      "ok": true,
+      "ms": 1918,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-048",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "6b73b7bdc3cc17101cbdb8e1b4013119",
+      "field": "priority",
+      "ok": true,
+      "ms": 1911,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-049",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "7773b7bdc3cc17101cbdb8e1b40131a2",
+      "field": "priority",
+      "ok": true,
+      "ms": 2082,
+      "calls": 69,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-050",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "7773b7bdc3cc17101cbdb8e1b40131c5",
+      "field": "priority",
+      "ok": true,
+      "ms": 2010,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-051",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "7373b7bdc3cc17101cbdb8e1b40131e1",
+      "field": "priority",
+      "ok": true,
+      "ms": 1937,
+      "calls": 61,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-052",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "3773b7bdc3cc17101cbdb8e1b40131d7",
+      "field": "priority",
+      "ok": true,
+      "ms": 1990,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-053",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "ff73b7bdc3cc17101cbdb8e1b40131e3",
+      "field": "priority",
+      "ok": true,
+      "ms": 2140,
+      "calls": 69,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-054",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "b373b7bdc3cc17101cbdb8e1b40131da",
+      "field": "priority",
+      "ok": true,
+      "ms": 1983,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-055",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "7f73b7bdc3cc17101cbdb8e1b40131f2",
+      "field": "priority",
+      "ok": true,
+      "ms": 1896,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-056",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "3b73b7bdc3cc17101cbdb8e1b40131ab",
+      "field": "priority",
+      "ok": true,
+      "ms": 1984,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-057",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "b773b7bdc3cc17101cbdb8e1b40131ae",
+      "field": "priority",
+      "ok": true,
+      "ms": 1872,
+      "calls": 60,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-058",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "7373b7bdc3cc17101cbdb8e1b40131b4",
+      "field": "priority",
+      "ok": true,
+      "ms": 1975,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-059",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "bb73f7bdc3cc17101cbdb8e1b401312d",
+      "field": "priority",
+      "ok": true,
+      "ms": 2126,
+      "calls": 68,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-060",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "ff73b7bdc3cc17101cbdb8e1b40131b6",
+      "field": "priority",
+      "ok": true,
+      "ms": 2002,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-061",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "3b73f7bdc3cc17101cbdb8e1b401315f",
+      "field": "priority",
+      "ok": true,
+      "ms": 1962,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-062",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "ff73f7bdc3cc17101cbdb8e1b4013140",
+      "field": "priority",
+      "ok": true,
+      "ms": 2030,
+      "calls": 67,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-063",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "7f73f7bdc3cc17101cbdb8e1b4013143",
+      "field": "priority",
+      "ok": true,
+      "ms": 1928,
+      "calls": 61,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-064",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "ff73b7bdc3cc17101cbdb8e1b40131ba",
+      "field": "priority",
+      "ok": true,
+      "ms": 1962,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-065",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "f773f7bdc3cc17101cbdb8e1b4013178",
+      "field": "priority",
+      "ok": true,
+      "ms": 1924,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-066",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "7f73f7bdc3cc17101cbdb8e1b4013184",
+      "field": "priority",
+      "ok": true,
+      "ms": 1857,
+      "calls": 61,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-067",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "4483f7bdc3cc17101cbdb8e1b40131aa",
+      "field": "priority",
+      "ok": true,
+      "ms": 1953,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-068",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "c883f7bdc3cc17101cbdb8e1b4013162",
+      "field": "priority",
+      "ok": true,
+      "ms": 1905,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-069",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "4883f7bdc3cc17101cbdb8e1b4013165",
+      "field": "priority",
+      "ok": true,
+      "ms": 1961,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-070",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "c483f7bdc3cc17101cbdb8e1b4013168",
+      "field": "priority",
+      "ok": true,
+      "ms": 1961,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-071",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "8083f7bdc3cc17101cbdb8e1b401316b",
+      "field": "priority",
+      "ok": true,
+      "ms": 1973,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-072",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "0083f7bdc3cc17101cbdb8e1b401316e",
+      "field": "priority",
+      "ok": true,
+      "ms": 1974,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-073",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "cc83f7bdc3cc17101cbdb8e1b40131c8",
+      "field": "priority",
+      "ok": true,
+      "ms": 1962,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-074",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "c483f7bdc3cc17101cbdb8e1b40131d4",
+      "field": "priority",
+      "ok": true,
+      "ms": 2000,
+      "calls": 66,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-075",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "8083f7bdc3cc17101cbdb8e1b40131cc",
+      "field": "priority",
+      "ok": true,
+      "ms": 1850,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-077",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "0083f7bdc3cc17101cbdb8e1b40131b0",
+      "field": "priority",
+      "ok": true,
+      "ms": 1926,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-076",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "4483f7bdc3cc17101cbdb8e1b40131d7",
+      "field": "priority",
+      "ok": true,
+      "ms": 1920,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-078",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "0883f7bdc3cc17101cbdb8e1b40131ff",
+      "field": "priority",
+      "ok": true,
+      "ms": 1893,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-079",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "c883f7bdc3cc17101cbdb8e1b40131f7",
+      "field": "priority",
+      "ok": true,
+      "ms": 2087,
+      "calls": 68,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-081",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "0883f7bdc3cc17101cbdb8e1b40131ba",
+      "field": "priority",
+      "ok": true,
+      "ms": 2013,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-080",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "8c83f7bdc3cc17101cbdb8e1b40131fa",
+      "field": "priority",
+      "ok": true,
+      "ms": 1974,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-082",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "1483f7bdc3cc17101cbdb8e1b40131bd",
+      "field": "priority",
+      "ok": true,
+      "ms": 1860,
+      "calls": 60,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-083",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "5083f7bdc3cc17101cbdb8e1b40131fe",
+      "field": "priority",
+      "ok": true,
+      "ms": 1877,
+      "calls": 61,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-084",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "54837779c38c17101cbdb8e1b4013137",
+      "field": "priority",
+      "ok": true,
+      "ms": 1989,
+      "calls": 66,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-085",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "dc833bbdc3cc17101cbdb8e1b4013121",
+      "field": "priority",
+      "ok": true,
+      "ms": 1937,
+      "calls": 61,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-086",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "90833bbdc3cc17101cbdb8e1b401314b",
+      "field": "priority",
+      "ok": true,
+      "ms": 2054,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-087",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "58833bbdc3cc17101cbdb8e1b4013141",
+      "field": "priority",
+      "ok": true,
+      "ms": 1934,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-089",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "1c833bbdc3cc17101cbdb8e1b4013144",
+      "field": "priority",
+      "ok": true,
+      "ms": 2089,
+      "calls": 68,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-088",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "10833bbdc3cc17101cbdb8e1b401314e",
+      "field": "priority",
+      "ok": true,
+      "ms": 1868,
+      "calls": 60,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-090",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "9c833bbdc3cc17101cbdb8e1b4013150",
+      "field": "priority",
+      "ok": true,
+      "ms": 1966,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-091",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "5c833bbdc3cc17101cbdb8e1b4013188",
+      "field": "priority",
+      "ok": true,
+      "ms": 1966,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-093",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "18833bbdc3cc17101cbdb8e1b4013176",
+      "field": "priority",
+      "ok": true,
+      "ms": 1956,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-092",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "10833bbdc3cc17101cbdb8e1b401318c",
+      "field": "priority",
+      "ok": true,
+      "ms": 1829,
+      "calls": 61,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-094",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "94833bbdc3cc17101cbdb8e1b4013179",
+      "field": "priority",
+      "ok": true,
+      "ms": 1994,
+      "calls": 66,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-095",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "90833bbdc3cc17101cbdb8e1b4013167",
+      "field": "priority",
+      "ok": true,
+      "ms": 1894,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-096",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "10833bbdc3cc17101cbdb8e1b401316a",
+      "field": "priority",
+      "ok": true,
+      "ms": 1952,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-097",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "20833bbdc3cc17101cbdb8e1b40131ab",
+      "field": "priority",
+      "ok": true,
+      "ms": 1953,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-099",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "28833bbdc3cc17101cbdb8e1b40131d3",
+      "field": "priority",
+      "ok": true,
+      "ms": 1912,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-098",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "ac833bbdc3cc17101cbdb8e1b4013192",
+      "field": "priority",
+      "ok": true,
+      "ms": 1918,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "B-BR-100",
+      "table": "x_2270630_pttrailb_pedido",
+      "sysId": "a4833bbdc3cc17101cbdb8e1b40131d6",
+      "field": "priority",
+      "ok": true,
+      "ms": 1894,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-002",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "6c833bbdc3cc17101cbdb8e1b40131fb",
+      "field": "priority",
+      "ok": true,
+      "ms": 1881,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-003",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "e8833bbdc3cc17101cbdb8e1b40131e0",
+      "field": "priority",
+      "ok": true,
+      "ms": 1932,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-005",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "e4833bbdc3cc17101cbdb8e1b40131e4",
+      "field": "priority",
+      "ok": true,
+      "ms": 1921,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-001",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "ac837bbdc3cc17101cbdb8e1b4013100",
+      "field": "priority",
+      "ok": true,
+      "ms": 1927,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-004",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "2c837bbdc3cc17101cbdb8e1b4013103",
+      "field": "priority",
+      "ok": true,
+      "ms": 1940,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-006",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "e0833bbdc3cc17101cbdb8e1b40131e7",
+      "field": "priority",
+      "ok": true,
+      "ms": 1869,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-007",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "f8837bbdc3cc17101cbdb8e1b4013126",
+      "field": "priority",
+      "ok": true,
+      "ms": 1916,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-008",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "7c837bbdc3cc17101cbdb8e1b4013129",
+      "field": "priority",
+      "ok": true,
+      "ms": 1878,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-010",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "f0837bbdc3cc17101cbdb8e1b4013142",
+      "field": "priority",
+      "ok": true,
+      "ms": 1867,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-009",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "f8837bbdc3cc17101cbdb8e1b401312c",
+      "field": "priority",
+      "ok": true,
+      "ms": 1901,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-012",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "70837bbdc3cc17101cbdb8e1b4013145",
+      "field": "priority",
+      "ok": true,
+      "ms": 2103,
+      "calls": 66,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-011",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "f4837bbdc3cc17101cbdb8e1b401312f",
+      "field": "priority",
+      "ok": true,
+      "ms": 1872,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-014",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "3c837bbdc3cc17101cbdb8e1b401316d",
+      "field": "priority",
+      "ok": true,
+      "ms": 1944,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-013",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "78837bbdc3cc17101cbdb8e1b4013161",
+      "field": "priority",
+      "ok": true,
+      "ms": 1937,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-017",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "38837bbdc3cc17101cbdb8e1b4013173",
+      "field": "priority",
+      "ok": true,
+      "ms": 1859,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-015",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "b8837bbdc3cc17101cbdb8e1b4013170",
+      "field": "priority",
+      "ok": true,
+      "ms": 1965,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-020",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "4d83bbbdc3cc17101cbdb8e1b401310a",
+      "field": "priority",
+      "ok": true,
+      "ms": 2289,
+      "calls": 55,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-019",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "cd837bbdc3cc17101cbdb8e1b40131ec",
+      "field": "priority",
+      "ok": true,
+      "ms": 2160,
+      "calls": 50,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-018",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "3c837bbdc3cc17101cbdb8e1b4013175",
+      "field": "priority",
+      "ok": true,
+      "ms": 2945,
+      "calls": 74,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-016",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "f083f7f9c3cc17101cbdb8e1b401314a",
+      "field": "priority",
+      "ok": true,
+      "ms": 3880,
+      "calls": 100,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-023",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "4983bbbdc3cc17101cbdb8e1b4013110",
+      "field": "priority",
+      "ok": true,
+      "ms": 2123,
+      "calls": 55,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-024",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "4583bbbdc3cc17101cbdb8e1b4013118",
+      "field": "priority",
+      "ok": true,
+      "ms": 1924,
+      "calls": 53,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-021",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "81837bbdc3cc17101cbdb8e1b40131f0",
+      "field": "priority",
+      "ok": true,
+      "ms": 2692,
+      "calls": 69,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-022",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "c983bbbdc3cc17101cbdb8e1b401310d",
+      "field": "priority",
+      "ok": true,
+      "ms": 3261,
+      "calls": 83,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-027",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "8983bbbdc3cc17101cbdb8e1b401312c",
+      "field": "priority",
+      "ok": true,
+      "ms": 1973,
+      "calls": 43,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-028",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "c983bbbdc3cc17101cbdb8e1b4013135",
+      "field": "priority",
+      "ok": true,
+      "ms": 1918,
+      "calls": 43,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-025",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "c583bbbdc3cc17101cbdb8e1b4013129",
+      "field": "priority",
+      "ok": true,
+      "ms": 3630,
+      "calls": 91,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "record": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-026",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "4d83bbbdc3cc17101cbdb8e1b4013132",
+      "field": "priority",
+      "ok": true,
+      "ms": 3631,
+      "calls": 91,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-029",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "c983bbbdc3cc17101cbdb8e1b401316d",
+      "field": "priority",
+      "ok": true,
+      "ms": 2002,
+      "calls": 60,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-030",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "4983bbbdc3cc17101cbdb8e1b4013138",
+      "field": "priority",
+      "ok": true,
+      "ms": 2073,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-032",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "0983bbbdc3cc17101cbdb8e1b40131a0",
+      "field": "priority",
+      "ok": true,
+      "ms": 2193,
+      "calls": 68,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-031",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "c983bbbdc3cc17101cbdb8e1b40131ab",
+      "field": "priority",
+      "ok": true,
+      "ms": 2195,
+      "calls": 66,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-033",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "9583bbbdc3cc17101cbdb8e1b40131a3",
+      "field": "priority",
+      "ok": true,
+      "ms": 1937,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-034",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "1183bbbdc3cc17101cbdb8e1b40131b8",
+      "field": "priority",
+      "ok": true,
+      "ms": 2080,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-035",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "9d83bbbdc3cc17101cbdb8e1b40131ba",
+      "field": "priority",
+      "ok": true,
+      "ms": 1996,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-036",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "1583bbbdc3cc17101cbdb8e1b40131a6",
+      "field": "priority",
+      "ok": true,
+      "ms": 2110,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-038",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "dd83bbbdc3cc17101cbdb8e1b40131d2",
+      "field": "priority",
+      "ok": true,
+      "ms": 2072,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-037",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "9983bbbdc3cc17101cbdb8e1b40131b6",
+      "field": "priority",
+      "ok": true,
+      "ms": 2065,
+      "calls": 68,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-040",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "5983bbbdc3cc17101cbdb8e1b40131eb",
+      "field": "priority",
+      "ok": true,
+      "ms": 1961,
+      "calls": 60,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-039",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "5d83bbbdc3cc17101cbdb8e1b40131d5",
+      "field": "priority",
+      "ok": true,
+      "ms": 2023,
+      "calls": 68,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-042",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "5583bbbdc3cc17101cbdb8e1b40131ee",
+      "field": "priority",
+      "ok": true,
+      "ms": 2025,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-041",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "d983bbbdc3cc17101cbdb8e1b40131d8",
+      "field": "priority",
+      "ok": true,
+      "ms": 1973,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-044",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "d583fbbdc3cc17101cbdb8e1b4013107",
+      "field": "priority",
+      "ok": true,
+      "ms": 1894,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-043",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "d983fbbdc3cc17101cbdb8e1b401311d",
+      "field": "priority",
+      "ok": true,
+      "ms": 1996,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-045",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "5583fbbdc3cc17101cbdb8e1b401310a",
+      "field": "priority",
+      "ok": true,
+      "ms": 1878,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-046",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "9d83fbbdc3cc17101cbdb8e1b4013120",
+      "field": "priority",
+      "ok": true,
+      "ms": 1950,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-047",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "1d83fbbdc3cc17101cbdb8e1b4013123",
+      "field": "priority",
+      "ok": true,
+      "ms": 1966,
+      "calls": 61,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-048",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "d183fbbdc3cc17101cbdb8e1b401310d",
+      "field": "priority",
+      "ok": true,
+      "ms": 2066,
+      "calls": 67,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-050",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "2983fbbdc3cc17101cbdb8e1b4013112",
+      "field": "priority",
+      "ok": true,
+      "ms": 2028,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-049",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "a983fbbdc3cc17101cbdb8e1b4013161",
+      "field": "priority",
+      "ok": true,
+      "ms": 2011,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-051",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "2983fbbdc3cc17101cbdb8e1b4013164",
+      "field": "priority",
+      "ok": true,
+      "ms": 2016,
+      "calls": 67,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-052",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "e183bbbdc3cc17101cbdb8e1b40131f4",
+      "field": "priority",
+      "ok": true,
+      "ms": 1907,
+      "calls": 61,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-053",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "ad83fbbdc3cc17101cbdb8e1b401317f",
+      "field": "priority",
+      "ok": true,
+      "ms": 1979,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-054",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "e983fbbdc3cc17101cbdb8e1b4013115",
+      "field": "priority",
+      "ok": true,
+      "ms": 1973,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-056",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "e183fbbdc3cc17101cbdb8e1b401319e",
+      "field": "priority",
+      "ok": true,
+      "ms": 1918,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-055",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "6583fbbdc3cc17101cbdb8e1b40131a5",
+      "field": "priority",
+      "ok": true,
+      "ms": 1973,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-057",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "e183fbbdc3cc17101cbdb8e1b40131a8",
+      "field": "priority",
+      "ok": true,
+      "ms": 1944,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-058",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "ed83fbbdc3cc17101cbdb8e1b4013175",
+      "field": "priority",
+      "ok": true,
+      "ms": 1921,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-060",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "6183fbbdc3cc17101cbdb8e1b40131ab",
+      "field": "priority",
+      "ok": true,
+      "ms": 1920,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-059",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "6d83fbbdc3cc17101cbdb8e1b4013178",
+      "field": "priority",
+      "ok": true,
+      "ms": 1928,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-062",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "e183fbbdc3cc17101cbdb8e1b40131b3",
+      "field": "priority",
+      "ok": true,
+      "ms": 1965,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-061",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "e983fbbdc3cc17101cbdb8e1b40131c6",
+      "field": "priority",
+      "ok": true,
+      "ms": 1953,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-063",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "7183fbbdc3cc17101cbdb8e1b40131b6",
+      "field": "priority",
+      "ok": true,
+      "ms": 1966,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-064",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "b583fbbdc3cc17101cbdb8e1b40131d5",
+      "field": "priority",
+      "ok": true,
+      "ms": 1965,
+      "calls": 66,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-065",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "fd83fbbdc3cc17101cbdb8e1b40131b8",
+      "field": "priority",
+      "ok": true,
+      "ms": 1918,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-066",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "3583fbbdc3cc17101cbdb8e1b40131d8",
+      "field": "priority",
+      "ok": true,
+      "ms": 1985,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-068",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "b583fbbdc3cc17101cbdb8e1b40131e1",
+      "field": "priority",
+      "ok": true,
+      "ms": 1978,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-067",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "f583fbbdc3cc17101cbdb8e1b40131fd",
+      "field": "priority",
+      "ok": true,
+      "ms": 2013,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-070",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "f583fbbdc3cc17101cbdb8e1b40131ec",
+      "field": "priority",
+      "ok": true,
+      "ms": 2119,
+      "calls": 66,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-069",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "75833fbdc3cc17101cbdb8e1b4013100",
+      "field": "priority",
+      "ok": true,
+      "ms": 2107,
+      "calls": 68,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-071",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "f1833fbdc3cc17101cbdb8e1b4013103",
+      "field": "priority",
+      "ok": true,
+      "ms": 1986,
+      "calls": 62,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-072",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "71833fbdc3cc17101cbdb8e1b4013106",
+      "field": "priority",
+      "ok": true,
+      "ms": 1987,
+      "calls": 61,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-074",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "31833fbdc3cc17101cbdb8e1b4013157",
+      "field": "priority",
+      "ok": true,
+      "ms": 2031,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-076",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "46833fbdc3cc17101cbdb8e1b4013166",
+      "field": "priority",
+      "ok": true,
+      "ms": 2026,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-077",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "46833fbdc3cc17101cbdb8e1b401315d",
+      "field": "priority",
+      "ok": true,
+      "ms": 1960,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-073",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "35833fbdc3cc17101cbdb8e1b4013160",
+      "field": "priority",
+      "ok": true,
+      "ms": 1945,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "sys_db_object": "ok",
+        "record": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-075",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "f5833fbdc3cc17101cbdb8e1b4013163",
+      "field": "priority",
+      "ok": true,
+      "ms": 1927,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-078",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "82833fbdc3cc17101cbdb8e1b4013192",
+      "field": "priority",
+      "ok": true,
+      "ms": 2019,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-079",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "0e833fbdc3cc17101cbdb8e1b4013182",
+      "field": "priority",
+      "ok": true,
+      "ms": 2025,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-080",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "c6833fbdc3cc17101cbdb8e1b4013176",
+      "field": "priority",
+      "ok": true,
+      "ms": 2028,
+      "calls": 67,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-082",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "06833fbdc3cc17101cbdb8e1b40131a2",
+      "field": "priority",
+      "ok": true,
+      "ms": 2044,
+      "calls": 65,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-081",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "42833fbdc3cc17101cbdb8e1b40131ab",
+      "field": "priority",
+      "ok": true,
+      "ms": 1899,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-083",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "06833fbdc3cc17101cbdb8e1b40131ae",
+      "field": "priority",
+      "ok": true,
+      "ms": 1932,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-084",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "4a833fbdc3cc17101cbdb8e1b40131b4",
+      "field": "priority",
+      "ok": true,
+      "ms": 1960,
+      "calls": 66,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-085",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "8e833fbdc3cc17101cbdb8e1b40131ba",
+      "field": "priority",
+      "ok": true,
+      "ms": 1886,
+      "calls": 61,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-086",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "42833fbdc3cc17101cbdb8e1b40131c5",
+      "field": "priority",
+      "ok": true,
+      "ms": 2015,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-087",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "0a833fbdc3cc17101cbdb8e1b40131c1",
+      "field": "priority",
+      "ok": true,
+      "ms": 2060,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-088",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "de833fbdc3cc17101cbdb8e1b40131c7",
+      "field": "priority",
+      "ok": true,
+      "ms": 2071,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-089",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "5e833fbdc3cc17101cbdb8e1b40131ca",
+      "field": "priority",
+      "ok": true,
+      "ms": 1955,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-090",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "5a833fbdc3cc17101cbdb8e1b40131d4",
+      "field": "priority",
+      "ok": true,
+      "ms": 1961,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-091",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "5e833fbdc3cc17101cbdb8e1b40131ec",
+      "field": "priority",
+      "ok": true,
+      "ms": 1945,
+      "calls": 63,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-092",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "52837fbdc3cc17101cbdb8e1b4013110",
+      "field": "priority",
+      "ok": true,
+      "ms": 2107,
+      "calls": 59,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-093",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "de837fbdc3cc17101cbdb8e1b4013112",
+      "field": "priority",
+      "ok": true,
+      "ms": 2302,
+      "calls": 67,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-094",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "d2837fbdc3cc17101cbdb8e1b4013125",
+      "field": "priority",
+      "ok": true,
+      "ms": 2228,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-095",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "52837fbdc3cc17101cbdb8e1b4013128",
+      "field": "priority",
+      "ok": true,
+      "ms": 2291,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-096",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "5a833fbdc3cc17101cbdb8e1b40131e3",
+      "field": "priority",
+      "ok": true,
+      "ms": 2242,
+      "calls": 67,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-097",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "1a837fbdc3cc17101cbdb8e1b4013131",
+      "field": "priority",
+      "ok": true,
+      "ms": 2253,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-098",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "de837fbdc3cc17101cbdb8e1b401315c",
+      "field": "priority",
+      "ok": true,
+      "ms": 2258,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-099",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "5e837fbdc3cc17101cbdb8e1b401315f",
+      "field": "priority",
+      "ok": true,
+      "ms": 2627,
+      "calls": 64,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "A-BR-005",
+      "table": "x_2270630_pttrail__pedido",
+      "sysId": "7fb37bfdc3cc17101cbdb8e1b401313b",
+      "field": "priority",
+      "ok": true,
+      "ms": 2066,
+      "calls": 37,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    },
+    {
+      "id": "C-BR-100",
+      "table": "x_2270630_pttrailc_pedido",
+      "sysId": "9e837fbdc3cc17101cbdb8e1b4013169",
+      "field": "priority",
+      "ok": true,
+      "ms": 3131,
+      "calls": 55,
+      "changeCount": 0,
+      "access": {
+        "record": "ok",
+        "sys_db_object": "ok",
+        "sys_script": "ok",
+        "sys_script_include": "ok",
+        "sys_audit": "empty",
+        "syslog_transaction": "ok"
+      },
+      "changes": []
+    }
+  ]
+}

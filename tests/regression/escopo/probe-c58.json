@@ -1,0 +1,104 @@
+{
+  "ms": 2574,
+  "calls": 31,
+  "title": "[PT] Escopo C cenário 058",
+  "labels": {
+    "1": "1 - Critical",
+    "2": "2 - High",
+    "3": "3 - Moderate",
+    "4": "4 - Low",
+    "5": "5 - Planning"
+  },
+  "gaps": [],
+  "pingPong": {
+    "values": [
+      "4",
+      "2"
+    ],
+    "actors": [
+      "admin",
+      "[PT] BR C hardware priority"
+    ],
+    "flips": 4,
+    "from": "2026-10-21 13:58:32",
+    "to": "2026-10-21 13:58:59"
+  },
+  "conflicts": [],
+  "unaudited": null,
+  "changes": [
+    {
+      "at": "2026-10-21 13:58:59",
+      "old": "4",
+      "neu": "2",
+      "cp": 5,
+      "user": "admin",
+      "notes": [],
+      "ev": [
+        "br_before probable 60 \"[PT] BR C hardware priority\" {references_field+20 references_table+10 condition_true+15 sets_same_value+15}",
+        "user_action candidate 30 \"admin\" {execution_in_window+20 user_matches+10}"
+      ],
+      "trace": [
+        "13:58:59 api /api/now/table/x_2270630_pttrailc_pedido/ed83fbbdc3cc17101cbdb8e1b4013175 ->syslog_transaction",
+        "13:58:59 api /api/now/table/x_2270630_pttrailc_pedido/ed83fbbdc3cc17101cbdb8e1b4013175 ->syslog_transaction",
+        "13:58:59 write  [u_categoria] ->sys_audit",
+        "13:58:59 change  [u_categoria] ->sys_audit"
+      ]
+    },
+    {
+      "at": "2026-10-21 13:58:59",
+      "old": "2",
+      "neu": "4",
+      "cp": 4,
+      "user": "admin",
+      "notes": [],
+      "ev": [
+        "user_action confirmed 75 \"admin\" {execution_in_window+20 user_matches+10 api_write_on_record+30 no_competing_automation+15}",
+        "br_before candidate -50 \"[PT] BR C hardware priority\" {references_field+20 references_table+10 condition_false-40 condition_false-40}"
+      ],
+      "trace": [
+        "13:58:59 api /api/now/table/x_2270630_pttrailc_pedido/ed83fbbdc3cc17101cbdb8e1b4013175 ->syslog_transaction",
+        "13:58:59 api /api/now/table/x_2270630_pttrailc_pedido/ed83fbbdc3cc17101cbdb8e1b4013175 ->syslog_transaction",
+        "13:58:59 write  [u_categoria] ->sys_audit",
+        "13:58:59 change  [u_categoria] ->sys_audit",
+        "13:59:04 job text index events process ->syslog_transaction"
+      ]
+    },
+    {
+      "at": "2026-10-21 13:58:32",
+      "old": "4",
+      "neu": "2",
+      "cp": 3,
+      "user": "admin",
+      "notes": [],
+      "ev": [
+        "br_before probable 60 \"[PT] BR C hardware priority\" {references_field+20 references_table+10 condition_true+15 sets_same_value+15}",
+        "user_action candidate 30 \"admin\" {execution_in_window+20 user_matches+10}"
+      ],
+      "trace": [
+        "13:58:32 api /api/now/table/x_2270630_pttrailc_pedido/ed83fbbdc3cc17101cbdb8e1b4013175 ->syslog_transaction",
+        "13:58:32 api /api/now/table/x_2270630_pttrailc_pedido/ed83fbbdc3cc17101cbdb8e1b4013175 ->syslog_transaction",
+        "13:58:32 write  [u_categoria] ->sys_audit",
+        "13:58:32 change  [u_categoria] ->sys_audit"
+      ]
+    },
+    {
+      "at": "2026-10-21 13:58:32",
+      "old": "2",
+      "neu": "4",
+      "cp": 2,
+      "user": "admin",
+      "notes": [],
+      "ev": [
+        "user_action confirmed 75 \"admin\" {execution_in_window+20 user_matches+10 api_write_on_record+30 no_competing_automation+15}",
+        "br_before candidate -50 \"[PT] BR C hardware priority\" {references_field+20 references_table+10 condition_false-40 condition_false-40}"
+      ],
+      "trace": [
+        "13:58:32 api /api/now/table/x_2270630_pttrailc_pedido/ed83fbbdc3cc17101cbdb8e1b4013175 ->syslog_transaction",
+        "13:58:32 api /api/now/table/x_2270630_pttrailc_pedido/ed83fbbdc3cc17101cbdb8e1b4013175 ->syslog_transaction",
+        "13:58:32 write  [u_categoria] ->sys_audit",
+        "13:58:32 change  [u_categoria] ->sys_audit",
+        "13:58:35 job text index events process ->syslog_transaction"
+      ]
+    }
+  ]
+}

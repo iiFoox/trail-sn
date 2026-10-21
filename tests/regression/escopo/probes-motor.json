@@ -1,0 +1,388 @@
+[
+  {
+    "id": "A-include",
+    "table": "x_2270630_pttrail__pedido_audit",
+    "sysId": "f410800ac38057101cbdb8e1b40131d6",
+    "field": "short_description",
+    "ms": 2202,
+    "calls": 27,
+    "title": "[PT] Script Include A",
+    "labels": {
+      "New employee hire": "New employee hire",
+      "Request for new or upgraded hardware": "Request for new or upgraded hardware",
+      "Issue with a web page": "Issue with a web page",
+      "Request for help": "Request for help",
+      "Request for new or upgraded software": "Request for new or upgraded software",
+      "Issue with networking": "Issue with networking",
+      "Request for a new service": "Request for a new service",
+      "Reset my password": "Reset my password",
+      "Request for a Blackberry": "Request for a Blackberry",
+      "Issue with email": "Issue with email"
+    },
+    "gaps": [],
+    "unaudited": null,
+    "changes": [
+      {
+        "at": "2026-10-21 14:31:37",
+        "old": "[PT] Fonte script include",
+        "neu": "[PT] Script Include A",
+        "cp": 1,
+        "user": "admin",
+        "notes": [],
+        "ev": [
+          "user_action confirmed 75 \"admin\" {execution_in_window+20 user_matches+10 api_write_on_record+30 no_competing_automation+15}"
+        ],
+        "trace": [
+          "14:31:37 api /api/now/table/x_2270630_pttrail__pedido_audit/f410800ac38057101cbdb8e1b40131d6 ->syslog_transaction",
+          "14:31:37 api /api/now/table/x_2270630_pttrail__pedido_audit/f410800ac38057101cbdb8e1b40131d6 ->syslog_transaction",
+          "14:31:37 change  [u_categoria] ->sys_audit",
+          "14:31:43 write  [u_valor] ->sys_audit"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A-event",
+    "table": "x_2270630_pttrail__pedido_audit",
+    "sysId": "f410800ac38057101cbdb8e1b40131d6",
+    "field": "u_valor",
+    "ms": 2305,
+    "calls": 26,
+    "title": "[PT] Script Include A",
+    "labels": {},
+    "gaps": [],
+    "unaudited": null,
+    "changes": [
+      {
+        "at": "2026-10-21 14:31:43",
+        "old": "333",
+        "neu": "555",
+        "cp": 2,
+        "user": "system",
+        "notes": [],
+        "ev": [
+          "script_action confirmed 85 \"[PT] Script Action A\" {trace_names_artifact+50 references_field+20 sets_same_value+15}"
+        ],
+        "trace": [
+          "14:31:43 event* [PT] escopo.a.pedido.changed ->sysevent",
+          "14:31:43 change  ->sys_audit"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A-global",
+    "table": "x_2270630_pttrail__pedido_audit",
+    "sysId": "c110804ac38057101cbdb8e1b40131ec",
+    "field": "u_valor",
+    "ms": 1864,
+    "calls": 17,
+    "title": "[PT] Fonte after",
+    "labels": {},
+    "gaps": [],
+    "unaudited": {
+      "count": 1,
+      "lastUpdatedOn": "2026-10-21 14:31:38",
+      "lastUpdatedBy": "admin",
+      "clues": [
+        "2026-10-21 14:31:37 rest /api/now/table/x_2270630_pttrail__pedido_audit/f410800ac38057101cbdb8e1b40131d6 (admin)",
+        "2026-10-21 14:31:37 rest /api/now/table/x_2270630_pttrail__pedido_audit (admin)",
+        "2026-10-21 14:31:37 rest /api/now/table/sys_audit (admin)",
+        "2026-10-21 14:31:37 rest /api/now/table/x_2270630_pttrail__pedido_audit/f410800ac38057101cbdb8e1b40131d6 (admin)",
+        "2026-10-21 14:31:37 rest /api/now/ui/concoursepicker/application (admin)",
+        "2026-10-21 14:31:38 rest /api/now/table/x_2270630_pttrail__pedido_audit (admin)",
+        "2026-10-21 14:31:38 rest /api/now/table/x_2270630_pttrail__pedido_audit/c110804ac38057101cbdb8e1b40131ec (admin)",
+        "2026-10-21 14:31:40 rest /api/now/table/x_2270630_pttrail__pedido_audit/6d10c04ac38057101cbdb8e1b401310e (admin)",
+        "2026-10-21 14:31:40 rest /api/now/table/sys_audit (admin)",
+        "2026-10-21 14:31:40 rest /api/now/table/x_2270630_pttrail__pedido_audit (admin)",
+        "2026-10-21 14:31:40 rest /api/now/table/x_2270630_pttrail__pedido_audit/c110804ac38057101cbdb8e1b40131ec (admin)",
+        "2026-10-21 14:31:38 evento text_index neste registro"
+      ]
+    },
+    "changes": []
+  },
+  {
+    "id": "A-after",
+    "table": "x_2270630_pttrail__pedido_audit",
+    "sysId": "c110804ac38057101cbdb8e1b40131ec",
+    "field": "u_aprovador",
+    "ms": 1943,
+    "calls": 17,
+    "title": "[PT] Fonte after",
+    "labels": {},
+    "gaps": [],
+    "unaudited": {
+      "count": 1,
+      "lastUpdatedOn": "2026-10-21 14:31:38",
+      "lastUpdatedBy": "admin",
+      "clues": [
+        "2026-10-21 14:31:37 rest /api/now/table/x_2270630_pttrail__pedido_audit/f410800ac38057101cbdb8e1b40131d6 (admin)",
+        "2026-10-21 14:31:37 rest /api/now/table/x_2270630_pttrail__pedido_audit (admin)",
+        "2026-10-21 14:31:37 rest /api/now/table/sys_audit (admin)",
+        "2026-10-21 14:31:37 rest /api/now/table/x_2270630_pttrail__pedido_audit/f410800ac38057101cbdb8e1b40131d6 (admin)",
+        "2026-10-21 14:31:37 rest /api/now/ui/concoursepicker/application (admin)",
+        "2026-10-21 14:31:38 rest /api/now/table/x_2270630_pttrail__pedido_audit (admin)",
+        "2026-10-21 14:31:38 rest /api/now/table/x_2270630_pttrail__pedido_audit/c110804ac38057101cbdb8e1b40131ec (admin)",
+        "2026-10-21 14:31:40 rest /api/now/table/x_2270630_pttrail__pedido_audit/6d10c04ac38057101cbdb8e1b401310e (admin)",
+        "2026-10-21 14:31:40 rest /api/now/table/sys_audit (admin)",
+        "2026-10-21 14:31:40 rest /api/now/table/x_2270630_pttrail__pedido_audit (admin)",
+        "2026-10-21 14:31:40 rest /api/now/table/x_2270630_pttrail__pedido_audit/c110804ac38057101cbdb8e1b40131ec (admin)",
+        "2026-10-21 14:31:38 evento text_index neste registro"
+      ]
+    },
+    "changes": []
+  },
+  {
+    "id": "A-async",
+    "table": "x_2270630_pttrail__pedido_audit",
+    "sysId": "6d10c04ac38057101cbdb8e1b401310e",
+    "field": "u_data_limite",
+    "ms": 1722,
+    "calls": 15,
+    "title": "[PT] Fonte async",
+    "labels": {},
+    "gaps": [],
+    "unaudited": null,
+    "changes": []
+  },
+  {
+    "id": "A-incident",
+    "table": "incident",
+    "sysId": "8420c04ac38057101cbdb8e1b401313f",
+    "field": "urgency",
+    "ms": 1782,
+    "calls": 14,
+    "title": "[PT] Escopo A grava incidente global",
+    "labels": {},
+    "gaps": [],
+    "unaudited": null,
+    "changes": []
+  },
+  {
+    "id": "B-job",
+    "table": "x_2270630_pttrailb_item",
+    "sysId": "89b4b771c30057101cbdb8e1b401314b",
+    "field": "u_estoque",
+    "ms": 1351,
+    "calls": 23,
+    "labels": {},
+    "gaps": [],
+    "unaudited": null,
+    "changes": [
+      {
+        "at": "2026-10-21 14:34:39",
+        "old": "20",
+        "neu": "99",
+        "cp": 3,
+        "user": "admin",
+        "notes": [],
+        "ev": [
+          "scheduled_job confirmed 70 \"[PT] Job estoque B\" {references_field+20 references_table+10 job_schedule_matches+30 user_matches+10}"
+        ],
+        "trace": [
+          "14:34:39 change  ->sys_audit"
+        ]
+      },
+      {
+        "at": "2026-10-21 14:32:41",
+        "old": "99",
+        "neu": "20",
+        "cp": 2,
+        "user": "admin",
+        "notes": [],
+        "ev": [
+          "user_action confirmed 75 \"admin\" {execution_in_window+20 user_matches+10 api_write_on_record+30 no_competing_automation+15}"
+        ],
+        "trace": [
+          "14:32:41 api /api/now/table/x_2270630_pttrailb_item/89b4b771c30057101cbdb8e1b401314b ->syslog_transaction",
+          "14:32:41 change  ->sys_audit"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "C-job",
+    "table": "x_2270630_pttrailc_item",
+    "sysId": "44d4b771c30057101cbdb8e1b4013189",
+    "field": "u_estoque",
+    "ms": 1337,
+    "calls": 23,
+    "labels": {},
+    "gaps": [],
+    "unaudited": null,
+    "changes": [
+      {
+        "at": "2026-10-21 14:34:39",
+        "old": "20",
+        "neu": "99",
+        "cp": 3,
+        "user": "admin",
+        "notes": [],
+        "ev": [
+          "scheduled_job confirmed 70 \"[PT] Job estoque C\" {references_field+20 references_table+10 job_schedule_matches+30 user_matches+10}"
+        ],
+        "trace": [
+          "14:34:39 change  ->sys_audit"
+        ]
+      },
+      {
+        "at": "2026-10-21 14:32:42",
+        "old": "99",
+        "neu": "20",
+        "cp": 2,
+        "user": "admin",
+        "notes": [],
+        "ev": [
+          "user_action confirmed 75 \"admin\" {execution_in_window+20 user_matches+10 api_write_on_record+30 no_competing_automation+15}"
+        ],
+        "trace": [
+          "14:32:42 api /api/now/table/x_2270630_pttrailc_item/44d4b771c30057101cbdb8e1b4013189 ->syslog_transaction",
+          "14:32:42 change  ->sys_audit"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "B-event",
+    "table": "x_2270630_pttrailb_pedido",
+    "sysId": "d691c80ac38057101cbdb8e1b401314c",
+    "field": "u_valor",
+    "ms": 2099,
+    "calls": 25,
+    "title": "[PT] Evento teste B",
+    "labels": {},
+    "gaps": [],
+    "unaudited": null,
+    "changes": [
+      {
+        "at": "2026-10-21 14:38:22",
+        "old": "10",
+        "neu": "555",
+        "cp": 2,
+        "user": "system",
+        "notes": [],
+        "ev": [
+          "script_action confirmed 85 \"[PT] Script Action B\" {trace_names_artifact+50 references_field+20 sets_same_value+15}"
+        ],
+        "trace": [
+          "14:38:22 event* [PT] escopo.b.pedido.changed ->sysevent",
+          "14:38:22 change  ->sys_audit",
+          "14:38:24 api /api/now/table/sysevent ->syslog_transaction",
+          "14:38:24 api /api/now/table/x_2270630_pttrailb_pedido/d691c80ac38057101cbdb8e1b401314c ->syslog_transaction"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "C-event",
+    "table": "x_2270630_pttrailc_pedido",
+    "sysId": "10a1cccac38057101cbdb8e1b40131df",
+    "field": "u_valor",
+    "ms": 2025,
+    "calls": 25,
+    "title": "[PT] Evento teste C",
+    "labels": {},
+    "gaps": [],
+    "unaudited": null,
+    "changes": [
+      {
+        "at": "2026-10-21 14:39:22",
+        "old": "10",
+        "neu": "555",
+        "cp": 4,
+        "user": "system",
+        "notes": [],
+        "ev": [
+          "script_action confirmed 85 \"[PT] Script Action C\" {trace_names_artifact+50 references_field+20 sets_same_value+15}"
+        ],
+        "trace": [
+          "14:39:22 event* [PT] escopo.c.pedido.changed ->sysevent",
+          "14:39:22 change  ->sys_audit",
+          "14:39:26 api /api/now/table/x_2270630_pttrailc_pedido/10a1cccac38057101cbdb8e1b40131df ->syslog_transaction",
+          "14:39:26 api /api/now/table/sysevent ->syslog_transaction"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "B-cross",
+    "table": "x_2270630_pttrail__pedido",
+    "sysId": "c1bfb739c38057101cbdb8e1b40131db",
+    "field": "u_valor",
+    "ms": 1730,
+    "calls": 16,
+    "title": "[PT] Script Include A",
+    "labels": {},
+    "gaps": [],
+    "unaudited": {
+      "count": 3,
+      "lastUpdatedOn": "2026-10-21 14:40:02",
+      "lastUpdatedBy": "system",
+      "clues": [
+        "2026-10-21 14:40:02 evento [PT] escopo.a.pedido.changed neste registro"
+      ]
+    },
+    "changes": []
+  },
+  {
+    "id": "C-cross",
+    "table": "x_2270630_pttrail__pedido",
+    "sysId": "b5bff739c38057101cbdb8e1b4013192",
+    "field": "short_description",
+    "ms": 1796,
+    "calls": 16,
+    "title": "[PT] Probe base C include allowed",
+    "labels": {},
+    "gaps": [],
+    "unaudited": {
+      "count": 1,
+      "lastUpdatedOn": "2026-10-21 14:30:02",
+      "lastUpdatedBy": "admin",
+      "clues": [
+        "2026-10-21 14:29:59 rest /api/now/table/sys_script/7b23ff3dc3cc17101cbdb8e1b40131d4 (admin)",
+        "2026-10-21 14:29:59 rest /api/now/ui/concoursepicker/application (admin)",
+        "2026-10-21 14:29:59 rest /api/now/ui/concoursepicker/application (admin)",
+        "2026-10-21 14:29:59 rest /api/now/table/sys_script/d033373dc3cc17101cbdb8e1b40131ee (admin)",
+        "2026-10-21 14:29:59 rest /api/now/table/sys_script/d033373dc3cc17101cbdb8e1b40131ee (admin)",
+        "2026-10-21 14:30:00 rest /api/now/table/x_2270630_pttrail__pedido (admin)",
+        "2026-10-21 14:30:00 rest /api/now/table/x_2270630_pttrail__pedido/c1bfb739c38057101cbdb8e1b40131db (admin)",
+        "2026-10-21 14:30:00 rest /api/now/table/sys_script/7b23ff3dc3cc17101cbdb8e1b40131d4 (admin)",
+        "2026-10-21 14:30:00 rest /api/now/ui/concoursepicker/application (admin)",
+        "2026-10-21 14:30:00 rest /api/now/ui/concoursepicker/application (admin)",
+        "2026-10-21 14:30:01 rest /api/now/table/sys_script/7b23ff3dc3cc17101cbdb8e1b40131d4 (admin)",
+        "2026-10-21 14:30:01 rest /api/now/ui/concoursepicker/application (admin)",
+        "2026-10-21 14:30:01 rest /api/now/table/x_2270630_pttrail__pedido/c1bfb739c38057101cbdb8e1b40131db (admin)",
+        "2026-10-21 14:30:01 rest /api/now/ui/concoursepicker/application (admin)",
+        "2026-10-21 14:30:01 rest /api/now/table/sys_script/7b23ff3dc3cc17101cbdb8e1b40131d4 (admin)",
+        "2026-10-21 14:30:02 rest /api/now/table/x_2270630_pttrail__pedido (admin)",
+        "2026-10-21 14:30:02 rest /api/now/table/sys_script/3f23373dc3cc17101cbdb8e1b4013192 (admin)",
+        "2026-10-21 14:30:02 rest /api/now/ui/concoursepicker/application (admin)",
+        "2026-10-21 14:30:02 rest /api/now/ui/concoursepicker/application (admin)",
+        "2026-10-21 14:30:02 rest /api/now/table/sys_script/3f23373dc3cc17101cbdb8e1b4013192 (admin)",
+        "2026-10-21 14:30:03 rest /api/now/table/x_2270630_pttrail__pedido (admin)",
+        "2026-10-21 14:30:03 rest /api/now/ui/concoursepicker/application (admin)",
+        "2026-10-21 14:30:03 rest /api/now/ui/concoursepicker/application (admin)",
+        "2026-10-21 14:30:03 rest /api/now/table/x_2270630_pttrail__pedido/b5bff739c38057101cbdb8e1b4013192 (admin)",
+        "2026-10-21 14:30:03 rest /api/now/table/x_2270630_pttrail__pedido/b5bff739c38057101cbdb8e1b4013192 (admin)",
+        "2026-10-21 14:30:03 rest /api/now/table/sys_scope_privilege/c433f77dc3cc17101cbdb8e1b40131f3 (admin)",
+        "2026-10-21 14:30:04 rest /api/now/table/sys_scope_privilege/c433f77dc3cc17101cbdb8e1b40131f3 (admin)",
+        "2026-10-21 14:30:04 rest /api/now/ui/concoursepicker/application (admin)",
+        "2026-10-21 14:30:04 rest /api/now/table/x_2270630_pttrail__pedido/06bff739c38057101cbdb8e1b40131d6 (admin)",
+        "2026-10-21 14:30:04 rest /api/now/ui/concoursepicker/application (admin)",
+        "2026-10-21 14:30:04 rest /api/now/ui/concoursepicker/application (admin)",
+        "2026-10-21 14:30:04 rest /api/now/table/x_2270630_pttrail__pedido/06bff739c38057101cbdb8e1b40131d6 (admin)",
+        "2026-10-21 14:30:05 rest /api/now/table/sys_script/3f23373dc3cc17101cbdb8e1b4013192 (admin)",
+        "2026-10-21 14:30:05 rest /api/now/table/sys_script/7b23ff3dc3cc17101cbdb8e1b40131d4 (admin)",
+        "2026-10-21 14:30:05 rest /api/now/table/sys_script/3f23373dc3cc17101cbdb8e1b4013192 (admin)",
+        "2026-10-21 14:30:05 rest /api/now/table/sys_script/7b23ff3dc3cc17101cbdb8e1b40131d4 (admin)",
+        "2026-10-21 14:30:05 rest /api/now/ui/concoursepicker/application (admin)",
+        "2026-10-21 14:30:06 rest /api/now/table/sys_script/d033373dc3cc17101cbdb8e1b40131ee (admin)",
+        "2026-10-21 14:30:06 rest /api/now/ui/concoursepicker/application (admin)",
+        "2026-10-21 14:30:06 rest /api/now/table/sys_script/d033373dc3cc17101cbdb8e1b40131ee (admin)",
+        "2026-10-21 14:30:02 evento text_index neste registro",
+        "2026-10-21 14:30:02 evento text_index neste registro"
+      ]
+    },
+    "changes": []
+  }
+]

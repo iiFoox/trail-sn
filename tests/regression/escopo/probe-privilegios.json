@@ -1,0 +1,240 @@
+{
+  "privB": {
+    "status": 201,
+    "data": {
+      "result": {
+        "target_name": "x_2270630_pttrail__pedido",
+        "sys_mod_count": "0",
+        "target_type": "sys_db_object",
+        "target_scope": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_scope/3def6f75c3cc17101cbdb8e1b40131cf",
+          "value": "3def6f75c3cc17101cbdb8e1b40131cf"
+        },
+        "sys_updated_on": "2026-10-21 14:29:15",
+        "sys_tags": "",
+        "sys_class_name": "sys_scope_privilege",
+        "sys_id": "468ffbb5c38057101cbdb8e1b40131ab",
+        "sys_package": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_package/b021f379c3cc17101cbdb8e1b401316a",
+          "value": "b021f379c3cc17101cbdb8e1b401316a"
+        },
+        "sys_update_name": "sys_scope_privilege_468ffbb5c38057101cbdb8e1b40131ab",
+        "sys_updated_by": "admin",
+        "sys_created_on": "2026-10-21 14:29:15",
+        "sys_name": "x_2270630_pttrail__pedido",
+        "source_scope": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_scope/b021f379c3cc17101cbdb8e1b401316a",
+          "value": "b021f379c3cc17101cbdb8e1b401316a"
+        },
+        "sys_scope": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_scope/b021f379c3cc17101cbdb8e1b401316a",
+          "value": "b021f379c3cc17101cbdb8e1b401316a"
+        },
+        "operation": "write",
+        "sys_created_by": "admin",
+        "status": "allowed",
+        "sys_policy": ""
+      }
+    }
+  },
+  "privC": {
+    "status": 201,
+    "data": {
+      "result": {
+        "target_name": "x_2270630_pttrail__pedido",
+        "sys_mod_count": "0",
+        "target_type": "sys_db_object",
+        "target_scope": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_scope/3def6f75c3cc17101cbdb8e1b40131cf",
+          "value": "3def6f75c3cc17101cbdb8e1b40131cf"
+        },
+        "sys_updated_on": "2026-10-21 14:29:15",
+        "sys_tags": "",
+        "sys_class_name": "sys_scope_privilege",
+        "sys_id": "928ffbb5c38057101cbdb8e1b4013176",
+        "sys_package": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_package/c921f379c3cc17101cbdb8e1b401316e",
+          "value": "c921f379c3cc17101cbdb8e1b401316e"
+        },
+        "sys_update_name": "sys_scope_privilege_928ffbb5c38057101cbdb8e1b4013176",
+        "sys_updated_by": "admin",
+        "sys_created_on": "2026-10-21 14:29:15",
+        "sys_name": "x_2270630_pttrail__pedido",
+        "source_scope": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_scope/c921f379c3cc17101cbdb8e1b401316e",
+          "value": "c921f379c3cc17101cbdb8e1b401316e"
+        },
+        "sys_scope": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_scope/c921f379c3cc17101cbdb8e1b401316e",
+          "value": "c921f379c3cc17101cbdb8e1b401316e"
+        },
+        "operation": "write",
+        "sys_created_by": "admin",
+        "status": "allowed",
+        "sys_policy": ""
+      }
+    }
+  },
+  "cOff": {
+    "status": 200,
+    "value": "false"
+  },
+  "gOff": {
+    "status": 200,
+    "value": "false"
+  },
+  "bOn": {
+    "status": 200,
+    "value": "true"
+  },
+  "bAllowed": {
+    "status": 200,
+    "record": {
+      "sys_id": "328f7339c38057101cbdb8e1b4013167",
+      "number": "TASK0020706",
+      "short_description": "[PT] Privilege B permitted",
+      "u_categoria": "2",
+      "u_valor": "700"
+    },
+    "audit": [
+      {
+        "fieldname": "u_categoria",
+        "newvalue": "2",
+        "sys_created_on": "2026-10-21 14:29:18",
+        "oldvalue": "1"
+      }
+    ]
+  },
+  "bOff": {
+    "status": 200,
+    "value": "false"
+  },
+  "cOn": {
+    "status": 200,
+    "value": "true"
+  },
+  "cAllowed": {
+    "status": 200,
+    "record": {
+      "sys_id": "d38f7339c38057101cbdb8e1b40131f0",
+      "number": "TASK0020707",
+      "short_description": "[PT] Privilege C include permitted",
+      "u_categoria": "2",
+      "u_valor": "700"
+    },
+    "audit": [
+      {
+        "fieldname": "u_categoria",
+        "newvalue": "2",
+        "sys_created_on": "2026-10-21 14:29:20",
+        "oldvalue": "1"
+      }
+    ]
+  },
+  "incDenied": {
+    "status": 200,
+    "data": {
+      "result": {
+        "target_name": "PTTrailScopeHelper",
+        "sys_mod_count": "5",
+        "target_type": "sys_db_object",
+        "target_scope": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_scope/3def6f75c3cc17101cbdb8e1b40131cf",
+          "value": "3def6f75c3cc17101cbdb8e1b40131cf"
+        },
+        "sys_updated_on": "2026-10-21 14:29:21",
+        "sys_tags": "",
+        "sys_class_name": "sys_scope_privilege",
+        "sys_id": "c433f77dc3cc17101cbdb8e1b40131f3",
+        "sys_package": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_package/c921f379c3cc17101cbdb8e1b401316e",
+          "value": "c921f379c3cc17101cbdb8e1b401316e"
+        },
+        "sys_update_name": "sys_scope_privilege_c433f77dc3cc17101cbdb8e1b40131f3",
+        "sys_updated_by": "admin",
+        "sys_created_on": "2026-10-21 13:35:18",
+        "sys_name": "PTTrailScopeHelper",
+        "source_scope": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_scope/c921f379c3cc17101cbdb8e1b401316e",
+          "value": "c921f379c3cc17101cbdb8e1b401316e"
+        },
+        "sys_scope": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_scope/c921f379c3cc17101cbdb8e1b401316e",
+          "value": "c921f379c3cc17101cbdb8e1b401316e"
+        },
+        "operation": "execute",
+        "sys_created_by": "admin",
+        "status": "denied",
+        "sys_policy": ""
+      }
+    }
+  },
+  "cDenied": {
+    "status": 200,
+    "record": {
+      "sys_id": "f38fb339c38057101cbdb8e1b401312a",
+      "number": "TASK0020708",
+      "short_description": "[PT] Privilege C include denied",
+      "u_categoria": "2",
+      "u_valor": "700"
+    },
+    "audit": [
+      {
+        "fieldname": "u_categoria",
+        "newvalue": "2",
+        "sys_created_on": "2026-10-21 14:29:22",
+        "oldvalue": "1"
+      }
+    ]
+  },
+  "incAllowedRestore": {
+    "status": 200,
+    "data": {
+      "result": {
+        "target_name": "PTTrailScopeHelper",
+        "sys_mod_count": "6",
+        "target_type": "sys_db_object",
+        "target_scope": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_scope/3def6f75c3cc17101cbdb8e1b40131cf",
+          "value": "3def6f75c3cc17101cbdb8e1b40131cf"
+        },
+        "sys_updated_on": "2026-10-21 14:29:22",
+        "sys_tags": "",
+        "sys_class_name": "sys_scope_privilege",
+        "sys_id": "c433f77dc3cc17101cbdb8e1b40131f3",
+        "sys_package": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_package/c921f379c3cc17101cbdb8e1b401316e",
+          "value": "c921f379c3cc17101cbdb8e1b401316e"
+        },
+        "sys_update_name": "sys_scope_privilege_c433f77dc3cc17101cbdb8e1b40131f3",
+        "sys_updated_by": "admin",
+        "sys_created_on": "2026-10-21 13:35:18",
+        "sys_name": "PTTrailScopeHelper",
+        "source_scope": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_scope/c921f379c3cc17101cbdb8e1b401316e",
+          "value": "c921f379c3cc17101cbdb8e1b401316e"
+        },
+        "sys_scope": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_scope/c921f379c3cc17101cbdb8e1b401316e",
+          "value": "c921f379c3cc17101cbdb8e1b401316e"
+        },
+        "operation": "execute",
+        "sys_created_by": "admin",
+        "status": "allowed",
+        "sys_policy": ""
+      }
+    }
+  },
+  "gOn": {
+    "status": 200,
+    "value": "true"
+  },
+  "bOnRestore": {
+    "status": 200,
+    "value": "true"
+  },
+  "cOnRestore": {
+    "status": 200,
+    "value": "true"
+  }
+}

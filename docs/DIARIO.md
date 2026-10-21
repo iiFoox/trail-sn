@@ -10,6 +10,29 @@ Convenções:
 
 ---
 
+## 2026-10-21 — bateria de escopos e 0.14.5
+
+**Bateria de escopos (Codex, `tests/regression/escopo/RELATORIO.md`):**
+- Três apps de teste no PDI:
+  - A: `x_2270630_pttrail_`, como `sys_app`;
+  - B: `x_2270630_pttrailb`, como `sys_scope`;
+  - C: `x_2270630_pttrailc`, como `sys_scope`, com uma tabela que estende uma tabela do B.
+- Regras, script includes, chamadas entre escopos, eventos, jobs, UI actions, policies e client scripts. 300 cenários (`cases-escopo.json`) × 10 perfis = 3000 investigações.
+- **Admin: a causa esperada aparece nos 300.** B-BR-001 e C-BR-001 mostravam primeiro a gravação do admin (2→4) e depois a da regra (4→2), no mesmo segundo. **Corrigido:** a auditoria agora é ordenada por horário e por `record_checkpoint`, na consulta e no código. Teste novo em `history.test.ts`.
+- **Perfis sem admin:**
+  - na primeira rodada nenhum leu nada, porque as tabelas escopadas estavam **sem ACL** (os papéis já estavam atribuídos);
+  - o Claude Code elevou `security_admin` na sessão (menu do usuário → Elevate role) e criou 24 ACLs [PT] (leitura, escrita e criação por tabela, exigindo o papel `.user` do escopo dono e criadas dentro desse escopo), com `tests/regression/escopo/criar-acls.js`;
+  - na segunda rodada, os usuários de cada app leem só o próprio escopo: 900 legíveis, sem erro. Sem `sys_audit`, o motor usa o histórico do formulário; sem `sys_script`, a causa fica "candidato: quem gravou", sem inventar a regra;
+  - itil, usuário sem papel e desenvolvedor sem delegação: "não legível", sem erro técnico.
+- **Não testado:**
+  - flows escopados (o Flow Designer do PDI dá página 500);
+  - desenvolvedor delegado (a tabela de delegação não aparece no PDI).
+- **Resultados brutos** em `tests/regression/escopo/results/`, fora do git.
+
+**0.14.5:**
+- espaçamento da aba Flows e das 6 abas (os dois cartões não ficam mais colados; as abas cabem de 370 a 420 px e rolam abaixo de 360);
+- desempate por checkpoint.
+
 ## 2026-10-21 — 0.14.3 e 0.14.4: busca e grupos recolhidos
 
 - **0.14.3:** busca em "O que roda neste registro" (procura em nome, quando roda, tabela, escopo e **campos que grava**, sem acento; "priority" acha tudo que mexe na prioridade) e o filtro "Só o que rodou aqui". Com busca, os grupos com resultado abrem e as partes vazias somem. Testado no e2e `flows.mjs`.

@@ -872,7 +872,12 @@ details.grp > .li { padding-left: 52px; }
 .bt-head .li .ck { flex: none; margin-top: 1px; }
 
 /* Aba Flows */
-.seg-tabs { grid-template-columns: repeat(6, auto); }
+.seg-tabs { grid-template-columns: repeat(6, auto); gap: 2px; padding: 3px; }
+.seg-tabs .ind { top: 3px; bottom: 3px; }
+.seg-tabs button { padding: 7px 4px; font-size: 11.5px; gap: 3px; }
+.seg-tabs button:has(.wdot) { padding-right: 8px; }
+.seg-tabs i { padding: 0 3px; }
+.flows { display: flex; flex-direction: column; gap: 10px; }
 .flows .box h4 span { margin-left: 6px; }
 .fl-run, .fl-def { animation: rise .32s cubic-bezier(.16,1,.3,1) both; animation-delay: calc(var(--i, 0) * 35ms); }
 .fl-st { flex: none; font: 600 10.5px var(--mono); padding: 2px 7px; border-radius: 999px; background: var(--surface-2); color: var(--fg-2); text-transform: lowercase; }
@@ -882,31 +887,25 @@ details.grp > .li { padding-left: 52px; }
 .fl-tag { margin-left: 6px; font: 600 10px var(--mono); padding: 1px 6px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--muted); }
 .fl-tag.ran { border-color: var(--teal); color: var(--teal-2); }
 .fl-def small { display: block; margin-top: 2px; }
-.fl-writes code { margin-left: 4px; font-size: 11px; padding: 0 5px; border-radius: 5px; background: var(--surface-2); }
+.fl-writes code { margin-left: 4px; font-size: 11px; padding: 1px 6px; border-radius: 5px; background: var(--surface-2); }
 .fl-writes code.on { background: var(--teal); color: #fff; }
 .fl-def.hit { box-shadow: inset 3px 0 0 var(--teal); }
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-@media (max-width: 400px) { .seg-tabs button { padding: 7px 3px; font-size: 11px; } }
 .fl-def small.fl-tag { display: inline-block; vertical-align: 1px; }
-/* Painel estreito: as 6 abas rolam para o lado em vez de encostar umas nas outras. */
-@media (max-width: 400px) {
+/* Painel estreito (até 360 px): as 6 abas rolam para o lado em vez de encostar umas nas outras. */
+@media (max-width: 360px) {
   .seg-tabs { display: flex; overflow-x: auto; scrollbar-width: none; gap: 2px; }
   .seg-tabs::-webkit-scrollbar { display: none; }
   .seg-tabs button { flex: none; padding: 7px 8px; font-size: 11.5px; }
 }
 
 /* O que roda neste registro */
+.rruns .grp .flows { gap: 0; }
 .rruns .grp .flows .box { box-shadow: none; border: 0; margin: 0; background: transparent; }
 .rr-row .lnk { color: var(--accent); font-weight: 600; }
 .rr-row.hit { box-shadow: inset 3px 0 0 var(--teal); }
 .rr-row small.fl-tag { display: inline-block; vertical-align: 1px; }
 .rr-row .fl-writes { display: block; margin-top: 3px; }
-/* 361–400 px (ex.: o painel do site, de 400 px): as 6 abas cabem com menos folga; só abaixo disso elas rolam. */
-@media (min-width: 361px) and (max-width: 400px) {
-  .seg-tabs { display: grid; grid-template-columns: repeat(6, auto); overflow: visible; gap: 1px; }
-  .seg-tabs button { padding: 7px 4px; font-size: 11.5px; }
-  .seg-tabs i { padding: 0 3px; }
-}
 
 /* Busca em "O que roda neste registro" */
 .rr-tools { display: flex; gap: 8px; align-items: center; padding: 0 12px 10px; flex-wrap: wrap; }

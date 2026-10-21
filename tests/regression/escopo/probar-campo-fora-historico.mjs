@@ -1,0 +1,22 @@
+import { startInPortal, readPortalTask, PORTAL } from './portal.mjs';
+import { execFileSync } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
+import { injectBundle } from '../bateria2000/injetar.mjs';
+const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function run(key,source){startInPortal(source,key);for(;;){await pause(400);const t=readPortalTask(key);if(t?.done){if(t.error)throw new Error(t.error);return t.result}}}
+const imp=await run('_fieldHistoryImpersonate',`(async()=>{const r=await fetch('/api/now/ui/impersonate/bb523ff9c3cc17101cbdb8e1b401318f',{method:'POST',headers:{'X-UserToken':window.g_ck}});return String(r.status)})()`);
+if(imp!=='201')throw new Error(`Impersonation failed: ${imp}`);
+execFileSync('rtk',['maestri','portal','navigate',PORTAL,'https://dev457034.service-now.com/incident_list.do'],{encoding:'utf8'});
+await pause(2500);
+injectBundle();
+const data=await run('_fieldHistoryResult',`TrailRegression.runOne({table:'x_2270630_pttrail__pedido_audit',sysId:'2f18f7b9c30057101cbdb8e1b40131a9',field:'u_valor'}).then(r=>JSON.stringify({auditFrom:r.auditFrom,fieldNotInHistory:r.fieldNotInHistory,historyFields:r.historyFields,changeCount:r.changes?.length,gaps:r.gaps,calls:r.calls}))`);
+console.log('FIELD_HISTORY '+data);
+writeFileSync('tests/regression/escopo/probe-campo-fora-historico.json',JSON.stringify(JSON.parse(data),null,2)+'\n');
+execFileSync('rtk',['maestri','portal','navigate',PORTAL,'https://dev457034.service-now.com/incident_list.do'],{encoding:'utf8'});
+await pause(1000);
+const restore=await run('_fieldHistoryRestore',`(async()=>{const r=await fetch('/api/now/ui/impersonate/6816f79cc0a8016401c5a33be04be441',{method:'POST',headers:{'X-UserToken':window.g_ck}});return String(r.status)})()`);
+if(restore!=='201')throw new Error(`Restore failed: ${restore}`);
+execFileSync('rtk',['maestri','portal','navigate',PORTAL,'https://dev457034.service-now.com/incident_list.do'],{encoding:'utf8'});
+await pause(2000);
+const final=await run('_fieldHistoryFinal',`(async()=>{const h={'X-UserToken':window.g_ck,'Content-Type':'application/json'};await fetch('/api/now/ui/concoursepicker/application',{method:'PUT',headers:h,body:JSON.stringify({app_id:'global'})});const u=await fetch('/api/now/ui/user/current_user',{headers:h}).then(r=>r.json());const a=await fetch('/api/now/ui/concoursepicker/current',{headers:h}).then(r=>r.json());return JSON.stringify({user:u.result?.user_name,app:a.result?.currentApplication?.sysId})})()`);
+console.log('RESTORED '+final);

@@ -1,0 +1,146 @@
+{
+  "cOff": {
+    "status": 200,
+    "active": "false"
+  },
+  "globalOff": {
+    "status": 200,
+    "active": "false"
+  },
+  "bOn": {
+    "status": 200,
+    "active": "true"
+  },
+  "b": {
+    "status": 200,
+    "record": {
+      "sys_id": "8f5ffbb5c38057101cbdb8e1b401319d",
+      "number": "TASK0020703",
+      "short_description": "[PT] Probe2 B only",
+      "u_categoria": "2",
+      "u_valor": "700"
+    },
+    "audit": [
+      {
+        "fieldname": "u_categoria",
+        "newvalue": "2",
+        "sys_created_on": "2026-10-21 14:28:30",
+        "oldvalue": "1"
+      }
+    ]
+  },
+  "bOnRestore": {
+    "status": 200,
+    "active": "true"
+  },
+  "globalOn": {
+    "status": 200,
+    "active": "true"
+  },
+  "cOn": {
+    "status": 200,
+    "active": "true"
+  },
+  "cAllowed": {
+    "status": 200,
+    "record": {
+      "sys_id": "7f5ffbf5c38057101cbdb8e1b401315d",
+      "number": "TASK0020704",
+      "short_description": "[PT] Probe2 C allowed",
+      "u_categoria": "2",
+      "u_valor": "333"
+    },
+    "audit": [
+      {
+        "fieldname": "u_categoria",
+        "newvalue": "2",
+        "sys_created_on": "2026-10-21 14:28:33",
+        "oldvalue": "1"
+      },
+      {
+        "fieldname": "u_valor",
+        "newvalue": "333",
+        "sys_created_on": "2026-10-21 14:28:33",
+        "oldvalue": "700"
+      }
+    ]
+  },
+  "privDenied": {
+    "status": 200,
+    "value": "denied"
+  },
+  "cDenied": {
+    "status": 200,
+    "record": {
+      "sys_id": "186ffbf5c38057101cbdb8e1b40131be",
+      "number": "TASK0020705",
+      "short_description": "[PT] Probe2 C denied",
+      "u_categoria": "2",
+      "u_valor": "333"
+    },
+    "audit": [
+      {
+        "fieldname": "u_categoria",
+        "newvalue": "2",
+        "sys_created_on": "2026-10-21 14:28:35",
+        "oldvalue": "1"
+      },
+      {
+        "fieldname": "u_valor",
+        "newvalue": "333",
+        "sys_created_on": "2026-10-21 14:28:35",
+        "oldvalue": "700"
+      }
+    ]
+  },
+  "privAllowed": {
+    "status": 200,
+    "data": {
+      "result": {
+        "target_name": "PTTrailScopeHelper",
+        "sys_mod_count": "4",
+        "target_type": "sys_db_object",
+        "target_scope": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_scope/3def6f75c3cc17101cbdb8e1b40131cf",
+          "value": "3def6f75c3cc17101cbdb8e1b40131cf"
+        },
+        "sys_updated_on": "2026-10-21 14:28:35",
+        "sys_tags": "",
+        "sys_class_name": "sys_scope_privilege",
+        "sys_id": "c433f77dc3cc17101cbdb8e1b40131f3",
+        "sys_package": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_package/c921f379c3cc17101cbdb8e1b401316e",
+          "value": "c921f379c3cc17101cbdb8e1b401316e"
+        },
+        "sys_update_name": "sys_scope_privilege_c433f77dc3cc17101cbdb8e1b40131f3",
+        "sys_updated_by": "admin",
+        "sys_created_on": "2026-10-21 13:35:18",
+        "sys_name": "PTTrailScopeHelper",
+        "source_scope": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_scope/c921f379c3cc17101cbdb8e1b401316e",
+          "value": "c921f379c3cc17101cbdb8e1b401316e"
+        },
+        "sys_scope": {
+          "link": "https://dev457034.service-now.com/api/now/table/sys_scope/c921f379c3cc17101cbdb8e1b401316e",
+          "value": "c921f379c3cc17101cbdb8e1b401316e"
+        },
+        "operation": "execute",
+        "sys_created_by": "admin",
+        "status": "allowed",
+        "sys_policy": ""
+      }
+    }
+  },
+  "cOnRestore": {
+    "status": 200,
+    "active": "true"
+  },
+  "globalOnRestore": {
+    "status": 200,
+    "active": "true"
+  },
+  "bOnRestore2": {
+    "status": 200,
+    "active": "true"
+  }
+}

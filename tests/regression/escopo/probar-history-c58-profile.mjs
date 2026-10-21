@@ -1,0 +1,23 @@
+import { startInPortal, readPortalTask, PORTAL } from './portal.mjs';
+import { execFileSync } from 'node:child_process';
+import { injectBundle } from '../bateria2000/injetar.mjs';
+const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function run(key,source){startInPortal(source,key);for(;;){await pause(400);const t=readPortalTask(key);if(t?.done){if(t.error)throw new Error(t.error);return t.result}}}
+const imp=await run('_historyC58Impersonate',`(async()=>{const r=await fetch('/api/now/ui/impersonate/d5627ff9c3cc17101cbdb8e1b40131c3',{method:'POST',headers:{'X-UserToken':window.g_ck}});return String(r.status)})()`);
+if(imp!=='201')throw new Error(`Impersonation failed: ${imp}`);
+execFileSync('rtk',['maestri','portal','navigate',PORTAL,'https://dev457034.service-now.com/incident_list.do'],{encoding:'utf8'});
+await pause(3000);
+const history=await run('_historyC58Result',`(async()=>{const u='/angular.do?sysparm_type=list_history&table=x_2270630_pttrailc_pedido&sys_id=ed83fbbdc3cc17101cbdb8e1b4013175';const r=await fetch(u,{headers:{'X-UserToken':window.g_ck}});const t=await r.text();let j;try{j=JSON.parse(t)}catch{j={raw:t.slice(0,300)}};return JSON.stringify({status:r.status,data:j})})()`);
+const h=JSON.parse(history);
+console.log('HISTORY '+JSON.stringify({status:h.status,entries:h.data?.entries?.length,fields:h.data?.fields?.map(f=>f.name),priorityChanges:h.data?.entries?.flatMap(e=>e.entries?.changes||[]).filter(c=>c.field_name==='priority').length}));
+injectBundle();
+const investigation=await run('_historyC58Investigation',`TrailRegression.runOne({table:'x_2270630_pttrailc_pedido',sysId:'ed83fbbdc3cc17101cbdb8e1b4013175',field:'priority'}).then(r=>JSON.stringify({auditFrom:r.auditFrom,fieldNotInHistory:r.fieldNotInHistory,historyFields:r.historyFields,changeCount:r.changes?.length,changes:r.changes?.map(c=>({old:c.old,new:c.neu,evidence:c.ev})),gaps:r.gaps,calls:r.calls}))`);
+console.log('INVESTIGATION '+investigation);
+execFileSync('rtk',['maestri','portal','navigate',PORTAL,'https://dev457034.service-now.com/incident_list.do'],{encoding:'utf8'});
+await pause(1200);
+const restore=await run('_historyC58Restore',`(async()=>{const r=await fetch('/api/now/ui/impersonate/6816f79cc0a8016401c5a33be04be441',{method:'POST',headers:{'X-UserToken':window.g_ck}});return String(r.status)})()`);
+if(restore!=='201')throw new Error(`Restore failed: ${restore}`);
+execFileSync('rtk',['maestri','portal','navigate',PORTAL,'https://dev457034.service-now.com/incident_list.do'],{encoding:'utf8'});
+await pause(2000);
+const final=await run('_historyC58Final',`(async()=>{const h={'X-UserToken':window.g_ck,'Content-Type':'application/json'};await fetch('/api/now/ui/concoursepicker/application',{method:'PUT',headers:h,body:JSON.stringify({app_id:'global'})});const u=await fetch('/api/now/ui/user/current_user',{headers:h}).then(r=>r.json());const a=await fetch('/api/now/ui/concoursepicker/current',{headers:h}).then(r=>r.json());return JSON.stringify({user:u.result?.user_name,app:a.result?.currentApplication?.sysId})})()`);
+console.log('RESTORED '+final);

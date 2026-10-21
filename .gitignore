@@ -7,3 +7,4 @@ tests/regression/results/
 extension/dist-types/
 tests/e2e/.tmp/
 tests/regression/bateria2000/res-*.json
+tests/regression/escopo/results/

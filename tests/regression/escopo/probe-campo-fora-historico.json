@@ -1,0 +1,10 @@
+{
+  "auditFrom": "history",
+  "fieldNotInHistory": true,
+  "changeCount": 0,
+  "gaps": [
+    "sys_db_object: denied",
+    "sys_script: denied"
+  ],
+  "calls": 14
+}

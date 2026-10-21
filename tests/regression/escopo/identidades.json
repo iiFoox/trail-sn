@@ -1,0 +1,110 @@
+{
+  "roles": {
+    "x_2270630_pttrail_.user": {
+      "status": 201,
+      "id": "c35237f9c3cc17101cbdb8e1b40131ec"
+    },
+    "x_2270630_pttrail_.admin": {
+      "status": 201,
+      "id": "8b52fbf9c3cc17101cbdb8e1b40131c9"
+    },
+    "x_2270630_pttrailb.user": {
+      "status": 201,
+      "id": "9b52fbf9c3cc17101cbdb8e1b40131ee"
+    },
+    "x_2270630_pttrailb.admin": {
+      "status": 201,
+      "id": "1352fbf9c3cc17101cbdb8e1b40131fb"
+    },
+    "x_2270630_pttrailc.user": {
+      "status": 201,
+      "id": "af523ff9c3cc17101cbdb8e1b401311f"
+    },
+    "x_2270630_pttrailc.admin": {
+      "status": 201,
+      "id": "27523ff9c3cc17101cbdb8e1b401312c"
+    }
+  },
+  "users": {
+    "pt.trail.escopo.user": {
+      "status": 201,
+      "id": "bb523ff9c3cc17101cbdb8e1b401318f",
+      "roleAssignments": [
+        {
+          "role": "x_2270630_pttrail_.user",
+          "status": 201
+        }
+      ]
+    },
+    "pt.trail.escopo.admin": {
+      "status": 201,
+      "id": "04623ff9c3cc17101cbdb8e1b40131d4",
+      "roleAssignments": [
+        {
+          "role": "x_2270630_pttrail_.user",
+          "status": 201
+        },
+        {
+          "role": "x_2270630_pttrail_.admin",
+          "status": 201
+        }
+      ]
+    },
+    "pt.trail.escopo.userb": {
+      "status": 201,
+      "id": "58627ff9c3cc17101cbdb8e1b4013136",
+      "roleAssignments": [
+        {
+          "role": "x_2270630_pttrailb.user",
+          "status": 201
+        }
+      ]
+    },
+    "pt.trail.escopo.adminb": {
+      "status": 201,
+      "id": "70627ff9c3cc17101cbdb8e1b4013152",
+      "roleAssignments": [
+        {
+          "role": "x_2270630_pttrailb.user",
+          "status": 201
+        },
+        {
+          "role": "x_2270630_pttrailb.admin",
+          "status": 201
+        }
+      ]
+    },
+    "pt.trail.escopo.userc": {
+      "status": 201,
+      "id": "41627ff9c3cc17101cbdb8e1b401318f",
+      "roleAssignments": [
+        {
+          "role": "x_2270630_pttrailc.user",
+          "status": 201
+        }
+      ]
+    },
+    "pt.trail.escopo.adminc": {
+      "status": 201,
+      "id": "d5627ff9c3cc17101cbdb8e1b40131c3",
+      "roleAssignments": [
+        {
+          "role": "x_2270630_pttrailc.user",
+          "status": 201
+        },
+        {
+          "role": "x_2270630_pttrailc.admin",
+          "status": 201
+        }
+      ]
+    },
+    "pt.trail.escopo.dev": {
+      "status": 201,
+      "id": "b1627ff9c3cc17101cbdb8e1b40131db"
+    },
+    "pt.trail.escopo.sem_papel": {
+      "status": 201,
+      "id": "3562bff9c3cc17101cbdb8e1b4013105"
+    }
+  }
+}

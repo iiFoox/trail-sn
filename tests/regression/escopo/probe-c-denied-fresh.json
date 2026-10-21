@@ -1,0 +1,23 @@
+{
+  "include": 201,
+  "includeApi": "x_2270630_pttrail_.PTTrailScopeHelperDeniedFresh",
+  "priv": 201,
+  "privilege": {
+    "id": "8965c8c6c3c057101cbdb8e1b40131d0",
+    "status": "denied",
+    "target_name": "PTTrailScopeHelperDeniedFresh"
+  },
+  "rulePatch": 200,
+  "id": "d165c8c6c3c057101cbdb8e1b40131fa",
+  "number": "TASK0020720",
+  "update": 200,
+  "record": {
+    "sys_id": "d165c8c6c3c057101cbdb8e1b40131fa",
+    "number": "TASK0020720",
+    "short_description": "[PT] Include negado bloqueado",
+    "u_categoria": "2",
+    "u_valor": "333"
+  },
+  "logs": [],
+  "restore": 200
+}

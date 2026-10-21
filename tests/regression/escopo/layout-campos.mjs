@@ -1,0 +1,13 @@
+import { startInPortal, readPortalTask } from './portal.mjs';
+import { writeFileSync } from 'node:fs';
+startInPortal(`(async()=>{
+ const h={'X-UserToken':window.g_ck,'Content-Type':'application/json'};const apps=[
+  {k:'A',app:'3def6f75c3cc17101cbdb8e1b40131cf',table:'x_2270630_pttrail__pedido_audit'},
+  {k:'B',app:'b021f379c3cc17101cbdb8e1b401316a',table:'x_2270630_pttrailb_pedido'},
+  {k:'C',app:'c921f379c3cc17101cbdb8e1b401316e',table:'x_2270630_pttrailc_pedido'}];
+ async function req(url,method='GET',body){const r=await fetch(url,{method,headers:h,...(body?{body:JSON.stringify(body)}:{})});let t=await r.text(),j;try{j=JSON.parse(t)}catch{j={raw:t.slice(0,180)}}return {status:r.status,data:j}}
+ const out=[];for(const a of apps){await req('/api/now/ui/concoursepicker/application','PUT',{app_id:a.app});let s=await req('/api/now/table/sys_ui_section?sysparm_query='+encodeURIComponent('name='+a.table+'^view=Default view')+'&sysparm_fields=sys_id,name,view,caption,sys_scope&sysparm_limit=5');let section=s.data?.result?.[0];let createdSection=null;if(!section){createdSection=await req('/api/now/table/sys_ui_section','POST',{name:a.table,view:'Default view',caption:'[PT] Campos de teste '+a.k});section=createdSection.data?.result;}else if(a.k==='A'){createdSection=await req('/api/now/table/sys_ui_section/'+section.sys_id,'PATCH',{caption:'[PT] Campos de teste A'});}
+  if(!section?.sys_id){out.push({app:a.k,sectionError:createdSection});continue;}let e=await req('/api/now/table/sys_ui_element?sysparm_query='+encodeURIComponent('sys_ui_section='+section.sys_id)+'&sysparm_fields=element,position&sysparm_limit=100');let elements=e.data?.result||[];let pos=Math.max(-1,...elements.map(x=>Number(x.position)||0))+1;const fields=['u_categoria','u_valor','u_aprovador','u_data_limite'];const made=[];for(const f of fields){if(elements.some(x=>x.element===f)){made.push({field:f,exists:true});continue;}const p=await req('/api/now/table/sys_ui_element','POST',{sys_ui_section:section.sys_id,element:f,position:String(pos++)});made.push({field:f,status:p.status,id:p.data?.result?.sys_id,error:p.data?.error?.message});}out.push({app:a.k,section:section.sys_id,sectionStatus:createdSection?.status||200,elements:made});}
+ return JSON.stringify(out);
+})()`, '_layoutFields');
+for(;;){await new Promise(r=>setTimeout(r,1000));const t=readPortalTask('_layoutFields');if(t?.done){if(t.error)throw new Error(t.error);const x=JSON.parse(t.result);writeFileSync('tests/regression/escopo/layouts.json',JSON.stringify(x,null,2)+'\n');console.log(JSON.stringify(x,null,2));break;}process.stdout.write('.');}

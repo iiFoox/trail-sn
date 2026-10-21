@@ -1,0 +1,83 @@
+{
+  "include": {
+    "record": {
+      "sys_id": "f410800ac38057101cbdb8e1b40131d6",
+      "number": "TASK0020712",
+      "short_description": "[PT] Script Include A",
+      "u_categoria": "3"
+    },
+    "audit": [
+      {
+        "fieldname": "u_categoria",
+        "newvalue": "3",
+        "sys_created_on": "2026-10-21 14:31:37",
+        "tablename": "x_2270630_pttrail__pedido_audit",
+        "oldvalue": "2"
+      },
+      {
+        "fieldname": "short_description",
+        "newvalue": "[PT] Script Include A",
+        "sys_created_on": "2026-10-21 14:31:37",
+        "tablename": "x_2270630_pttrail__pedido_audit",
+        "oldvalue": "[PT] Fonte script include"
+      }
+    ]
+  },
+  "after": {
+    "record": {
+      "sys_id": "c110804ac38057101cbdb8e1b40131ec",
+      "number": "TASK0020713",
+      "u_aprovador": "",
+      "u_valor": "333"
+    },
+    "audit": []
+  },
+  "async": {
+    "record": {
+      "sys_id": "6d10c04ac38057101cbdb8e1b401310e",
+      "number": "TASK0020714",
+      "u_data_limite": "",
+      "state": "3"
+    },
+    "audit": [
+      {
+        "fieldname": "closed_at",
+        "newvalue": "2026-10-21 14:31:40",
+        "sys_created_on": "2026-10-21 14:31:40",
+        "tablename": "x_2270630_pttrail__pedido_audit",
+        "oldvalue": ""
+      },
+      {
+        "fieldname": "active",
+        "newvalue": "0",
+        "sys_created_on": "2026-10-21 14:31:40",
+        "tablename": "x_2270630_pttrail__pedido_audit",
+        "oldvalue": "1"
+      },
+      {
+        "fieldname": "closed_by",
+        "newvalue": "6816f79cc0a8016401c5a33be04be441",
+        "sys_created_on": "2026-10-21 14:31:40",
+        "tablename": "x_2270630_pttrail__pedido_audit",
+        "oldvalue": ""
+      },
+      {
+        "fieldname": "state",
+        "newvalue": "3",
+        "sys_created_on": "2026-10-21 14:31:40",
+        "tablename": "x_2270630_pttrail__pedido_audit",
+        "oldvalue": "2"
+      }
+    ]
+  },
+  "incident": {
+    "status": 201,
+    "record": {
+      "sys_id": "8420c04ac38057101cbdb8e1b401313f",
+      "number": "INC0010176",
+      "short_description": "[PT] Escopo A grava incidente global",
+      "urgency": "1"
+    },
+    "audit": []
+  }
+}

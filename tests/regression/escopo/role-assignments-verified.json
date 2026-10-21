@@ -1,0 +1,87 @@
+{
+  "user": "admin",
+  "app": "global",
+  "assignments": [
+    {
+      "username": "pt.trail.escopo.user",
+      "role": "x_2270630_pttrail_.user",
+      "status": 200,
+      "count": 1,
+      "ids": [
+        "8c623ff9c3cc17101cbdb8e1b4013197"
+      ]
+    },
+    {
+      "username": "pt.trail.escopo.admin",
+      "role": "x_2270630_pttrail_.user",
+      "status": 200,
+      "count": 1,
+      "ids": [
+        "8c623ff9c3cc17101cbdb8e1b40131ff"
+      ]
+    },
+    {
+      "username": "pt.trail.escopo.admin",
+      "role": "x_2270630_pttrail_.admin",
+      "status": 200,
+      "count": 1,
+      "ids": [
+        "58627ff9c3cc17101cbdb8e1b4013109"
+      ]
+    },
+    {
+      "username": "pt.trail.escopo.userb",
+      "role": "x_2270630_pttrailb.user",
+      "status": 200,
+      "count": 1,
+      "ids": [
+        "ac627ff9c3cc17101cbdb8e1b401313c"
+      ]
+    },
+    {
+      "username": "pt.trail.escopo.adminb",
+      "role": "x_2270630_pttrailb.user",
+      "status": 200,
+      "count": 1,
+      "ids": [
+        "7c627ff9c3cc17101cbdb8e1b4013164"
+      ]
+    },
+    {
+      "username": "pt.trail.escopo.adminb",
+      "role": "x_2270630_pttrailb.admin",
+      "status": 200,
+      "count": 1,
+      "ids": [
+        "09627ff9c3cc17101cbdb8e1b401316e"
+      ]
+    },
+    {
+      "username": "pt.trail.escopo.userc",
+      "role": "x_2270630_pttrailc.user",
+      "status": 200,
+      "count": 1,
+      "ids": [
+        "d9627ff9c3cc17101cbdb8e1b40131ba"
+      ]
+    },
+    {
+      "username": "pt.trail.escopo.adminc",
+      "role": "x_2270630_pttrailc.user",
+      "status": 200,
+      "count": 1,
+      "ids": [
+        "2d627ff9c3cc17101cbdb8e1b40131c9"
+      ]
+    },
+    {
+      "username": "pt.trail.escopo.adminc",
+      "role": "x_2270630_pttrailc.admin",
+      "status": 200,
+      "count": 1,
+      "ids": [
+        "e5627ff9c3cc17101cbdb8e1b40131d3"
+      ]
+    }
+  ]
+}
