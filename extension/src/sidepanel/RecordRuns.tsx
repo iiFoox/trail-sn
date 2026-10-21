@@ -17,7 +17,7 @@ import { ErrorMsg } from './ErrorMsg';
 const P = t(getPrefs().lang).p;
 const isDemo = new URLSearchParams(location.search).has('demo');
 
-export function RecordRuns({ table, sysId, origin, items }: { table: string; sysId: string; origin: string; items: BatchItem[] }) {
+export function RecordRuns({ table, sysId, origin, items, labels = {}, open = true }: { table: string; sysId: string; origin: string; items: BatchItem[]; labels?: Record<string, string>; open?: boolean }) {
   const [res, setRes] = useState<TableAutomations>();
   const [err, setErr] = useState('');
   const [query, setQuery] = useState('');
@@ -51,7 +51,7 @@ export function RecordRuns({ table, sysId, origin, items }: { table: string; sys
         {isDemo ? <span class="lnk">{a.name}</span> : <a href={recordLink(origin, linkTable, a.sysId)} target="_blank" rel="noreferrer">{a.name}</a>}
         {hit(a) && <small class="fl-tag ran">{P.flRanHere}</small>}
         <div class="det">{[a.detail, a.table !== table && a.table !== linkTable ? a.table : '', a.scope ? fmt(P.flScope, { scope: a.scope }) : ''].filter(Boolean).join(' · ')}</div>
-        {a.writes.length > 0 && <small class="fl-writes">{P.flWrites} {a.writes.slice(0, 8).map((w) => <code>{w}</code>)}</small>}
+        {a.writes.length > 0 && <small class="fl-writes">{P.flWrites} {a.writes.slice(0, 8).map((w) => <code title={w}>{labels[w] || w}</code>)}</small>}
       </div>
     </div>
   );
@@ -64,7 +64,7 @@ export function RecordRuns({ table, sysId, origin, items }: { table: string; sys
     ] as const).map(([key, title, icon, tbl, list]) => ({ key, title, icon, denied: res.access[tbl] === 'denied', count: pick(list).length, body: pick(list).map((a) => row(a, tbl)) })),
     (() => {
       const fl = res.flows ? filterFlows(res.flows, terms, onlyRan) : undefined;
-      return { key: 'fl', title: P.rrFlows, icon: Glyph.flow, denied: false, count: (fl?.runs.length ?? 0) + (fl?.definitions.length ?? 0), body: fl ? <FlowsView res={fl} origin={origin} filtered={filtering} /> : null };
+      return { key: 'fl', title: P.rrFlows, icon: Glyph.flow, denied: false, count: (fl?.runs.length ?? 0) + (fl?.definitions.length ?? 0), body: fl ? <FlowsView res={fl} origin={origin} filtered={filtering} labels={labels} /> : null };
     })(),
     ...([
       ['cs', P.rrCs, Glyph.terminal, 'sys_script_client', res.clientScripts],
@@ -77,7 +77,7 @@ export function RecordRuns({ table, sysId, origin, items }: { table: string; sys
   ].filter((g) => g.count > 0 || (g.denied && !filtering));
   const total = groups.reduce((n, g) => n + g.count, 0);
   return (
-    <details class="box fold rruns" open>
+    <details class="box fold rruns" open={open}>
       <summary><h4>{P.rrTitle}<span>{res ? total : ''} {Glyph.chevron}</span></h4></summary>
       <div class="muted small pad">{fmt(P.rrHint, { table })}</div>
       {res && (

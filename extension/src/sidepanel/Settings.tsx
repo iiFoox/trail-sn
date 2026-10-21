@@ -70,19 +70,23 @@ export function Settings({ demo, canPin, onPin, onClose }: { demo: boolean; canP
         <Choice label={s.stTheme} value={p.theme} options={[['dark', s.stDark], ['light', s.stLight], ['system', s.stSystem]]} onChange={(theme) => set({ theme })} />
         <Choice label={s.stLang} value={p.lang} options={[['pt', 'Português'], ['en', 'English']]} onChange={(lang) => set({ lang })} />
         <Switch on={p.motion} label={s.stMotion} hint={s.stMotionHint} onChange={(motion) => set({ motion })} />
-        <div class="st-row">
-          <span class="grow"><b>{s.stKey}</b><small>{s.stKeyHint}</small></span>
-          <button type="button" class={`st-key ${recording ? 'rec' : ''}`} onClick={() => setRecording(!recording)}>
-            {recording ? s.stKeyPress : p.panelKey ? <kbd>{p.panelKey}</kbd> : s.stKeyNone}
-          </button>
-        </div>
-        <div class="st-links">
-          {p.panelKey !== DEFAULT_PANEL_KEY && <button type="button" class="btn link sm" onClick={() => set({ panelKey: DEFAULT_PANEL_KEY })}>{s.stKeyReset}</button>}
-          {p.panelKey && <button type="button" class="btn link sm" onClick={() => set({ panelKey: '' })}>{s.stKeyOff}</button>}
+        {/* Atalho e as ações dele no mesmo item ("Desligar atalho" não fica solto fora do cartão). */}
+        <div class="st-row col st-keyrow">
+          <div class="st-keyline">
+            <span class="grow"><b>{s.stKey}</b><small>{s.stKeyHint}</small></span>
+            <button type="button" class={`st-key ${recording ? 'rec' : ''}`} onClick={() => setRecording(!recording)}>
+              {recording ? s.stKeyPress : p.panelKey ? <kbd>{p.panelKey}</kbd> : s.stKeyNone}
+            </button>
+          </div>
+          <div class="st-links">
+            {p.panelKey !== DEFAULT_PANEL_KEY && <button type="button" class="btn link sm" onClick={() => set({ panelKey: DEFAULT_PANEL_KEY })}>{s.stKeyReset}</button>}
+            {p.panelKey && <button type="button" class="btn link sm" onClick={() => set({ panelKey: '' })}>{s.stKeyOff}</button>}
+          </div>
         </div>
         <Switch on={p.showIcons} label={s.stIcons} hint={s.stIconsHint} onChange={(showIcons) => set({ showIcons })} />
         <Switch on={p.showBubble} label={s.stBubble} hint={s.stBubbleHint} onChange={(showBubble) => set({ showBubble })} />
         <Choice label={s.stMode} value={p.panelMode} options={[['float', s.stModeFloat], ['side', s.stModeSide], ['window', s.stModeWindow]]} onChange={(panelMode) => set({ panelMode })} />
+        <div class="st-row col st-keys"><b>{s.p.ux.stKeysTitle}</b><small>{s.p.ux.stKeysHint}</small></div>
         {canPin && <button type="button" class="btn sm full" onClick={onPin}>{s.floatPin}</button>}
         <button type="button" class="btn link sm" onClick={() => { if (!demo) void chrome.runtime.openOptionsPage(); }}>{s.stAll}</button>
       </div>

@@ -21,7 +21,7 @@ export interface PageContext {
  */
 export type Message =
   | { type: 'context'; ctx: PageContext }
-  | { type: 'investigate'; origin: string; target: Target; token?: string; language?: string; mode?: import('./prefs').PanelMode; tabId?: number }
+  | { type: 'investigate'; origin: string; target: Target; token?: string; language?: string; mode?: import('./prefs').PanelMode; tabId?: number; /** Rótulo do campo e número do registro, só para o painel mostrar enquanto analisa. */ label?: string; display?: string }
   | { type: 'toggle-icons' }
   | { type: 'timeline'; origin: string; target: { table: string; sysId: string }; language?: string; tabId?: number }
   | { type: 'scan-conflicts'; origin: string; table: string }
@@ -41,7 +41,13 @@ export type Message =
   | { type: 'activate'; origin: string }
   | { type: 'deactivate'; origin: string }
   | { type: 'clear-cache'; origin: string }
-  | { type: 'open-diff-popup'; key: string };
+  | { type: 'open-diff-popup'; key: string }
+  // Telas novas (4 abas): cada uma chama um motor que já existe no core; todas só leem.
+  | { type: 'field-rules'; origin: string; target: { table: string; field: string }; language?: string; tabId?: number }
+  | { type: 'simulate-value'; origin: string; target: { table: string; sysId: string; field: string; value: string }; language?: string; tabId?: number }
+  | { type: 'save-timing'; origin: string; target: { table: string; sysId: string; at?: string; checkpoint?: number }; tabId?: number }
+  | { type: 'visibility'; origin: string; target: { table: string; sysId: string; user?: string; field?: string }; language?: string; tabId?: number }
+  | { type: 'compare-instances'; origin: string; other: string; target: { table: string; field: string }; language?: string; tabId?: number };
 
 export type ProbeStep = 'cookie' | 'pageToken' | 'htmlToken' | 'htmlTokenMissing';
 export type ProbeConclusion = 'cookieOnly' | 'tokenPage' | 'tokenHtml' | 'unauthorized' | 'inconclusive';
@@ -62,6 +68,8 @@ export interface TabState {
   startedAt?: string;
   result?: Investigation;
   error?: string;
+  /** O que está sendo (ou foi) pedido: o painel mostra "INC0010001 · State" ao carregar e refaz o pedido em "Tentar de novo". */
+  pending?: { target: Target; label?: string; display?: string };
   access?: AccessReport;
   /** Investigação em lote (vários registros, um campo), iniciada pela lista. */
   batch?: { table: string; field: string; items: BatchItem[]; status: 'running' | 'done'; startedAt: string; ms?: number; error?: string;

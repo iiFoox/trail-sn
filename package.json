@@ -15,7 +15,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc -b",
     "regression": "node --import tsx tests/regression/run.mts",
-    "e2e": "node tests/e2e/smoke.mjs && node tests/e2e/content-ui16.mjs && node tests/e2e/content-list.mjs && node tests/e2e/content-portal.mjs && node tests/e2e/content-workspace.mjs && node tests/e2e/prefs-window.mjs && node tests/e2e/float.mjs && node tests/e2e/reload.mjs && node tests/e2e/flows.mjs && node tests/e2e/settings.mjs && node tests/e2e/fieldlock.mjs",
+    "e2e": "node tests/e2e/smoke.mjs && node tests/e2e/content-ui16.mjs && node tests/e2e/content-list.mjs && node tests/e2e/content-portal.mjs && node tests/e2e/content-workspace.mjs && node tests/e2e/prefs-window.mjs && node tests/e2e/float.mjs && node tests/e2e/reload.mjs && node tests/e2e/flows.mjs && node tests/e2e/settings.mjs && node tests/e2e/fieldlock.mjs && node tests/e2e/tabs4.mjs",
     "shots": "node tests/e2e/screenshots.mjs light && node tests/e2e/screenshots.mjs dark"
   },
   "devDependencies": {

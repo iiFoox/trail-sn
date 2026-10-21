@@ -1,4 +1,4 @@
-/** Aba Flows (demo): execuções no registro e flows configurados para a tabela; "O que roda neste registro" no registro inteiro; abas cabem em 340 px. */
+/** Flows (demo), agora em Histórico › "O que rodou neste registro": execuções e flows configurados; o mesmo no registro inteiro; abas cabem em 340 px. */
 import { chromium } from 'playwright';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
@@ -15,17 +15,21 @@ try {
   page.on('pageerror', (e) => errors.push('page: ' + e.message));
   for (const w of [420, 340]) {
     await page.setViewportSize({ width: w, height: 800 });
+    // tab=flows é apelido antigo: abre em Histórico, onde os flows ficam dentro de "O que rodou neste registro".
     await page.goto(`chrome-extension://${id}/src/sidepanel/index.html?demo=1&float=1&tab=flows`);
+    await page.waitForSelector('.rruns .grp', { state: 'attached' });
+    await page.click('.rruns > summary');
+    await page.locator('.rruns .grp > summary', { hasText: 'Flows' }).click();
     await page.waitForSelector('.fl-run');
     out[w] = await page.evaluate(() => {
       const t = document.querySelector('.seg-tabs'), a = t.querySelector('button[aria-selected="true"]');
       const tr = t.getBoundingClientRect(), ar = a.getBoundingClientRect();
       const runs = [...document.querySelectorAll('.fl-run')];
-      return { runs: runs.length, nested: runs.filter((r) => r.classList.contains('sub')).length, secondIsNested: runs[1]?.classList.contains('sub'), defs: document.querySelectorAll('.fl-def').length, active: a.textContent, activeVisible: ar.left >= tr.left - 1 && ar.right <= tr.right + 1 };
+      return { runs: runs.length, nested: runs.filter((r) => r.classList.contains('sub')).length, secondIsNested: runs[1]?.classList.contains('sub'), defs: document.querySelectorAll('.fl-def').length, active: a.dataset.tab, activeVisible: ar.left >= tr.left - 1 && ar.right <= tr.right + 1, writes: [...document.querySelectorAll('.fl-def .fl-writes code')].map((c) => c.textContent) };
     });
-    if (out[w].runs !== 2 || out[w].defs !== 2) errors.push(`aba Flows sem as listas em ${w}px: ` + JSON.stringify(out[w]));
+    if (out[w].runs !== 2 || out[w].defs !== 2) errors.push(`Flows sem as listas em ${w}px: ` + JSON.stringify(out[w]));
     if (out[w].nested !== 1 || !out[w].secondIsNested) errors.push(`subflow sem recuo logo abaixo do flow pai em ${w}px: ` + JSON.stringify(out[w]));
-    if (out[w].active !== 'Flows' || !out[w].activeVisible) errors.push(`aba Flows ativa fora da vista em ${w}px: ` + JSON.stringify(out[w]));
+    if (out[w].active !== 'history' || !out[w].activeVisible) errors.push(`aba Histórico ativa fora da vista em ${w}px: ` + JSON.stringify(out[w]));
   }
   await page.setViewportSize({ width: 420, height: 1300 });
   await page.goto(`chrome-extension://${id}/src/sidepanel/index.html?demo=1&float=1&batch=rec`);

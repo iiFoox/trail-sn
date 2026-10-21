@@ -251,11 +251,22 @@ function decorateForm(): void {
     if (!field || done.has(field)) continue;
     done.add(field);
     decorated.add(label);
-    label.appendChild(makeIcon(field));
+    label.appendChild(makeIcon(field, undefined, undefined, labelText(label)));
   }
 }
 
-function makeIcon(field: string, title?: string, onClick?: () => void): HTMLElement {
+/** Texto do rótulo como aparece no formulário (sem o asterisco de obrigatório nem espaços extras). */
+function labelText(el: Element | null | undefined): string {
+  const t = (el?.querySelector('.label-text') ?? el)?.textContent ?? '';
+  return t.replace(/\s+/g, ' ').replace(/^\*\s*/, '').trim().slice(0, 80);
+}
+
+/** Número do registro (INC0010001) pelo título da página, para o painel mostrar enquanto analisa. */
+function recordDisplay(): string | undefined {
+  try { return (window.top?.document.title ?? document.title).match(/\b([A-Z]{2,8}\d{4,})\b/)?.[1]; } catch { return document.title.match(/\b([A-Z]{2,8}\d{4,})\b/)?.[1]; }
+}
+
+function makeIcon(field: string, title?: string, onClick?: () => void, label?: string): HTMLElement {
   const host = document.createElement('span');
   host.className = 'trail-host';
   host.style.cssText = `display:${showIcons ? 'inline-block' : 'none'};margin-left:5px;vertical-align:middle;line-height:0;`;
@@ -268,21 +279,28 @@ function makeIcon(field: string, title?: string, onClick?: () => void): HTMLElem
       button:hover,button:focus-visible{opacity:1;color:#62d84e;background:#032d42;border-color:#032d42;box-shadow:0 0 0 3px rgba(98,216,78,.22)}
       svg{width:12px;height:12px;display:block}
     </style>
-    <button type="button" title="${title ?? `${strings.whyChanged} · ${field}`}" aria-label="${title ?? strings.whyChanged} (${field})">
+    <button type="button">
       ${TRAIL_GLYPH('currentColor', 2.8)}
     </button>`;
-  root.querySelector('button')!.addEventListener('click', (ev) => {
+  // Rótulo do formulário no lugar do nome técnico (que fica só no aria-label, para leitores de tela e suporte).
+  const btn = root.querySelector('button')!;
+  btn.title = title ?? `${strings.whyChanged} · ${label || field}`;
+  btn.setAttribute('aria-label', `${title ?? strings.whyChanged} (${label || field})`);
+  btn.addEventListener('click', (ev) => {
     ev.preventDefault();
     ev.stopPropagation();
-    if (onClick) onClick(); else investigate(field);
+    if (onClick) onClick(); else investigate(field, label);
   });
   return host;
 }
 
-function investigate(field: string): void {
+function investigate(field: string, label?: string): void {
   if (!ctx.table || !ctx.sysId) return;
+  const display = recordDisplay();
   chrome.runtime.sendMessage({
     type: 'investigate',
+    ...(label ? { label } : {}),
+    ...(display ? { display } : {}),
     origin,
     token: ctx.token,
     language: ctx.language,
@@ -318,7 +336,7 @@ function decoratePortal(): void {
     const field = span.id.slice('sp_field_label_'.length);
     if (!/^[a-z0-9_]+$/.test(field)) continue;
     decorated.add(span);
-    span.after(makeIcon(field));
+    span.after(makeIcon(field, undefined, undefined, labelText(span)));
   }
 }
 
@@ -374,7 +392,7 @@ function decorateWorkspace(): void {
     const label = el.shadowRoot.querySelector('.now-form-field-label, label');
     if (!label) continue;
     decorated.add(el);
-    label.appendChild(makeIcon(field));
+    label.appendChild(makeIcon(field, undefined, undefined, labelText(label)));
   }
 }
 

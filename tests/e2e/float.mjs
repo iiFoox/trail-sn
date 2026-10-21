@@ -86,9 +86,9 @@ try {
   await frame.waitForSelector('header.topbar.drag');
   const nTop = await frame.$$eval('header.topbar', (h) => h.length);
   if (nTop !== 1) errors.push('esperava um cabeçalho só, achei ' + nTop);
-  // Cabeçalho: sem as bolinhas do Mac; à direita, nesta ordem, configurações, painel lateral, tema e fechar.
+  // Cabeçalho: sem as bolinhas do Mac; à direita, nesta ordem, configurações, painel lateral e fechar (o tema fica nas Configurações).
   const actions = await frame.$$eval('header.topbar .actions .icon-btn', (bs) => bs.map((b) => b.getAttribute('aria-label')));
-  const want = ['Configurações', 'Abrir no painel lateral do navegador', 'Alternar tema claro/escuro', 'Fechar (fica a bolinha no canto)'];
+  const want = ['Configurações', 'Abrir no painel lateral do navegador', 'Fechar (fica a bolinha no canto)'];
   if (JSON.stringify(actions) !== JSON.stringify(want)) errors.push('botões do cabeçalho fora da ordem: ' + JSON.stringify(actions));
   if (await frame.locator('header.topbar .lights').count()) errors.push('as bolinhas do Mac ainda estão no cabeçalho');
   // A engrenagem abre as configurações dentro do painel; Esc fecha só a folha.

@@ -87,7 +87,6 @@ export function RecordTimeline({ origin, table, sysId, onField }: { origin: stri
       </ol>
       {filtered.length > shown && <button class="btn sm" onClick={() => setShown(shown + PAGE)}>{fmt(P.tlMore, { n: Math.min(PAGE, filtered.length - shown) })}</button>}
       {data.truncated && <div class="muted small">{P.tlTruncated}</div>}
-      <div class="muted small" style="text-align:center">{fmt(t(getPrefs().lang).timing, { calls: data.timing.calls, ms: data.timing.totalMs })}</div>
     </div>
   );
 }

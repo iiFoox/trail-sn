@@ -2,7 +2,7 @@ import type { AccessReport, Change, Evidence, Investigation, StaticSuspects, Tim
 
 type DemoChange = Omit<Change, 'trace'>;
 import type { ObservedField, TabState } from './messages';
-import { FakeRestClient, fieldStates, type FieldStateResult } from '@trail/core';
+import { FakeRestClient, compareInstances, fieldRules, fieldStates, saveTiming, simulateValue, visibility, type FieldRules, type FieldStateResult, type InstanceComparison, type Row, type SaveTiming, type ValueSimulation, type Visibility } from '@trail/core';
 
 /**
  * Dados de demonstração do painel (sidepanel/index.html?demo=1&field=<campo>).
@@ -362,7 +362,7 @@ export function demoRecord(wait = false): TabState {
 /** Demonstração do lote: 12 incidentes, a categoria mudou por três causas. */
 export function demoBatch(): TabState {
   const mk = (n: number, type: string, name: string, grade: string, user = 'system', at?: string) => ({ sysId: n.toString(16).padStart(32, '0'), display: `INC00${10100 + n}`, title: ['Impressora sem rede', 'VPN cai toda hora', 'Notebook lento', 'E-mail não sincroniza'][n % 4], status: 'done' as const,
-    at: at ?? `2026-10-${10 + (n % 9)} 1${n % 9}:2${n % 6}:00`, oldValue: 'inquiry', newValue: n % 3 ? 'network' : 'hardware', user, changes: 1 + (n % 2), cause: { type, name, grade, score: grade === 'confirmed' ? 85 : 55, sysId: 'demo', table: 'sys_script' } });
+    at: at ?? `2026-10-${10 + (n % 9)} 1${n % 9}:2${n % 6}:00`, oldValue: 'inquiry', newValue: n % 3 ? 'network' : 'hardware', oldDisplay: 'Inquiry / Help', newDisplay: n % 3 ? 'Network' : 'Hardware', user, changes: 1 + (n % 2), cause: { type, name, grade, score: grade === 'confirmed' ? 85 : 55, sysId: 'demo', table: 'sys_script' } });
   const items = [
     ...[1, 2, 3, 4, 5, 6, 7].map((n) => mk(n, 'br_before', 'Categoria pelo grupo de suporte', 'confirmed', 'system', n <= 3 ? '2026-10-19 19:21:00' : undefined)),
     ...[8, 9, 10].map((n) => mk(n, 'user_action', 'beth.anglin', 'confirmed', 'beth.anglin')),
@@ -427,6 +427,7 @@ export function demoObserved(field: string): ObservedField | undefined {
 }
 const P_ = (o: Record<string, string>) => ({ active: 'true', table: 'incident', on_load: 'true', reverse_if_false: 'true', global: 'true', ui_type: '0', run_scripts: 'false', order: '100', ...o });
 const A_ = (o: Record<string, string>) => ({ disabled: 'ignore', mandatory: 'ignore', visible: 'ignore', 'ui_policy.active': 'true', 'ui_policy.table': 'incident', ...o });
+const LOCK_DICT = Object.entries(LOCK_LABELS).map(([element, [column_label, name]]) => ({ sys_id: `d0${element}`.padEnd(32, '0').slice(0, 32), name, element, column_label, active: 'true', mandatory: element === 'short_description' ? 'true' : 'false', read_only: element === 'number' ? 'true' : 'false', internal_type: element === 'assignment_group' ? 'reference' : 'string', ...(element === 'assignment_group' ? { reference: 'sys_user_group' } : {}) }));
 function lockInstance(itil: boolean): FakeRestClient {
   const c = new FakeRestClient();
   c.rows('sys_db_object', [{ name: 'incident', 'super_class.name': 'task' }, { name: 'task', 'super_class.name': '' }]);
@@ -439,7 +440,7 @@ function lockInstance(itil: boolean): FakeRestClient {
     c.rows('sys_dictionary', []);
     return c;
   }
-  c.rows('sys_dictionary', Object.entries(LOCK_LABELS).map(([element, [column_label, name]]) => ({ sys_id: `d0${element}`.padEnd(32, '0').slice(0, 32), name, element, column_label, active: 'true', mandatory: element === 'short_description' ? 'true' : 'false', read_only: element === 'number' ? 'true' : 'false', internal_type: element === 'assignment_group' ? 'reference' : 'string', ...(element === 'assignment_group' ? { reference: 'sys_user_group' } : {}) })));
+  c.rows('sys_dictionary', LOCK_DICT);
   c.rows('sys_dictionary_override', []);
   c.rows('sys_ui_policy', [
     P_({ sys_id: 'a0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5', short_description: 'Resolvido trava o grupo', conditions: 'state=6^EQ', order: '100' }),
@@ -469,4 +470,132 @@ const isItilDemo = () => typeof location !== 'undefined' && new URLSearchParams(
 export async function demoFieldStates(fields: string[]): Promise<FieldStateResult[]> {
   const obs = demoFormStates();
   return fieldStates(lockInstance(isItilDemo()), { table: 'incident', sysId: SYS_ID, fields: fields.map((field) => { const o = obs.find((x) => x.field === field); return { field, ...(o ? { observed: o } : {}) }; }) });
+}
+
+// ---------- Telas novas (Regras do campo, Simular, Salvamento, Quem enxerga, Comparar) ----------
+// Igual ao "Por que está bloqueado?": o motor de verdade roda contra uma instância falsa em memória, então o que
+// aparece na demonstração é o que o motor diria com estas regras. Parâmetros da URL (só no modo demo):
+//   &tab=answer|how|history|rules   aba inicial (tab=trace, proof, flows, whatif e lock ainda valem, como apelidos)
+//   &sim=<valor>                    Regras do campo › Simular um valor, já rodando com o valor (ex.: &sim=7)
+//   &compare=1|nologin|none         Regras do campo › Comparar: com diferenças, outra instância sem login, nenhuma conectada
+//   &visibility=1|<user_name>       Histórico › Quem enxerga este registro, já rodando (1 = abel.tuter, que não vê)
+//   &slow=1|denied                  Como aconteceu › salvamento lento (ou sem acesso às transações)
+//   &access=1 &err=1 &run=1 &empty=1  aviso de acesso, erro, carregando e painel vazio
+
+const DEMO_USERS = { admin: '6816f79cc0a8016401c5a33be04be441', abel: '62826bf03710200044e0bfc8bcbe5df1', howard: ID.howard, beth: ID.beth };
+/** Os mesmos campos de tempo que a instância lista no dicionário (syslog_transaction). */
+const TIMING_DICT = ['response_time', 'client_response_time', 'business_rule_time', 'business_rule_count', 'sql_time', 'sql_count', 'acl_time', 'browser_time', 'client_network_time', 'semaphore_wait_time', 'session_wait_time', 'additional_info']
+  .map((element) => ({ name: 'syslog_transaction', element, internal_type: 'integer' }));
+/** Tabelas que os motores leem e que, nesta instância de mentira, existem e estão vazias (vazio ≠ sem acesso). */
+const EMPTY_SOURCES = ['dl_definition_rel_match', 'dl_definition_rel_set', 'sys_script_include', 'sysrule_assignment', 'sys_hub_action_instance_v2', 'sysauto_script', 'sys_transform_entry',
+  'sys_update_xml', 'sys_update_version', 'sys_update_set', 'sys_hub_flow', 'dl_definition', 'sys_transform_map', 'sys_user_grmember', 'sysevent', 'sys_flow_context', 'syslog'];
+
+const BR = (o: Row): Row => ({ active: 'true', collection: 'incident', when: 'before', order: '100', action_insert: 'false', action_update: 'true', action_delete: 'false', action_query: 'false', filter_condition: '', condition: '', template: '', script: '', sys_updated_on: '2026-09-01 10:00:00', sys_updated_by: 'admin', ...o });
+const INCIDENT_QUERY = 'if (!gs.hasRole("itil") && !gs.hasRole("sn_incident_read") && gs.isInteractive()) {\n\tvar u = gs.getUserID();\n\tvar qc = current.addQuery("caller_id", u).addOrCondition("opened_by", u).addOrCondition("watch_list", "CONTAINS", u);\n}';
+function demoBrs(prod: boolean): Row[] {
+  return [
+    BR({ sys_id: ID.brAsync, name: '[PERICIA-TESTE] Resolve incidente por palavra-chave', when: 'async', filter_condition: 'descriptionLIKEreiniciada^EQ', script: "current.state = 6;\ncurrent.close_code = 'Solved (Permanently)';\ncurrent.close_notes = 'Resolvido automaticamente';\ncurrent.update();" }),
+    BR({ sys_id: 'b2c3d4e5f60718293a4b5c6d7e8f90a1', name: 'mark_resolved', filter_condition: prod ? 'stateCHANGESTO7^EQ' : 'stateCHANGESTO6^EQ', script: 'current.resolved_by = gs.getUserID();\ncurrent.resolved_at = new GlideDateTime();', sys_updated_on: prod ? '2026-06-02 09:00:00' : '2026-09-01 10:00:00' }),
+    BR({ sys_id: 'c3d4e5f60718293a4b5c6d7e8f90a1b2', name: 'Fecha as tarefas filhas', when: 'after', order: '200', filter_condition: 'stateCHANGESTO7^EQ', script: prod ? "var t = new GlideRecord('incident_task');\nt.addQuery('incident', current.sys_id);\nt.query();\nwhile (t.next()) { t.state = 3; t.update(); }" : "var t = new GlideRecord('incident_task');\nt.addQuery('incident', current.sys_id);\nt.addQuery('active', true);\nt.query();\nwhile (t.next()) { t.state = 3; t.update(); }" }),
+    ...(prod ? [] : [BR({ sys_id: 'd4e5f60718293a4b5c6d7e8f90a1b2c3', name: 'Avisa o SLA quando o estado muda', when: 'async', filter_condition: 'stateVALCHANGES^EQ', script: "gs.eventQueue('incident.state.changed', current);" })]),
+    BR({ sys_id: 'e5f60718293a4b5c6d7e8f90a1b2c3d4', name: 'Calcula prioridade', order: '50', filter_condition: 'impactVALCHANGES^ORurgencyVALCHANGES^EQ', script: 'current.priority = new IncidentUtils().priority(current);' }),
+    BR({ sys_id: 'f60718293a4b5c6d7e8f90a1b2c3d4e5', name: 'incident query', action_query: 'true', action_update: 'false', script: INCIDENT_QUERY }),
+  ];
+}
+function demoInstance(prod = false, slow: string | null = null): FakeRestClient {
+  const c = lockInstance(false);
+  for (const t of EMPTY_SOURCES) c.rows(t, []);
+  c.rows('incident', [{ ...LOCK_REC, description: 'Impressora PRN-3A-01 não responde no ping.', opened_by: DEMO_USERS.admin, watch_list: '', active: 'true', sys_domain: 'global', sys_created_on: T0, sys_updated_on: '2026-10-18 02:40:00', sys_updated_by: 'admin' }]);
+  c.rows('sys_dictionary', [...LOCK_DICT, ...TIMING_DICT]);
+  c.rows('sys_choice', [
+    ...Object.entries(LABELS.state!).filter(([v]) => !prod || v !== '3').map(([value, label]) => ({ name: 'incident', element: 'state', value, label, language: 'en', inactive: 'false', sequence: value })),
+    { name: 'incident', element: 'category', value: 'network', label: 'Network', language: 'en', inactive: 'false' },
+  ]);
+  c.rows('sys_documentation', [{ name: 'incident', element: 'state', label: 'State', language: 'en' }, { name: 'task', element: 'close_notes', label: 'Resolution notes', language: 'en' }, { name: 'incident', element: 'close_code', label: 'Resolution code', language: 'en' }, { name: 'incident', element: 'resolved_by', label: 'Resolved by', language: 'en' }, { name: 'incident', element: 'resolved_at', label: 'Resolved', language: 'en' }]);
+  c.rows('sys_script', demoBrs(prod));
+  c.rows('sys_script_client', [
+    { sys_id: 'a1d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5', name: 'Só coordenador muda o grupo', type: 'onLoad', field: '', table: 'incident', active: 'true', ui_type: '0', global: 'true', script: "function onLoad() {\n  if (!g_user.hasRole('itil_admin'))\n    g_form.setReadOnly('assignment_group', true);\n}" },
+    { sys_id: 'c1d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5', name: 'Resolve: exige código de fechamento', type: 'onChange', field: 'state', table: 'incident', active: 'true', ui_type: '0', global: 'true', script: "function onChange(control, oldValue, newValue) {\n  if (newValue == '6') g_form.setMandatory('close_code', true);\n}" },
+  ]);
+  c.rows('sys_ui_action', [{ sys_id: ID.uiAction, name: 'Resolve Incident', table: 'incident', active: 'true', order: '300', condition: "current.state != 6 && current.state != 7", script: "current.state = 6;\ncurrent.update();" }]);
+  c.rows('sysevent_email_action', [{ sys_id: 'n1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6', name: 'Incidente resolvido: avisa o solicitante', collection: 'incident', active: 'true', condition: 'stateCHANGESTO6^EQ', advanced_condition: '', action_insert: 'false', action_update: 'true', generation_type: 'engine', order: '100' }]);
+  c.rows('contract_sla', [{ sys_id: 's1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6', name: 'Resolução P2 (8 h)', collection: 'incident', active: 'true', start_condition: 'priority=2^EQ', stop_condition: 'state=6^ORstate=7^EQ', pause_condition: 'state=3^EQ', reset_condition: '', cancel_condition: '', resume_condition: '' }]);
+  c.rows('sys_hub_trigger_instance_v2', [{ flow: 'f2a3b4c5d6e7f8091a2b3c4d5e6f7a8b', 'flow.name': 'Fechar tarefas filhas', 'flow.active': 'true', 'flow.sys_class_name': 'sys_hub_flow', trigger_type: 'record_update', trigger_inputs: JSON.stringify([{ name: 'table', value: 'incident' }, { name: 'condition', value: 'state=7^EQ' }]) }]);
+  c.rows('sys_ui_policy', [
+    { sys_id: 'c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5', short_description: 'Resolvido exige categoria', table: 'incident', active: 'true', conditions: prod ? 'state=6^ORstate=7^EQ' : 'state=6^EQ', on_load: 'true', reverse_if_false: 'true', inherit: 'false', global: 'true', view: '', ui_type: '0', order: '200', run_scripts: 'false', script_true: '', script_false: '' },
+    { sys_id: 'a0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5', short_description: 'Resolvido trava o grupo', table: 'incident', active: 'true', conditions: 'state=6^EQ', on_load: 'true', reverse_if_false: 'true', inherit: 'false', global: 'true', view: '', ui_type: '0', order: '100', run_scripts: 'false', script_true: '', script_false: '' },
+  ]);
+  // Transações: uma por gravação do incidente (form salvo pela tela) e as de outros incidentes nas horas antes (o "normal").
+  const tx = (o: Row): Row => ({ sys_id: `tx${(o.sys_created_on ?? '').replace(/\D/g, '')}`, type: 'form', sys_created_by: 'admin', url: `/incident.do?sys_id=${SYS_ID}&sys_uniqueValue=${SYS_ID}&sys_action=sysverb_update`, ...o });
+  const at = [...new Set(Object.values(STORIES).flatMap((st) => st.changes.map((c) => c.at)))];
+  const heavy = slow === '1';
+  const others = Array.from({ length: 14 }, (_, i) => tx({ sys_id: `h${i}`, sys_created_on: shiftUtc('2026-10-17 23:00:00', -i * 600), url: `/incident.do?sys_id=${String(i).padStart(32, 'c')}&sys_uniqueValue=${String(i).padStart(32, 'c')}&sys_action=sysverb_update`, response_time: String(560 + (i % 4) * 30) }));
+  if (slow === 'denied') c.deny('syslog_transaction');
+  else c.rows('syslog_transaction', [...at.map((a) => tx({ sys_created_on: shiftUtc(a, 1), response_time: heavy ? '4870' : '640', business_rule_time: heavy ? '3620' : '180', business_rule_count: heavy ? '17' : '9', sql_time: heavy ? '910' : '150', sql_count: heavy ? '64' : '31', client_response_time: heavy ? '5310' : '900', browser_time: heavy ? '260' : '180', client_network_time: '120', acl_time: '40', semaphore_wait_time: '0', session_wait_time: '0' })), ...others]);
+  c.rows('sys_audit', Object.entries(STORIES).flatMap(([fieldname, st]) => st.changes.map((ch) => ({ fieldname, oldvalue: ch.oldValue, newvalue: ch.newValue, user: ch.user, sys_created_on: ch.at, record_checkpoint: String(ch.checkpoint), tablename: 'incident', documentkey: SYS_ID }))));
+  if (heavy) c.rows('syslog', [{ source: 'mark_resolved', sys_created_on: '2026-10-18 01:37:03' }]);
+  // Quem enxerga: a regra "incident query" do ServiceNow, as ACLs de leitura e as pessoas.
+  c.rows('sys_security_acl', [
+    { sys_id: 'acl0', name: 'incident', 'operation.name': 'read', 'type.name': 'record', active: 'true', condition: '', script: '', advanced: 'false', admin_overrides: 'true' },
+    { sys_id: 'acl1', name: 'incident', 'operation.name': 'read', 'type.name': 'record', active: 'true', condition: 'caller_idDYNAMIC90d1921e5f510100a9ad2572f2b477fe^EQ', script: '', advanced: 'false', admin_overrides: 'true' },
+    { sys_id: 'acl2', name: 'incident.*', 'operation.name': 'read', 'type.name': 'record', active: 'true', condition: '', script: '', advanced: 'false', admin_overrides: 'true' },
+  ]);
+  c.rows('sys_security_acl_role', [{ sys_security_acl: 'acl0', sys_user_role: 'itilid', 'sys_user_role.name': 'itil' }]);
+  c.rows('sys_user', [
+    { sys_id: DEMO_USERS.admin, user_name: 'admin', name: 'System Administrator', active: 'true', sys_domain: 'global' },
+    { sys_id: DEMO_USERS.beth, user_name: 'beth.anglin', name: 'Beth Anglin', active: 'true', sys_domain: 'global' },
+    { sys_id: DEMO_USERS.abel, user_name: 'abel.tuter', name: 'Abel Tuter', active: 'true', sys_domain: 'global' },
+    { sys_id: DEMO_USERS.howard, user_name: 'howard.johnson', name: 'Howard Johnson', active: 'true', sys_domain: 'global' },
+  ]);
+  c.rows('sys_user_has_role', [
+    { user: DEMO_USERS.admin, role: 'adminid', 'role.name': 'admin', inherited: 'false', state: 'active' },
+    { user: DEMO_USERS.howard, role: 'itilid', 'role.name': 'itil', inherited: 'true', state: 'active' },
+  ]);
+  return c;
+}
+function shiftUtc(at: string, sec: number): string {
+  const d = new Date(at.replace(' ', 'T') + 'Z');
+  return new Date(d.getTime() + sec * 1000).toISOString().replace('T', ' ').slice(0, 19);
+}
+const demoParam = (k: string) => (typeof location !== 'undefined' ? new URLSearchParams(location.search).get(k) : null);
+const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Regras do campo (Quem grava + Quem depende) na instância de demonstração. */
+export async function demoFieldRules(field: string): Promise<FieldRules> {
+  const r = await fieldRules(demoInstance(), { table: 'incident', field }, { language: 'en' });
+  await pause(500);
+  return r;
+}
+/** "Simular um valor" com o motor de verdade. */
+export async function demoSimulate(field: string, value: string): Promise<ValueSimulation> {
+  const r = await simulateValue(demoInstance(), { table: 'incident', sysId: SYS_ID, field, value, language: 'en', user: { name: 'admin', sysId: DEMO_USERS.admin } });
+  await pause(500);
+  return r;
+}
+/** Tempo do salvamento de uma mudança (`&slow=1`: lento; `&slow=denied`: sem acesso às transações). */
+export async function demoSaveTiming(at: string, checkpoint: number): Promise<SaveTiming> {
+  const r = await saveTiming(demoInstance(false, demoParam('slow')), { table: 'incident', sysId: SYS_ID, at, checkpoint });
+  await pause(400);
+  return r;
+}
+/** Quem enxerga o registro de demonstração. */
+export async function demoVisibility(user: string): Promise<Visibility> {
+  const r = await visibility(demoInstance(), { table: 'incident', sysId: SYS_ID, ...(user ? { user } : {}) }, { language: 'en' });
+  await pause(450);
+  return r;
+}
+/** Pessoas para sugerir no "Quem enxerga" do demo. */
+export const DEMO_PEOPLE = ['admin', 'beth.anglin', 'abel.tuter', 'howard.johnson'];
+export const DEMO_OTHER = 'https://sua-instancia-prod.service-now.com';
+/** Outras instâncias conectadas no demo (`&compare=none`: nenhuma). */
+export function demoOtherInstances(): string[] {
+  return demoParam('compare') === 'none' ? [] : [DEMO_OTHER];
+}
+/** Comparação com a "produção" de mentira (`&compare=nologin`: sem login nela). */
+export async function demoCompare(field: string, other: string): Promise<InstanceComparison> {
+  const b = demoParam('compare') === 'nologin' ? new FakeRestClient() : demoInstance(true);
+  const label = (o: string) => o.replace(/^https?:\/\//, '').split('.')[0]!;
+  const r = await compareInstances({ client: demoInstance(), label: label(DEMO_ORIGIN) }, { client: b, label: label(other) }, { table: 'incident', field }, { language: 'en' });
+  await pause(600);
+  return r;
 }

@@ -36,6 +36,34 @@ function groupSaves(rows: BatchItem[]): SaveGroup[] {
   return [...saves.values()];
 }
 
+/** Lote: uma causa por grupo (a pergunta do lote é "por quê?"), das que mais explicam para as que menos. */
+function groupCauses(rows: BatchItem[]): SaveGroup[] {
+  const by = new Map<string, SaveGroup>();
+  for (const it of rows) {
+    const c = it.cause;
+    const key = c ? `${c.type}|${c.sysId ?? ''}|${c.name}` : 'none';
+    let g = by.get(key);
+    if (!g) by.set(key, (g = { key, at: it.at ?? '', cause: c, user: c?.type === 'user_action' ? c.name : it.user ?? '', items: [] }));
+    g.items.push(it);
+  }
+  return [...by.values()].sort((a, b) => b.items.length - a.items.length);
+}
+
+/** "pela regra “X”", "por beth.anglin", "pela importação “Y”": a causa numa expressão curta. */
+function causePhrase(c: BatchItem['cause']): string {
+  const W = P.ux.btCause as Record<string, string>;
+  if (!c) return W.none!;
+  const k = c.type === 'user_action' ? 'user' : c.type === 'import_set' ? 'import' : c.type === 'flow' || c.type === 'workflow' ? 'flow' : c.type === 'scheduled_job' ? 'job' : c.type === 'ui_action' ? 'button' : /^br_|rule|script_action|data_lookup|server_change/.test(c.type) ? 'rule' : 'other';
+  return fmt(W[k]!, { name: c.name });
+}
+
+/** "7 de 11 mudaram pela regra “X”; 3 por beth.anglin; 1 pela importação “Y”." */
+export function causeSummary(groups: SaveGroup[], total: number): string {
+  const [first, ...rest] = groups;
+  if (!first) return '';
+  return [fmt(P.ux.btSumFirst, { n: first.items.length, total, cause: causePhrase(first.cause) }), ...rest.map((g) => `${g.items.length} ${causePhrase(g.cause)}`)].join('; ') + '.';
+}
+
 function saveTitle(group: SaveGroup, rec: boolean): string {
   const cause = group.cause;
   if (!cause) return P.noTrace;
@@ -60,7 +88,9 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
   const key = (i: BatchItem) => (rec ? i.field ?? '' : i.sysId);
   const groupOf = (i: BatchItem) => groups.find((g) => g.items.includes(key(i)))?.key ?? '';
   const rows = changed.filter((i) => !filter || groupOf(i) === filter).sort((a, c) => ((a.at ?? '') < (c.at ?? '') ? 1 : -1));
-  const saves = groupSaves(rows);
+  const saves = rec ? groupSaves(rows) : groupCauses(rows);
+  // Abertos de saída: os três primeiros grupos, ou todos quando a lista é curta (até 10 linhas).
+  const openFirst = rows.length <= 10 ? saves.length : 3;
   const fieldLabel = b.items.find((i) => i.label)?.label ?? humanField(b.field);
   const title = rec ? fmt(P.btRecTitle, { rec: b.display ?? '' }) : fmt(P.btTitle, { field: fieldLabel, n: b.items.length });
   const sub = rec ? b.items.find((i) => i.title)?.title : b.table;
@@ -96,7 +126,8 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
         {rec && !running && !b.items.length && b.error === undefined && <div class="muted small">{P.btRecEmpty}</div>}
       </div>
 
-      {groups.length > 1 && (
+      {!rec && !running && saves.length > 0 && <div class="bt-sum">{causeSummary(saves, changed.length)}</div>}
+      {rec && groups.length > 1 && (
         <div class="chips bt-chips" role="group" aria-label={P.btFilter}>
           <button aria-pressed={!filter} onClick={() => setFilter('')}>{P.btAll}<i>{changed.length}</i></button>
           {groups.map((g) => (
@@ -114,10 +145,10 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
       <div class="hist bt-list">
         {saves.map((group, i) => {
           const when = parts(group.at);
-          return <details class="bt-group" key={group.key}>
+          return <details class="bt-group" key={group.key} open={i < openFirst}>
             <summary class="bt-group-head">
               <span class="bt-group-arrow" aria-hidden="true" />
-              <span class="bt-group-title"><time dateTime={group.at.replace(' ', 'T') + 'Z'}>{when.date} {when.time}</time> · {saveTitle(group, rec)}
+              <span class="bt-group-title">{rec && <><time dateTime={group.at.replace(' ', 'T') + 'Z'}>{when.date} {when.time}</time> · </>}{saveTitle(group, rec)}
                 {group.cause?.sysId && group.cause.table && group.cause.type !== 'user_action' && <a class="bt-group-link" href={recordLink(origin, group.cause.table, group.cause.sysId)} target="_blank" rel="noreferrer" title={fmt(P.openArtifact, { what: group.cause.name })} aria-label={fmt(P.openArtifact, { what: group.cause.name })} onClick={(e) => e.stopPropagation()}>↗</a>}
               </span>
               <span class="pill">{group.items.length}</span>
@@ -157,7 +188,7 @@ function Row({ it, i, rec, origin, onOpen }: { it: BatchItem; i: number; rec: bo
       <div class="c">
         <div class="what">{rec ? <b class="fl">{it.label ?? humanField(it.field ?? '')}</b> : <><b class="fl">{it.display}</b>{it.title && <span class="muted"> · {it.title}</span>}</>}</div>
         <div class="vals">
-          <Val raw={it.oldValue ?? ''} text={it.oldDisplay} refTable={it.refTable} origin={origin} cls="o" empty={P.btEmpty} /><span class="arr">→</span>
+          <Val raw={it.oldValue ?? ''} text={it.oldDisplay} refTable={it.refTable} origin={origin} cls="o" empty={P.empty} /><span class="arr">→</span>
           <Val raw={it.newValue ?? ''} text={it.newDisplay} refTable={it.refTable} origin={origin} cls="n" empty={P.empty} />
         </div>
       </div>
