@@ -360,3 +360,11 @@ Pedidos do dono depois de testar a 0.12.2 no Edge:
 - A orientação de privacidade agora informa que o Trail processa localmente conteúdo do ServiceNow e envia as consultas diretamente à instância escolhida. Removida a instrução imprecisa de declarar “não coleta dados”; o dono deve confirmar as categorias no painel conforme a política vigente.
 - Pendência identificada na revisão: `site/privacidade/index.html` ainda afirma que não há tratamento de dados pessoais. Atualizar a política publicada para refletir leitura/processamento local de conteúdo do ServiceNow e consultas à instância antes de enviar a listagem.
 - Próximo item da fila: site em inglês com alternador PT/EN (`site/b3`). Nenhum envio às lojas foi feito.
+
+## 21/10/2026, 17h: fechamento da rodada e 1.0.0 pronta para as lojas
+- O Codex e o Antigravity pararam por limite de uso. O Claude integrou o que estava pendente: o tile `docs/store/tile-440x280.png` e a política revisada.
+- Política conferida contra o código e corrigida: acrescentado o token de sessão (`g_ck`) em `chrome.storage.session`; trocado `sys_documentation` (que o motor não lê) por `/api/now/ui/meta`.
+- Versão **1.0.0**: `npm test` com 150/150, build ok, zip `../trail-edge-1.0.0.zip` (cópia `../trail-chrome-1.0.0.zip`).
+- Corrigido `tools/atualizar-extensao.sh`: o Compress-Archive gravava caminhos com `\` dentro do zip (todos os zips anteriores vinham assim); agora usa o `tar` do Windows, com `/`.
+- Os 8 commits locais do Codex (o sandbox dele não tinha rede) foram enviados ao GitHub junto com este.
+- Pendências e ordem de trabalho para a próxima IA: topo de `docs/PROXIMOS-PASSOS.md`.

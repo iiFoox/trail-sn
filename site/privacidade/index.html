@@ -2,38 +2,84 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Trail · Privacidade</title>
+<title>Trail · Política de Privacidade</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20128%20128%22%3E%3Crect%20width%3D%22128%22%20height%3D%22128%22%20rx%3D%2264%22%20fill%3D%22%23032d42%22/%3E%3Ccircle%20cx%3D%2264%22%20cy%3D%2264%22%20r%3D%2238%22%20fill%3D%22none%22%20stroke%3D%22%23244f63%22%20stroke-width%3D%2212%22/%3E%3Cpath%20d%3D%22M64%2026a38%2038%200%201%201-36.4%2027%22%20fill%3D%22none%22%20stroke%3D%22%2362d84e%22%20stroke-width%3D%2212%22%20stroke-linecap%3D%22round%22/%3E%3Cpath%20d%3D%22M18%2040l10%2015%2015-9%22%20fill%3D%22none%22%20stroke%3D%22%2362d84e%22%20stroke-width%3D%229%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3Cpath%20d%3D%22M64%2044v22l14%209%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%229%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E%0A">
 <style>
 :root{--bg:#f6f8fa;--fg:#14202a;--mu:#556270;--line:#dde3e8;--card:#fff;--acc:#1f8476}
 @media (prefers-color-scheme:dark){:root{--bg:#0d1419;--fg:#e8eef2;--mu:#9aa8b4;--line:#22313c;--card:#121c23;--acc:#62d84e}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif}
-main{max-width:720px;margin:0 auto;padding:40px 16px 64px}
-header{display:flex;gap:12px;align-items:center;margin-bottom:24px}header svg{width:40px;height:40px}
-h1{font-size:26px;margin:0}h2{font-size:18px;margin:28px 0 6px}p,li{color:var(--fg)}small,.mu{color:var(--mu)}
-section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 20px 18px;margin-top:18px}
-a{color:var(--acc)}
+main{max-width:760px;margin:0 auto;padding:40px 16px 64px}
+header{display:flex;gap:14px;align-items:center;margin-bottom:24px}header svg{width:44px;height:44px;flex-shrink:0}
+h1{font-size:26px;margin:0}h2{font-size:18px;margin:24px 0 8px}h3{font-size:16px;margin:18px 0 6px}
+p,li{color:var(--fg)}small,.mu{color:var(--mu)}ul{padding-left:22px;margin:8px 0 14px}li{margin-bottom:6px}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 24px 22px;margin-top:20px}
+a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13.5px;background:rgba(120,140,160,.12);padding:2px 6px;border-radius:4px}
 </style>
 </head>
 <body><main>
 <header><svg viewBox="0 0 128 128" aria-hidden="true"><rect width="128" height="128" rx="64" fill="#032d42"/><circle cx="64" cy="64" r="38" fill="none" stroke="#244f63" stroke-width="12"/><path d="M64 26a38 38 0 1 1-36.4 27" fill="none" stroke="#62d84e" stroke-width="12" stroke-linecap="round"/><path d="M18 40l10 15 15-9" fill="none" stroke="#62d84e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M64 44v22l14 9" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>
-<div><h1>Política de privacidade do Trail</h1><small>Atualizada em 19 de outubro de 2026</small></div></header>
+<div><h1>Política de Privacidade do Trail</h1><small>Atualizada em 21 de outubro de 2026 · Versão 1.0.0</small></div></header>
 
 <section lang="pt-BR">
 <h2>Resumo</h2>
-<p>O Trail é uma extensão de navegador somente leitura para ServiceNow. Ela não tem servidor próprio, não coleta dados pessoais, não coleta dados de uso e não envia nada para terceiros.</p>
-<h2>O que a extensão lê</h2>
-<p>Quando você clica no ícone ao lado de um campo, o Trail consulta a instância ServiceNow que você está usando, com a sua própria sessão e apenas com requisições de leitura (GET) na API de tabelas: o registro, a auditoria do campo, rastros de execução e as regras que gravam aquele campo.</p>
-<h2>Onde os dados ficam</h2>
-<p>Os resultados ficam na memória do navegador enquanto o painel está aberto. Preferências (idioma, tema, atalho) e um cache curto de metadados da tabela ficam no armazenamento local da extensão, no seu computador. Nada sai do seu navegador além das consultas à sua própria instância.</p>
-<h2>Permissões</h2>
-<p>O acesso a cada instância é pedido no momento de uso e pode ser retirado a qualquer momento nas configurações de extensões do navegador.</p>
+<p>O Trail é uma extensão de navegador para perícia de alterações e automações em registros do ServiceNow. A extensão processa dados e conteúdos do ServiceNow no próprio navegador do usuário, opera exclusivamente por requisições de leitura (GET) e não envia dados a servidores próprios nem a terceiros (sem telemetria e sem servidores intermediários).</p>
+
+<h2>Dados tratados e conteúdo do ServiceNow</h2>
+<p>Ao navegar em formulários ou listas e ao iniciar uma investigação, o Trail consulta a instância ServiceNow da aba ativa utilizando a sessão autenticada do usuário (via chamadas HTTP <code>GET</code> à API de tabelas):</p>
+<ul>
+  <li><strong>Registros, auditoria e histórico de alterações:</strong> lê o registro aberto, entradas de auditoria (<code>sys_audit</code>), registros de transações (<code>syslog_transaction</code>), eventos de sistema (<code>sysevent</code>), execuções de flows (<code>sys_flow_context</code>) e automações associadas. Esses registros podem incluir identificadores de usuários e dados pessoais cadastrados no ServiceNow, tais como nomes de usuários, autores de alterações, solicitantes, analistas responsáveis e notas de trabalho (<em>work notes</em> ou comentários do chamado).</li>
+  <li><strong>Contexto de formulário e interface:</strong> inspeciona rótulos e opções dos campos (metadados da tabela em <code>/api/now/ui/meta</code>), valores de campos e metadados de tabelas na página ativa para correlacionar os campos exibidos com o histórico auditado.</li>
+  <li><strong>Processamento local:</strong> a correlação pericial, o cálculo de pontuação de candidatos e a reconstrução da linha do tempo são executados no motor da extensão localmente no navegador.</li>
+</ul>
+
+<h2>Armazenamento e ciclo de vida dos dados (Retenção)</h2>
+<p>Os dados processados pelo Trail são gerenciados localmente nos seguintes mecanismos do navegador:</p>
+<ul>
+  <li><strong>Sessão da extensão (<code>chrome.storage.session</code>):</strong> armazena o estado pericial associado a cada aba (chave <code>tab:tabId</code>), incluindo o resultado da última investigação, investigações em lote, relatório de acessibilidade de fontes e metadados temporários da tabela. Esse estado permanece disponível enquanto a aba do registro estiver aberta — permitindo fechar e reabrir o painel sem perder a análise em andamento —, é limpo ou atualizado quando a página é recarregada ou quando o usuário troca de registro, e é removido quando a respectiva aba é fechada no navegador (<code>chrome.tabs.onRemoved</code>). Toda a área de sessão é descartada ao encerrar o navegador.</li>
+  <li><strong>Token da sessão:</strong> para consultar a instância em nome do usuário, o token de sessão do ServiceNow da página (<code>g_ck</code>) fica guardado em <code>chrome.storage.session</code>, por instância, somente em memória e só enquanto o navegador estiver aberto. Ele nunca é enviado a outro lugar além dessa mesma instância.</li>
+  <li><strong>Armazenamento local da extensão (<code>chrome.storage.local</code>):</strong> armazena o estado de interface do painel flutuante (aberto, fechado ou minimizado), a posição proporcional customizada da bolinha-assistente na tela e o controle de exibição inicial do balão de boas-vindas.</li>
+  <li><strong>Sincronização de preferências (<code>chrome.storage.sync</code>):</strong> armazena as preferências de configuração do usuário (tema visual claro, escuro ou sistema, idioma da extensão, atalho de teclado configurado, preferência entre painel lateral ou janela, exibição de ícones) e a lista de domínios de instâncias que o usuário conectou.</li>
+</ul>
+<p>Nenhum conteúdo de registros, credenciais ou dados periciais são compartilhados com terceiros ou transmitidos para servidores fora da instância ServiceNow conectada pelo usuário.</p>
+
+<h2>Permissões e controle de acesso (ACLs)</h2>
+<ul>
+  <li><strong>Somente leitura (GET):</strong> a extensão emite unicamente requisições de consulta; o código não contém rotas ou instruções para criar, alterar ou apagar registros na instância.</li>
+  <li><strong>Operação sob as permissões da sessão do usuário:</strong> o Trail realiza consultas autenticadas através da sessão do usuário no navegador e recebe apenas o conteúdo que as listas de controle de acesso (ACLs) e regras de segurança do servidor ServiceNow autorizam para aquele perfil. Ele não ignora nem contorna as restrições de segurança do servidor.</li>
+  <li><strong>Permissões sob demanda:</strong> o acesso à instância é concedido apenas quando o usuário decide conectar o Trail naquela origem específica e pode ser revogado a qualquer momento nas configurações de extensões do navegador.</li>
+</ul>
+
 <h2>Contato</h2>
-<p>Dúvidas: pela página da extensão na loja do Edge.</p>
+<p>Dúvidas sobre o funcionamento técnico ou sobre esta política podem ser encaminhadas pela página da extensão nas lojas de aplicativos do navegador ou pelo repositório do projeto.</p>
 </section>
 
 <section lang="en">
-<h2>Privacy policy (English)</h2>
-<p>Trail is a read-only browser extension for ServiceNow. It has no server of its own, collects no personal data and no usage data, and shares nothing with third parties. It reads your ServiceNow instance with your own session, using GET requests to the Table API only. Results stay in browser memory; preferences and a short metadata cache stay in the extension's local storage on your computer. Access to each instance is requested at the moment of use and can be revoked at any time in the browser's extension settings.</p>
+<h2>Privacy Policy (English)</h2>
+<p><strong>Summary:</strong> Trail is a browser extension for ServiceNow record and change forensics. The extension processes ServiceNow data and content locally inside the user's browser, operates strictly via read-only (GET) requests, and does not transmit data to proprietary or third-party servers (zero telemetry and no intermediary backend).</p>
+
+<h2>Data handling and ServiceNow content</h2>
+<p>When you view records or trigger an investigation, Trail queries the active tab's ServiceNow instance using your existing authenticated browser session (via HTTP <code>GET</code> requests to the Table API):</p>
+<ul>
+  <li><strong>Records, audit logs, and change history:</strong> reads the target record, field audit entries (<code>sys_audit</code>), transaction logs (<code>syslog_transaction</code>), system events (<code>sysevent</code>), flow executions (<code>sys_flow_context</code>), and configured business rules. Depending on the ticket or table inspected, this data may contain user identifiers and personal information stored in ServiceNow, such as user names, change authors, callers, assigned technicians, and ticket work notes or comments.</li>
+  <li><strong>Form and UI context:</strong> inspects field labels and choices (table metadata from <code>/api/now/ui/meta</code>), field values, and table metadata on the active page to correlate UI fields with audit history.</li>
+  <li><strong>Local processing:</strong> all forensic correlation, candidate scoring, and timeline reconstruction are performed by the extension engine locally within your browser.</li>
+</ul>
+
+<h2>Data storage and lifecycle (Retention)</h2>
+<p>Data handled by Trail is retained strictly locally within browser storage mechanisms:</p>
+<ul>
+  <li><strong>Extension session storage (<code>chrome.storage.session</code>):</strong> stores per-tab forensic state (keyed by <code>tab:tabId</code>), including the latest field inspection result, batch runs, source access reports, and temporary table metadata. This state remains available while the corresponding tab remains open — allowing users to close and reopen the panel without losing in-flight analysis —, is refreshed or reset when the page reloads or when navigating to another record, and is deleted when the tab is closed (<code>chrome.tabs.onRemoved</code>). All session storage is cleared when the browser is closed.</li>
+  <li><strong>Session token:</strong> to query the instance on the user's behalf, the ServiceNow session token of the page (<code>g_ck</code>) is kept in <code>chrome.storage.session</code>, per instance, only in memory and only while the browser is open. It is never sent anywhere other than that same instance.</li>
+  <li><strong>Extension local storage (<code>chrome.storage.local</code>):</strong> stores floating panel UI state (open, closed, minimized), the assistant bubble's custom proportional screen coordinates, and first-time welcome tip flags.</li>
+  <li><strong>Preferences storage (<code>chrome.storage.sync</code>):</strong> stores user settings (light/dark/system theme, extension language, custom keyboard shortcuts, side panel vs. detached window preference, field icon visibility) and the list of user-connected ServiceNow instance domains.</li>
+</ul>
+<p>No record content, credentials, or forensic data are shared with third parties or transmitted to servers outside the user-connected ServiceNow instance.</p>
+
+<h2>Permissions and access control (ACLs)</h2>
+<ul>
+  <li><strong>Read-only (GET requests only):</strong> the extension exclusively issues query requests; it contains no code paths to insert, update, or delete records or configurations on the instance.</li>
+  <li><strong>Server ACL compliance:</strong> Trail queries ServiceNow through the user's authenticated session and can only access data permitted by the instance's Access Control Lists (ACLs) and security rules for that account. It does not bypass server-side security policies.</li>
+  <li><strong>On-demand permissions:</strong> host access is requested on demand only when you choose to connect a specific instance domain and can be revoked at any time via browser extension settings.</li>
+</ul>
 </section>
 </main></body></html>

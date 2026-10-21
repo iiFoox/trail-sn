@@ -1,4 +1,27 @@
-# Próximos passos (passagem de 21/10/2026: Claude → Codex no comando)
+# Próximos passos
+
+## Estado em 21/10/2026, 17h (leia isto primeiro)
+O Codex #2 e o Antigravity #2 pararam por limite de uso; o Claude fechou a rodada. **A próxima IA assume a coordenação.** Leia também `docs/DIARIO.md` (registro contínuo) e as regras logo abaixo.
+
+**Versão atual: 1.0.0**, pronta para as lojas.
+- Zip: `../trail-edge-1.0.0.zip` (cópia idêntica em `../trail-chrome-1.0.0.zip`), gerado por `bash tools/atualizar-extensao.sh`. O script agora usa o `tar` do Windows: o Compress-Archive gravava caminhos com `\` e a loja do Chrome recusa. `npm test` deu 150/150, e o build passou.
+- Materiais: `docs/loja-edge.md` (textos PT/EN, notas 1.0.0, justificativas de permissões, passo a passo) e `docs/store/` (5 capturas 1280×800, logo 300×300, tile 440×280 do Chrome).
+- Política de privacidade revisada (PT/EN) em `site/privacidade/index.html`, publicada em `https://trail-sn.vercel.app/privacidade/`. Foi conferida contra o código: só GET; token `g_ck` em `storage.session`; estado da aba apagado em `tabs.onRemoved`; preferências e instâncias em `storage.sync`; painel e bolinha em `storage.local`.
+
+### Pendências, em ordem
+1. **Dono:** enviar a 1.0.0 às lojas (Chrome Web Store e Edge Add-ons) com o zip, os materiais de `docs/store/` e a URL da política. Só o dono envia e aceita termos.
+2. **Dono:** testes manuais no Edge e no Chrome (lista no fim deste arquivo), de preferência com a 1.0.0 instalada pela pasta `../trail-extensao`.
+3. **Investigar os 11 "erros de leitura"** da rodada dos 441 casos como `pt.trail.itil` (ver `docs/DIARIO.md`, 21/10). Separar o que é negação esperada do perfil do que é falha real (timeout, parse). Corrigir se for falha do motor.
+4. **e2e:** a cadeia `npm run e2e` parou em `prefs-window` no ambiente do Codex (limitação de janela do Chromium headless). Rodar aqui no Windows; se falhar de novo, tornar o teste tolerante ao headless ou marcá-lo como manual.
+5. **Em aberto:** flows escopados e o papel de desenvolvedor delegado (item 6 abaixo). O Flow Designer do PDI não grava flows novos, e o convite de colaborador foi aprovado mas não aplicou papéis. Só retomar se o PDI melhorar; não insistir.
+6. Depois da publicação: acompanhar a revisão das lojas e responder às perguntas dos revisores com as justificativas de `docs/loja-edge.md`. Mudanças pedidas pela loja viram 1.0.1.
+
+### Estado dos agentes
+- Codex #2: limite de uso até cerca de 19h47 de 21/10. Estava conferindo a política com o código, conferência que o Claude terminou.
+- Antigravity #2: livre. Entregou o tile 440×280 e a política revisada.
+- O sandbox do Codex não alcança o GitHub nem roda esbuild. Por isso a integração final (build, zip, push) deve ser feita por quem tiver acesso: Claude ou o dono.
+
+## Passagem anterior (21/10/2026, manhã: Claude → Codex)
 
 O Claude saiu por limite de tokens. O **Codex #2 coordena** a partir daqui: passa tarefas ao Antigravity #2, integra, testa e faz o commit.
 Antes de tudo, leia `docs/DIARIO.md` (registro contínuo) e `docs/PASSAGEM.md`.
@@ -29,10 +52,10 @@ O pacote `0.14.6` foi copiado para `../trail-extensao` e zipado manualmente (a e
 `TrailRegression.flows` e `TrailRegression.automations` (novos em `tests/regression/browser/entry.ts`) rodaram como admin em incidentes reais [PT] (F14, F7). O flow que rodou aparece marcado "rodou aqui"; o resto: 4 definições de flow, 226 regras de negócio, 23 script includes, 46 client scripts, 23 UI policies, 63 UI actions, 2 data lookups, 6 regras de atribuição e 13 jobs. Acesso "ok" em todas as fontes. Cerca de 2,4 s e 20 chamadas. "Copy State to Incident State" sem campos gravados é correto (o script está vazio na instância).
 
 ## Fila depois disso (em ordem)
-1. Repetir a validação acima como itil (impersonar `pt.trail.itil`, sys_id `3fc011fdc3c4d3101cbdb8e1b401311c`) e como um usuário de escopo. Conferir que as fontes negadas aparecem como "–" / "Seus papéis não mostram…" e que nada é inventado. Voltar ao admin no fim.
+1. **Concluído em 21/10/2026** (ver DIARIO): repetir a validação acima como itil (impersonar `pt.trail.itil`, sys_id `3fc011fdc3c4d3101cbdb8e1b401311c`) e como um usuário de escopo. Conferir que as fontes negadas aparecem como "–" / "Seus papéis não mostram…" e que nada é inventado. Voltar ao admin no fim.
 2. **Concluído em 21/10/2026:** rodar os 441 casos como `pt.trail.itil`. Resultado: 2 causas esperadas; 317 casos sem evidência, 111 com causa candidata e 11 erros de leitura. Fontes negadas incluem `sys_audit`, logs/eventos, workflows, regras, script includes e UI actions. A leitura é compatível com as restrições desse perfil; conferir os números e a análise em `docs/DIARIO.md`. Sessão restaurada e confirmada como admin.
 3. **Concluído em 21/10/2026:** texto neutro para navegadores em `extension/src/shared/i18n.ts` (PT/EN), `site/b3/index.html`, bundles de demonstração `site/assets/icons-BktSENMu.js` e `site/demo/content.js`; expectativa ajustada em `tests/e2e/float.mjs`. Teste `float.mjs` passou. Checks completos e limitações em `docs/DIARIO.md`.
-4. **Concluído com pendências de envio em 21/10/2026:** materiais da loja 1.0.0 em `docs/loja-edge.md` e `docs/store/` (5 capturas 1280×800, logo 300×300, textos PT/EN e instruções). Revisão corrigiu o limite do Edge (6 capturas), links locais e declaração de dados. Antes do envio, criar o tile 440×280 obrigatório no Chrome e atualizar `site/privacidade/index.html`, que ainda diz que a extensão não trata dados pessoais. **Quem envia é o dono.**
+4. **Concluído em 21/10/2026 (tile e política entregues depois; falta só o envio pelo dono):** materiais da loja 1.0.0 em `docs/loja-edge.md` e `docs/store/` (5 capturas 1280×800, logo 300×300, textos PT/EN e instruções). Revisão corrigiu o limite do Edge (6 capturas), links locais e declaração de dados. Antes do envio, criar o tile 440×280 obrigatório no Chrome e atualizar `site/privacidade/index.html`, que ainda diz que a extensão não trata dados pessoais. **Quem envia é o dono.**
 5. **Concluído em 21/10/2026:** site bilíngue PT/EN em `site/b3`, com seletor acessível, persistência em URL e `localStorage`, dicionário de conteúdo completo incluindo os 29 itens do roadmap da Fase 1, e2e de idioma/recarga e layout responsivo. O Antigravity reportou `typecheck`, 150 testes e `_site-demo` aprovados. Na verificação local, `typecheck` passou; `npm test` e `build` foram bloqueados por leitura externa do esbuild, a cadeia e2e parou em `prefs-window` por limitação de janela do Chromium headless, e `_site-demo` só registrou a fonte Google Fonts bloqueada pela rede do sandbox (conteúdo, imagens e overflow passaram). Detalhes em `docs/DIARIO.md`.
 6. **Em aberto, rechecado em 21/10/2026:** flows escopados e o perfil de desenvolvedor delegado continuam sem teste. O Workflow Studio abre a lista e o editor do flow global `[PT] F14`. Após fechar um aviso que cobria “New”, o formulário de criação abriu com o app A selecionado; “Build flow” não avançou e nenhum flow foi gravado. `/now/flow-designer` ainda mostra “Page not found”. O convite “Editor” de `[PT] Escopo dev` para o app A gerou a tarefa `DEV0001001`, salva como “Closed - Approved”; mesmo assim o app mostra zero colaboradores e a conta continua sem papéis. Consultar a rechecagem em `docs/DIARIO.md` e `tests/regression/escopo/RELATORIO.md` antes de retomar.
 7. **Concluído em 21/10/2026:** removida pelo menu do usuário a elevação `security_admin` que estava ativa. Confirmados usuário `admin`, ausência de `security_admin` na lista de papéis da sessão e aplicativo `Global` ao final.
