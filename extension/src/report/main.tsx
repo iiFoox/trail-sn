@@ -17,6 +17,8 @@ document.documentElement.dataset.theme = 'light'; // papel é sempre claro
 const s = t(getPrefs().lang);
 const P = s.p;
 const locale = getPrefs().lang === 'en' ? 'en-US' : 'pt-BR';
+document.documentElement.lang = locale;
+document.title = s.reportTitle;
 type Payload = { r: Investigation; sel: number; origin: string };
 
 const gradeClass = (g: string) => (g === 'confirmed' ? 'hi' : g === 'probable' ? 'md' : 'lo');

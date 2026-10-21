@@ -117,6 +117,15 @@ let minimized = false;
 /** Animações (preferência "Animações" das configurações). */
 let motionOn = true;
 
+/** Textos do painel e do balão no idioma escolhido (o content script manda quando carrega as preferências). */
+let labels = { hide: 'Esconder o painel', close: 'Fechar' };
+export function setFloatLabels(l: { hide: string; close: string }): void {
+  labels = l;
+  const tab = st?.root.querySelector<HTMLButtonElement>('.tab');
+  if (tab) { tab.title = l.hide; tab.setAttribute('aria-label', l.hide); }
+  assistant?.balloon.querySelector('.close')?.setAttribute('aria-label', l.close);
+}
+
 export function setFloatMotion(on: boolean): void {
   motionOn = on;
   for (const id of [HOST_ID, ASSISTANT_ID]) {
@@ -274,7 +283,7 @@ export async function initAssistant(tabId: number, origin: string, enabled: bool
   host.id = ASSISTANT_ID;
   if (!motionOn) host.dataset.motion = 'off';
   const root = host.attachShadow({ mode: 'open' });
-  root.innerHTML = `<style>${ASSISTANT_CSS}</style><button class="bub" type="button" aria-label="Trail" hidden>${TRAIL_MINI(3)}</button><div class="balloon" role="status" hidden><button class="close" type="button" aria-label="Fechar">×</button><b></b><span class="text"></span></div>`;
+  root.innerHTML = `<style>${ASSISTANT_CSS}</style><button class="bub" type="button" aria-label="Trail" hidden>${TRAIL_MINI(3)}</button><div class="balloon" role="status" hidden><button class="close" type="button" aria-label="${labels.close}">×</button><b></b><span class="text"></span></div>`;
   document.documentElement.appendChild(host);
   assistant = { host, balloon: root.querySelector('.balloon')!, edge: sideOf(px), x: px, y: typeof p?.y === 'number' && Number.isFinite(p.y) ? Math.max(0, Math.min(1, p.y)) : 1, origin, tabId, enabled, tip };
   root.querySelector('.close')!.addEventListener('click', hideBalloon);
@@ -496,8 +505,8 @@ function wireResize(s: State): void {
 /** Setinha da lateral: esconde o painel na bolinha do Trail, como minimizar. */
 function wireTab(s: State): void {
   const tab = s.root.querySelector<HTMLButtonElement>('.tab')!;
-  tab.title = 'Esconder o painel';
-  tab.setAttribute('aria-label', 'Esconder o painel');
+  tab.title = labels.hide;
+  tab.setAttribute('aria-label', labels.hide);
   tab.addEventListener('click', () => minimize());
 }
 

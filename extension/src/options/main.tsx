@@ -78,7 +78,8 @@ function Diagnostics({ origins }: { origins: string[] }) {
         <div><b>{s.probe}</b><p class="muted small">{s.probeExplain}</p></div>
         <button class="btn sm" disabled={busy} onClick={() => run(() => send<ProbeResult>({ type: 'probe-auth', origin }), setProbe)}>{Glyph.shield} {s.run}</button>
       </div>
-      {probe && <table class="simple">{probe.steps.map((st) => <tr><td style="width:18px">{st.ok ? '✅' : '❌'}</td><td>{st.label}</td><td><code>{String(st.status)}</code></td></tr>)}</table>}
+      {probe && <table class="simple">{probe.steps.map((st) => <tr><td style="width:18px">{st.ok ? '✅' : '❌'}</td><td>{s.probeStep[st.step] ?? st.step}</td><td><code>{st.step === 'htmlTokenMissing' ? s.probeMissing : String(st.status)}</code></td></tr>)}</table>}
+      {probe && <p class="muted small">{s.probeConclusion[probe.conclusion] ?? probe.conclusion}</p>}
       <div class="diag-row">
         <div><b>{s.checkAccess}</b><p class="muted small">{s.accessExplain}</p></div>
         <button class="btn sm" disabled={busy} onClick={() => run(() => send<AccessReport>({ type: 'check-access', origin, force: true }), setAccess)}>{Glyph.refresh} {s.run}</button>

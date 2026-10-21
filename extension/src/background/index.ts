@@ -456,39 +456,40 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 async function probeAuth(origin: string): Promise<ProbeResult> {
   const url = `${origin}/api/now/table/sys_properties?sysparm_limit=1&sysparm_fields=sys_id`;
   const steps: ProbeResult['steps'] = [];
-  const get = async (label: string, headers: Record<string, string>) => {
+  const get = async (step: ProbeResult['steps'][number]['step'], headers: Record<string, string>) => {
     try {
       const r = await fetch(url, { headers: { Accept: 'application/json', ...headers }, credentials: 'include' });
       const body = (await r.text()).slice(0, 120);
-      steps.push({ label, status: r.status, ok: r.status === 200, detail: body });
+      steps.push({ step, status: r.status, ok: r.status === 200, detail: body });
       return r.status;
     } catch (e) {
-      steps.push({ label, status: String(e), ok: false });
+      steps.push({ step, status: String(e), ok: false });
       return 0;
     }
   };
-  const s1 = await get('GET só com cookie (sem X-UserToken)', {});
+  const s1 = await get('cookie', {});
   const o = await session.get(storageKey.token(origin));
   const pageToken = o[storageKey.token(origin)] as string | undefined;
   let tokenSource: ProbeResult['tokenSource'] = 'none';
   let s2 = 0;
   if (pageToken) {
     tokenSource = 'page';
-    s2 = await get('GET com X-UserToken vindo da página', { 'X-UserToken': pageToken });
+    s2 = await get('pageToken', { 'X-UserToken': pageToken });
   }
   const htmlToken = await fetchTokenFromHtml(origin).catch(() => null);
   let s3 = 0;
   if (htmlToken) {
     if (tokenSource === 'none') tokenSource = 'html';
-    s3 = await get('GET com X-UserToken obtido do HTML (/navpage.do)', { 'X-UserToken': htmlToken });
+    s3 = await get('htmlToken', { 'X-UserToken': htmlToken });
   } else {
-    steps.push({ label: 'Obter g_ck do HTML (/navpage.do)', status: 'não encontrado', ok: false });
+    steps.push({ step: 'htmlTokenMissing', status: '—', ok: false });
   }
-  const conclusion =
-    s1 === 200 ? 'Cookie puro basta: g_ck é opcional neste contexto.' :
-    s2 === 200 || s3 === 200 ? `g_ck é obrigatório e funciona a partir do service worker (fonte: ${s3 === 200 ? 'HTML' : 'página'}).` :
-    s1 === 401 || s2 === 401 || s3 === 401 ? 'Nem cookie nem token funcionaram: verifique se está logado e se a permissão de host foi concedida.' :
-    'Resultado inconclusivo; veja os passos.';
+  const conclusion: ProbeResult['conclusion'] =
+    s1 === 200 ? 'cookieOnly' :
+    s3 === 200 ? 'tokenHtml' :
+    s2 === 200 ? 'tokenPage' :
+    s1 === 401 || s2 === 401 || s3 === 401 ? 'unauthorized' :
+    'inconclusive';
   const result: ProbeResult = { origin, checkedAt: new Date().toISOString(), tokenSource, steps, conclusion };
   await session.set({ [storageKey.probe(origin)]: result });
   return result;

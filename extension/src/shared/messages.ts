@@ -41,12 +41,16 @@ export type Message =
   | { type: 'clear-cache'; origin: string }
   | { type: 'open-diff-popup'; key: string };
 
+export type ProbeStep = 'cookie' | 'pageToken' | 'htmlToken' | 'htmlTokenMissing';
+export type ProbeConclusion = 'cookieOnly' | 'tokenPage' | 'tokenHtml' | 'unauthorized' | 'inconclusive';
+
 export interface ProbeResult {
   origin: string;
   checkedAt: string;
   tokenSource: 'page' | 'html' | 'none';
-  steps: { label: string; status: number | string; ok: boolean; detail?: string }[];
-  conclusion: string;
+  /** Passos e conclusão vão como códigos; a página de opções traduz (pt/en). */
+  steps: { step: ProbeStep; status: number | string; ok: boolean; detail?: string }[];
+  conclusion: ProbeConclusion;
 }
 
 export interface TabState {

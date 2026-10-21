@@ -11,7 +11,7 @@ import { fmt, t } from '../shared/i18n';
 import { comboFromEvent, loadPrefs, normalize, PREFS_KEY, resolvedTheme, type Prefs } from '../shared/prefs';
 import type { PageContext } from '../shared/messages';
 import { openDiffWindow, type DiffWindowRequest } from './diffWindow';
-import { canShowAssistantMessage, disposeFloat, initAssistant, openFloat, setAssistantEnabled, setFloatMotion, setFloatTheme, showAssistantMessage, showFloat, toggleFloat, toggleFloatByKey } from './floatPanel';
+import { canShowAssistantMessage, disposeFloat, initAssistant, openFloat, setAssistantEnabled, setFloatLabels, setFloatMotion, setFloatTheme, showAssistantMessage, showFloat, toggleFloat, toggleFloatByKey } from './floatPanel';
 // Se a cópia anterior ainda responde, ela solta observers e listeners antes desta assumir.
 document.dispatchEvent(new Event('trail:dispose-content'));
 for (const el of deepWalk(document)) {
@@ -58,6 +58,7 @@ document.addEventListener('trail:dispose-content', dispose);
 
 // Idioma do navegador até a preferência chegar do storage; os ícones criados depois já saem no idioma escolhido.
 let strings = t(normalize(undefined).lang);
+setFloatLabels({ hide: strings.floatTabHide, close: strings.balloonClose });
 let panelMode: Prefs['panelMode'] | undefined;
 let theme: 'dark' | 'light' = 'dark';
 /** Atalho das configurações para abrir e fechar o painel, e a aba deste quadro (vem do worker). */
@@ -66,7 +67,7 @@ let knownTabId: number | undefined;
 let showIcons = true;
 const hosts = new Set<HTMLElement>();
 const KEY_HINT = 'Alt+Shift+T';
-void loadPrefs().then((p) => { if (!checkContext()) return; strings = t(p.lang); panelMode = p.panelMode; theme = resolvedTheme(p.theme); panelKey = p.panelKey; setFloatMotion(p.motion); applyIcons(p.showIcons); void restoreFloat(p); }).catch(() => undefined);
+void loadPrefs().then((p) => { if (!checkContext()) return; strings = t(p.lang); setFloatLabels({ hide: strings.floatTabHide, close: strings.balloonClose }); panelMode = p.panelMode; theme = resolvedTheme(p.theme); panelKey = p.panelKey; setFloatMotion(p.motion); applyIcons(p.showIcons); void restoreFloat(p); }).catch(() => undefined);
 
 // ---------- painel flutuante (só no quadro de cima) ----------
 /** Recarregou a página com o painel aberto: ele volta no mesmo estado (aberto ou minimizado). */
@@ -95,6 +96,7 @@ function onPrefsChanged(ch: { [key: string]: chrome.storage.StorageChange }, are
   const before = normalize(ch[PREFS_KEY].oldValue as Partial<Prefs> | undefined);
   const after = normalize(ch[PREFS_KEY].newValue as Partial<Prefs> | undefined);
   panelMode = after.panelMode;
+  if (before.lang !== after.lang) { strings = t(after.lang); setFloatLabels({ hide: strings.floatTabHide, close: strings.balloonClose }); }
   theme = resolvedTheme(after.theme);
   setFloatTheme(theme);
   panelKey = after.panelKey;
