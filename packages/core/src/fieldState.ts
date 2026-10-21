@@ -179,7 +179,8 @@ export async function fieldStates(
   // Registro: pelo sys_id ou, se veio o número, pelo número.
   const byNumber = !/^[0-9a-f]{32}$/.test(target.sysId) && /^[A-Z]{2,}[A-Z0-9]*\d{3,}$/.test(target.sysId);
   const [recRows, dictAll, overridesAll, actionsAll, scriptPols, dpRulesAll, csAll] = await Promise.all([
-    q(table, byNumber ? `number=${target.sysId}` : `sys_id=${target.sysId}`, [], 1),
+    // Sem registro (sysId vazio): só o desenho estático (dicionário, overrides, policies e condições), sem avaliar.
+    target.sysId ? q(table, byNumber ? `number=${target.sysId}` : `sys_id=${target.sysId}`, [], 1) : Promise.resolve([] as Row[]),
     q('sys_dictionary', `name${inT}^element${inF}`, ['sys_id', 'name', 'element', 'read_only', 'mandatory', 'active', 'attributes', 'column_label', 'internal_type'], 200),
     q('sys_dictionary_override', `name${inT}^element${inF}`, ['sys_id', 'name', 'element', 'base_table', 'read_only_override', 'read_only', 'mandatory_override', 'mandatory', 'attributes_override', 'attributes'], 200),
     q('sys_ui_policy_action', `field${inF}^ui_policy.active=true^ui_policy.table${inT}`, ['sys_id', 'ui_policy', 'field', 'disabled', 'mandatory', 'visible', 'table'], 1000),
