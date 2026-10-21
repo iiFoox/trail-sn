@@ -93,30 +93,35 @@
   $$('[data-count]').forEach((b) => no.observe(b));
 
   // ---------- acesso por perfil (observado na PDI) ----------
-  const SRC = ['sys_audit', 'syslog_transaction', 'sysevent', 'sysevent_script_action', 'sys_flow_context', 'wf_context', 'sys_script', 'sys_script_include', 'sys_ui_action', 'sysauto_script', 'sys_db_object'];
+  // O que cada perfil vê, medido no PDI por personificação (docs/sem-admin.md). Por capacidade, como no painel:
+  // o nome técnico fica em letra pequena. ok = vê; part = vê em parte; no = os papéis não mostram.
+  const CAPS = [
+    ['who', 'Quem mudou e quando', 'sys_audit · histórico do formulário'],
+    ['rules', 'Regras automáticas', 'sys_script · sys_script_include'],
+    ['flows', 'Flows e workflows', 'sys_flow_context · wf_context'],
+    ['jobs', 'Jobs agendados', 'sysauto_script'],
+    ['events', 'Eventos e script actions', 'sysevent · sysevent_script_action'],
+    ['actions', 'Botões do formulário', 'sys_ui_action'],
+    ['tx', 'Prova de formulário, API ou job', 'syslog_transaction'],
+  ];
+  const all = (v) => Object.fromEntries(CAPS.map(([k]) => [k, v]));
   const PROFILES = {
-    admin: { lvl: 'full', st: Object.fromEntries(SRC.map((s) => [s, 'ok'])) },
-    reader: { lvl: 'full', st: Object.fromEntries(SRC.map((s) => [s, 'ok'])) },
-    itil: { lvl: 'none', st: { sys_audit: 'no', syslog_transaction: 'no', sysevent: 'em', sysevent_script_action: 'no', sys_flow_context: 'em', wf_context: 'em', sys_script: 'no', sys_script_include: 'no', sys_ui_action: 'ok', sysauto_script: 'em', sys_db_object: 'ok' } },
-    basic: { lvl: 'none', st: Object.fromEntries(SRC.map((s) => [s, s === 'sys_db_object' ? 'ok' : 'no'])) },
+    admin: { st: all('ok'), v: ['Acesso completo', 'Perícia completa.', 'O Trail lê todas as fontes. O painel não mostra nenhum aviso.'] },
+    itil: { st: { ...all('no'), who: 'part' }, v: ['Sem admin · itil', 'Quem mudou e quando, pelo histórico do formulário.', 'A auditoria completa é negada, então o Trail lê o histórico que a pessoa já vê no registro (os campos do Activity Stream). As regras automáticas ficam de fora, e o painel diz isso em palavras.'] },
+    flow: { st: { ...all('no'), who: 'part', flows: 'ok' }, v: ['Sem admin · itil + Flow Designer', 'Linha do tempo e flows.', 'Além do histórico do formulário, o papel de Flow Designer mostra as execuções de flows no registro: o Trail cruza a mudança com elas.'] },
+    basic: { st: all('no'), v: ['Sem leitura do registro', 'Nada para mostrar.', 'Se o login não lê o registro, o Trail também não lê. Ele nunca vê mais do que a pessoa vê.'] },
   };
-  const LABEL = { ok: 'LÊ', no: 'NEGADO', em: 'VAZIO' };
-  const TXT = {
-    full: ['Acesso completo', 'Perícia completa.', 'Todas as fontes leem. O painel não mostra nenhum aviso.'],
-    partial: ['Acesso parcial', 'Perícia com lacunas.', 'Auditoria e metadados lidos, mas algumas fontes estão negadas. BRs assíncronas e UI actions podem não aparecer.'],
-    none: ['Sem perícia', 'A auditoria está negada.', 'Sem sys_audit não há linha do tempo. O painel mostra o que pedir ao administrador, com os nomes técnicos para copiar no chamado.'],
-  };
+  const LABEL = { ok: 'VÊ', part: 'EM PARTE', no: 'NÃO MOSTRA' };
   const srcs = $('#srcs'), verdict = $('#verdict');
-  srcs.innerHTML = SRC.map((s) => `<div class="src" data-s="${s}"><span>${s}</span><span class="st"></span></div>`).join('');
+  srcs.innerHTML = CAPS.map(([k, label, tech]) => `<div class="src cap" data-s="${k}"><span><b>${label}</b><small>${tech}</small></span><span class="st"></span></div>`).join('');
   function profile(p) {
     const pr = PROFILES[p];
-    SRC.forEach((s, i) => setTimeout(() => { const el = $(`.src[data-s="${s}"]`); el.className = 'src ' + pr.st[s]; $('.st', el).textContent = LABEL[pr.st[s]]; }, reduce ? 0 : i * 45));
-    const denied = SRC.filter((s) => pr.st[s] === 'no');
-    const lvl = pr.lvl === 'full' && denied.length ? 'partial' : pr.lvl;
-    verdict.className = 'verdict rv in ' + lvl;
-    const [a, b, c] = TXT[lvl];
+    CAPS.forEach(([k], i) => setTimeout(() => { const el = $(`.src[data-s="${k}"]`); el.className = 'src cap ' + ({ ok: 'ok', part: 'em', no: 'no' })[pr.st[k]] + ' flip'; $('.st', el).textContent = LABEL[pr.st[k]]; }, reduce ? 0 : i * 55));
+    const seen = CAPS.filter(([k]) => pr.st[k] !== 'no').length;
+    verdict.className = 'verdict rv in ' + (p === 'admin' ? 'full' : seen ? 'partial' : 'none');
+    const [a, b, c] = pr.v;
     $('.lvl', verdict).textContent = a; $('h3', verdict).textContent = b; $('p', verdict).textContent = c;
-    $('code', verdict).textContent = denied.length ? 'Negado: ' + denied.join(', ') : (p === 'reader' ? 'Papel: x_trail_reader (read em ' + SRC.length + ' tabelas, nenhuma escrita)' : 'Nenhuma fonte negada');
+    $('code', verdict).textContent = `${seen} de ${CAPS.length} capacidades com o login deste perfil`;
   }
   $$('#seg button').forEach((b) => b.addEventListener('click', () => { $$('#seg button').forEach((x) => x.classList.toggle('on', x === b)); profile(b.dataset.p); }));
   profile('admin');

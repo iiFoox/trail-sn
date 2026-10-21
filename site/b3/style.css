@@ -401,3 +401,8 @@ section{padding-block:84px}
 
 /* Fora da tela, o navegador não desenha os iframes do painel (o que mais pesava a rolagem). */
 .compo .shot .fit,.compo .side,#inside-img,.galbox{content-visibility:auto;contain-intrinsic-size:auto 700px}
+
+/* Simulador de acesso por capacidade (como no painel): rótulo em palavras e o nome técnico pequeno. */
+.src.cap{font:13px var(--sans);align-items:center}
+.src.cap b{display:block;font-weight:600}
+.src.cap small{display:block;font:11px var(--mono);color:var(--fg2,#8ea3ad);opacity:.8;margin-top:2px}
