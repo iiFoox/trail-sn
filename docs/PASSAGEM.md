@@ -1,21 +1,22 @@
 # Trail: passagem do projeto
 
-Estado em 20/10/2026, versão **0.12.7**. Documento para quem continua o projeto, seja outra sessão do Claude, outro agente ou outra pessoa. Leia este arquivo inteiro junto com `docs/DIARIO.md` (o registro contínuo de trabalho) antes de mexer em qualquer coisa.
+Estado em 20/10/2026, versão **0.13.0**. Documento para quem continua o projeto, seja outra sessão do Claude, outro agente ou outra pessoa. Leia este arquivo inteiro junto com `docs/DIARIO.md` (o registro contínuo de trabalho) antes de mexer em qualquer coisa.
 
 ---
 
 ## 1. O que é
 
-O Trail é uma extensão MV3 para Edge e Chrome que responde, para qualquer campo de um registro do ServiceNow: **o que mudou este campo, quando e por quê**. A extensão não grava nada na instância. Ela só lê pela Table API, usando a sessão de quem está logado e o token `X-UserToken`. Não tem telemetria nem servidor próprio.
+O Trail é uma extensão MV3 para Edge e Chrome que responde, para qualquer campo de um registro do ServiceNow: **o que mudou este campo, quando e por quê**. A extensão não grava nada na instância. Ela só lê usando a sessão de quem está logado e o token `X-UserToken`. Não tem telemetria nem servidor próprio.
 
-A pergunta que o produto responde, com detalhes **claros** e que **qualquer pessoa entenda** (mesmo um desenvolvedor), é sempre esta: o que aconteceu, o que está acontecendo, quem ou o quê fez, e com que certeza. Toda mudança de interface deve ser julgada por esse critério. O dono do produto pediu explicitamente que seja simples de usar e de entender.
+A pergunta que o produto responde, com detalhes **claros** e que **qualquer pessoa entenda** (mesmo um desenvolvedor), é sempre esta: o que aconteceu, o que está acontecendo, quem ou o quê fez, e com que certeza. Toda mudança de interface deve ser julgada por esse critério. O dono do produto pediu explicitamente que seja simples de usar e de entender, e que **funcione também para quem não é admin**, sem instalar nada na instância e sem criar papel novo (`docs/sem-admin.md`).
 
 ## 2. Estrutura do repositório
 
 ```
 packages/core/              motor (TypeScript puro, sem navegador; roda em Node e no navegador)
-  src/investigate.ts        pipeline: registro + auditoria → rastros (transações, eventos, flows, workflows,
-                            import sets, contexto gravado) → artefatos → assinaturas → pontuação
+  src/investigate.ts        pipeline: registro + auditoria (ou histórico do formulário) → rastros (transações,
+                            eventos, flows, workflows, import sets, contexto gravado) → artefatos → assinaturas → pontuação
+  src/history.ts            leitura do histórico do formulário quando sys_audit é negada (modo sem admin)
   src/signatures/           uma assinatura por arquivo; recebem dados já carregados, não chamam a rede
   src/scoring.ts            pesos dos fatos (FactKind) e faixas de certeza (confirmed / probable / candidate)
   src/preview.ts            "E se eu mudar?": simula o que roda se o campo for para outro valor (só leitura)
@@ -25,27 +26,27 @@ packages/core/              motor (TypeScript puro, sem navegador; roda em Node 
   src/pingpong.ts           duas automações trocando o valor entre si
   src/display.ts            nomes do formulário: rótulo do campo (sys_documentation + sys_dictionary), texto do choice, nome do registro referenciado
   src/conflicts.ts          regras que gravam o mesmo campo com valores diferentes
-  src/access.ts             detector de acesso (completo / parcial / sem acesso)
+  src/access.ts             detector de acesso e capacidades (completo / parcial / sem acesso + aviso de lentidão)
   src/client/               RestClient (interface), FetchRestClient, FakeRestClient (testes)
-  test/                     133 testes unitários do motor (vitest; 135 no total com extension/test)
+  test/                     138 testes unitários do motor (vitest; 144 no total com extension/test)
 extension/                  MV3 (Preact + Vite)
   public/manifest.json      versão, permissões (host só opcional, por instância)
-  src/background/           service worker: roda o motor, guarda estado por aba em chrome.storage.session, abre o painel, vigia build.txt em modo descompactado e reinjeta abas conectadas
-  src/content/main.ts       ícones nos campos (UI16, Workspace, Service Portal, colunas da lista), contexto da página e limpeza quando o script fica órfão após reload
-  src/content/floatPanel.ts bolinha-assistente (#trail-assistant) e painel flutuante estilo janela do Mac (#trail-float, padrão desde a 0.12)
+  src/background/           service worker: roda o motor, guarda estado por aba (float:<tabId> em storage.local), abre o painel, vigia build.txt em modo descompactado e reinjeta abas conectadas
+  src/content/main.ts       ícones nos campos (UI16, Workspace, Service Portal, colunas da lista), contexto da página, atalho de teclado e limpeza quando o script fica órfão após reload
+  src/content/floatPanel.ts bolinha-assistente (#trail-assistant) e painel flutuante (#trail-float, padrão desde a 0.12)
   src/content/diffWindow.ts janela "lado a lado" da diferença de textos longos
   src/page/                 mundo MAIN: lê g_ck, idioma da sessão e o contexto do formulário
-  src/sidepanel/            o painel: App, Result (5 abas), Batch, Timeline, WhatIf, FieldMap, Loading (trilha com lupa), Val (valor com link)
-  src/options/              opções (tema, idioma, onde abrir o painel, ícones, bolinha-assistente)
+  src/sidepanel/            o painel: App, Result (5 abas), Batch, Timeline, WhatIf, FieldMap, Settings (configurações no painel), Loading (trilha com lupa), Val (valor com link)
+  src/options/              opções completas (tema, idioma, animações, atalho, onde abrir o painel, ícones, bolinha-assistente)
   src/shared/               i18n (pt e en; toda chave nova nas DUAS línguas), ui.css (tokens), demo, prefs, mensagens
-  test/                     2 testes unitários de diff e idioma
+  test/                     6 testes unitários da extensão (i18n, preferências, diff e idioma)
 site/                       site de apresentação (site/b3) com o painel em modo demonstração (sincronizado por tests/e2e/_sync-site.sh)
 tools/                      atualizar-extensao.sh: copia extension/dist para ../trail-extensao (auto-reload) e gera ../trail-edge-<versão>.zip
-tests/e2e/                  8 suítes Playwright com a extensão carregada no Chromium (smoke, ui16, list, portal, workspace, prefs-window, float, reload)
+tests/e2e/                  9 suítes Playwright com a extensão carregada no Chromium (smoke, ui16, list, portal, workspace, prefs-window, float, reload, settings)
 tests/regression/           bateria contra o PDI de testes: cases.json (441 casos), scripts de montagem, testes cegos
   browser/                  bundle IIFE (TrailRegression) para rodar a bateria dentro de uma aba logada
   results/                  relatórios das rodadas (fora do git, no .gitignore)
-docs/                       DIARIO.md (registro contínuo), decisões, papel de leitura mínimo, fase 2 (app escopado), loja do Edge, esta passagem
+docs/                       DIARIO.md (registro contínuo), sem-admin.md (modo sem admin), decisões, papel opcional (papel-leitura.md), fase 2 (app escopado), loja do Edge, esta passagem
 ```
 
 ## 3. Como compilar, testar e atualizar a extensão
@@ -54,16 +55,16 @@ docs/                       DIARIO.md (registro contínuo), decisões, papel de 
 npm install
 npx playwright install chromium
 npm run typecheck                  # tsc -b
-npm test                           # 135 testes unitários (133 do motor + 2 da extensão)
+npm test                           # 144 testes unitários (138 do motor + 6 da extensão)
 npm run build                      # core + extensão → extension/dist (inclui dist/build.txt)
-npm run e2e                        # 8 scripts: smoke, ui16, list, portal, workspace, prefs-window, float e reload
+npm run e2e                        # 9 scripts: smoke, ui16, list, portal, workspace, prefs-window, float, reload e settings
 bash tools/atualizar-extensao.sh   # copia para ../trail-extensao (sem .map) e gera ../trail-edge-<versão>.zip
 ```
 
-- **Carregar no navegador e auto-reload:** abra `edge://extensions` (ou `chrome://extensions`), ligue o modo de desenvolvedor, clique em "Carregar sem compactação" e escolha `../trail-extensao` (gerada por `bash tools/atualizar-extensao.sh`). Quando carregada sem compactação (sem `update_url`), o service worker confere `build.txt` a cada 3 s, recarrega a extensão sozinho quando um novo build é copiado e reinjeta `page.js` e `content.js` nas abas conectadas.
+- **Carregar no navegador e auto-reload:** abra `edge://extensions` (ou `chrome://extensions`), ligue o modo de desenvolvedor, clique em "Carregar sem compactação" e escolha `../trail-extensao` (gerada por `bash tools/atualizar-extensao.sh`). Quando carregada sem compactação (sem `update_url`), o service worker confere `build.txt` a cada 3 s, recarrega a extensão sozinho quando um novo build é copiado e reinjeta `page.js` e `content.js` em todos os frames das abas conectadas.
 - **Nota para Windows + Node 24:** `fs.cpSync` derruba o processo sem mensagem (código 127) no Node 24 para Windows; nos scripts de build/sync use cópia manual arquivo a arquivo.
 - **Ver o painel sem instância (modo demonstração):**
-  - `src/sidepanel/index.html?demo=1&float=1` (cabeçalho de janela flutuante; na gaveta "Investigar", funciona tanto "Um campo" quanto "O registro inteiro")
+  - `src/sidepanel/index.html?demo=1&float=1` (cabeçalho de janela flutuante; na gaveta "Investigar", funciona tanto "Um campo" quanto "O registro inteiro", além de `⚙ Configurações`)
   - `&batch=1` mostra o lote.
   - `&batch=rec` mostra o registro inteiro; `&batch=rec&wait=1` mostra a trilha animada com a lupa em andamento.
   - `&tab=whatif` abre na aba "E se?".
@@ -81,55 +82,54 @@ A bateria roda dentro de uma aba já logada no PDI de testes (por exemplo via po
 
 A alternativa em Node com usuário e senha (`npm run regression`) existe, mas **não foi usada**: a regra é nunca digitar senhas.
 
-## 4. Estado atual (0.12.7)
+## 4. Estado atual (0.13.0)
 
 | Item | Situação |
 |---|---|
-| Versão atual | **0.12.7** |
-| Bateria do PDI | **441/441** com o motor da 0.12.1 (mediana de **2,5 s** e **26 chamadas** por investigação; as 2 chamadas extras vêm de `sys_documentation`) |
+| Versão atual | **0.13.0** |
+| Bateria do PDI | **441/441** com o motor da 0.12.1 (mediana de **2,5 s** e **26 chamadas** por investigação; será atualizada na rodada da 0.13.0) |
 | Testes cegos | blind5: 35/35. blind6: 27/27 alvos válidos (8 excluídos porque os campos não estão no formulário) |
-| Unitários | **135** passando (133 do motor + 2 da extensão) |
-| e2e | **8 de 8** passando (`smoke`, `ui16`, `list`, `portal`, `workspace`, `prefs-window`, `float`, `reload`) |
+| Unitários | **144** passando (138 do motor + 6 da extensão) |
+| e2e | **9 de 9** passando (`smoke`, `ui16`, `list`, `portal`, `workspace`, `prefs-window`, `float`, `reload`, `settings`) |
 | Fase 2 (app escopado) | Protótipo funcionando no PDI de testes (fase 18, 5/5 com certeza alta). Desenho em `docs/fase2-app-escopado.md` |
 
-### O que entrou da 0.12.2 à 0.12.7
+### O que entrou da 0.12.8 à 0.13.0
 
-- **Bolinha-assistente no canto da página (`#trail-assistant`, 0.12.6–0.12.7):**
-  - Fica sempre visível nas páginas da instância conectada (pode ser desligada nas Opções).
-  - Pode ser arrastada (mouse e toque); ao soltar, encosta na borda mais próxima e lembra a posição por instância.
-  - **Boas-vindas e dica (0.12.7):** o balão de boas-vindas aparece uma única vez por registro (`origem + tabela + sys_id`) e fecha após 6 s; a dica rápida só aparece ao passar o mouse sobre a bolinha (`pointerenter`) e some 150 ms depois que o mouse sai. O aviso "Trail conectado" também sai como balão da bolinha, sem cobrir o clique.
-  - Clicar na bolinha abre o painel flutuante; fechar no `X`, apertar `Esc`, clicar na setinha lateral ou minimizar escondem o painel de volta na bolinha.
-- **Painel flutuante estilo janela do Mac (`0.12.2–0.12.7`):**
-  - Cantos arredondados (`12 px`), margem de `8 px` da borda e botões no cabeçalho para fechar, minimizar na bolinha, manter **sempre visível** e enviar para o painel lateral do Edge (`chrome.sidePanel.open` direto no clique; no painel lateral, o botão `↗` traz de volta para o painel flutuante na página).
-  - **Sempre visível (Document Picture-in-Picture):** destaca o painel numa janela que o navegador mantém por cima de tudo, até de outros programas; fechar a janela devolve o painel para a página.
-  - Redimensionável por qualquer borda ou canto (quando encostado: borda interna, borda inferior e canto entre elas, respeitando mínimo de `340×260`).
-  - Clicar no ícone da extensão numa aba ServiceNow ainda não conectada pede a permissão no próprio clique e já abre o painel flutuante; quando abre em janela separada, ela nasce encostada à direita do navegador.
-- **"Tudo que mudou" em grupos por momento e trilha animada com lupa (`0.12.3–0.12.7`):**
-  - A investigação do registro inteiro e o lote agrupam os campos salvos no mesmo minuto pelo mesmo autor/causa (*"admin salvou 4 campos"*), em blocos recolhíveis.
-  - Na **0.12.7**, o registro inteiro e o lote usam a mesma animação da investigação de um campo (`sidepanel/Loading.tsx`: a trilha que se desenha com a lupa), com etapas próprias (*"Lendo a auditoria do registro…"*, *"Separando os campos que mudaram…"*), permanecendo visível enquanto os grupos entram embaixo.
-- **Auto-reload e reinjeção sem F5 (`0.12.2, 0.12.6, 0.12.7`):**
-  - O build gera `dist/build.txt` e `tools/atualizar-extensao.sh` publica esse arquivo por último em `../trail-extensao`.
-  - Quando a extensão recarrega, o content script antigo detecta que ficou órfão, desliga observers/listeners e remove ícones, painel e bolinha antigos; o worker novo reinjeta `page.js` (sondando o mundo MAIN por frame para não duplicar) e `content.js` nas abas conectadas, ou quando uma aba não responde ao abrir o painel.
-  - Suíte `tests/e2e/reload.mjs` testa a limpeza do script órfão e simula aba sem resposta para comprovar a reinjeção sem duplicar ícones.
-- **Idioma da sessão do ServiceNow no motor (`0.12.2`):**
-  - O mundo MAIN lê `g_user_lang`, `NOW.language`, `g_lang` ou `<html lang>` e passa ao motor (`pt-BR`, `pt` e `pb` mapeiam para `pb` no `sys_documentation`).
-- **Site (`site/b3`) e loja (`docs/loja-edge.md`, `docs/store/`):**
-  - Página `site/b3` atualizada até a 0.12.7: demonstração do formulário com a bolinha-assistente interativa + balão (boas-vindas uma vez + dica no hover), trilha com lupa, seção `#painel` sem sticky com linha do tempo vertical e autoplay de 5 s, roadmap com 5 itens visíveis + "Ver mais", FAQ começando fechado e tabela de 441 casos exibindo 30 linhas + "Ver mais (+30)".
-  - Textos da loja (PT/EN) e capturas `1280×800` (`docs/store/shot-*.png`) atualizados para a 0.12.6/0.12.7.
+- **Perícia para quem não é admin (`0.13.0`, detalhes em `docs/sem-admin.md`):**
+  - **Nada instalado na instância e nenhum papel novo:** o Trail usa a sessão de quem está logado e pede cada fonte; as ACLs do servidor decidem o que vem e o que fica negado. Não há lógica por papel no código.
+  - **Histórico do formulário quando `sys_audit` é negada (`packages/core/src/history.ts`, `RestClient.history`):** lê `/angular.do?sysparm_type=list_history` (o Activity Stream do formulário, com as ACLs do usuário), converte rótulos de lista de volta para o valor interno usando `/api/now/ui/meta/<tabela>` e resolve o autor em `sys_user` pelo `user_id`. Vale também para a linha do tempo do registro inteiro. Quando o campo investigado não está no Activity Stream da tabela, marca `fieldNotInHistory` e o painel informa isso em vez de dizer que não houve mudança.
+  - **Correção de falso processo de fundo (`ChangeContext.txDenied`):** quando `syslog_transaction` é negada (403), o motor não interpreta mais "sem transação" como prova de execução em segundo plano; se nenhuma outra fonte explicar a mudança, apresenta o autor da gravação em grau candidato, explicando a lacuna.
+  - **Aviso de acesso por capacidade ("O que os seus papéis deixam o Trail ver"):** mostra em linguagem simples o que entrou e o que ficou de fora por capacidade (*quem mudou e quando*, *regras automáticas*, *flows*, *jobs*, *eventos*, *botões* e *transações*, cada um com `✓`, `◐` ou `–`), deixando os nomes técnicos das tabelas recolhidos em "detalhes técnicos".
+- **Cabeçalho novo e configurações dentro do painel (`0.12.8–0.12.9`, `extension/src/sidepanel/Settings.tsx`):**
+  - Cabeçalho limpo (sem as bolinhas coloridas do Mac): marca, nome e instância à esquerda; à direita, nesta ordem: `⚙` configurações, painel lateral do Edge, alternância de tema e `✕` (que esconde na bolinha com animação de minimizar).
+  - Folha **⚙ Configurações** dentro do próprio painel: tema, idioma, animações liga/desliga (`motion`), atalho para abrir e fechar (`panelKey`, grava a combinação apertada, padrão `Alt+Shift+P` e funciona mesmo com o foco dentro do iframe do formulário via `postMessage`), ícones nos campos, bolinha-assistente, onde o painel abre, **Sempre visível** (Document Picture-in-Picture) e link para todas as opções.
+  - Suíte `tests/e2e/settings.mjs` cobre a folha de configurações inteira.
+- **Fim do falso "sem acesso" em instâncias lentas (`0.12.8`):**
+  - O prazo por consulta subiu de 3 s para 8 s e as tabelas que estouram tempo são consultadas uma segunda vez.
+  - `AccessReport.slow` fica separado de `denied` (que só registra 401/403 reais), exibindo aviso leve *"A instância demorou a responder"* sem guardar resultado incompleto em cache.
+- **Persistência do painel flutuante e reinjeção em todos os frames (`0.12.9`):**
+  - O estado aberto ou minimizado por aba (`float:<tabId>`) passou de `chrome.storage.session` para `chrome.storage.local` (limpo no `runtime.onStartup` por `clearFloatStates()`), de modo que um painel aberto não volta mais como bolinha após recarregar a extensão.
+  - Quando a sondagem falha, a reinjeção de reserva aplica `page.js` (MAIN) e `content.js` em todos os frames (`allFrames: true`), e não apenas no frame 0.
+- **Inspeção visual e polimento nos temas escuro e claro (`0.13.0`):**
+  - 8 ajustes em `extension/src/shared/ui.css` após inspeção em `340 px`, `380 px` e `420 px` nos dois temas (tokens `--teal-2`, `--ok`, `--bad` e `--warn` no escuro, tons pastel e `--muted` no claro, `.dot` sem amassar, cabeçalhos do registro inteiro com elipse, pontinho de "Provas", botão `×` da comparação, filtros em `340 px` e recuo de "Outras regras").
+- **Site (`site/b3`) mais leve e atualizado para a 0.13.0:**
+  - Miniaturas de "Quatro passos" em imagens estáticas, carregamento ocioso (`data-src` + `IntersectionObserver`) dos 4 iframes interativos, `content-visibility: auto` e otimizações no canvas e no cursor (reduzindo o p95 de rolagem com CPU 4× mais lenta de `34,7 ms` para `20,9 ms`).
+  - Seção `#acesso` reescrita por capacidade (como no painel) com os perfis **Admin**, **ITIL (sem admin)**, **ITIL + Flow Designer** e **Usuário básico**, FAQ com *"Preciso ser admin?"* no topo e item novo na Fase 1 do roadmap.
 
-### O que entrou na 0.12.0 e na 0.12.1
+### O que entrou da 0.12.0 à 0.12.7
 
-- **0.12.1:** rótulos por `sys_documentation` em paralelo à auditoria; comparador da linha do tempo renomeado para **"O que mudou entre dois momentos"** com frase explicativa; opção "O registro inteiro" funcionando no modo demonstração; site dentro do repositório em `site/`.
-- **0.12.0:** painel flutuante na página como padrão; nomes e valores como no formulário em todo o painel (rótulos, display values no lugar de `sys_id` e links em referências); ícone em campos de referência do UI16 (`sys_display.`, `sys_readonly.`, `ni.`, `select_0`); seletor customizado na aba "E se?".
+- **0.12.6–0.12.7:** bolinha-assistente no canto da página (`#trail-assistant`, arrastável, boas-vindas uma vez por registro e dica só no hover); trilha animada com lupa (`Loading.tsx`) também no registro inteiro e no lote; auto-reload em modo descompactado (`build.txt` + `tools/atualizar-extensao.sh`) e suíte `tests/e2e/reload.mjs`.
+- **0.12.2–0.12.5:** painel flutuante redimensionável por qualquer borda/canto, botão **Sempre visível** (Document Picture-in-Picture), agrupamento de "Tudo que mudou" por momento (*"admin salvou 4 campos"*) e leitura do idioma da sessão do ServiceNow no mundo MAIN.
+- **0.12.0–0.12.1:** painel flutuante como padrão; rótulos por `sys_documentation` e display values com links em referências; comparador **"O que mudou entre dois momentos"**; ícones em campos de referência do UI16; site dentro do repositório em `site/`.
 
 ## 5. Pendências abertas (conforme `docs/DIARIO.md`)
 
-1. **Achados médios do fluxo de recarga e injeção (`0.12.7`):**
-   - `extension/src/background/index.ts` (~linha 130): se a injeção em todos os frames (`allFrames: true`) falhar, a reserva hoje reinjeta apenas no frame 0.
-   - Depois de um auto-reload, `chrome.storage.session` é limpo, de modo que um painel que estava aberto ou minimizado volta como bolinha. Para mudar isso, falta decidir onde guardar esse estado entre reloads.
+1. **Bateria no PDI de testes para a 0.13.0:**
+   - Atualizar a rodada completa como admin e medir uma amostra personificando `pt.trail.itil` (histórico do formulário).
 2. **Testes no navegador Edge real (fora do alcance do Chromium headless):**
+   - Confirmar no navegador real que o painel aberto continua aberto após um auto-reload (`chrome.runtime.reload()` encerra a extensão no Playwright).
    - Testar o modo **"Sempre visível"** (Document Picture-in-Picture) e a tecla `Esc` dentro da janela PiP (o Chromium headless não abre PiP).
-   - Testar no Edge real com o PDI de testes: auto-reload completo após `tools/atualizar-extensao.sh`, painel flutuante sobre UI16 / Workspace / Portal, e rótulos em português (`pb`) numa sessão com idioma da instância em português.
+   - Testar no Edge real com o PDI de testes: painel flutuante sobre UI16 / Workspace / Portal e rótulos em português (`pb`).
 3. **Fase 2 (app escopado `x_trail`):** os próximos passos estão em `docs/fase2-app-escopado.md`.
 4. **Publicação na Edge Add-ons:** textos e capturas `1280×800` prontos em `docs/loja-edge.md` e `docs/store/`. **O envio e o aceite dos termos são ação exclusiva do dono.**
 
@@ -142,6 +142,9 @@ A alternativa em Node com usuário e senha (`npm run regression`) existe, mas **
 
 Itens criados e ainda presentes no PDI de testes:
 
+- **Usuários de teste `[PT]` sem senha (para personificação na 0.13.0, veja `docs/sem-admin.md`):**
+  - `pt.trail.itil` (papel `itil`) e `pt.trail.aes` (`sn_app_eng_studio.user` + `flow_designer`), criados sem senha.
+  - Uso exclusivamente por personificação (`/api/now/ui/impersonate/<sys_id>`) na aba já logada, **voltando sempre ao admin no fim**.
 - Conta de integração de teste: criada sem senha e restrita a web service, com autorização do dono.
 - **Fase 13:** UI policies (a reversa está restrita aos registros de teste), transform map e tabela de staging `u_pt_f13_import`, data policy.
 - **Fase 14:** flow e subflow, ativos e restritos ao registro "[PT] F14-SUB1".
@@ -159,7 +162,7 @@ Os scripts de montagem estão em `tests/regression/pdi-setup-*.js` e `tests/regr
 - **Nunca digitar senhas.**
 - **Não mudar propriedades do sistema da instância.**
 - **Itens de teste no PDI:** só com o prefixo [PT] e restritos aos próprios registros (seção 6).
-- **Não publicar o e-mail do dono nem URL/nome da instância PDI ou usuários de teste em lugar nenhum** (site, repositório, loja).
+- **Não publicar o e-mail do dono nem URL/nome da instância PDI em lugar nenhum** (site, repositório, loja).
 - **Envio para a loja do Edge e aceite de termos:** só o dono faz.
 - **Interface:** em português simples, com o inglês completo no `i18n.ts`. Linguagem de gente, sem jargão quando houver alternativa.
 - **A extensão é somente leitura.** Nenhum código da extensão grava na instância.
