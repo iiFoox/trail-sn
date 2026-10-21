@@ -280,12 +280,14 @@ describe('Simular um valor', () => {
     const c = sim();
     const s = await simulateValue(c, { table: 'incident', sysId: ID, field: 'state', value: '6' });
     expect(s.from).toBe('2');
-    expect(names(s.runs)).toEqual(['Resolvido esconde', 'Nota ao resolver', 'Resolução', 'Resolvido (P1)']);
+    // "Com OU" (state=6^ORstate=7) roda: desde P1 o ^OR é avaliado.
+    expect(names(s.runs)).toEqual(['Resolvido esconde', 'Nota ao resolver', 'Resolução', 'Com OU', 'Resolvido (P1)']);
     expect(s.runs.find((x) => x.name === 'Nota ao resolver')).toMatchObject({ why: 'preview', writes: [{ field: 'close_notes', value: 'Resolvido' }] });
     expect(s.runs.find((x) => x.name === 'Resolvido esconde')).toMatchObject({ why: 'policy_true', effects: [{ type: 'form', field: 'work_notes', aspect: 'hidden', sets: true }] });
     expect(s.runs.find((x) => x.name === 'Resolução')).toMatchObject({ why: 'sla_stage', effects: [{ type: 'sla', stage: 'stop' }] });
     expect(s.runs.find((x) => x.name === 'Resolvido (P1)')).toMatchObject({ why: 'cond_true', effects: [{ type: 'notify' }] });
-    expect(names(s.maybe).sort()).toEqual(['Com OU', 'Com script']);
+    expect(s.runs.find((x) => x.name === 'Com OU')).toMatchObject({ why: 'cond_true' });
+    expect(names(s.maybe).sort()).toEqual(['Com script']);
     expect(s.maybe.every((x) => x.why === 'cond_unknown')).toBe(true);
     expect(s.wontRun.map((x) => [x.name, x.why])).toEqual(expect.arrayContaining([['Cancelado', 'cond_false'], ['Só ao criar', 'not_on_update']]));
     expect(s.preview.result.close_notes).toEqual({ from: '', to: 'Resolvido', by: 'Nota ao resolver' });
