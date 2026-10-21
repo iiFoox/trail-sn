@@ -17,7 +17,7 @@ Convenções:
   - página b3 com as novidades da 0.12 e mais telas na galeria (Registro inteiro, Lote, E se?);
   - as 10 imagens refeitas a partir da demonstração em português, sem URL de instância;
   - `site/tools` com caminhos relativos.
-- Os protótipos antigos `site/a`, `b`, `b2` e `c` ainda citam a URL do PDI. Já citavam no site antigo; o dono decide se remove.
+- Protótipos antigos `site/a`, `b`, `b2` e `c` removidos a pedido do dono (citavam a URL do PDI). A raiz `/` redireciona para `/b3/` (`site/vercel.json` e `site/index.html` como reserva).
 
 ## 2026-10-20 (noite) — 0.12.4
 
