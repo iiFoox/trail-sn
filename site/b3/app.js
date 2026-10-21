@@ -14,6 +14,135 @@
   const nav = $('#nav');
   addEventListener('scroll', () => nav.classList.toggle('scrolled', scrollY > 40), { passive: true });
 
+  // ---------- suporte bilíngue (PT / EN) ----------
+  let currentLang = new URLSearchParams(location.search).get('lang') === 'en' || localStorage.getItem('trail_lang') === 'en' ? 'en' : 'pt';
+  const SCRAMBLE_DATA = {
+    pt: ['// por que esse campo mudou?', '// quem resolveu esse incidente?', '// que regra alterou a prioridade?', '// foi job, flow ou alguém?', '// extensão para ServiceNow · somente leitura'],
+    en: ['// why did this field change?', '// who resolved this incident?', '// which rule changed priority?', '// was it job, flow or someone?', '// ServiceNow extension · read-only']
+  };
+  const CAPS_DATA = {
+    pt: [
+      ['who', 'Quem mudou e quando', 'sys_audit · histórico do formulário'],
+      ['rules', 'Regras automáticas', 'sys_script · sys_script_include'],
+      ['flows', 'Flows e workflows', 'sys_flow_context · wf_context'],
+      ['jobs', 'Jobs agendados', 'sysauto_script'],
+      ['events', 'Eventos e script actions', 'sysevent · sysevent_script_action'],
+      ['actions', 'Botões do formulário', 'sys_ui_action'],
+      ['tx', 'Prova de formulário, API ou job', 'syslog_transaction'],
+    ],
+    en: [
+      ['who', 'Who changed it and when', 'sys_audit · form history'],
+      ['rules', 'Automated rules', 'sys_script · sys_script_include'],
+      ['flows', 'Flows and workflows', 'sys_flow_context · wf_context'],
+      ['jobs', 'Scheduled jobs', 'sysauto_script'],
+      ['events', 'Events and script actions', 'sysevent · sysevent_script_action'],
+      ['actions', 'Form buttons', 'sys_ui_action'],
+      ['tx', 'Form, API or job evidence', 'syslog_transaction'],
+    ]
+  };
+  const PROFILES_DATA = {
+    pt: {
+      admin: { v: ['Acesso completo', 'Perícia completa.', 'O Trail lê todas as fontes. O painel não mostra nenhum aviso.'] },
+      itil: { v: ['Sem admin · itil', 'Quem mudou e quando, pelo histórico do formulário.', 'A auditoria completa é negada, então o Trail lê o histórico que a pessoa já vê no registro (os campos do Activity Stream). As regras automáticas ficam de fora, e o painel diz isso em palavras.'] },
+      flow: { v: ['Sem admin · itil + Flow Designer', 'Linha do tempo e flows.', 'Além do histórico do formulário, o papel de Flow Designer mostra as execuções de flows no registro: o Trail cruza a mudança com elas.'] },
+      basic: { v: ['Sem leitura do registro', 'Nada para mostrar.', 'Se o login não lê o registro, o Trail também não lê. Ele nunca vê mais do que a pessoa vê.'] },
+    },
+    en: {
+      admin: { v: ['Full access', 'Complete forensics.', 'Trail reads all sources. The panel shows no warning.'] },
+      itil: { v: ['No admin · itil', 'Who changed and when, from form history.', 'Full audit is denied, so Trail reads the history you already see on the record (Activity Stream fields). Automated rules remain excluded, and the panel explains this in plain words.'] },
+      flow: { v: ['No admin · itil + Flow Designer', 'Timeline and flows.', 'In addition to form history, the Flow Designer role reveals flow executions on the record: Trail correlates the change with them.'] },
+      basic: { v: ['No read access to record', 'Nothing to display.', 'If the user cannot read the record, Trail does not read it either. It never sees more than the user sees.'] },
+    }
+  };
+  const LABEL_DATA = {
+    pt: { ok: 'VÊ', part: 'EM PARTE', no: 'NÃO MOSTRA', unit: 'capacidades com o login deste perfil' },
+    en: { ok: 'SEES', part: 'PARTIAL', no: 'NOT SHOWN', unit: 'capabilities with this profile login' }
+  };
+  const CASES_TEXT = {
+    pt: {
+      state: { who: 'Depois que admin salvou', type: 'BR assíncrona', grade: 'CONFIRMADO', facts: [['+50', 'Job ASYNC às 01:37:02 nomeia a regra'], ['+20', 'O script referencia "state"'], ['+10', 'BR da tabela incident']] },
+      impact: { who: 'Ao salvar de pericia.itil', type: 'BR before', grade: 'CONFIRMADO', facts: [['+30', 'O formulário enviou 3, o gravado foi 1'], ['+20', 'Salvo às 02:10:33, na janela'], ['+20', 'O script referencia "impact"'], ['+10', 'BR before da tabela incident']] },
+      contact_type: { who: 'Evento do registro', type: 'Script action (evento)', grade: 'CONFIRMADO', facts: [['+50', 'Evento processado no mesmo segundo'], ['+20', 'O script referencia "contact_type"']] },
+      severity: { who: 'Job das 23:20', type: 'Job agendado', grade: 'CONFIRMADO', facts: [['+50', 'Transação JOB nomeia o job'], ['+20', 'O script referencia "severity"']] }
+    },
+    en: {
+      state: { who: 'After admin saved', type: 'Async business rule', grade: 'CONFIRMED', facts: [['+50', 'ASYNC job at 01:37:02 names the rule'], ['+20', 'Script references "state"'], ['+10', 'Business rule on incident table']] },
+      impact: { who: 'Upon save by pericia.itil', type: 'Before business rule', grade: 'CONFIRMED', facts: [['+30', 'Form submitted 3, stored value was 1'], ['+20', 'Saved at 02:10:33, in window'], ['+20', 'Script references "impact"'], ['+10', 'Before BR on incident table']] },
+      contact_type: { who: 'Record event', type: 'Script action (event)', grade: 'CONFIRMED', facts: [['+50', 'Event processed in the same second'], ['+20', 'Script references "contact_type"']] },
+      severity: { who: '23:20 scheduled job', type: 'Scheduled job', grade: 'CONFIRMED', facts: [['+50', 'JOB transaction names the job'], ['+20', 'Script references "severity"']] }
+    }
+  };
+  const GAL_CAPTIONS = {
+    pt: [
+      "Painel · tema escuro (padrão) · cabeçalho com configurações, painel lateral, tema e fechar",
+      "Registro inteiro · 'Tudo que mudou' em grupos por momento e 'O que roda neste registro' (regras na ordem de execução com campos gravados, flows, scripts e botões)",
+      "Lote pela coluna da lista · mesma animação da trilha com a lupa, grupos por momento e exportação CSV",
+      "Flows · execuções reais no registro (estado, horário, subflow recuado abaixo do flow pai e link) e flows configurados na tabela com gatilho e campos que gravam",
+      "E se? · simule outro valor antes de salvar e veja quais regras, client scripts ou lookups rodariam",
+      "Opções · tema, idioma, onde abrir o painel (na página, lateral ou janela separada), ícones e privacidade"
+    ],
+    en: [
+      "Panel · dark theme (default) · header with settings, side panel, theme and close",
+      "Full record · 'Everything that changed' in save groups and 'What runs on this record' (rules in execution order with written fields, flows, scripts and buttons)",
+      "Batch by list column · animated progress trail with magnifying glass, save groups and CSV export",
+      "Flows · real record executions (status, timestamp, subflow indented under parent flow and link) and configured table flows with triggers and written fields",
+      "What if? · simulate another value before saving and see which rules, client scripts or lookups would run",
+      "Options · theme, language, where to open panel (in-page, side or separate window), icons and privacy"
+    ]
+  };
+
+  function updateGalCaptions() {
+    const caps = GAL_CAPTIONS[currentLang] || GAL_CAPTIONS.pt;
+    $$('#galseg button').forEach((b, i) => { if (caps[i]) b.dataset.c = caps[i]; });
+    const act = $('#galseg button.on');
+    const galcap = $('#galcap');
+    if (act && galcap) galcap.textContent = act.dataset.c;
+  }
+
+  function applyLanguage(lang) {
+    if (lang !== 'en' && lang !== 'pt') lang = 'pt';
+    currentLang = lang;
+    document.documentElement.lang = lang === 'en' ? 'en' : 'pt-BR';
+    localStorage.setItem('trail_lang', lang);
+    const url = new URL(location.href);
+    if (lang === 'en') url.searchParams.set('lang', 'en');
+    else url.searchParams.delete('lang');
+    history.replaceState(null, '', url.toString());
+
+    $$('.lang-btn').forEach((b) => {
+      const on = b.dataset.lang === lang;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+
+    const dict = window.TRAIL_I18N ? window.TRAIL_I18N[lang] : null;
+    if (dict) {
+      $$('[data-i18n]').forEach((el) => {
+        const k = el.dataset.i18n;
+        if (dict[k] !== undefined) el.innerHTML = dict[k];
+      });
+      $$('[data-i18n-title]').forEach((el) => {
+        const k = el.dataset.i18nTitle;
+        if (dict[k] !== undefined) { el.title = dict[k]; el.setAttribute('aria-label', dict[k]); }
+      });
+      if (dict.html_title) document.title = dict.html_title;
+      const meta = $('meta[name="description"]');
+      if (meta && dict.meta_desc) meta.content = dict.meta_desc;
+    }
+
+    if (typeof updateCapUi === 'function') updateCapUi();
+    if (typeof updateTblUi === 'function') updateTblUi();
+    $$('.road-more').forEach((btn) => {
+      btn.dataset.more = lang === 'en' ? 'View more (+24)' : 'Ver mais (+24)';
+      btn.dataset.less = lang === 'en' ? 'View less' : 'Ver menos';
+      const isOpen = btn.closest('div')?.classList.contains('open');
+      btn.textContent = isOpen ? btn.dataset.less : btn.dataset.more;
+    });
+    updateGalCaptions();
+  }
+  window.applyLanguage = applyLanguage;
+
+
   // revelar ao rolar
   const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: .15 });
   $$('.rv').forEach((el) => io.observe(el));
@@ -55,10 +184,16 @@
     }
     const caret = document.createElement('span'); caret.className = 'caret'; con.appendChild(caret);
     if (my !== token) return;
-    $('#p-field').textContent = c.field; $('#p-when').innerHTML = `${c.when} <small style="color:#8c99a5;font-weight:400">· ${c.who}</small>`;
-    $('#p-old').textContent = c.old; $('#p-new').textContent = c.neu; $('#p-type').textContent = c.type; $('#p-name').textContent = c.name;
-    const bd = $('#p-badge'); bd.innerHTML = `${c.grade === 'CONFIRMADO' ? 'CERTEZA ALTA' : 'CERTEZA MÉDIA'}<i class="stamp-wave"></i>`; bd.classList.toggle('p', c.grade !== 'CONFIRMADO');
-    $('#p-facts').innerHTML = c.facts.map(([p, t]) => `<div><b>${p}</b>${t}</div>`).join('');
+    const t = (CASES_TEXT[currentLang] && CASES_TEXT[currentLang][key]) || c;
+    const who = t.who || c.who;
+    const type = t.type || c.type;
+    const grade = t.grade || c.grade;
+    const facts = t.facts || c.facts;
+    const isHigh = grade === 'CONFIRMED' || grade === 'CONFIRMADO';
+    $('#p-field').textContent = c.field; $('#p-when').innerHTML = `${c.when} <small style="color:#8c99a5;font-weight:400">· ${who}</small>`;
+    $('#p-old').textContent = c.old; $('#p-new').textContent = c.neu; $('#p-type').textContent = type; $('#p-name').textContent = c.name;
+    const bd = $('#p-badge'); bd.innerHTML = `${isHigh ? (currentLang === 'en' ? 'HIGH CONFIDENCE' : 'CERTEZA ALTA') : (currentLang === 'en' ? 'MEDIUM CONFIDENCE' : 'CERTEZA MÉDIA')}<i class="stamp-wave"></i>`; bd.classList.toggle('p', !isHigh);
+    $('#p-facts').innerHTML = facts.map(([p, tx]) => `<div><b>${p}</b>${tx}</div>`).join('');
     panel.classList.add('in');
     await wait(350);
     ev.classList.add('in');
@@ -113,18 +248,38 @@
   };
   const LABEL = { ok: 'VÊ', part: 'EM PARTE', no: 'NÃO MOSTRA' };
   const srcs = $('#srcs'), verdict = $('#verdict');
-  srcs.innerHTML = CAPS.map(([k, label, tech]) => `<div class="src cap" data-s="${k}"><span><b>${label}</b><small>${tech}</small></span><span class="st"></span></div>`).join('');
-  function profile(p) {
+  let activeProfile = 'admin';
+  function updateCapUi() {
+    const caps = CAPS_DATA[currentLang] || CAPS_DATA.pt;
+    if (srcs) {
+      srcs.innerHTML = caps.map(([k, label, tech]) => `<div class="src cap" data-s="${k}"><span><b>${label}</b><small>${tech}</small></span><span class="st"></span></div>`).join('');
+    }
+    profile(activeProfile, true);
+  }
+  function profile(p, instant = false) {
+    activeProfile = p;
     const pr = PROFILES[p];
-    CAPS.forEach(([k], i) => setTimeout(() => { const el = $(`.src[data-s="${k}"]`); el.className = 'src cap ' + ({ ok: 'ok', part: 'em', no: 'no' })[pr.st[k]] + ' flip'; $('.st', el).textContent = LABEL[pr.st[k]]; }, reduce ? 0 : i * 55));
-    const seen = CAPS.filter(([k]) => pr.st[k] !== 'no').length;
+    const profs = PROFILES_DATA[currentLang] || PROFILES_DATA.pt;
+    const labels = LABEL_DATA[currentLang] || LABEL_DATA.pt;
+    const caps = CAPS_DATA[currentLang] || CAPS_DATA.pt;
+    caps.forEach(([k], i) => setTimeout(() => {
+      const el = $(`.src[data-s="${k}"]`);
+      if (el) {
+        el.className = 'src cap ' + ({ ok: 'ok', part: 'em', no: 'no' })[pr.st[k]] + ' flip';
+        const st = $('.st', el);
+        if (st) st.textContent = labels[pr.st[k]];
+      }
+    }, (reduce || instant) ? 0 : i * 55));
+    const seen = caps.filter(([k]) => pr.st[k] !== 'no').length;
     verdict.className = 'verdict rv in ' + (p === 'admin' ? 'full' : seen ? 'partial' : 'none');
-    const [a, b, c] = pr.v;
+    const [a, b, c] = (profs[p] && profs[p].v) || pr.v;
     $('.lvl', verdict).textContent = a; $('h3', verdict).textContent = b; $('p', verdict).textContent = c;
-    $('code', verdict).textContent = `${seen} de ${CAPS.length} capacidades com o login deste perfil`;
+    $('code', verdict).textContent = currentLang === 'en'
+      ? `${seen} of ${caps.length} ${labels.unit}`
+      : `${seen} de ${caps.length} ${labels.unit}`;
   }
   $$('#seg button').forEach((b) => b.addEventListener('click', () => { $$('#seg button').forEach((x) => x.classList.toggle('on', x === b)); profile(b.dataset.p); }));
-  profile('admin');
+  updateCapUi();
 
   // ---------- iframes do painel: só carregam perto da tela, no tempo ocioso ----------
   // Cada iframe é o painel inteiro rodando; carregar todos de uma vez travava a rolagem.
@@ -218,12 +373,12 @@
   // ---------- texto que embaralha no topo ----------
   const sc = $('#scramble');
   if (sc && !reduce) {
-    const phrases = ['// por que esse campo mudou?', '// quem resolveu esse incidente?', '// que regra alterou a prioridade?', '// foi job, flow ou alguém?', '// extensão para ServiceNow · somente leitura'];
+    const phrases = () => (SCRAMBLE_DATA[currentLang] || SCRAMBLE_DATA.pt);
     const chars = '!<>-_\\/[]{}—=+*^?#________';
     let i = 0;
     const to = (txt) => new Promise((res) => { const from = sc.textContent; const len = Math.max(from.length, txt.length); let f = 0; const steps = 22;
       (function fr() { let out = ''; for (let k = 0; k < len; k++) { const p = k / len; out += f / steps > p + .15 ? (txt[k] || '') : f / steps > p - .15 ? chars[Math.floor(Math.random() * chars.length)] : (from[k] || ''); } sc.textContent = out; if (f++ < steps) requestAnimationFrame(fr); else { sc.textContent = txt; res(); } })(); });
-    (async function cycle() { while (true) { await wait(3400); i = (i + 1) % phrases.length; await to(phrases[i]); } })();
+    (async function cycle() { while (true) { await wait(3400); const pList = phrases(); i = (i + 1) % pList.length; await to(pList[i]); } })();
   }
 
   // ---------- paralaxe do palco ----------
@@ -274,16 +429,27 @@
   ];
   const tblBody = $('#tbl tbody'), tblMore = $('#tbl-more'), tblLess = $('#tbl-less'), tblCount = $('#tbl-count');
   let extraIdx = 0;
-  const updateTblUi = () => {
+  function updateTblUi() {
     const shown = 30 + extraIdx;
-    if (tblCount) tblCount.textContent = `Mostrando ${shown} de 441`;
+    if (tblCount) {
+      tblCount.textContent = currentLang === 'en'
+        ? `Showing ${shown} of 441`
+        : `Mostrando ${shown} de 441`;
+    }
     const rem = 441 - shown;
     if (tblMore) {
       tblMore.hidden = rem <= 0;
-      if (rem > 0) tblMore.textContent = `Ver mais (+${Math.min(30, rem)})`;
+      if (rem > 0) {
+        tblMore.textContent = currentLang === 'en'
+          ? `View more (+${Math.min(30, rem)})`
+          : `Ver mais (+${Math.min(30, rem)})`;
+      }
     }
-    if (tblLess) tblLess.hidden = extraIdx === 0;
-  };
+    if (tblLess) {
+      tblLess.hidden = extraIdx === 0;
+      tblLess.textContent = currentLang === 'en' ? 'Show less' : 'Ver menos';
+    }
+  }
   if (tblMore && tblBody) {
     tblMore.addEventListener('click', () => {
       const slice = ALL_EXTRA.slice(extraIdx, extraIdx + 30);
@@ -377,6 +543,8 @@
     const ti = $('#inside-img'); if (ti) { const f = $('iframe', ti); f.style.height = "1500px"; }
   };
   fitAll(); addEventListener('resize', fitAll);
+  $$('.lang-btn').forEach((b) => b.addEventListener('click', () => applyLanguage(b.dataset.lang)));
+  if (currentLang === 'en') applyLanguage('en');
   const side = $('.compo .side'), cform = $('#cform');
   const LINES = ['→ GET sys_audit', '→ GET syslog_transaction', '→ GET sysevent · sys_flow_context · wf_context', '→ GET sys_script · sys_ui_action · sysauto_script', '✓ cruzando janela de 3 s antes a 15 s depois', '✓ pontuando candidatos'];
   let busyT;

@@ -25,9 +25,11 @@ page.on('popup', (p) => navs.push('popup ' + p.url()));
 await page.goto('http://localhost:4481/b3/');
 await page.addStyleTag({ content: 'html{scroll-behavior:auto!important}' });
 await page.locator('.compo').scrollIntoViewIfNeeded();
-await page.waitForTimeout(1500);
+await page.waitForSelector('#cform[src]', { timeout: 10000 });
+await page.waitForSelector('#cpanel[src]', { timeout: 10000 });
 const panelFrame = await (await page.$('#cpanel')).contentFrame();
 const formFrame = await (await page.$('#cform')).contentFrame();
+await formFrame.waitForFunction(() => document.querySelectorAll('.trail-host').length > 0, null, { timeout: 10000 });
 const results = {};
 for (const field of ['priority', 'impact', 'category', 'severity', 'description', 'assignment_group', 'number', 'state']) {
   await formFrame.evaluate((f) => { document.querySelector(`label[for="incident.${f}"] .trail-host`).shadowRoot.querySelector('button').click(); }, field);
@@ -132,6 +134,78 @@ const roadVis1 = await page.$$eval('#roadmap .now ul li', (lis) => lis.filter((l
 const roadBtn1 = await page.$eval('#roadmap .road-more', (b) => b.textContent.trim());
 if (roadVis1 <= 5 || roadBtn1 !== 'Ver menos') errs.push(`roadmap expandido inesperado: ${roadVis1} (${roadBtn1})`);
 await page.click('#roadmap .road-more');
+
+// Teste do seletor bilíngue (PT / EN):
+// 1. Clicar em EN: idioma muda para en, textos atualizam, sem overflow
+await page.setViewportSize({ width: 1280, height: 860 });
+await page.evaluate(() => scrollTo(0, 0));
+await page.waitForTimeout(400);
+await page.click('.lang-btn[data-lang="en"]');
+await page.waitForTimeout(300);
+const langEn = await page.evaluate(() => document.documentElement.lang);
+const titleEn = await page.title();
+const navTryEn = await page.$eval('nav .btn.sm', (el) => el.textContent.trim());
+const tblCountEn = await page.$eval('#tbl-count', (el) => el.textContent.trim());
+const roadBtnEn = await page.$eval('#roadmap .road-more', (el) => el.textContent.trim());
+const roadItemEn = await page.$eval('#roadmap .now ul li[data-i18n="road_p1_l1"]', (el) => el.textContent.trim());
+const beforeItemEn = await page.$eval('#antes ol li[data-i18n="antes_without_li1"]', (el) => el.textContent.trim());
+const numbersIntroEn = await page.$eval('#numeros p[data-i18n="numeros_sub"]', (el) => el.textContent.trim());
+const screensIntroEn = await page.$eval('#telas p[data-i18n="telas_sub"]', (el) => el.textContent.trim());
+if (langEn !== 'en') errs.push('ao clicar em EN, documentElement.lang não ficou "en": ' + langEn);
+if (!titleEn.includes('Record Forensics')) errs.push('ao clicar em EN, título não mudou para inglês: ' + titleEn);
+if (navTryEn !== 'Try it') errs.push('ao clicar em EN, botão do nav não mudou para "Try it": ' + navTryEn);
+if (!tblCountEn.startsWith('Showing 30')) errs.push('ao clicar em EN, contador da tabela não mudou para "Showing 30...": ' + tblCountEn);
+if (!roadBtnEn.startsWith('View more')) errs.push('ao clicar em EN, botão do roadmap não mudou para "View more...": ' + roadBtnEn);
+if (!roadItemEn.includes('Works without admin')) errs.push('ao clicar em EN, item da Fase 1 do roadmap não mudou para inglês: ' + roadItemEn);
+if (!beforeItemEn.startsWith('Open record history')) errs.push('ao clicar em EN, passos de comparação não mudaram para inglês: ' + beforeItemEn);
+if (!numbersIntroEn.startsWith('Regression suite')) errs.push('ao clicar em EN, introdução dos resultados não mudou para inglês: ' + numbersIntroEn);
+if (!screensIntroEn.startsWith('Assistant bubble')) errs.push('ao clicar em EN, introdução da galeria não mudou para inglês: ' + screensIntroEn);
+
+// Checar acesso direto via URL ?lang=en e persistência após reload em nova aba
+const pageEn = await b.newPage();
+await pageEn.goto('http://localhost:4481/b3/?lang=en');
+await pageEn.waitForTimeout(300);
+const langUrlEn = await pageEn.evaluate(() => document.documentElement.lang);
+const navTryUrlEn = await pageEn.$eval('nav .btn.sm', (el) => el.textContent.trim());
+const roadItemUrlEn = await pageEn.$eval('#roadmap .now ul li[data-i18n="road_p1_l1"]', (el) => el.textContent.trim());
+if (langUrlEn !== 'en') errs.push('ao abrir direto com ?lang=en, lang não ficou "en": ' + langUrlEn);
+if (navTryUrlEn !== 'Try it') errs.push('ao abrir direto com ?lang=en, nav não mostrou "Try it": ' + navTryUrlEn);
+if (!roadItemUrlEn.includes('Works without admin')) errs.push('ao abrir direto com ?lang=en, roadmap não ficou em inglês: ' + roadItemUrlEn);
+
+await pageEn.reload();
+await pageEn.waitForTimeout(300);
+const langReload = await pageEn.evaluate(() => document.documentElement.lang);
+const roadItemReload = await pageEn.$eval('#roadmap .now ul li[data-i18n="road_p1_l1"]', (el) => el.textContent.trim());
+if (langReload !== 'en') errs.push('após reload com ?lang=en / localStorage, idioma não persistiu em EN: ' + langReload);
+if (!roadItemReload.includes('Works without admin')) errs.push('após reload, item do roadmap não permaneceu em inglês: ' + roadItemReload);
+await pageEn.close();
+
+// Checar overflow em EN no desktop e mobile
+const overflow1280En = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+if (overflow1280En > 0) errs.push('overflow em 1280px com idioma EN: ' + overflow1280En);
+
+await page.setViewportSize({ width: 390, height: 844 });
+await page.waitForTimeout(300);
+const overflow390En = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+if (overflow390En > 0) errs.push('overflow em 390px com idioma EN: ' + overflow390En);
+
+// 2. Voltar para PT: idioma volta para pt-BR, textos restaurados
+await page.setViewportSize({ width: 1280, height: 860 });
+await page.evaluate(() => scrollTo(0, 0));
+await page.waitForTimeout(200);
+await page.click('.lang-btn[data-lang="pt"]');
+await page.waitForTimeout(300);
+const langPt = await page.evaluate(() => document.documentElement.lang);
+const navTryPt = await page.$eval('nav .btn.sm', (el) => el.textContent.trim());
+const tblCountPt = await page.$eval('#tbl-count', (el) => el.textContent.trim());
+const roadItemPt = await page.$eval('#roadmap .now ul li[data-i18n="road_p1_l1"]', (el) => el.textContent.trim());
+if (langPt !== 'pt-BR') errs.push('ao clicar em PT, documentElement.lang não voltou para "pt-BR": ' + langPt);
+if (navTryPt !== 'Experimentar') errs.push('ao clicar em PT, botão do nav não voltou para "Experimentar": ' + navTryPt);
+if (!tblCountPt.startsWith('Mostrando 30')) errs.push('ao clicar em PT, contador da tabela não voltou para "Mostrando 30...": ' + tblCountPt);
+if (!roadItemPt.includes('Funciona sem admin')) errs.push('ao voltar para PT, item do roadmap não voltou para português: ' + roadItemPt);
+
+await page.setViewportSize({ width: 1280, height: 860 });
+await page.waitForTimeout(200);
 
 const brokenImgs = await page.$$eval('img', (is) => is.filter((i) => !i.complete || i.naturalWidth === 0).map((i) => i.getAttribute('src')));
 const overflow1280 = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);

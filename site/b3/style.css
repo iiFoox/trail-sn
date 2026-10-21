@@ -26,6 +26,10 @@ nav.scrolled{background:rgba(7,26,36,.88)}
 nav .lk{display:flex;gap:2px}
 nav .lk a{padding:8px 12px;border-radius:999px;color:var(--fg2);text-decoration:none;font-size:14px;transition:background .25s,color .25s}
 nav .lk a:hover{background:rgba(143,168,179,.12);color:var(--fg)}
+.lang-switch{display:inline-flex;align-items:center;padding:2px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--line2);gap:2px;margin:0 2px}
+.lang-btn{all:unset;padding:4px 8px;border-radius:999px;font:600 12px var(--mono);color:var(--fg2);cursor:pointer;transition:all .2s;text-align:center;line-height:1}
+.lang-btn:hover{color:var(--fg);background:rgba(255,255,255,.08)}
+.lang-btn.on{background:var(--kelp2);color:var(--green);box-shadow:0 1px 4px rgba(0,0,0,.3)}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:999px;background:var(--green);color:#052a0c;font-weight:700;text-decoration:none;font-size:14px;border:0;cursor:pointer;transition:transform .25s var(--ease),box-shadow .25s,background .25s;position:relative;overflow:hidden}
 .btn:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(98,216,78,.3)}
 .btn:active{transform:translateY(0)}
@@ -347,7 +351,7 @@ section{padding-block:84px}
 .road-more{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:5px 11px;border-radius:999px;border:1px solid var(--line2);background:rgba(15,45,61,.7);color:var(--aqua);font:600 12px var(--mono);transition:background .2s,border-color .2s,color .2s}
 .road-more:hover{background:#12333f;border-color:var(--green);color:var(--green)}
 @media (max-width:960px){.story{grid-template-columns:1fr 1fr}.compo{grid-template-columns:1fr}.compo .shot{border-radius:var(--r2) var(--r2) 0 0}.compo .side{border-left:1px solid var(--line2);border-top:0;border-radius:0 0 var(--r2) var(--r2)}.inside{grid-template-columns:1fr;gap:24px}.inside .shot{position:relative;height:680px}.ba,.faq{grid-template-columns:1fr}.who,.road{grid-template-columns:1fr}.road:before{display:none}.road>div{padding:0 0 22px 22px}.road>div:before{left:0;top:4px}.tbl{overflow-x:auto}.tbl table{min-width:640px}}
-@media (max-width:600px){.story{grid-template-columns:1fr}.seg{border-radius:16px}}
+@media (max-width:600px){.story{grid-template-columns:1fr}.seg{border-radius:16px}.btn.sm{padding:6px 10px;font-size:12.5px}.lang-btn{padding:3px 7px;font-size:11px}}
 
 /* demos ao vivo */
 .frame .pic.live,.frame .pic.snap{background:#f4f5f7}

@@ -10,6 +10,17 @@ Convenções:
 
 ---
 
+## 2026-10-21 — Site bilíngue PT/EN (item 5 da fila)
+
+- **Site (`site/b3`, Antigravity #2; revisão e integração, Codex #2):** adicionado seletor acessível PT/EN na navegação. O idioma troca os textos, descrições, título, conteúdo dinâmico da demonstração, capacidades, contagem da tabela e legendas da galeria; salva em `localStorage` e na URL (`?lang=en`). O roadmap inteiro da Fase 1 (29 itens) tem chaves `road_p1_l1` a `road_p1_l29` nos dicionários PT e EN. Na revisão, também associei as chaves que já existiam mas ainda não eram aplicadas aos passos da seção "Antes e depois", à introdução dos resultados e à introdução da galeria.
+- **Layout e teste:** estilos do seletor adaptados para telas pequenas. `tests/e2e/_site-demo.mjs` verifica alternância, textos do roadmap, comparação, resultados e galeria em inglês, acesso direto via `?lang=en`, idioma após recarga, retorno para PT e overflow em 1280 px e 390 px.
+- **Validação reportada pelo Antigravity #2:** `node --check` passou nos dois scripts; `npm run typecheck` passou; `npm test` passou (18 arquivos, 150 testes); `_site-demo.mjs` terminou com código 0, sem erros, imagens quebradas ou overflow.
+- **Validação neste ambiente:** `npm run typecheck` passou. `npm test` e `npm run build` foram bloqueados pelo esbuild ao ler diretórios acima do workspace (`Acesso negado`). A cadeia `npm run e2e` passou pelos testes iniciais e parou em `prefs-window.mjs`, pois o Chromium headless não abriu janela destacada (`windowOpened: false`). A execução local de `_site-demo.mjs` verificou idioma, conteúdo, imagens e overflow, mas terminou com código 1 porque o sandbox bloqueou a fonte externa do Google (`ERR_NETWORK_ACCESS_DENIED`); não apontou erro funcional ou overflow.
+- **Integração:** commit local de integração criado no ramo `master`; o e-mail Git foi verificado como noreply do iiFoox. A tentativa de `git push origin master` falhou: não foi possível conectar a `github.com:443`; o commit ficou local.
+- **Em aberto:** item 6 da fila — lacunas conhecidas de flows escopados e teste do papel de desenvolvedor delegado. Itens manuais de Edge e pendências de loja seguem descritos abaixo.
+
+---
+
 ## 2026-10-21 — bateria de regressão como `pt.trail.itil` concluída
 
 - Execução somente de leitura dos **441 casos**, no mesmo registro [PT] `INC0010156`, como `pt.trail.itil`; mediana reportada pelo runner: **1.773 ms**. Foram encontrados 2 resultados com a causa esperada; 439 diferiram da causa de referência.
