@@ -78,6 +78,11 @@ const peopleGroups = await record.locator('.bt-group').count();
 const peopleHeaders = await record.locator('.bt-group summary').allTextContents();
 if (peopleGroups === 0 || peopleGroups >= allGroups || peopleHeaders.some((text) => !text.includes('salvou'))) errors.push('filtro Pessoas não reduziu os grupos: ' + JSON.stringify({ allGroups, peopleGroups, peopleHeaders }));
 
-console.log(JSON.stringify({ extId, popup: popupText.slice(0, 120), panel: panelText.slice(0, 120), cmpBtn, recRows, allGroups, peopleGroups, errors }, null, 1));
+// Nome localizado do manifest (__MSG_name__), conforme o idioma da interface do navegador (o headless fica em inglês).
+const self = await page.evaluate(() => chrome.management.getSelf());
+const extName = self.name, extShort = self.shortName;
+if (!['Trail — Perícia de registros ServiceNow', 'Trail — ServiceNow Record Forensics'].includes(extName) || extShort !== 'Trail') errors.push('nome da extensão inesperado: ' + JSON.stringify({ extName, extShort }));
+
+console.log(JSON.stringify({ extId, extName, extShort, popup: popupText.slice(0, 120), panel: panelText.slice(0, 120), cmpBtn, recRows, allGroups, peopleGroups, errors }, null, 1));
 await ctx.close();
 process.exit(errors.length ? 1 : 0);

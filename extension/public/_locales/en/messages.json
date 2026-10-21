@@ -1,4 +1,10 @@
 {
+  "name": {
+    "message": "Trail — ServiceNow Record Forensics"
+  },
+  "short_name": {
+    "message": "Trail"
+  },
   "description": {
     "message": "Record forensics for ServiceNow: what changed this field, when and why. Read-only."
   },
