@@ -44,6 +44,24 @@ await panelFrame.evaluate(() => document.querySelector('.btns a, .headcard a')?.
 await page.waitForTimeout(300);
 results.toast = await panelFrame.evaluate(() => document.querySelector('.toast')?.textContent);
 results.panelUrlAfterClick = panelFrame.url().replace(/^.*\/demo/, '/demo');
+const macLights = await panelFrame.$$eval('.topbar .lights .light', (ls) => ls.length);
+if (macLights !== 3) errs.push('esperava 3 bolinhas estilo Mac no topo do painel flutuante, achei ' + macLights);
+// bolinha-assistente + balão no formulário (.compo .shot):
+// boas-vindas fecham após 5s, depois o balão só aparece com o mouse em cima da bolinha
+const balloonAfterWelcome = await page.$eval('#demo-balloon', (el) => el.hidden);
+if (!balloonAfterWelcome) errs.push('balão de boas-vindas deveria ter fechado após 5s (uma vez por registro)');
+await page.hover('#demo-bub');
+await page.waitForTimeout(100);
+const balloonOnHover = await page.$eval('#demo-balloon', (el) => !el.hidden && getComputedStyle(el).display !== 'none');
+if (!balloonOnHover) errs.push('balão da bolinha-assistente deveria aparecer ao passar o mouse');
+await page.mouse.move(10, 10);
+await page.waitForTimeout(250);
+const balloonAfterLeave = await page.$eval('#demo-balloon', (el) => el.hidden);
+if (!balloonAfterLeave) errs.push('balão da bolinha-assistente deveria sumir ao tirar o mouse');
+await page.click('#demo-bub');
+await page.waitForTimeout(1000);
+const recGroupTitle = await panelFrame.$eval('.bt-group summary', (el) => el.textContent.trim()).catch(() => '');
+if (!recGroupTitle.includes('salvou')) errs.push('clique na bolinha-assistente não abriu Tudo que mudou em grupos: ' + recGroupTitle);
 // galeria
 for (const label of ['Registro inteiro', 'Lote', 'E se?', 'Popup', 'Opções', 'Painel · escuro', 'Painel · claro']) {
   await page.click(`#galseg button:has-text("${label}")`);

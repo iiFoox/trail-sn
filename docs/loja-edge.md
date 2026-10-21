@@ -1,99 +1,107 @@
-# Publicação na loja do Edge (Microsoft Edge Add-ons) como extensão oculta
+# Submissão na loja Microsoft Edge Add-ons
 
-Status: material pronto. A submissão é feita por você, logado no Partner Center, porque exige aceitar o
-contrato de desenvolvedor da Microsoft e enviar o formulário em nome da sua conta.
+Textos, notas de versão, respostas de revisão e instruções para publicar o **Trail** (v0.12.6) no Partner Center.
 
-## O que "oculta" significa no Edge
+## Nome
+**Trail — Perícia de registros ServiceNow** (ou, em inglês: **Trail — ServiceNow Record Forensics**)
 
-No Partner Center, em **Availability → Visibility**, escolha **Hidden**. A extensão não aparece na
-busca nem nas listas da loja; só quem tem o link direto instala. Ela passa pela mesma revisão de uma
-extensão pública e recebe **atualização automática**: cada nova versão aprovada chega sozinha a todos
-que instalaram, sem baixar zip nem ativar modo de desenvolvedor.
+## Descrição curta (até 132 caracteres)
+> Descubra o que alterou qualquer campo do ServiceNow, quando e por quê, na própria página. Somente leitura, sem telemetria.
 
-## Passo a passo (uma vez)
+*(122 caracteres — em inglês, 112 caracteres:)*
+> Find out what changed any ServiceNow field, when and why, right on the page. Read-only, no servers or telemetry.
 
-1. Entrar em https://partner.microsoft.com/dashboard/microsoftedge/overview com a conta Microsoft que
-   vai ser a dona da extensão e concluir o cadastro de desenvolvedor (gratuito).
-2. **Create new extension** → enviar `trail-edge-<versão>.zip` (o mesmo zip que eu mando aqui).
-3. **Availability**: Visibility = *Hidden*; Markets = todos (ou só Brasil).
-4. **Properties**: categoria *Developer tools*; site `https://trail-site-lime.vercel.app/b3/`;
-   política de privacidade `https://trail-site-lime.vercel.app/privacidade/`; e-mail de suporte.
-5. **Store listing** (Português do Brasil e Inglês): textos abaixo, ícone 300×300
-   (`docs/store/logo-300.png`) e as capturas 1280×800 (`docs/store/shot-*.png`).
-6. **Submit**. A revisão costuma levar de 3 a 7 dias úteis. Depois de aprovada, copie o link da
-   página da extensão e compartilhe com quem deve instalar.
+## Descrição longa (Português)
 
-## Atualizações
+Um campo de um incidente, mudança ou item de catálogo apareceu com outro valor e ninguém sabe dizer se foi uma pessoa, uma integração, uma business rule, um client script, um job agendado ou um flow.
 
-Subir a versão em `manifest.json` (ex.: 0.8.0 → 0.8.1), gerar o zip e, no Partner Center,
-**Update** → enviar o zip novo → **Publish**. Quem já instalou recebe a nova versão em algumas horas.
+O **Trail** coloca um ícone ao lado de cada campo do ServiceNow (UI16, Workspace e Service Portal) e uma **bolinha-assistente** sempre à mão no canto da página. Clique no ícone de um campo ou na bolinha e o painel cruza a auditoria do registro com os rastros de execução da própria instância, usando a sua sessão já aberta no navegador:
 
-## Textos da página
+- **Bolinha-assistente na página:** fica no canto da instância conectada, pode ser arrastada para qualquer altura (encosta na borda e lembra a posição), mostra as boas-vindas uma vez por registro e exibe o balão de dica só ao passar o mouse; um clique abre o painel.
+- **Painel flutuante estilo janela do Mac:** abre dentro da própria página com cantos arredondados, bolinhas de fechar, minimizar na bolinha e **sempre visível** (Picture-in-Picture que fica por cima de tudo), redimensionável por qualquer borda, setinha lateral e tecla `Esc` para recolher, além de botão para enviar ao painel lateral do Edge ou abrir em janela separada.
+- **Resposta e nomes como no formulário:** mostra quem mudou o campo, quando, de qual valor para qual (com o rótulo certo por tabela via `sys_documentation`, valor legível em vez de `sys_id` e links nas referências) e se a certeza é alta, média ou baixa, com texto pronto sem jargão técnico para colar no chamado.
+- **Rastro segundo a segundo e provas:** reconstrói a janela da mudança (formulário salvo, regras, eventos, flows e jobs) e lista cada fato verificável, por que outros candidatos foram descartados e se há regras em conflito gravando o mesmo campo.
+- **"Tudo que mudou" em grupos por momento:** ao investigar o registro inteiro ou vários registros em lote pela lista, usa a mesma animação da trilha com a lupa e etapas próprias (*"Lendo a auditoria do registro..."*, *"Separando os campos que mudaram..."*) e agrupa as alterações por salvamento (*"admin salvou 4 campos"*), com filtros por pessoa, API ou automação e exportação em CSV, texto ou PDF.
+- **O que mudou entre dois momentos e "E se?":** escolha dois momentos na linha do tempo para ver só o que ficou diferente no registro entre eles, ou simule na aba **E se?** o que mudaria antes de salvar outro valor.
 
-### Nome
-Trail
+**Privacidade e segurança**
+- **Somente leitura:** o cliente REST do motor só emite `GET` na Table API. Não há código capaz de criar, alterar ou apagar registros.
+- **Sem servidores externos:** todas as chamadas vão direto do navegador para a instância aberta na aba. Não há telemetria, conta nem coleta de dados.
+- **Permissão por instância:** você escolhe em quais instâncias conectar o Trail; a extensão não pede acesso a todos os sites.
 
-### Descrição curta (até 132 caracteres)
-PT: Descubra o que mudou um campo no ServiceNow: qual regra, flow, job ou pessoa, quando e com que prova. Só leitura.
-EN: Find out what changed a field in ServiceNow: which rule, flow, job or person, when, and with what evidence. Read-only.
+## Long description (English)
 
-### Descrição longa (PT)
-O Trail responde a pergunta que todo administrador de ServiceNow faz: "quem mudou este campo, e por quê?".
+A field on an incident, change request or catalog item has a value nobody recognizes, and nobody can tell whether it came from a person, an integration, a business rule, a client script, a scheduled job or a flow.
 
-Clique no ícone ao lado de qualquer campo do formulário e o Trail cruza a auditoria do registro com os
-rastros de execução da instância (transações, eventos, contextos de flow e workflow, jobs) e com as
-regras que gravam aquele campo (business rules, client scripts, UI actions, flows, data lookups,
-regras de atribuição, importações). O resultado é uma resposta com grau de certeza e as provas que
-sustentam a conclusão.
+**Trail** adds a small icon next to every ServiceNow field (UI16, Workspace and Service Portal) and a persistent **assistant bubble** in the corner of connected pages. Click any field icon or the bubble and the panel cross-references the record's audit history with execution traces from your own instance, using the session already open in your browser:
 
-- Veredito em uma linha, com a regra ou pessoa responsável e o link para abrir no ServiceNow.
-- Provas verificáveis e o motivo de cada candidato descartado.
-- Rastro do que rodou em volta da mudança, segundo a segundo.
-- Linha do tempo do registro, com filtro por pessoa, API e automação, e comparação entre duas gravações.
-- Alerta de regras em conflito que gravam o mesmo campo com valores diferentes.
-- Frase sem termos técnicos para colar no chamado.
-- Relatório em PDF e diferença lado a lado para textos e scripts.
+- **Assistant bubble on the page:** stays in the corner of connected instances, drags and snaps to the left or right edge (remembering its position), greets you once per record and shows the tip balloon only on hover; click to open the floating panel.
+- **Mac-style floating window:** opens right inside the page with rounded corners, close / minimize / **always on top** (Document Picture-in-Picture) window dots, resizing from any edge or corner, side arrow tab and `Esc` to hide back into the bubble, plus a button to send it to the Edge side panel or a separate window.
+- **Verdict with form labels and values:** shows what changed the field, when, from which value to which (using table-specific labels from `sys_documentation`, display values instead of raw `sys_id`s, and clickable reference links), whether certainty is high, medium or low, and a plain-language summary ready to paste into a ticket.
+- **Second-by-second trace & proofs:** rebuilds the execution window around the change and lists every verifiable fact, why other candidates were ruled out, and whether conflicting rules write to the same field.
+- **"Everything that changed" grouped by moment:** whole-record and list-column batch investigations use the same animated trail-and-magnifying-glass loader with dedicated steps (*"Reading record audit..."*, *"Picking out the fields that changed..."*) and group changes by save (*"admin saved 4 fields"*), with filters by person, API or automation and CSV, text or PDF export.
+- **What changed between two moments & "What if?":** pick two moments on the timeline to see only what differs between them, or simulate another value in the **What if?** tab before saving.
 
-Somente leitura: o Trail usa a sua própria sessão e só faz consultas GET na API de tabelas. Não grava,
-não executa scripts na instância e não envia dados para nenhum servidor externo.
+**Privacy and security**
+- **Read-only:** the REST client only issues `GET` requests to the Table API. It cannot create, update or delete records.
+- **No external servers:** every request goes straight from your browser to the ServiceNow instance open in the tab. No telemetry, no accounts, no analytics.
+- **Per-instance permission:** you choose which instances to connect; Trail never asks for access to all websites.
 
-### Long description (EN)
-Trail answers the question every ServiceNow admin asks: "who changed this field, and why?".
+## Novidades da versão 0.12.6 (Português)
+- **Bolinha-assistente no canto da página:** fica visível nas páginas da instância conectada, pode ser arrastada (encosta na borda e lembra a posição), mostra as boas-vindas uma vez por registro e exibe o balão de dica só com o mouse em cima; um clique abre o painel flutuante.
+- **Painel flutuante estilo janela do Mac:** cantos arredondados, bolinhas de fechar, minimizar na bolinha e **sempre visível** (fica por cima de tudo via Picture-in-Picture), redimensionável por qualquer borda, setinha lateral e tecla `Esc` para recolher, e botão para enviar ao painel lateral do Edge.
+- **"Tudo que mudou" em grupos por momento e trilha com lupa:** a investigação do registro inteiro e o lote usam a mesma animação da trilha que se desenha com a lupa (com etapas próprias como *"Lendo a auditoria do registro..."* e *"Separando os campos que mudaram..."*) e agrupam os campos alterados no mesmo salvamento (*"admin salvou 4 campos"*).
+- **O que mudou entre dois momentos:** comparador da linha do tempo renomeado e com explicação direta para comparar dois pontos do registro.
 
-Click the icon next to any form field and Trail cross-checks the record's audit with the instance's
-execution traces (transactions, events, flow and workflow contexts, jobs) and with the rules that write
-that field (business rules, client scripts, UI actions, flows, data lookups, assignment rules, imports).
-You get an answer with a certainty grade and the evidence behind it.
+## What's new in 0.12.6 (English)
+- **Assistant bubble in the page corner:** stays visible on connected instance pages, drags and snaps to either edge (remembering its position), greets once per record and shows the tip balloon only on hover; click to open the floating panel.
+- **Mac-style floating panel:** rounded corners, close / minimize / **always on top** (Picture-in-Picture) window buttons, resizable from any edge, side arrow tab and `Esc` to hide into the bubble, plus a button to dock into the Edge side panel.
+- **"Everything that changed" grouped by moment & trail loader:** whole-record and batch views share the animated trail-and-magnifying-glass loader with dedicated steps (*"Reading record audit..."*, *"Picking out the fields that changed..."*) and group fields modified in the same save (*"admin saved 4 fields"*).
+- **What changed between two moments:** clearer timeline comparison mode showing only the fields that differ between two selected moments.
 
-- One-line verdict with the responsible rule or person and a link to open it in ServiceNow.
-- Verifiable evidence and why each other candidate was discarded.
-- What ran around the change, second by second.
-- Record timeline with people / API / automation filters and a compare-two-saves view.
-- Warning for conflicting rules that write the same field with different values.
-- A plain-language sentence to paste in the ticket.
-- PDF report and side-by-side diff for texts and scripts.
+## Categoria sugerida
+**Developer Tools** (Ferramentas para desenvolvedores) ou **Productivity** (Produtividade).
 
-Read-only: Trail uses your own session and only issues GET requests to the Table API. It never writes,
-never runs scripts on the instance and never sends data to any external server.
+## Permissões justificadas (para o campo "Notes for reviewers")
 
-## Justificativa das permissões (campo "Notes for certification")
+```
+Trail is a read-only forensic assistant for ServiceNow records.
 
-- `storage`: preferências (idioma, tema, atalhos) e cache dos metadados da tabela.
-- `sidePanel`: o resultado aparece no painel lateral do navegador.
-- `activeTab` e `scripting`: inserir o ícone ao lado dos campos só na aba da instância que o usuário
-  autorizou.
-- `contextMenus`: item "Trail" no clique direito da página, que abre o painel.
-- `optional_host_permissions` (`https://*.service-now.com/*` e `https://*/*` para domínios próprios):
-  pedidas em tempo de uso, por instância, quando o usuário conecta o Trail a ela. Sem isso a extensão
-  não acessa nenhum site.
-- `web_accessible_resources`: a página da diferença lado a lado abre num iframe dentro da instância.
+Permissions used:
+- storage: saves user preferences (theme, language, panel mode, bubble/float position) and the list of ServiceNow instances the user explicitly connected.
+- sidePanel: displays the investigation report in the browser side panel when the user chooses side panel mode.
+- activeTab + scripting: reads the current ServiceNow record context (table, sys_id, session token g_ck) and injects the field icons, assistant bubble, and floating panel on instances the user connected.
+- optional_host_permissions (https://*/*): requested at runtime via chrome.permissions.request ONLY for the specific ServiceNow origin the user clicks "Connect this instance" on.
 
-Para testar: qualquer instância de desenvolvedor gratuita (developer.servicenow.com). Abrir um
-incidente, clicar no ícone ao lado de "State" e ver a resposta no painel.
+Testing without a ServiceNow account:
+Open chrome-extension://<id>/sidepanel/index.html?demo=1&float=1 (or https://trail-sn.vercel.app/b3/) to inspect the full UI with built-in demonstration data.
 
-## Privacidade (resumo para o formulário)
+The extension makes only GET requests to the connected ServiceNow instance and never sends data to any third-party server.
+```
 
-- Não coleta dados pessoais nem de uso.
-- Não há servidor do Trail: tudo roda no navegador, com a sessão do usuário na instância dele.
-- Dados lidos da instância ficam na memória do navegador e, por pouco tempo, no armazenamento local
-  da extensão (cache de metadados). Nada é vendido, compartilhado ou transferido.
+## URL da política de privacidade
+Publique `docs/PRIVACIDADE.md` (ou a página equivalente do site):
+- Site: `https://trail-sn.vercel.app/privacidade/`
+- Repositório público: `https://github.com/iiFoox/trail-sn/blob/master/docs/PRIVACIDADE.md`
+
+No Partner Center, marque **"This extension does not collect any personal data"**.
+
+## Site e suporte
+- Site oficial com demonstração interativa: `https://trail-sn.vercel.app/b3/`
+- Repositório e suporte (issues): `https://github.com/iiFoox/trail-sn`
+
+## Passo a passo no Partner Center (1ª submissão — exige login Microsoft)
+
+1. Acesse <https://partner.microsoft.com/dashboard/microsoftedge/overview> e entre com a sua conta Microsoft.
+2. Caso ainda não tenha cadastro no programa **Microsoft Edge Add-ons**, conclua o registro gratuito de desenvolvedor individual.
+3. Clique em **Create new extension** e envie o arquivo `trail-0.12.6.zip` (gerado por `npm run pack`).
+4. Em **Availability**, escolha **Public** (ou **Hidden** se quiser testar só por link direto antes).
+5. Em **Properties**:
+   - Categoria: **Developer tools**.
+   - Cole a URL da política de privacidade (`https://trail-sn.vercel.app/privacidade/`).
+   - Cole a URL do site (`https://trail-sn.vercel.app/b3/`).
+6. Em **Store listings**, adicione **Portuguese (Brazil)** e **English**:
+   - Cole a descrição curta e a descrição longa acima.
+   - Cole as notas da versão 0.12.6 no campo de novidades da versão.
+   - Envie o ícone `300×300` (`docs/store/logo-300.png`) e as capturas `1280×800` (`docs/store/shot-*.png`).
+7. Em **Submit your extension**, cole o texto de **Notes for reviewers** acima e clique em **Publish**.

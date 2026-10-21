@@ -353,6 +353,75 @@
     cpanel?.contentWindow?.postMessage({ type: 'trail-demo', field }, '*');
     busyT = setTimeout(() => side.classList.remove('busy'), reduce ? 0 : 250);
   });
+  // bolinha-assistente + balão na demonstração do formulário (.compo .shot):
+  // boas-vindas aparecem uma vez por registro e depois o balão só aparece com o mouse em cima da bolinha.
+  const demoAsst = $('#demo-asst'), demoBub = $('#demo-bub'), demoBalloon = $('#demo-balloon'), demoBalloonB = $('#demo-balloon-b'), demoBalloonT = $('#demo-balloon-t'), demoBalloonX = $('#demo-balloon-x');
+  let balloonKind = null, welcomeTimer = 0, tipLeaveTimer = 0, welcomedOnce = false;
+  const demoShot = $('.compo .shot');
+  const hideDemoBalloon = () => {
+    clearTimeout(welcomeTimer); clearTimeout(tipLeaveTimer);
+    balloonKind = null;
+    demoShot?.classList.remove('welcoming');
+    if (demoBalloon) demoBalloon.hidden = true;
+  };
+  const showWelcomeOnce = () => {
+    if (welcomedOnce || !demoBalloon) return;
+    welcomedOnce = true;
+    // No celular o balão cobriria o formulário inteiro: lá a bolinha fica quieta.
+    if (matchMedia('(max-width:640px)').matches) return;
+    demoShot?.classList.add('welcoming');
+    balloonKind = 'welcome';
+    if (demoBalloonB) { demoBalloonB.textContent = 'Trail pronto nesta página'; demoBalloonB.hidden = false; }
+    if (demoBalloonT) demoBalloonT.textContent = 'Clique num ícone nos campos ou aqui na bolinha para abrir o painel. Arraste para mudar de lugar.';
+    demoBalloon.hidden = false;
+    clearTimeout(welcomeTimer);
+    welcomeTimer = setTimeout(hideDemoBalloon, 5000);
+  };
+  const showHoverTip = () => {
+    if (!demoBalloon || balloonKind === 'welcome') return;
+    clearTimeout(tipLeaveTimer);
+    balloonKind = 'tip';
+    if (demoBalloonB) demoBalloonB.hidden = true;
+    if (demoBalloonT) demoBalloonT.textContent = 'Trail · clique para investigar o registro inteiro (arraste para mudar de lugar)';
+    demoBalloon.hidden = false;
+  };
+  if (demoBalloonX) demoBalloonX.addEventListener('click', (e) => { e.stopPropagation(); hideDemoBalloon(); });
+  if (demoAsst && demoBub) {
+    const wio = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { setTimeout(showWelcomeOnce, reduce ? 0 : 1000); wio.disconnect(); } }), { threshold: .2 });
+    wio.observe(demoAsst.parentElement || demoAsst);
+    let dragged = false, sx = 0, sy = 0, startBottom = 14;
+    demoBub.addEventListener('pointerenter', () => { if (!dragged) showHoverTip(); });
+    demoBub.addEventListener('pointerleave', () => {
+      if (balloonKind === 'tip') { clearTimeout(tipLeaveTimer); tipLeaveTimer = setTimeout(hideDemoBalloon, 150); }
+    });
+    demoBub.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault(); dragged = false; sx = e.clientX; sy = e.clientY;
+      hideDemoBalloon();
+      startBottom = parseFloat(demoAsst.style.bottom) || 14;
+      demoBub.setPointerCapture(e.pointerId);
+      const box = demoAsst.parentElement;
+      const move = (ev) => {
+        if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 5) dragged = true;
+        if (!dragged || !box) return;
+        const r = box.getBoundingClientRect();
+        const nb = Math.max(10, Math.min(r.height - 96, startBottom + (sy - ev.clientY)));
+        demoAsst.style.bottom = nb + 'px';
+        demoAsst.classList.toggle('left', (ev.clientX - r.left) < r.width / 2);
+      };
+      const end = () => {
+        demoBub.removeEventListener('pointermove', move);
+        demoBub.removeEventListener('pointerup', end);
+        demoBub.removeEventListener('pointercancel', end);
+        if (!dragged) {
+          cpanel?.contentWindow?.postMessage({ type: 'trail-demo', batch: 'rec' }, '*');
+        }
+      };
+      demoBub.addEventListener('pointermove', move);
+      demoBub.addEventListener('pointerup', end);
+      demoBub.addEventListener('pointercancel', end);
+    });
+  }
   const galimg = $('#galimg');
   if (galimg) $$('#galseg button').forEach((b) => b.addEventListener('click', () => { $$('#galseg button').forEach((x) => x.classList.toggle('on', x === b)); galimg.style.opacity = 0; setTimeout(() => { galimg.src = b.dataset.u; galimg.width = b.dataset.w; galimg.onload = () => { galimg.style.opacity = 1; }; $('#galcap').textContent = b.dataset.c; $('#galurl').textContent = 'chrome-extension://…/' + b.dataset.u.split('/').pop().split('.')[0]; }, 200); }));
 })();
