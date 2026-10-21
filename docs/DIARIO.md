@@ -10,6 +10,20 @@ Convenções:
 
 ---
 
+## 2026-10-20 (noite) — site mais leve
+
+O dono achou o site pesado. Medido com `tests/e2e/.tmp/site-perf.mjs` (fora do git): rolagem pela página inteira com a CPU 4× mais lenta, contando quadros pelo rAF e tarefas longas.
+- **Culpado principal: os 8 iframes do painel** (cada um é o painel inteiro rodando, e por serem da mesma origem o navegador não os desacelera fora da tela). Sem eles, os quadros lentos caíam de ~45 para 10. Desfoque, faixa e canvas pesavam pouco.
+- **O que mudou:**
+  - as 4 miniaturas de "Quatro passos" viraram imagens capturadas da própria demonstração (`b3/img/passo-1..4.png`);
+  - os 4 iframes interativos usam `data-src`: carregam um por vez no tempo ocioso depois do `load`, ou antes, se a pessoa chegar perto (IntersectionObserver com 600 px de folga);
+  - `content-visibility: auto` nos contêineres dos iframes;
+  - canvas de partículas em densidade 1, um traço por cor, 30 fps e pausa durante a rolagem;
+  - o cursor próprio só roda o loop enquanto está se movendo.
+- **Resultado, nas mesmas condições:** p95 de 34,7 → 20,9 ms por quadro; quadros lentos de 37–45 → 12–17; quadros na rolagem de ~520 → ~630.
+- Textos do site atualizados para o cabeçalho novo (sem bolinhas do Mac; engrenagem de configurações).
+- Testes novos (Antigravity): `extension/test/i18n.test.ts` (mesmas chaves e placeholders em pt e en, nenhum texto vazio) e `extension/test/prefs.test.ts` (`motion`, `panelKey`, `comboFromEvent`). Total de 140 testes.
+
 ## 2026-10-20 (noite) — 0.12.8: cabeçalho novo, configurações no painel, falso "sem acesso"
 
 - **Cabeçalho do painel (pedido do dono):**

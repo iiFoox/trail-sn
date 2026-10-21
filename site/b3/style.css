@@ -350,7 +350,10 @@ section{padding-block:84px}
 @media (max-width:600px){.story{grid-template-columns:1fr}.seg{border-radius:16px}}
 
 /* demos ao vivo */
-.frame .pic.live{background:#f4f5f7}
+.frame .pic.live,.frame .pic.snap{background:#f4f5f7}
+/* Miniaturas dos passos: imagem capturada da demonstração (era um iframe por cartão, o que pesava a página). */
+.frame .pic.snap img{object-position:0 0}
+.frame .pic.snap:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 70%,rgba(7,26,36,.35));pointer-events:none}
 .pic.live iframe,.fit iframe,.tall iframe{border:0;display:block;transform-origin:0 0;position:absolute;left:0;top:0;background:transparent}
 .frame .pic.live iframe{pointer-events:none}
 .frame .pic.live:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 70%,rgba(7,26,36,.35))}
@@ -395,3 +398,6 @@ section{padding-block:84px}
 .galbox{display:flex;justify-content:center;background:#0b141b;padding:20px;min-height:660px}
 .galbox iframe{border:1px solid var(--line2);border-radius:12px;background:#fff;transition:opacity .3s,width .4s var(--ease);max-width:100%}
 @media (max-width:960px){.galbox{min-height:0}}
+
+/* Fora da tela, o navegador não desenha os iframes do painel (o que mais pesava a rolagem). */
+.compo .shot .fit,.compo .side,#inside-img,.galbox{content-visibility:auto;contain-intrinsic-size:auto 700px}

@@ -121,6 +121,23 @@
   $$('#seg button').forEach((b) => b.addEventListener('click', () => { $$('#seg button').forEach((x) => x.classList.toggle('on', x === b)); profile(b.dataset.p); }));
   profile('admin');
 
+  // ---------- iframes do painel: só carregam perto da tela, no tempo ocioso ----------
+  // Cada iframe é o painel inteiro rodando; carregar todos de uma vez travava a rolagem.
+  const lazyFrames = new IntersectionObserver((es) => es.forEach((e) => {
+    if (!e.isIntersecting) return;
+    const f = e.target; lazyFrames.unobserve(f);
+    const go = () => { if (f.dataset.src && !f.getAttribute('src')) f.setAttribute('src', f.dataset.src); };
+    'requestIdleCallback' in window ? requestIdleCallback(go, { timeout: 700 }) : setTimeout(go, 60);
+  }), { rootMargin: '600px 0px' });
+  $$('iframe[data-src]').forEach((f) => lazyFrames.observe(f));
+  // Com a página pronta, carrega um por vez no tempo ocioso: quem rola não pega o painel iniciando no meio do caminho.
+  const idle = (fn) => ('requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 1500 }) : setTimeout(fn, 200));
+  addEventListener('load', () => setTimeout(function next() {
+    const f = $$('iframe[data-src]').find((x) => !x.getAttribute('src'));
+    if (!f) return;
+    idle(() => { lazyFrames.unobserve(f); f.addEventListener('load', () => setTimeout(next, 250), { once: true }); f.setAttribute('src', f.dataset.src); });
+  }, 1200), { once: true });
+
   // ---------- B3: barra de progresso + nav que se esconde ao descer ----------
   const prog = $('#progress'); let lastY = 0;
   addEventListener('scroll', () => {
@@ -133,46 +150,64 @@
   const cur = $('#cursor');
   if (!reduce && matchMedia('(hover:hover)').matches) {
     let cx = innerWidth / 2, cy = innerHeight / 2, tx = cx, ty = cy;
-    addEventListener('pointermove', (e) => { tx = e.clientX; ty = e.clientY; cur.classList.remove('hid'); }, { passive: true });
+    // O loop só roda enquanto o cursor ainda não alcançou o ponteiro; parado, não gasta quadro nenhum.
+    let moving = false;
+    const loop = () => {
+      cx += (tx - cx) * .22; cy += (ty - cy) * .22;
+      cur.style.transform = `translate(${cx}px,${cy}px) translate(-50%,-50%)`;
+      if (Math.abs(tx - cx) + Math.abs(ty - cy) > .3) requestAnimationFrame(loop); else moving = false;
+    };
+    addEventListener('pointermove', (e) => { tx = e.clientX; ty = e.clientY; cur.classList.remove('hid'); if (!moving) { moving = true; requestAnimationFrame(loop); } }, { passive: true });
     addEventListener('pointerleave', () => cur.classList.add('hid'));
     // dentro de um iframe a página para de receber o mouse: esconde a bolinha em vez de deixá-la presa na borda
     document.addEventListener('pointerover', (e) => { if (e.target.tagName === 'IFRAME') cur.classList.add('hid'); });
     document.addEventListener('mouseleave', () => cur.classList.add('hid'));
     addEventListener('blur', () => cur.classList.add('hid'));
     document.addEventListener('pointerover', (e) => cur.classList.toggle('on', !!e.target.closest('a,button,.tile,.q,.seg')));
-    (function loop() { cx += (tx - cx) * .22; cy += (ty - cy) * .22; cur.style.transform = `translate(${cx}px,${cy}px) translate(-50%,-50%)`; requestAnimationFrame(loop); })();
   } else cur.remove();
 
   // ---------- fundo: partículas em trilhas (campo de fluxo), atraídas pelo cursor ----------
   const cv = $('#trails');
   if (!reduce && cv) {
     const ctx = cv.getContext('2d'); let W, H, pts = [], mx = -1e9, my = -1e9, running = true;
-    const DPR = Math.min(2, devicePixelRatio || 1);
+    // Densidade 1: o rastro é difuso, e repintar a tela inteira em 2x a cada quadro era o que pesava.
+    const DPR = 1;
     const size = () => { W = cv.width = innerWidth * DPR; H = cv.height = innerHeight * DPR; cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px'; };
     size(); addEventListener('resize', size);
     addEventListener('pointermove', (e) => { mx = e.clientX * DPR; my = e.clientY * DPR; }, { passive: true });
     const N = innerWidth < 700 ? 60 : 140;
     for (let i = 0; i < N; i++) pts.push({ x: Math.random() * innerWidth * DPR, y: Math.random() * innerHeight * DPR, vx: 0, vy: 0, life: Math.random() * 200, hue: Math.random() < .25 ? 'g' : 't' });
     const field = (x, y, t) => { const s = 0.0016 / DPR; return Math.sin(x * s + t) * Math.cos(y * s * 1.3 - t * .7) * Math.PI * 2; };
-    let t = 0;
+    let t = 0, frame = 0, scrolling = 0, looping = false;
+    // Pausa enquanto a página rola (é quando o navegador mais precisa do quadro) e volta logo depois.
+    addEventListener('scroll', () => { clearTimeout(scrolling); scrolling = setTimeout(() => { scrolling = 0; start(); }, 140); }, { passive: true });
     const tick = () => {
-      if (!running) return;
-      t += 0.004;
-      ctx.fillStyle = 'rgba(7,26,36,0.10)'; ctx.fillRect(0, 0, W, H);
-      for (const p of pts) {
-        const a = field(p.x, p.y, t); let ax = Math.cos(a) * .18, ay = Math.sin(a) * .18;
-        const dx = mx - p.x, dy = my - p.y, d2 = dx * dx + dy * dy;
-        if (d2 < (260 * DPR) ** 2) { const d = Math.sqrt(d2) + 1; ax += (dx / d) * .9; ay += (dy / d) * .9; }
-        p.vx = (p.vx + ax) * .94; p.vy = (p.vy + ay) * .94;
-        const ox = p.x, oy = p.y; p.x += p.vx * DPR; p.y += p.vy * DPR;
-        ctx.strokeStyle = p.hue === 'g' ? 'rgba(98,216,78,.55)' : 'rgba(43,179,159,.45)'; ctx.lineWidth = 1.2 * DPR;
-        ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(p.x, p.y); ctx.stroke();
-        if (++p.life > 420 || p.x < 0 || p.y < 0 || p.x > W || p.y > H) { p.x = Math.random() * W; p.y = Math.random() * H; p.vx = p.vy = 0; p.life = 0; }
-      }
+      if (!running || scrolling) { looping = false; return; }
       requestAnimationFrame(tick);
+      // 30 quadros por segundo bastam para o rastro; metade do trabalho.
+      if (++frame % 2) return;
+      t += 0.008;
+      ctx.fillStyle = 'rgba(7,26,36,0.18)'; ctx.fillRect(0, 0, W, H);
+      ctx.lineWidth = 1.2;
+      // Um traço por cor (em vez de um por partícula): duas trocas de estilo por quadro em vez de 140.
+      for (const hue of ['t', 'g']) {
+        ctx.strokeStyle = hue === 'g' ? 'rgba(98,216,78,.55)' : 'rgba(43,179,159,.45)';
+        ctx.beginPath();
+        for (const p of pts) {
+          if (p.hue !== hue) continue;
+          const a = field(p.x, p.y, t); let ax = Math.cos(a) * .36, ay = Math.sin(a) * .36;
+          const dx = mx - p.x, dy = my - p.y, d2 = dx * dx + dy * dy;
+          if (d2 < 260 ** 2) { const d = Math.sqrt(d2) + 1; ax += (dx / d) * 1.8; ay += (dy / d) * 1.8; }
+          p.vx = (p.vx + ax) * .9; p.vy = (p.vy + ay) * .9;
+          ctx.moveTo(p.x, p.y); p.x += p.vx; p.y += p.vy; ctx.lineTo(p.x, p.y);
+          if ((p.life += 2) > 420 || p.x < 0 || p.y < 0 || p.x > W || p.y > H) { p.x = Math.random() * W; p.y = Math.random() * H; p.vx = p.vy = 0; p.life = 0; }
+        }
+        ctx.stroke();
+      }
     };
-    tick();
-    document.addEventListener('visibilitychange', () => { running = !document.hidden; if (running) tick(); });
+    const start = () => { if (!looping && running && !scrolling) { looping = true; requestAnimationFrame(tick); } };
+    start();
+    document.addEventListener('visibilitychange', () => { running = !document.hidden; start(); });
   }
 
   // ---------- texto que embaralha no topo ----------
