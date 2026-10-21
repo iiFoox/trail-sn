@@ -10,6 +10,18 @@ Convenções:
 
 ---
 
+## 2026-10-21 — testes em aplicações escopadas (em andamento, Codex)
+
+A bateria só cobria tabelas globais. O dono pediu testes em apps escopados (o dia a dia do App Engine).
+- **Já criado no PDI pelo Claude Code:**
+  - app **[PT] Trail Escopo A**: `sys_app` `3def6f75c3cc17101cbdb8e1b40131cf`, escopo `x_2270630_pttrail_` (o ServiceNow corta em 18 caracteres; o prefixo de empresa do PDI é 2270630);
+  - tabelas `x_2270630_pttrail__pedido` (estende `task`) e `x_2270630_pttrail__item`.
+- **Truques da API:**
+  - `PUT /api/now/ui/concoursepicker/application {app_id}` troca o app da sessão (o que for criado vai para esse escopo); voltar com `{app_id: "global"}`;
+  - tabela nova: mandar o nome curto, porque o ServiceNow põe o prefixo.
+- **Tarefa do Codex:** `tests/regression/ESCOPO-TAREFA.md`. Ele monta campos, regras, script include, job, UI action, app B com regra de outro escopo, papéis e usuários (`escopo.user`, `escopo.admin`, `escopo.dev`), e roda o motor por perfil. Resultado esperado em `tests/regression/escopo/RELATORIO.md`.
+- **Atenção:** se a aba ficar no app A ou personificada, voltar ao admin e ao global.
+
 ## 2026-10-21 — 0.13.2: o painel acompanha o registro aberto
 
 - **Problema relatado:** o dono testou numa UI page (erro "registro não encontrado") e depois abriu um incidente. O painel só percebeu a troca depois de um clique num campo.
