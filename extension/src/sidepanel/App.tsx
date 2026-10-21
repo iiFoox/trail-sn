@@ -11,6 +11,7 @@ import { Batch } from './Batch';
 import { setTrackedTab } from '../shared/tabRef';
 import { send, storageKey, type TabState } from '../shared/messages';
 import { isEnabled, looksLikeServiceNow } from '../shared/instances';
+import { ErrorMsg } from './ErrorMsg';
 
 const s = t(getPrefs().lang);
 const params = new URLSearchParams(location.search);
@@ -245,7 +246,7 @@ export function App() {
         )}
         {state?.access && !state.result && <AccessNotice report={state.access} />}
         {state?.status === 'running' && <Loading steps={s.p.loadSteps as string[]} />}
-        {state?.status === 'error' && <div class="notice bad"><div class="title">{s.errorTitle}</div>{state.error}</div>}
+        {state?.status === 'error' && <div class="notice bad"><div class="title">{s.errorTitle}</div><ErrorMsg msg={state.error ?? ''} /></div>}
         {state?.batch && !state.result && origin && state.status !== 'running' && <Batch b={state.batch} origin={origin} onOpen={(id, f) => { if (isDemo) { investigateField(f ?? state.batch!.field); return; } void send({ type: 'investigate', origin, mode: here, target: { table: state.batch!.table, sysId: id, field: f ?? state.batch!.field } }); }} />}
         {state?.result && origin && state.status !== 'running' && <Result r={state.result} origin={origin} access={state.access} toast={(m) => showToast(m)} onField={investigateField} />}
         {!needsConnect && !state?.result && !state?.batch && state?.status !== 'running' && (

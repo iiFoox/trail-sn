@@ -273,6 +273,13 @@ const dict = {
     showBubble: 'Mostrar a bolinha do Trail nas páginas da instância',
     bubbleWelcome: 'Trail está aqui. Toque na bolinha para investigar este registro.',
     bubbleTip: 'Clique para investigar este registro',
+    // Erros em linguagem de gente (shared/errors.ts); a mensagem técnica fica em "Detalhes técnicos".
+    errNotFound: 'Não encontrei este registro, ou os seus papéis não deixam lê-lo.',
+    errUnavailable: 'A instância não respondeu; tente de novo.',
+    errOffline: 'Sem conexão com a instância. Confira a internet ou a VPN e tente de novo.',
+    errReloaded: 'O Trail foi atualizado ou recarregado. Recarregue a página da instância e tente de novo.',
+    errOther: 'Algo deu errado nesta consulta. Tente de novo.',
+    errTech: 'Detalhes técnicos',
   },
   en: {
     prefsTitle: 'Appearance and language',
@@ -544,6 +551,12 @@ const dict = {
     showBubble: 'Show the Trail bubble on instance pages',
     bubbleWelcome: 'Trail is here. Tap the bubble to investigate this record.',
     bubbleTip: 'Click to investigate this record',
+    errNotFound: 'This record was not found, or your roles do not let you read it.',
+    errUnavailable: 'The instance did not respond; try again.',
+    errOffline: 'No connection to the instance. Check your internet or VPN and try again.',
+    errReloaded: 'Trail was updated or reloaded. Reload the instance page and try again.',
+    errOther: 'Something went wrong with this lookup. Try again.',
+    errTech: 'Technical details',
   },
 };
 

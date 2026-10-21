@@ -12,6 +12,7 @@ import { recordLink } from '../shared/instances';
 import { send } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
 import { demoFlows, FlowsView } from './Flows';
+import { ErrorMsg } from './ErrorMsg';
 
 const P = t(getPrefs().lang).p;
 const isDemo = new URLSearchParams(location.search).has('demo');
@@ -55,7 +56,7 @@ export function RecordRuns({ table, sysId, origin, items }: { table: string; sys
     </div>
   );
 
-  if (err) return <div class="box"><div class="li"><span class="ck w">!</span><span class="grow">{err}</span></div></div>;
+  if (err) return <div class="box"><div class="li"><span class="ck w">!</span><span class="grow"><ErrorMsg msg={err} /></span></div></div>;
   const groups: { key: string; title: string; icon: ComponentChildren; denied: boolean; count: number; body: ComponentChildren }[] = !res ? [] : [
     ...([
       ['br', P.rrBr, Glyph.rule, 'sys_script', res.businessRules],

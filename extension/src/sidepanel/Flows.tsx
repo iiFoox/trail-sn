@@ -5,6 +5,7 @@ import { fmt, t } from '../shared/i18n';
 import { Glyph } from '../shared/icons';
 import { send } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
+import { ErrorMsg } from './ErrorMsg';
 
 const lang = getPrefs().lang;
 const P = t(lang).p;
@@ -33,7 +34,7 @@ export function FlowsTab({ target, origin, field = '' }: { target: { table: stri
     return () => { alive = false; };
   }, [target.sysId]);
 
-  if (err) return <div class="box"><div class="li"><span class="ck w">!</span><span class="grow">{err}</span></div></div>;
+  if (err) return <div class="box"><div class="li"><span class="ck w">!</span><span class="grow"><ErrorMsg msg={err} /></span></div></div>;
   if (!res) return <div class="box"><div class="li"><span class="spin" /><span class="grow muted small">{P.flLoading}</span></div></div>;
   return <FlowsView res={res} origin={origin} field={field} />;
 }

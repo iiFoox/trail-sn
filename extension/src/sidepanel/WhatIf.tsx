@@ -8,6 +8,7 @@ import { send } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
 import { fieldName } from './Result';
 import { Val } from './Val';
+import { ErrorMsg } from './ErrorMsg';
 
 const P = t(getPrefs().lang).p;
 const isDemo = new URLSearchParams(location.search).has('demo');
@@ -44,7 +45,7 @@ export function WhatIf({ r, origin }: { r: Investigation; origin: string; field?
           <button class="btn primary sm" disabled={!value || st === 'run'} onClick={() => void run()}>{Glyph.search} {P.wiRun}</button>
         </div>
         {st === 'run' && <div class="li"><span class="spin" /><span class="grow muted small">{P.wiRunning}</span></div>}
-        {st === 'err' && <div class="li"><span class="ck w">!</span><span class="grow">{err}</span></div>}
+        {st === 'err' && <div class="li"><span class="ck w">!</span><span class="grow">{err === P.wiSame ? err : <ErrorMsg msg={err} />}</span></div>}
       </div>
       {st === 'done' && res && <Outcome res={res} r={r} origin={origin} />}
     </div>
