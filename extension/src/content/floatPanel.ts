@@ -108,7 +108,10 @@ let st: State | null = null;
 let bubble: HTMLButtonElement | null = null;
 let assistant: { host: HTMLElement; balloon: HTMLElement; edge: 'left' | 'right'; y: number; origin: string; tabId: number; enabled: boolean; tip: string } | null = null;
 let balloonTimer: number | undefined;
+let tipLeaveTimer: number | undefined;
+let balloonKind: 'tip' | 'message' | null = null;
 let minimized = false;
+let disposed = false;
 let onOutside: ((e: PointerEvent) => void) | null = null;
 const extOrigin = (() => { try { return new URL(chrome.runtime.getURL('')).origin; } catch { return ''; } })();
 
@@ -136,20 +139,43 @@ function placeBalloon(): void {
 
 function hideBalloon(): void {
   if (balloonTimer) clearTimeout(balloonTimer);
+  if (tipLeaveTimer) clearTimeout(tipLeaveTimer);
+  balloonKind = null;
   if (assistant) assistant.balloon.hidden = true;
 }
 
-export function showAssistantMessage(text: string, title?: string): void {
-  if (!assistant?.enabled || !bubble) return;
+function scheduleTipHide(): void {
+  if (balloonKind !== 'tip') return;
+  if (tipLeaveTimer) clearTimeout(tipLeaveTimer);
+  tipLeaveTimer = window.setTimeout(hideBalloon, 150);
+}
+
+export function showAssistantMessage(text: string, title?: string): boolean {
+  if (!assistant?.enabled || !bubble) return false;
   const card = assistant.balloon;
   const heading = card.querySelector<HTMLElement>('b')!;
   heading.textContent = title ?? '';
   heading.hidden = !title;
   card.querySelector<HTMLElement>('.text')!.textContent = text;
   card.hidden = false;
+  balloonKind = 'message';
   placeBalloon();
   if (balloonTimer) clearTimeout(balloonTimer);
-  balloonTimer = window.setTimeout(hideBalloon, 5000);
+  balloonTimer = window.setTimeout(hideBalloon, 6000);
+  return true;
+}
+
+export function canShowAssistantMessage(): boolean { return !!assistant?.enabled && !!bubble && !bubble.hidden; }
+
+function showTip(): void {
+  if (!assistant?.tip || balloonKind === 'message') return;
+  const card = assistant.balloon;
+  card.querySelector<HTMLElement>('b')!.hidden = true;
+  card.querySelector<HTMLElement>('.text')!.textContent = assistant.tip;
+  card.hidden = false;
+  balloonKind = 'tip';
+  if (tipLeaveTimer) clearTimeout(tipLeaveTimer);
+  placeBalloon();
 }
 
 function ensureBubble(): void {
@@ -160,6 +186,7 @@ function ensureBubble(): void {
   bubble = b;
   b.hidden = false;
   placeBubble();
+  document.dispatchEvent(new Event('trail:bubble-visible'));
   if (b.dataset.wired) return;
   b.dataset.wired = '1';
   let drag: { id: number; x: number; y: number; left: number; top: number; moved: boolean } | null = null;
@@ -199,7 +226,8 @@ function ensureBubble(): void {
     hideBalloon();
     showFloat(a.tabId);
   });
-  b.addEventListener('pointerenter', () => { if (!drag && a.tip) showAssistantMessage(a.tip); });
+  b.addEventListener('pointerenter', () => { if (!drag) showTip(); });
+  b.addEventListener('pointerleave', scheduleTipHide);
 }
 
 function hideBubble(): void {
@@ -208,9 +236,11 @@ function hideBubble(): void {
 }
 
 export async function initAssistant(tabId: number, origin: string, enabled: boolean, tip: string): Promise<void> {
+  if (disposed) return;
   if (assistant) { assistant.tabId = tabId; assistant.tip = tip; setAssistantEnabled(enabled); return; }
   const key = bubbleKey(origin);
   const stored: Record<string, unknown> = await chrome.storage.local.get(key).catch(() => ({}));
+  if (disposed) return;
   try { if (!chrome.runtime.id) return; } catch { return; }
   const p = stored[key] as { edge?: string; y?: number } | undefined;
   const host = document.createElement('div');
@@ -220,6 +250,8 @@ export async function initAssistant(tabId: number, origin: string, enabled: bool
   document.documentElement.appendChild(host);
   assistant = { host, balloon: root.querySelector('.balloon')!, edge: p?.edge === 'left' ? 'left' : 'right', y: typeof p?.y === 'number' && Number.isFinite(p.y) ? Math.max(0, Math.min(1, p.y)) : 1, origin, tabId, enabled, tip };
   root.querySelector('.close')!.addEventListener('click', hideBalloon);
+  assistant.balloon.addEventListener('pointerenter', () => { if (tipLeaveTimer) clearTimeout(tipLeaveTimer); });
+  assistant.balloon.addEventListener('pointerleave', scheduleTipHide);
   onOutside = (e) => { if (assistant && !e.composedPath().includes(host)) hideBalloon(); };
   document.addEventListener('pointerdown', onOutside, true);
   ensureBubble();
@@ -234,6 +266,7 @@ export function setAssistantEnabled(enabled: boolean): void {
 
 /** Remove toda a interface desta cópia quando o contexto da extensão perde validade. */
 export function disposeFloat(): void {
+  disposed = true;
   st = null;
   minimized = false;
   pip?.close(); pip = null;

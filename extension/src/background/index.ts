@@ -79,12 +79,30 @@ async function openWindow(): Promise<void> {
  * página que não é do ServiceNow), cai para a janela separada, que não depende de gesto do usuário.
  */
 async function openFloat(tabId: number, toggle = false): Promise<void> {
-  const send = () => chrome.tabs.sendMessage(tabId, { type: toggle ? 'float-toggle' : 'float-open', tabId }, { frameId: 0 }).then((r) => !!r, () => false);
-  let ok = await send();
-  if (!ok && await reinjectConnectedTab(tabId)) ok = await send();
+  if (!(await connectedOriginForTab(tabId))) {
+    const tab = await chrome.tabs.get(tabId).catch(() => undefined);
+    const url = tab?.url;
+    const origin = url?.startsWith('https://') ? new URL(url).origin : undefined;
+    if (tab && url && origin && (looksLikeServiceNow(url) || (await listInstances()).some((i) => i.origin === origin))) {
+      await openConnectionPrompt(tab, origin);
+    } else await openWindow();
+    return;
+  }
+  const send = (type: 'float-toggle' | 'float-open') => chrome.tabs.sendMessage(tabId, { type, tabId }, { frameId: 0 }).then((r) => !!r, () => false);
+  let ok = await send(toggle ? 'float-toggle' : 'float-open');
+  // O content reinjetado pode restaurar o painel salvo antes desta segunda mensagem.
+  // Repetir um toggle o fecharia; após a reinjeção, a intenção do clique é abrir.
+  if (!ok && await reinjectConnectedTab(tabId)) ok = await send('float-open');
   if (!ok) await openWindow();
 }
 /** Reinjeta só em aba cuja origem está conectada e tem permissão de host. */
+async function connectedOriginForTab(tabId: number): Promise<string | null> {
+  const tab = await chrome.tabs.get(tabId).catch(() => undefined);
+  let origin: string;
+  try { origin = new URL(tab?.url ?? '').origin; } catch { return null; }
+  if (!(await listInstances()).some((i) => i.origin === origin)) return null;
+  return await chrome.permissions.contains({ origins: [`${origin}/*`] }).catch(() => false) ? origin : null;
+}
 const reinjections = new Map<number, Promise<boolean>>();
 function reinjectConnectedTab(tabId: number): Promise<boolean> {
   const pending = reinjections.get(tabId);
@@ -94,16 +112,33 @@ function reinjectConnectedTab(tabId: number): Promise<boolean> {
   return task;
 }
 async function doReinjectConnectedTab(tabId: number): Promise<boolean> {
-  const tab = await chrome.tabs.get(tabId).catch(() => undefined);
-  let origin: string;
-  try { origin = new URL(tab?.url ?? '').origin; } catch { return false; }
-  if (!(await listInstances()).some((i) => i.origin === origin)) return false;
-  if (!(await chrome.permissions.contains({ origins: [`${origin}/*`] }).catch(() => false))) return false;
-  try {
-    await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['page.js'], world: 'MAIN' });
-    await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['content.js'] });
-    return true;
-  } catch { return false; }
+  const origin = await connectedOriginForTab(tabId);
+  if (!origin) return false;
+  // Descobre os quadros da própria instância. Um iframe de outra origem não deve
+  // impedir a reinjeção do quadro principal nem receber os scripts do Trail.
+  const probe = () => {
+    let pageReady = false;
+    const onContext = () => { pageReady = true; };
+    document.addEventListener('trail:context', onContext);
+    document.dispatchEvent(new Event('trail:request-context'));
+    document.removeEventListener('trail:context', onContext);
+    return { origin: location.origin, pageReady };
+  };
+  const top = { target: { tabId, frameIds: [0] }, world: 'MAIN' as const, func: probe };
+  const topFrame = await chrome.scripting.executeScript(top).catch(() => []);
+  if (!topFrame.length) return false;
+  const frames = await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, world: 'MAIN', func: probe }).catch(() => topFrame);
+  let topInjected = false;
+  for (const frame of frames) {
+    if (frame.result?.origin !== origin) continue;
+    const target = { tabId, frameIds: [frame.frameId] };
+    try {
+      if (!frame.result.pageReady) await chrome.scripting.executeScript({ target, files: ['page.js'], world: 'MAIN' });
+      await chrome.scripting.executeScript({ target, files: ['content.js'] });
+      if (frame.frameId === 0) topInjected = true;
+    } catch { /* um quadro pode ter navegado durante a injeção */ }
+  }
+  return topInjected;
 }
 async function openPanel(tabId: number | undefined, mode?: PanelMode): Promise<void> {
   // Com o modo conhecido, sidePanel.open é chamado antes de qualquer await: o Edge descarta o gesto do usuário
@@ -200,6 +235,7 @@ async function syncRegistrations(): Promise<void> {
   for (const i of await listInstances()) {
     const granted = await chrome.permissions.contains({ origins: [`${i.origin}/*`] });
     if (granted) await registerScripts(i.origin).catch(() => { /* já registrado */ });
+    else await unregisterScripts(i.origin).catch(() => undefined);
   }
 }
 /** A atualização já reativa o Trail nas abas abertas e autorizadas. */
@@ -258,6 +294,26 @@ chrome.permissions.onAdded.addListener((p) => {
         await openFloat(pending.tabId);
       }
     }).catch(() => undefined);
+  }
+});
+chrome.permissions.onRemoved.addListener((p) => {
+  for (const o of p.origins ?? []) {
+    const m = o.match(/^(https:\/\/[^/*]+)\/\*$/);
+    if (!m?.[1]) continue;
+    const origin = m[1];
+    void (async () => {
+      if (await chrome.permissions.contains({ origins: [`${origin}/*`] }).catch(() => false)) return;
+      await unregisterScripts(origin).catch(() => undefined);
+      // Sem a permissão, tabs.query não expõe mais a URL. Envia a todas as abas;
+      // somente o content da origem revogada se desliga.
+      const tabs = await chrome.tabs.query({});
+      await Promise.all(tabs.filter((tab) => tab.id !== undefined).map(async (tab) => {
+        const message = { type: 'trail-dispose', origin };
+        const topRemoved = await chrome.tabs.sendMessage(tab.id!, message, { frameId: 0 }).then((r) => !!r, () => false);
+        if (topRemoved) await session.remove(`float:${tab.id}`).catch(() => undefined);
+        await chrome.tabs.sendMessage(tab.id!, message).catch(() => undefined); // demais quadros da instância
+      }));
+    })().catch(() => undefined);
   }
 });
 

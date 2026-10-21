@@ -48,6 +48,44 @@ try {
   out.before = await count();
   if (!out.before.icons) errors.push('os ícones não apareceram antes do reload: ' + JSON.stringify(out.before));
   if (out.before.bubble !== 1) errors.push('esperava uma bolinha do Trail antes do reload: ' + JSON.stringify(out.before));
+  const balloon = page.locator('#trail-assistant').locator('.balloon');
+  await balloon.waitFor({ state: 'visible', timeout: 5000 });
+  out.welcomeFirst = await balloon.textContent();
+  await page.reload();
+  await page.waitForFunction(() => document.querySelectorAll('.trail-host').length > 0 && !!document.getElementById('trail-assistant'));
+  await page.waitForTimeout(400);
+  out.welcomeRepeated = await balloon.isVisible();
+  if (out.welcomeRepeated) errors.push('boas-vindas repetidas ao recarregar o mesmo registro');
+  const otherTab = await ctx.newPage();
+  await otherTab.goto(`${ORIGIN}/incident.do?sys_id=${'b'.repeat(32)}`);
+  await otherTab.waitForFunction(() => !!document.getElementById('trail-assistant'));
+  await otherTab.waitForTimeout(350);
+  if (await otherTab.locator('#trail-assistant').locator('.balloon').isVisible()) errors.push('boas-vindas repetidas em outra aba do mesmo registro');
+  await otherTab.close();
+  await page.goto(`${ORIGIN}/incident.do?sys_id=${'c'.repeat(32)}`);
+  await balloon.waitFor({ state: 'visible', timeout: 5000 });
+  out.welcomeOtherRecord = true;
+  await page.goto(`${ORIGIN}/incident.do?sys_id=${'b'.repeat(32)}`);
+  await page.waitForFunction(() => document.querySelectorAll('.trail-host').length > 0 && !!document.getElementById('trail-assistant'));
+  await page.waitForTimeout(400);
+  if (await balloon.isVisible()) errors.push('boas-vindas repetidas ao voltar ao primeiro registro');
+
+  // Simula a falha de resposta do content sem recarregar a extensão: o worker deve
+  // reinjetar na aba autorizada e abrir o painel, sem duplicar ícones ou a bolinha.
+  await page.evaluate(() => document.dispatchEvent(new Event('trail:dispose-content')));
+  await page.waitForFunction(() => !document.querySelector('.trail-host, #trail-assistant'));
+  await sw.evaluate(async () => {
+    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: () => chrome.runtime.sendMessage({ type: 'open-panel', mode: 'float' }) });
+  });
+  await page.waitForFunction(() => document.querySelectorAll('.trail-host').length > 0 && !!document.getElementById('trail-float'), null, { timeout: 10000 });
+  out.reinjected = await count();
+  if (out.reinjected.icons !== out.before.icons || out.reinjected.hosts !== 1 || out.reinjected.bubble !== 1) errors.push('reinjeção não recuperou uma interface única: ' + JSON.stringify(out.reinjected));
+  await sw.evaluate(async () => {
+    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    await chrome.tabs.sendMessage(tab.id, { type: 'float-toggle', tabId: tab.id }, { frameId: 0 });
+  });
+  await page.waitForFunction(() => !document.getElementById('trail-float'));
 
   // Recarrega a extensão como o auto-reload faz.
   await sw.evaluate(() => chrome.runtime.reload()).catch(() => undefined);

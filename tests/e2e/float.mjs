@@ -35,6 +35,15 @@ try {
     return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
   });
   if (overlaps) errors.push('balão cobre a bolinha');
+  const tipBox = await balloon.boundingBox();
+  await page.mouse.move(tipBox.x + tipBox.width / 2, tipBox.y + tipBox.height / 2);
+  await page.waitForTimeout(220);
+  if (!(await balloon.isVisible())) errors.push('dica sumiu ao mover o mouse para o balão');
+  await page.mouse.move(150, 150);
+  await page.waitForTimeout(220);
+  if (await balloon.isVisible()) errors.push('dica não sumiu ao sair da bolinha e do balão');
+  await bubble.hover();
+  await balloon.waitFor({ state: 'visible' });
   await page.mouse.click(150, 150);
   if (await balloon.isVisible()) errors.push('clique fora não fechou o balão');
   const b0 = await bubble.boundingBox();

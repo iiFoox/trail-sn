@@ -10,6 +10,23 @@ Convenções:
 
 ---
 
+## 2026-10-20 (noite) — 0.12.7
+
+- **Registro inteiro e lote** usam a mesma animação da investigação de um campo: `sidepanel/Loading.tsx`, a trilha com a lupa, com etapas próprias. Ela fica durante toda a análise e os grupos entram embaixo.
+- **Balão da bolinha** (Codex, pedido do dono): a dica só aparece com o mouse em cima e some 150 ms depois que ele sai. As boas-vindas aparecem uma vez por origem + tabela + sys_id e duram 6 s.
+- **Revisão do fluxo de abrir e recarregar** (Codex). Corrigido:
+  - a corrida do toggle depois da reinjeção (agora abre);
+  - o descarte da cópia antiga e a guarda no init assíncrono;
+  - a sondagem do mundo MAIN por frame, para não duplicar o `page.js`;
+  - a conferência de conexão e permissão antes de abrir;
+  - a limpeza quando a permissão é revogada.
+
+  O `reload.mjs` agora também simula a aba sem resposta e comprova a reinjeção sem duplicar ícones.
+- **Achados em aberto (médios):**
+  - `background/index.ts` ~130: se a injeção em todos os frames falhar, a reserva reinjeta só no frame 0;
+  - depois do reload o `storage.session` é limpo, então um painel aberto ou minimizado volta como bolinha. Para mudar, falta decidir como guardar esse estado.
+- PiP e Esc dentro do PiP não foram testados (o headless não abre PiP).
+
 ## 2026-10-20 (noite) — site: ajustes do dono
 
 Antigravity, na página b3:

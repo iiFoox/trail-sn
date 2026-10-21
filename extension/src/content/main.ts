@@ -11,7 +11,9 @@ import { fmt, t } from '../shared/i18n';
 import { loadPrefs, normalize, PREFS_KEY, resolvedTheme, type Prefs } from '../shared/prefs';
 import type { PageContext } from '../shared/messages';
 import { openDiffWindow, type DiffWindowRequest } from './diffWindow';
-import { disposeFloat, initAssistant, openFloat, setAssistantEnabled, setFloatTheme, showAssistantMessage, showFloat, toggleFloat } from './floatPanel';
+import { canShowAssistantMessage, disposeFloat, initAssistant, openFloat, setAssistantEnabled, setFloatTheme, showAssistantMessage, showFloat, toggleFloat } from './floatPanel';
+// Se a cópia anterior ainda responde, ela solta observers e listeners antes desta assumir.
+document.dispatchEvent(new Event('trail:dispose-content'));
 for (const el of deepWalk(document)) {
   if (el.matches('.trail-host, #trail-float, #trail-assistant, #trail-notice, #trail-update-notice')) el.remove();
 }
@@ -33,6 +35,8 @@ function dispose(): void {
   document.removeEventListener('click', scheduleWorkspaceScan, true);
   document.removeEventListener('keydown', onShortcut, true);
   document.removeEventListener('trail:context', onPageContext);
+  document.removeEventListener('trail:dispose-content', dispose);
+  document.removeEventListener('trail:bubble-visible', welcome);
   try { chrome.storage?.onChanged?.removeListener(onPrefsChanged); } catch { /* contexto inválido */ }
   try { chrome.runtime?.onMessage?.removeListener(onRuntimeMessage); } catch { /* contexto inválido */ }
   disposeFloat();
@@ -47,6 +51,7 @@ function checkContext(): boolean {
   return false;
 }
 const livenessTimer = window.setInterval(checkContext, 2000);
+document.addEventListener('trail:dispose-content', dispose);
 
 // Português até a preferência chegar do storage; os ícones criados depois já saem no idioma escolhido.
 let strings = t('pt');
@@ -67,6 +72,7 @@ async function restoreFloat(p: Prefs): Promise<void> {
     if (typeof r?.tabId !== 'number') return;
     if (r.open) openFloat(r.tabId, { theme, minimized: !!r.min && p.showBubble });
     await initAssistant(r.tabId, origin, p.showBubble, strings.bubbleTip);
+    if (!checkContext()) return;
     if (p.showBubble && (!r.open || r.min)) welcome();
   } catch { /* worker indisponível */ }
 }
@@ -104,17 +110,28 @@ function onShortcut(e: KeyboardEvent): void {
 }
 document.addEventListener('keydown', onShortcut, true);
 
-/** Primeira vez nesta instância: explica em uma frase como usar e o atalho. */
+/** Boas-vindas uma vez para cada registro, quando a bolinha está visível. */
+const welcomePending = new Set<string>();
 function welcome(): void {
-  if (window !== window.top) return;
-  const k = `welcomed:${origin}`;
-  void chrome.storage?.local.get(k).then((o) => {
-    if (o[k]) return;
-    void chrome.storage.local.set({ [k]: Date.now() });
-    showAssistantMessage(strings.bubbleWelcome, strings.welcomeTitle);
-  }).catch(() => undefined);
+  if (window !== window.top || !ctx.table || !ctx.sysId || !chrome.storage?.local) return;
+  const k = `welcomed:${origin}:${ctx.table}:${ctx.sysId}`;
+  if (welcomePending.has(k)) return;
+  welcomePending.add(k);
+  const claim = async () => {
+    if (!checkContext() || k !== `welcomed:${origin}:${ctx.table}:${ctx.sysId}` || !canShowAssistantMessage()) return false;
+    const o = await chrome.storage.local.get(k);
+    if (o[k] || !canShowAssistantMessage()) return false;
+    await chrome.storage.local.set({ [k]: Date.now() });
+    return true;
+  };
+  // A trava evita que duas abas abertas no mesmo registro mostrem a saudação juntas.
+  const reserved = navigator.locks ? navigator.locks.request(k, claim) : claim();
+  void reserved.then((ok) => {
+    if (ok && checkContext() && k === `welcomed:${origin}:${ctx.table}:${ctx.sysId}`) showAssistantMessage(strings.bubbleWelcome, strings.welcomeTitle);
+  }).catch(() => undefined).finally(() => welcomePending.delete(k));
 }
 const origin = location.origin;
+document.addEventListener('trail:bubble-visible', welcome);
 
 let ctx: PageContext = { origin, surface: 'unknown', ...contextFromUrl(location.href) };
 let lastSent = '';
@@ -164,6 +181,7 @@ function onPageContext(e: Event): void {
   };
   pushContext();
   decorateForm();
+  welcome();
 }
 document.addEventListener('trail:context', onPageContext);
 document.dispatchEvent(new CustomEvent('trail:request-context'));
@@ -317,6 +335,7 @@ const mo = new MutationObserver(() => {
     ctx = { ...ctx, ...fromUrl };
     pushContext();
     scheduleWorkspaceScan();
+    welcome();
   }
   decorateForm();
   decorateList();
@@ -328,8 +347,9 @@ decorateList();
 decoratePortal();
 
 // Janela "lado a lado" pedida pelo painel: desenhada só no quadro de cima, por cima da página inteira.
-function onRuntimeMessage(m: { type?: string; tabId?: number } & Partial<DiffWindowRequest>, _s: chrome.runtime.MessageSender, reply: (response?: unknown) => void): void {
+function onRuntimeMessage(m: { type?: string; tabId?: number; origin?: string } & Partial<DiffWindowRequest>, _s: chrome.runtime.MessageSender, reply: (response?: unknown) => void): void {
   if (!checkContext()) return;
+  if (m?.type === 'trail-dispose' && m.origin === origin) { reply({ ok: true }); dispose(); return; }
   if (m?.type === 'trail-ping' && window === window.top) { reply({ ok: true }); return; }
   if ((m?.type === 'float-open' || m?.type === 'float-toggle') && window === window.top && typeof m.tabId === 'number') {
     if (m.type === 'float-open') showFloat(m.tabId, theme); else toggleFloat(m.tabId, theme);
