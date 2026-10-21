@@ -4,6 +4,7 @@ import { demoBatch, demoRecord, demoState, describeLink } from '../shared/demo';
 import { fmt, t } from '../shared/i18n';
 import { applyTheme, getPrefs, resolvedTheme, savePrefs } from '../shared/prefs';
 import { EmptyIllustration, Glyph, TrailMark } from '../shared/icons';
+import { Loading } from './Loading';
 import { Result } from './Result';
 import { Batch } from './Batch';
 import { setTrackedTab } from '../shared/tabRef';
@@ -245,7 +246,7 @@ export function App() {
           </div>
         )}
         {state?.access && !state.result && <AccessNotice report={state.access} />}
-        {state?.status === 'running' && <Loading />}
+        {state?.status === 'running' && <Loading steps={s.p.loadSteps as string[]} />}
         {state?.status === 'error' && <div class="notice bad"><div class="title">{s.errorTitle}</div>{state.error}</div>}
         {state?.batch && !state.result && origin && state.status !== 'running' && <Batch b={state.batch} origin={origin} onOpen={(id, f) => { if (isDemo) { investigateField(f ?? state.batch!.field); return; } void send({ type: 'investigate', origin, mode: here, target: { table: state.batch!.table, sysId: id, field: f ?? state.batch!.field } }); }} />}
         {state?.result && origin && state.status !== 'running' && <Result r={state.result} origin={origin} access={state.access} toast={(m) => showToast(m)} onField={investigateField} />}
@@ -265,23 +266,6 @@ export function App() {
 }
 
 /** Enquanto investiga: o rastro se desenha e uma lupa percorre o caminho, com o passo atual da perícia. */
-function Loading() {
-  const steps = s.p.loadSteps as string[];
-  const [i, setI] = useState(0);
-  useEffect(() => { const id = setInterval(() => setI((x) => (x + 1) % steps.length), 650); return () => clearInterval(id); }, []);
-  return (
-    <div class="card loader" role="status" aria-live="polite">
-      <svg class="trailsvg" viewBox="0 0 320 90" aria-hidden="true">
-        <path class="ghost" d="M10 70 C 60 70, 70 20, 120 24 S 190 78, 232 60 S 290 12, 310 18" />
-        <path class="draw" d="M10 70 C 60 70, 70 20, 120 24 S 190 78, 232 60 S 290 12, 310 18" />
-        {[[10, 70], [120, 24], [232, 60], [310, 18]].map(([x, y], k) => <circle class="stop" cx={x} cy={y} r="5" style={`--k:${k}`} />)}
-        <g class="lens"><circle r="9" /><path d="M6.5 6.5 L13 13" /></g>
-      </svg>
-      <div class="lsteps"><b key={i}>{steps[i]}</b></div>
-    </div>
-  );
-}
-
 function AccessNotice({ report }: { report: AccessReport }) {
   if (report.level === 'full') return null;
   const sources = report.denied.join(', ');

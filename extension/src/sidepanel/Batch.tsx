@@ -13,6 +13,7 @@ import { recordLink } from '../shared/instances';
 import { getPrefs } from '../shared/prefs';
 import type { TabState } from '../shared/messages';
 import { parts, humanField } from './Result';
+import { Loading } from './Loading';
 import { Val } from './Val';
 
 const P = t(getPrefs().lang).p;
@@ -83,7 +84,6 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
           {!running && b.items.length > 0 && <button class="btn sm" onClick={download} title={P.btCsvHint}>{Glyph.copy} CSV</button>}
         </div>
         {b.error !== undefined && <div class="li"><span class="ck w">!</span><span class="grow">{fmt(P.btNotFound, { rec: b.error })}</span></div>}
-        {running && b.items.length === 0 && b.error === undefined && <div class="muted small">{P.btRecLoading}</div>}
         {b.items.length > 0 && (
           <div class="bt-prog">
             <div class={`bar ${running ? 'live' : ''}`}><i style={`width:${pct}%`} /></div>
@@ -105,6 +105,8 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
         </div>
       )}
 
+      {/* Enquanto analisa: a mesma animação da investigação de um campo; os resultados entram embaixo. */}
+      {running && b.error === undefined && <Loading steps={(rec ? P.btRecSteps : P.btSteps) as string[]} />}
       {(rows.length > 0 || pending.length > 0) && <div class="muted small">{P.btOpenHint}</div>}
       <div class="hist bt-list">
         {saves.map((group, i) => {
@@ -120,7 +122,7 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
             <div class="bt-group-rows">{group.items.map((it, j) => <Row key={`${key(it)}-done`} it={it} i={i + j} rec={rec} origin={origin} onOpen={onOpen} />)}</div>
           </details>;
         })}
-        {!filter && pending.map((it, i) => <Pending key={`${key(it)}-wait`} it={it} i={i} rec={rec} />)}
+        {!filter && !running && pending.map((it, i) => <Pending key={`${key(it)}-wait`} it={it} i={i} rec={rec} />)}
       </div>
 
       {quiet.length > 0 && !running && (
