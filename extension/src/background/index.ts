@@ -3,7 +3,7 @@
  * guarda estado em chrome.storage.session e abre o painel. Não toca no DOM.
  * Nenhum estado em memória que importe: o worker pode ser encerrado a qualquer momento.
  */
-import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, batchItemFrom, fieldMap, previewChange, recordTimeline, scanTableConflicts, type AccessReport, type BatchItem, type MetaCache, type TableMeta, recordFlows, tableAutomations } from '@trail/core';
+import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, batchItemFrom, fieldMap, previewChange, recordTimeline, scanTableConflicts, type AccessReport, type BatchItem, type MetaCache, type TableMeta, recordFlows, tableAutomations, fieldState, fieldStates } from '@trail/core';
 import { addInstance, isEnabled, listInstances, looksLikeServiceNow, removeInstance } from '../shared/instances';
 import { loadPrefs, PREFS_KEY, type PanelMode } from '../shared/prefs';
 import { normalizeInstanceLanguage, storageKey, type Message, type PageContext, type ProbeResult, type TabState } from '../shared/messages';
@@ -633,6 +633,12 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
           .catch((e: Error) => ({ error: e.message }));
       case 'field-map':
         return fieldMap(makeClient(msg.origin), { table: msg.table, field: msg.field });
+      case 'field-state':
+        return fieldState(makeClient(msg.origin), { ...msg.target, ...(msg.observed ? { observed: msg.observed } : {}), language: await languageFor(msg.origin, tabId ?? (await activeTabId()), msg.language) })
+          .catch((e: Error) => ({ error: e.message }));
+      case 'field-states':
+        return fieldStates(makeClient(msg.origin), { table: msg.table, sysId: msg.sysId, fields: msg.fields, language: await languageFor(msg.origin, tabId ?? (await activeTabId()), msg.language) })
+          .catch((e: Error) => ({ error: e.message }));
       case 'preview':
         return previewChange(makeClient(msg.origin), { ...msg.target, language: await languageFor(msg.origin, tabId ?? (await activeTabId()), msg.language) });
       case 'investigate': {

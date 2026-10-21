@@ -27,6 +27,8 @@ export type Message =
   | { type: 'flows'; origin: string; table: string; sysId: string }
   | { type: 'automations'; origin: string; table: string; sysId: string }
   | { type: 'preview'; origin: string; target: { table: string; sysId: string; field: string; value: string }; language?: string }
+  | { type: 'field-state'; origin: string; target: { table: string; sysId: string; field: string }; observed?: import('@trail/core').FieldObserved; language?: string }
+  | { type: 'field-states'; origin: string; table: string; sysId: string; fields: { field: string; observed?: import('@trail/core').FieldObserved }[]; language?: string }
   | { type: 'open-panel'; mode?: import('./prefs').PanelMode }
   | { type: 'float-get' }
   | { type: 'float-set'; open: boolean; min?: boolean }
@@ -81,4 +83,14 @@ export function normalizeInstanceLanguage(value: unknown): string {
 
 export function send<T = unknown>(msg: Message): Promise<T> {
   return chrome.runtime.sendMessage(msg) as Promise<T>;
+}
+
+/** Estado de um campo lido do g_form (mundo MAIN), com o rótulo do formulário. */
+export interface ObservedField { field: string; label?: string; onForm?: boolean; readOnly?: boolean; mandatory?: boolean; visible?: boolean }
+
+/** Pergunta à aba (content → mundo MAIN) o estado de um campo ou de todos. Sem g_form (Workspace) volta undefined. */
+export async function askForm<T>(tabId: number | undefined, msg: { type: 'trail-field-state'; field: string; table?: string; sysId?: string } | { type: 'trail-form-states'; table?: string; sysId?: string }): Promise<T | undefined> {
+  if (tabId === undefined || !chrome.tabs?.sendMessage) return undefined;
+  const timeout = new Promise<undefined>((r) => setTimeout(() => r(undefined), 1500));
+  return Promise.race([chrome.tabs.sendMessage(tabId, msg).then((x) => (x ?? undefined) as T | undefined, () => undefined), timeout]);
 }

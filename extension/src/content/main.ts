@@ -270,6 +270,23 @@ function investigate(field: string): void {
   }).catch(() => { /* noop */ });
 }
 
+/** Pergunta ao mundo MAIN (g_form) o estado do campo. Síncrono: o evento é despachado e respondido na hora. */
+function observedField(field: string): { field: string; table?: string; sysId?: string; onForm?: boolean; readOnly?: boolean; mandatory?: boolean; visible?: boolean } | undefined {
+  if (!/^[a-z0-9_]+$/.test(field)) return undefined;
+  return askPage('field-state', { field });
+}
+function askPage<T>(what: 'field-state' | 'form-states', detail: Record<string, unknown>): T | undefined {
+  const id = Math.random().toString(36).slice(2);
+  let got: T | undefined;
+  const on = (e: Event) => {
+    try { const d = JSON.parse(String((e as CustomEvent).detail ?? '')) as T & { id?: string }; if (d.id === id) { delete d.id; got = d; } } catch { /* outro formato */ }
+  };
+  document.addEventListener(`trail:${what}`, on);
+  document.dispatchEvent(new CustomEvent(`trail:request-${what}`, { detail: JSON.stringify({ id, ...detail }) }));
+  document.removeEventListener(`trail:${what}`, on);
+  return got;
+}
+
 // ---------- ícone nos campos do Service Portal / Employee Center (widget de formulário) ----------
 function decoratePortal(): void {
   if (!checkContext()) return;
@@ -386,6 +403,19 @@ function onRuntimeMessage(m: { type?: string; tabId?: number; origin?: string } 
   if (!checkContext()) return;
   if (m?.type === 'trail-dispose' && m.origin === origin) { reply({ ok: true }); dispose(); return; }
   if (m?.type === 'trail-ping' && window === window.top) { reply({ ok: true }); return; }
+  // Estado do campo no formulário, pedido pelo painel ("Por que está bloqueado?"). Só o quadro com o formulário responde.
+  if (m?.type === 'trail-field-state') {
+    const req = m as { field?: string; table?: string; sysId?: string };
+    const st = observedField(req.field ?? '');
+    if (st && (!req.table || st.table === req.table) && (!req.sysId || !st.sysId || st.sysId === req.sysId)) reply(st);
+    return;
+  }
+  if (m?.type === 'trail-form-states') {
+    const req = m as { table?: string; sysId?: string };
+    const st = askPage<{ table?: string; sysId?: string; fields?: unknown[] }>('form-states', {});
+    if (st && (!req.table || st.table === req.table) && (!req.sysId || !st.sysId || st.sysId === req.sysId)) reply(st);
+    return;
+  }
   if ((m?.type === 'float-open' || m?.type === 'float-toggle') && window === window.top && typeof m.tabId === 'number') {
     if (m.type === 'float-open') showFloat(m.tabId, theme); else toggleFloat(m.tabId, theme);
     reply({ ok: true });

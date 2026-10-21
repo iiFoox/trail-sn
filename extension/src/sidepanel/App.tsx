@@ -1,6 +1,6 @@
 import type { AccessReport } from '@trail/core';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { demoBatch, demoRecord, demoState, describeLink } from '../shared/demo';
+import { demoBatch, demoFormStates, demoRecord, demoState, describeLink } from '../shared/demo';
 import { fmt, t } from '../shared/i18n';
 import { applyTheme, getPrefs, resolvedTheme, savePrefs } from '../shared/prefs';
 import { EmptyIllustration, Glyph, TrailMark } from '../shared/icons';
@@ -9,7 +9,8 @@ import { Settings } from './Settings';
 import { Result } from './Result';
 import { Batch } from './Batch';
 import { setTrackedTab } from '../shared/tabRef';
-import { send, storageKey, type TabState } from '../shared/messages';
+import { askForm, send, storageKey, type ObservedField, type TabState } from '../shared/messages';
+import { FieldLock, useObserved } from './FieldLock';
 import { isEnabled, looksLikeServiceNow } from '../shared/instances';
 
 const s = t(getPrefs().lang);
@@ -53,6 +54,9 @@ export function App() {
   const [tabId, setTabId] = useState<number>();
   const [state, setState] = useState<TabState | undefined>(isDemo ? (params.has('batch') ? (params.get('batch') === 'rec' ? demoRecord(params.has('wait')) : demoBatch()) : demoState(params.get('field') ?? 'state')) : undefined);
   const [fallbackOrigin, setFallbackOrigin] = useState<string>();
+  // "Por que está bloqueado?" pedido pela gaveta (um campo qualquer, inclusive escondido): vista própria.
+  const [lock, setLock] = useState<{ table: string; sysId: string; field: string } | undefined>(isDemo && params.get('lockfield') ? { table: 'incident', sysId: 'INC0010001', field: params.get('lockfield')! } : undefined);
+  useEffect(() => { if (!isDemo || !params.get('lockfield')) setLock(undefined); }, [state?.result?.target.field, state?.result?.target.sysId, state?.batch?.startedAt]);
   const [settings, setSettings] = useState(false);
   const [toast, setToast] = useState<string>();
   const toastTimer = useRef<number>();
@@ -236,6 +240,8 @@ export function App() {
       </header>
       {settings && <Settings demo={isDemo} canPin={isFloat && !isPip && !isDemo} onPin={() => { setSettings(false); toPage('trail-float-pin'); }} onClose={() => setSettings(false)} />}
       <main class="wrap">
+        {lock && origin && <LockPage target={lock} origin={origin} onBack={() => setLock(undefined)} />}
+        {!lock && <>
         {needsConnect && !state?.result && (
           <div class="card connect">
             <div class="title">{s.connectTitle}</div>
@@ -255,9 +261,10 @@ export function App() {
             <div>{s.noContext}</div>
           </div>
         )}
+        </>}
       </main>
-      <ManualDrawer origin={origin} table={state?.ctx?.table ?? state?.result?.target.table ?? state?.batch?.table} sysId={state?.ctx?.sysId ?? state?.result?.target.sysId ?? state?.batch?.sysId} field={state?.result?.target.field} tabId={tabId} open={!state?.result && !state?.batch}
-        onDemo={(f, whole) => (whole ? runDemoRecord() : runDemoField(f))} />
+      <ManualDrawer origin={origin} table={state?.ctx?.table ?? state?.result?.target.table ?? state?.batch?.table} sysId={state?.ctx?.sysId ?? state?.result?.target.sysId ?? state?.batch?.sysId} field={state?.result?.target.field} tabId={tabId} open={!state?.result && !state?.batch && !lock}
+        onDemo={(f, whole) => (whole ? runDemoRecord() : runDemoField(f))} onLock={(t) => { setLock(t); scrollTo(0, 0); }} />
       {toast && <div class="toast" role="status" onClick={() => showToast()}>{toast}</div>}
     </>
   );
@@ -308,7 +315,19 @@ function AccessNotice({ report }: { report: AccessReport }) {
   );
 }
 
-function ManualDrawer({ origin, table, sysId, field, tabId, open, onDemo }: { origin?: string; table?: string; sysId?: string; field?: string; tabId?: number; open: boolean; onDemo: (field: string, whole: boolean) => void }) {
+/** Vista "Por que está bloqueado?" aberta pela gaveta: o registro, o campo e as regras. */
+function LockPage({ target, origin, onBack }: { target: { table: string; sysId: string; field: string }; origin: string; onBack: () => void }) {
+  const observed = useObserved(target.table, target.sysId, target.field);
+  return (
+    <div class="res lk-page">
+      <button class="link lk-back" onClick={onBack}>← {s.p.lkBack}</button>
+      <div class="headcard"><div class="rec"><b>{target.sysId.length === 32 ? target.table : target.sysId}</b></div><div class="chg"><span class="fld">{observed?.label || target.field}</span></div></div>
+      <FieldLock target={{ ...target, ...(observed?.label ? { label: observed.label } : {}) }} origin={origin} observed={observed} />
+    </div>
+  );
+}
+
+function ManualDrawer({ origin, table, sysId, field, tabId, open, onDemo, onLock }: { origin?: string; table?: string; sysId?: string; field?: string; tabId?: number; open: boolean; onDemo: (field: string, whole: boolean) => void; onLock: (t: { table: string; sysId: string; field: string }) => void }) {
   const [tbl, setTbl] = useState(table ?? 'incident');
   const [rec, setRec] = useState(sysId ?? '');
   const [fld, setFld] = useState(field ?? 'state');
@@ -317,6 +336,20 @@ function ManualDrawer({ origin, table, sysId, field, tabId, open, onDemo }: { or
   // Aberto/fechado sob controle: a pessoa fecha pelo X (ou pelo título) e reabre pelo título.
   const [isOpen, setOpen] = useState(open);
   useEffect(() => setOpen(open), [open]);
+  // Sugestões de campo: os do formulário aberto (inclusive escondidos), lidos do g_form.
+  const [sugg, setSugg] = useState<ObservedField[]>([]);
+  useEffect(() => {
+    if (!isOpen) return;
+    let alive = true;
+    void (isDemo ? Promise.resolve({ fields: demoFormStates() }) : askForm<{ fields?: ObservedField[] }>(tabId, { type: 'trail-form-states', ...(table ? { table } : {}) }))
+      .then((x) => { if (alive) setSugg(x?.fields ?? []); });
+    return () => { alive = false; };
+  }, [isOpen, table, sysId]);
+  const lockIt = () => {
+    if (!tbl || !rec || !fld) return;
+    setOpen(false);
+    onLock({ table: tbl, sysId: rec, field: fld });
+  };
   const go = async () => {
     setOpen(false);
     if (isDemo) { onDemo(fld, whole); return; }
@@ -337,12 +370,14 @@ function ManualDrawer({ origin, table, sysId, field, tabId, open, onDemo }: { or
         </div>
         <div class={whole ? '' : 'grid2'}>
           <div class="field"><label>{s.table}</label><input value={tbl} onInput={(e) => setTbl((e.target as HTMLInputElement).value.trim())} /></div>
-          {!whole && <div class="field"><label>{s.field}</label><input value={fld} onInput={(e) => setFld((e.target as HTMLInputElement).value.trim())} /></div>}
+          {!whole && <div class="field"><label>{s.field}</label><input value={fld} list="trail-field-sugg" autocomplete="off" onInput={(e) => setFld((e.target as HTMLInputElement).value.trim())} />
+            <datalist id="trail-field-sugg">{sugg.map((f) => <option value={f.field}>{f.label ? `${f.label}${f.visible === false ? ' · ' + (s.p.lkAspect as Record<string, string>).hidden!.toLowerCase() : ''}` : f.field}</option>)}</datalist></div>}
         </div>
         {whole && <div class="muted small">{s.p.manualRecordHint}</div>}
         <div class="field"><label>{s.record}</label><input value={rec} placeholder="INC0010001" onInput={(e) => setRec((e.target as HTMLInputElement).value.trim())} /></div>
         <div class="row">
           <button class="btn primary" onClick={go} disabled={!isDemo && (!origin || !tbl || !rec || (!whole && !fld))}>{Glyph.search} {s.investigate}</button>
+          {!whole && <button class="btn lk-check" onClick={lockIt} disabled={!isDemo && (!origin || !tbl || !rec || !fld)}>{s.p.lkCheck}</button>}
           {!origin && <span class="muted small">{s.notServiceNow}</span>}
         </div>
       </div>

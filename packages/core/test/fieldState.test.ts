@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FakeRestClient } from '../src/client/FakeRestClient';
-import { fieldState } from '../src/fieldState';
+import { activeStates, fieldState, fieldStates } from '../src/fieldState';
 
 const ID = 'rec1';
 const F = 'assignment_group';
@@ -173,5 +173,30 @@ describe('Por que o campo está bloqueado, obrigatório ou escondido', () => {
     const r = await run(c);
     expect(r.skipped).toEqual([expect.objectContaining({ sysId: 'p1', why: 'not_inherited' })]);
     expect(r.rules).toEqual([expect.objectContaining({ sysId: 'p2', aspect: 'mandatory', sets: true, grade: 'confirmed' })]);
+  });
+
+  it('vários campos de uma vez (lista do registro inteiro): mesmas consultas, cada campo com o seu motivo', async () => {
+    const c = base({ number: 'INC0010001', state: '6', category: 'network', assignment_group: 'g1' });
+    c.rows('sys_dictionary', [
+      { sys_id: 'd1', name: 'task', element: F, read_only: 'false', mandatory: 'false', active: 'true' },
+      { sys_id: 'd2', name: 'task', element: 'number', read_only: 'true', mandatory: 'false', active: 'true' },
+      { sys_id: 'd3', name: 'incident', element: 'category', read_only: 'false', mandatory: 'false', active: 'true' },
+    ]);
+    c.rows('sys_ui_policy', [policy({ sys_id: 'p1', short_description: 'Resolvido trava o grupo', conditions: 'state=6' })]);
+    c.rows('sys_ui_policy_action', [action({ ui_policy: 'p1', disabled: 'true' })]);
+    const calls0 = c.calls;
+    const rs = await fieldStates(c, { table: 'incident', sysId: 'INC0010001', fields: [
+      { field: F, observed: { readOnly: true, mandatory: false, visible: true } },
+      { field: 'number', observed: { readOnly: true, mandatory: false, visible: true } },
+      { field: 'category', observed: { readOnly: false, mandatory: false, visible: false, onForm: true } },
+    ] });
+    expect(rs.map((r) => r.field)).toEqual([F, 'number', 'category']);
+    expect(rs[0]!.sysId).toBe(ID); // o número virou sys_id
+    expect(activeStates(rs[0]!)).toEqual([expect.objectContaining({ aspect: 'read_only', rule: expect.objectContaining({ sysId: 'p1' }), unexplained: false })]);
+    expect(activeStates(rs[1]!)).toEqual([expect.objectContaining({ aspect: 'read_only', rule: expect.objectContaining({ kind: 'dictionary' }) })]);
+    // A policy do grupo não aparece no campo categoria (não mexe nele).
+    expect(rs[2]!.rules).toEqual([]);
+    expect(activeStates(rs[2]!)).toEqual([expect.objectContaining({ aspect: 'hidden', unexplained: true })]);
+    expect(c.calls - calls0).toBeLessThan(16);
   });
 });

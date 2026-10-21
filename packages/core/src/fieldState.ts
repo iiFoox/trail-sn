@@ -129,15 +129,32 @@ const CALL = /g_form\.(setReadOnly|setReadonly|setDisabled|setMandatory|setDispl
 const PSEUDO: Record<StateAspect, string> = { read_only: '__trail_ro__', mandatory: '__trail_mand__', hidden: '__trail_vis__' };
 const truth = (v: string | undefined): boolean | undefined => (v === 'true' ? true : v === 'false' ? false : undefined);
 
+/** Um campo. `sysId` pode ser o número do registro (INC0010001). */
 export async function fieldState(
   client: RestClient,
   target: { table: string; sysId: string; field: string; observed?: FieldObserved; language?: string },
   opts: { timeoutMs?: number } = {},
 ): Promise<FieldStateResult> {
+  const [one] = await fieldStates(client, { table: target.table, sysId: target.sysId, fields: [{ field: target.field, ...(target.observed ? { observed: target.observed } : {}) }], ...(target.language ? { language: target.language } : {}) }, opts);
+  return one!;
+}
+
+/**
+ * Vários campos do mesmo registro com as mesmas consultas (IN / OU): usado pela lista "Campos bloqueados, obrigatórios
+ * ou escondidos agora" do registro inteiro. Até 40 campos por chamada; o resto fica de fora.
+ */
+export async function fieldStates(
+  client: RestClient,
+  target: { table: string; sysId: string; fields: { field: string; observed?: FieldObserved }[]; language?: string },
+  opts: { timeoutMs?: number } = {},
+): Promise<FieldStateResult[]> {
   const started = Date.now();
   const calls0 = client.calls;
   const timeoutMs = opts.timeoutMs ?? 8000;
-  const { table, sysId, field, observed } = target;
+  const { table } = target;
+  const wantedFields = target.fields.filter((x) => /^[a-z0-9_]+$/.test(x.field)).slice(0, 40);
+  if (!wantedFields.length) return [];
+  const names_ = wantedFields.map((x) => x.field);
   const access: Record<string, AccessState> = {};
   const rank: Record<AccessState, number> = { ok: 0, empty: 1, unknown: 2, timeout: 3, no_filter: 4, denied: 5 };
   const note = (t: string, a: AccessState) => { const prev = access[t]; if (!prev || rank[a] > rank[prev]) access[t] = a; };
@@ -157,28 +174,34 @@ export async function fieldState(
     cur = (await q('sys_db_object', `name=${cur}`, ['super_class.name'], 1, false))[0]?.['super_class.name'] || undefined;
   }
   const inT = `IN${tables.join(',')}`;
-  const like = field.replace(/[^a-z0-9_]/gi, '');
-  const [recRows, dict, overrides, actions, scriptPols, dpRules, cs] = await Promise.all([
-    q(table, `sys_id=${sysId}`, [], 1),
-    q('sys_dictionary', `name${inT}^element=${field}`, ['sys_id', 'name', 'element', 'read_only', 'mandatory', 'active', 'attributes', 'column_label', 'internal_type'], 20),
-    q('sys_dictionary_override', `name${inT}^element=${field}`, ['sys_id', 'name', 'element', 'base_table', 'read_only_override', 'read_only', 'mandatory_override', 'mandatory', 'attributes_override', 'attributes'], 20),
-    q('sys_ui_policy_action', `field=${field}^ui_policy.active=true^ui_policy.table${inT}`, ['sys_id', 'ui_policy', 'field', 'disabled', 'mandatory', 'visible', 'table'], 200),
-    q('sys_ui_policy', `table${inT}^active=true^run_scripts=true^script_trueLIKE${like}^ORscript_falseLIKE${like}`, ['sys_id'], 100),
-    q('sys_data_policy_rule', `field=${field}^sys_data_policy.active=true^sys_data_policy.model_table${inT}`, ['sys_id', 'sys_data_policy', 'field', 'mandatory', 'disabled', 'read_only', 'table'], 100),
-    q('sys_script_client', `table${inT}^active=true^scriptLIKE${like}`, ['sys_id', 'name', 'type', 'field', 'table', 'script', 'ui_type', 'global', 'view'], 200),
+  const inF = `IN${names_.join(',')}`;
+  const likeAny = (col: string | string[]) => names_.flatMap((f) => (Array.isArray(col) ? col : [col]).map((c) => `${c}LIKE${f}`)).join('^OR');
+  // Registro: pelo sys_id ou, se veio o número, pelo número.
+  const byNumber = !/^[0-9a-f]{32}$/.test(target.sysId) && /^[A-Z]{2,}[A-Z0-9]*\d{3,}$/.test(target.sysId);
+  const [recRows, dictAll, overridesAll, actionsAll, scriptPols, dpRulesAll, csAll] = await Promise.all([
+    q(table, byNumber ? `number=${target.sysId}` : `sys_id=${target.sysId}`, [], 1),
+    q('sys_dictionary', `name${inT}^element${inF}`, ['sys_id', 'name', 'element', 'read_only', 'mandatory', 'active', 'attributes', 'column_label', 'internal_type'], 200),
+    q('sys_dictionary_override', `name${inT}^element${inF}`, ['sys_id', 'name', 'element', 'base_table', 'read_only_override', 'read_only', 'mandatory_override', 'mandatory', 'attributes_override', 'attributes'], 200),
+    q('sys_ui_policy_action', `field${inF}^ui_policy.active=true^ui_policy.table${inT}`, ['sys_id', 'ui_policy', 'field', 'disabled', 'mandatory', 'visible', 'table'], 1000),
+    q('sys_ui_policy', `table${inT}^active=true^run_scripts=true^${likeAny(['script_true', 'script_false'])}`, ['sys_id'], 300),
+    q('sys_data_policy_rule', `field${inF}^sys_data_policy.active=true^sys_data_policy.model_table${inT}`, ['sys_id', 'sys_data_policy', 'field', 'mandatory', 'disabled', 'read_only', 'table'], 500),
+    q('sys_script_client', `table${inT}^active=true^${likeAny('script')}`, ['sys_id', 'name', 'type', 'field', 'table', 'script', 'ui_type', 'global', 'view'], 300),
   ]);
-  const polIds = [...new Set([...actions.map((a) => a.ui_policy ?? ''), ...scriptPols.map((p) => p.sys_id ?? '')].filter(Boolean))];
-  const dpIds = [...new Set(dpRules.map((r) => r.sys_data_policy ?? '').filter(Boolean))];
+  const polIds = [...new Set([...actionsAll.map((a) => a.ui_policy ?? ''), ...scriptPols.map((p) => p.sys_id ?? '')].filter(Boolean))];
+  const dpIds = [...new Set(dpRulesAll.map((r) => r.sys_data_policy ?? '').filter(Boolean))];
   const [pols, dps] = await Promise.all([
     polIds.length ? q('sys_ui_policy', `sys_idIN${polIds.join(',')}^active=true`, ['sys_id', 'short_description', 'table', 'conditions', 'on_load', 'reverse_if_false', 'global', 'view', 'run_scripts', 'script_true', 'script_false', 'ui_type', 'order', 'inherit'], 200) : Promise.resolve([] as Row[]),
     dpIds.length ? q('sys_data_policy2', `sys_idIN${dpIds.join(',')}^active=true`, ['sys_id', 'short_description', 'model_table', 'conditions', 'enforce_ui', 'inherit', 'reverse_if_false'], 100) : Promise.resolve([] as Row[]),
   ]);
 
   const recordReadable = !!recRows[0];
+  const sysId = byNumber ? recRows[0]?.sys_id || target.sysId : target.sysId;
   const record: Record<string, string> = recordReadable ? { ...recRows[0], sys_id: sysId } : {};
   const depth = (t: string | undefined) => { const i = tables.indexOf(t ?? ''); return i < 0 ? 99 : i; };
-  const rules: StateRule[] = [];
-  const skipped: StateSkip[] = [];
+  const dictionaryHidden = !dictAll.length && access.sys_dictionary === 'empty';
+  const denied = Object.entries(access).filter(([, a]) => a === 'denied' || a === 'no_filter').map(([t]) => t);
+  const slow = Object.entries(access).filter(([, a]) => a === 'timeout').map(([t]) => t);
+  const limited = dictionaryHidden || FORM_SOURCES.some((t) => denied.includes(t));
   const nowOf = (cond: string | undefined) => {
     const fs = conditionFields(cond);
     if (!recordReadable || !fs.length) return undefined;
@@ -186,10 +209,18 @@ export async function fieldState(
   };
   // Policy vale nesta tabela? Definida numa tabela-mãe só vale se herdar.
   const inherits = (on: string | undefined, inherit: string | undefined) => (on ?? table) === table || inherit !== 'false';
+  const env: Env = { rec: record, old: record, changed: new Set(), unknownChanges: true };
+
+  const compute = (field: string, observed: FieldObserved | undefined) => {
+  const rules: StateRule[] = [];
+  const skipped: StateSkip[] = [];
+  const dict = dictAll.filter((x) => x.element === field);
+  const overrides = overridesAll.filter((x) => x.element === field);
+  const actions = actionsAll.filter((x) => x.field === field);
+  const dpRules = dpRulesAll.filter((x) => x.field === field);
 
   // ---------- 1. dicionário (o mais específico da hierarquia) ----------
   const d = [...dict].sort((a, b) => depth(a.name) - depth(b.name))[0];
-  const dictionaryHidden = !dict.length && access.sys_dictionary === 'empty';
   if (d) {
     const base = { kind: 'dictionary' as const, name: `${d.name ?? table}.${field}`, table: 'sys_dictionary', ...(d.sys_id ? { sysId: d.sys_id } : {}), on: d.name ?? table, order: 0, grade: 'confirmed' as const };
     if (d.read_only === 'true') rules.push({ ...base, aspect: 'read_only', sets: true, why: 'dict' });
@@ -205,7 +236,6 @@ export async function fieldState(
   }
 
   // ---------- chamadas g_form.setReadOnly/setMandatory/setDisplay num script ----------
-  const env: Env = { rec: record, old: record, changed: new Set(), unknownChanges: true };
   /** Para cada aspecto que o script mexe neste campo: o valor (true = ativa) e se as condições valem com certeza. */
   const scriptEffects = (script: string | undefined): { aspect: StateAspect; sets: boolean | undefined; sure: boolean; valueKnown: boolean }[] => {
     if (!script) return [];
@@ -231,7 +261,7 @@ export async function fieldState(
   };
 
   // ---------- 3. client scripts (onLoad roda ao abrir; onChange só quando outro campo muda) ----------
-  for (const c of cs) {
+  for (const c of csAll) {
     if (c.ui_type === '1') continue; // só celular / portal
     const type = c.type ?? '';
     if (type !== 'onLoad' && type !== 'onChange') continue;
@@ -247,6 +277,8 @@ export async function fieldState(
   const ordered = [...pols].sort((a, b) => Number(a.order || 100) - Number(b.order || 100) || (a.short_description ?? '').localeCompare(b.short_description ?? ''));
   for (const p of ordered) {
     if (p.ui_type === '1') continue;
+    // Só as policies que mexem neste campo (ação para ele ou chamada no script).
+    if (!actions.some((x) => x.ui_policy === p.sys_id) && !(p.run_scripts === 'true' && (scriptEffects(p.script_true).length || scriptEffects(p.script_false).length))) continue;
     const name = p.short_description || 'UI policy';
     const link = { table: 'sys_ui_policy', ...(p.sys_id ? { sysId: p.sys_id } : {}) };
     if (!inherits(p.table, p.inherit)) { skipped.push({ kind: 'ui_policy', name, ...link, why: 'not_inherited' }); continue; }
@@ -280,6 +312,7 @@ export async function fieldState(
 
   // ---------- 5. data policies (valem ao gravar; com "usar como UI policy", também no formulário) ----------
   for (const p of dps) {
+    if (!dpRules.some((x) => x.sys_data_policy === p.sys_id)) continue;
     const name = p.short_description || 'Data policy';
     const link = { table: 'sys_data_policy2', ...(p.sys_id ? { sysId: p.sys_id } : {}) };
     if (!inherits(p.model_table, p.inherit)) { skipped.push({ kind: 'data_policy', name, ...link, why: 'not_inherited' }); continue; }
@@ -334,22 +367,38 @@ export async function fieldState(
     };
   }
 
-  const denied = Object.entries(access).filter(([, a]) => a === 'denied' || a === 'no_filter').map(([t]) => t);
-  const slow = Object.entries(access).filter(([, a]) => a === 'timeout').map(([t]) => t);
-  const limited = dictionaryHidden || FORM_SOURCES.some((t) => denied.includes(t));
-  const aclNote = aspects.read_only.unexplained;
-
-  // Rótulos do campo e dos campos citados nas condições, com o texto dos valores atuais.
-  const wanted: Record<string, (string | undefined)[]> = { [field]: [] };
-  for (const r of [...rules, ...skipped]) for (const [f, v] of Object.entries(r.now ?? {})) (wanted[f] ??= []).push(v);
-  const names = await resolveDisplay((t, query, fields, limit) => q(t, query, fields, limit, false), tables, wanted, target.language).catch(() => undefined);
-  const fieldLabel = names?.fields[field] || d?.column_label || undefined;
-
-  return {
-    table, sysId, field, tables, ...(fieldLabel ? { fieldLabel } : {}),
-    ...(names ? { fieldLabels: names.fields, valueLabels: names.values, refTables: names.refs } : {}),
-    ...(observed ? { observed } : {}),
-    rules, skipped, aspects, access, denied, slow, dictionaryHidden, limited, aclNote, recordReadable,
-    timing: { totalMs: Date.now() - started, calls: client.calls - calls0 },
+  return { field, observed, rules, skipped, aspects, dictLabel: d?.column_label };
   };
+  const parts = wantedFields.map((x) => compute(x.field, x.observed));
+
+  // Rótulos dos campos e dos campos citados nas condições, com o texto dos valores atuais (uma consulta para todos).
+  const wanted: Record<string, (string | undefined)[]> = Object.fromEntries(names_.map((f) => [f, []]));
+  for (const pt of parts) for (const r of [...pt.rules, ...pt.skipped]) for (const [f, v] of Object.entries(r.now ?? {})) (wanted[f] ??= []).push(v);
+  const names = await resolveDisplay((t, query, fields, limit) => q(t, query, fields, limit, false), tables, wanted, target.language).catch(() => undefined);
+  const timing = { totalMs: Date.now() - started, calls: client.calls - calls0 };
+
+  return parts.map(({ field, observed, rules, skipped, aspects, dictLabel }) => {
+    const fieldLabel = names?.fields[field] || dictLabel || undefined;
+    return {
+      table, sysId, field, tables, ...(fieldLabel ? { fieldLabel } : {}),
+      ...(names ? { fieldLabels: names.fields, valueLabels: names.values, refTables: names.refs } : {}),
+      ...(observed ? { observed } : {}),
+      rules, skipped, aspects, access, denied, slow, dictionaryHidden, limited, aclNote: aspects.read_only.unexplained, recordReadable, timing,
+    };
+  });
+}
+
+/** Resumo de uma linha por aspecto ativo (formulário ou regras): qual regra explica, "pode ser" ou nada. */
+export interface ActiveState { aspect: StateAspect; observed?: boolean; rule?: StateRule; maybe?: StateRule; unexplained: boolean }
+export function activeStates(r: FieldStateResult): ActiveState[] {
+  const out: ActiveState[] = [];
+  for (const aspect of STATE_ASPECTS) {
+    const a = r.aspects[aspect];
+    const on = a.observed ?? a.rules;
+    if (!on) continue;
+    const rule = a.rules && a.winner !== undefined ? r.rules[a.winner] : undefined;
+    const maybe = rule ? undefined : a.maybe.map((i) => r.rules[i]!).find((x) => x.sets !== false);
+    out.push({ aspect, ...(a.observed !== undefined ? { observed: a.observed } : {}), ...(rule ? { rule } : {}), ...(maybe ? { maybe } : {}), unexplained: !rule && !maybe });
+  }
+  return out;
 }
