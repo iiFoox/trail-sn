@@ -10,6 +10,19 @@ Convenções:
 
 ---
 
+## 2026-10-21 — rechecagem das lacunas de escopo e retirada de `security_admin`
+
+- A sessão autenticada do PDI estava em `admin` com `security_admin` elevado. Removi a elevação pelo menu do usuário e confirmei que a caixa `security_admin` ficou desmarcada. Ao final, `g_user.roles` e `g_user.allRoles` não contêm `security_admin`; o usuário é `admin` e o seletor de aplicativo voltou a `Global`.
+- **Flows escopados:** a lista clássica `/sys_hub_flow_list.do` agora abre (373 registros), ao contrário do erro 500 da bateria anterior. O Workflow Studio abre a lista de Flows e o editor do flow global `[PT] F14 flow chama subflow`, com gatilho, subflow e Update Record visíveis. A rota antiga `/now/flow-designer` continua em “Page not found”. Nesta sessão, os botões “New” e “Create” não abriram formulário ou menu; não criei flow A/B/C nem alterei os flows globais. Criação e execução em escopos seguem sem cobertura.
+- **Desenvolvedor delegado:** no app `[PT] Trail Escopo A`, localizei “Manage Collaborators”. A busca encontra a conta de teste pelo nome `[PT] Escopo dev`, embora não a encontre pelo `user_name`. O modal oferece o descritor “Editor”. Não enviei convite nem gravei delegação, portanto as investigações anteriores dessa conta continuam sendo de um usuário sem papel. A documentação oficial indica esse fluxo no registro do app: [Delegate permissions](https://www.servicenow.com/docs/r/application-development/delegated-development-and-deployment/t_AddADeveloper.html).
+- Reabri o modal com o app A selecionado e tentei escolher o resultado tanto pelo teclado quanto pelo clique. O teclado não concluiu a seleção; o clique fechou o modal sem habilitar “Send”. Ao reabrir, mostrava “No collaborators have been added yet”. A associação segue ausente. Não elevei `security_admin` para essa tentativa, pois o app permitiu abrir a gestão e a documentação indica `admin` como suficiente.
+- Nenhum registro de teste foi criado, atualizado ou apagado; nenhuma tarefa agendada foi criada. A sessão terminou como `admin`, aplicativo `Global`, sem `security_admin` elevado.
+- **Validação local:** `npm run typecheck` passou. `npm test` e `npm run build` pararam no carregamento das configurações do esbuild por leitura negada acima do workspace (`Acesso negado`). `npm run e2e` passou por smoke, content-ui16, content-list, content-portal e content-workspace; parou em `prefs-window.mjs` porque o Chromium headless não abriu a janela destacada (`windowOpened: false`). Não houve mudança de código nesta rodada.
+- **Integração:** commit local de documentação criado no `master`. O e-mail Git foi conferido como noreply do iiFoox. `git push origin master` falhou por falta de conexão com `github.com:443`; os commits locais continuam pendentes de envio.
+- **Em aberto:** concluir a atribuição de colaborador/developer à conta `[PT] Escopo dev`, verificar os direitos efetivos e executar os cenários do app A e de outro escopo; criar flows escopados pelo Workflow Studio quando o fluxo de criação funcionar e testar o motor. Não contar essas lacunas como cobertura concluída.
+
+---
+
 ## 2026-10-21 — Site bilíngue PT/EN (item 5 da fila)
 
 - **Site (`site/b3`, Antigravity #2; revisão e integração, Codex #2):** adicionado seletor acessível PT/EN na navegação. O idioma troca os textos, descrições, título, conteúdo dinâmico da demonstração, capacidades, contagem da tabela e legendas da galeria; salva em `localStorage` e na URL (`?lang=en`). O roadmap inteiro da Fase 1 (29 itens) tem chaves `road_p1_l1` a `road_p1_l29` nos dicionários PT e EN. Na revisão, também associei as chaves que já existiam mas ainda não eram aplicadas aos passos da seção "Antes e depois", à introdução dos resultados e à introdução da galeria.
