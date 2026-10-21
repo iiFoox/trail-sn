@@ -20,7 +20,7 @@ for (const scheme of shots ? ['light', 'dark'] : ['light']) {
     const id = new URL(sw.url()).host;
     const page = await ctx.newPage();
     page.on('pageerror', (e) => errors.push('page: ' + e.message));
-    const base = `chrome-extension://${id}/src/sidepanel/index.html?demo=1&float=1&theme=${scheme}`;
+    const base = `chrome-extension://${id}/src/sidepanel/index.html?demo=1&float=1&lang=pt&theme=${scheme}`;
     const noOverflow = async (w, what) => { const sw_ = await page.evaluate(() => document.documentElement.scrollWidth); if (sw_ > w + 1) errors.push(`${what}: rolagem lateral em ${w}px (${sw_})`); };
     const shot = async (name) => { if (shots) await page.screenshot({ path: resolve(shots, `${name}-${scheme}.png`), fullPage: true }); };
 

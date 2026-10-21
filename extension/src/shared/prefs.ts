@@ -1,6 +1,6 @@
 /**
  * Preferências do usuário: tema, idioma e onde o painel abre.
- * Padrões decididos: escuro, português, painel flutuante na página.
+ * Padrões decididos: escuro, idioma do navegador (português ou inglês), painel flutuante na página.
  *
  * As páginas da extensão (painel, popup, opções) compartilham a mesma origem, então o
  * localStorage serve de leitura síncrona no carregamento. O chrome.storage.sync guarda a
@@ -20,6 +20,18 @@ export const DEFAULT_PREFS: Prefs = { theme: 'dark', lang: 'pt', panelMode: 'flo
 const KEY = 'trail.prefs';
 export const PREFS_KEY = KEY;
 
+/**
+ * Idioma do navegador, usado enquanto a pessoa não escolhe um: qualquer variante de português vira 'pt',
+ * o resto vira 'en'. Sem nenhuma informação (fora do navegador), português.
+ */
+export function browserLang(): Lang {
+  let l = '';
+  try { l = (globalThis as { chrome?: typeof chrome }).chrome?.i18n?.getUILanguage?.() ?? ''; } catch { /* sem chrome.i18n */ }
+  if (!l) { try { l = typeof navigator !== 'undefined' ? navigator.language ?? '' : ''; } catch { /* sem navigator */ } }
+  if (!l) return 'pt';
+  return l.toLowerCase().startsWith('pt') ? 'pt' : 'en';
+}
+
 function params(): URLSearchParams {
   try { return new URLSearchParams(location.search); } catch { return new URLSearchParams(); }
 }
@@ -31,7 +43,8 @@ function readLocal(): Partial<Prefs> {
 export function normalize(p: Partial<Prefs> | undefined): Prefs {
   return {
     theme: p?.theme === 'light' || p?.theme === 'system' ? p.theme : 'dark',
-    lang: p?.lang === 'en' ? 'en' : 'pt',
+    // Sem idioma salvo, segue o navegador; quem já escolheu mantém a escolha.
+    lang: p?.lang === 'en' || p?.lang === 'pt' ? p.lang : browserLang(),
     // 'side' gravado antes da 0.12 era só o padrão da época: quem não escolheu passa para o flutuante.
     panelMode: p?.panelMode === 'window' ? 'window' : p?.panelMode === 'side' && p.modeV === 2 ? 'side' : 'float',
     showIcons: p?.showIcons !== false,
@@ -52,19 +65,26 @@ export function getPrefs(): Prefs {
 }
 
 /** Leitura assíncrona para o service worker e o content script. */
+async function loadRaw(): Promise<Partial<Prefs> | undefined> {
+  const o = await chrome.storage.sync.get(KEY);
+  return o[KEY] as Partial<Prefs> | undefined;
+}
+
 export async function loadPrefs(): Promise<Prefs> {
   try {
-    const o = await chrome.storage.sync.get(KEY);
-    return normalize(o[KEY] as Partial<Prefs> | undefined);
-  } catch { return DEFAULT_PREFS; }
+    return normalize(await loadRaw());
+  } catch { return normalize(undefined); }
 }
 
 export async function savePrefs(patch: Partial<Prefs>): Promise<Prefs> {
   // Parte do que está salvo no sync (vale para todas as páginas e o worker), não só do localStorage desta página.
-  const stored = await loadPrefs().catch(() => normalize(readLocal()));
+  const stored = await loadRaw().catch(() => readLocal());
   const next = normalize({ ...stored, ...patch });
-  try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* sem localStorage */ }
-  try { await chrome.storage.sync.set({ [KEY]: next }); } catch { /* demo fora da extensão */ }
+  // O idioma só é gravado quando a pessoa escolhe; enquanto não escolher, continua seguindo o navegador.
+  const keep: Partial<Prefs> = { ...next };
+  if (stored?.lang === undefined && patch.lang === undefined) delete keep.lang;
+  try { localStorage.setItem(KEY, JSON.stringify(keep)); } catch { /* sem localStorage */ }
+  try { await chrome.storage.sync.set({ [KEY]: keep }); } catch { /* demo fora da extensão */ }
   return next;
 }
 

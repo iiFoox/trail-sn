@@ -11,7 +11,7 @@ import { fmt, t } from '../shared/i18n';
 import { comboFromEvent, loadPrefs, normalize, PREFS_KEY, resolvedTheme, type Prefs } from '../shared/prefs';
 import type { PageContext } from '../shared/messages';
 import { openDiffWindow, type DiffWindowRequest } from './diffWindow';
-import { canShowAssistantMessage, disposeFloat, initAssistant, openFloat, setAssistantEnabled, setFloatMotion, setFloatTheme, showAssistantMessage, showFloat, toggleFloat, toggleFloatByKey } from './floatPanel';
+import { canShowAssistantMessage, disposeFloat, initAssistant, openFloat, setAssistantEnabled, setFloatLabels, setFloatMotion, setFloatTheme, showAssistantMessage, showFloat, toggleFloat, toggleFloatByKey } from './floatPanel';
 // Se a cópia anterior ainda responde, ela solta observers e listeners antes desta assumir.
 document.dispatchEvent(new Event('trail:dispose-content'));
 for (const el of deepWalk(document)) {
@@ -56,8 +56,9 @@ function checkContext(): boolean {
 const livenessTimer = window.setInterval(checkContext, 2000);
 document.addEventListener('trail:dispose-content', dispose);
 
-// Português até a preferência chegar do storage; os ícones criados depois já saem no idioma escolhido.
-let strings = t('pt');
+// Idioma do navegador até a preferência chegar do storage; os ícones criados depois já saem no idioma escolhido.
+let strings = t(normalize(undefined).lang);
+setFloatLabels({ hide: strings.floatTabHide, close: strings.balloonClose });
 let panelMode: Prefs['panelMode'] | undefined;
 let theme: 'dark' | 'light' = 'dark';
 /** Atalho das configurações para abrir e fechar o painel, e a aba deste quadro (vem do worker). */
@@ -66,7 +67,7 @@ let knownTabId: number | undefined;
 let showIcons = true;
 const hosts = new Set<HTMLElement>();
 const KEY_HINT = 'Alt+Shift+T';
-void loadPrefs().then((p) => { if (!checkContext()) return; strings = t(p.lang); panelMode = p.panelMode; theme = resolvedTheme(p.theme); panelKey = p.panelKey; setFloatMotion(p.motion); applyIcons(p.showIcons); void restoreFloat(p); }).catch(() => undefined);
+void loadPrefs().then((p) => { if (!checkContext()) return; strings = t(p.lang); setFloatLabels({ hide: strings.floatTabHide, close: strings.balloonClose }); panelMode = p.panelMode; theme = resolvedTheme(p.theme); panelKey = p.panelKey; setFloatMotion(p.motion); applyIcons(p.showIcons); void restoreFloat(p); }).catch(() => undefined);
 
 // ---------- painel flutuante (só no quadro de cima) ----------
 /** Recarregou a página com o painel aberto: ele volta no mesmo estado (aberto ou minimizado). */
@@ -95,6 +96,7 @@ function onPrefsChanged(ch: { [key: string]: chrome.storage.StorageChange }, are
   const before = normalize(ch[PREFS_KEY].oldValue as Partial<Prefs> | undefined);
   const after = normalize(ch[PREFS_KEY].newValue as Partial<Prefs> | undefined);
   panelMode = after.panelMode;
+  if (before.lang !== after.lang) { strings = t(after.lang); setFloatLabels({ hide: strings.floatTabHide, close: strings.balloonClose }); }
   theme = resolvedTheme(after.theme);
   setFloatTheme(theme);
   panelKey = after.panelKey;
@@ -132,25 +134,45 @@ function onFrameKey(e: MessageEvent): void {
 }
 addEventListener('message', onFrameKey);
 
-/** Boas-vindas uma vez para cada registro, quando a bolinha está visível. */
+/**
+ * Boas-vindas uma vez para cada registro, quando a bolinha está visível.
+ * Para não virar histórico de navegação, o storage guarda só um resumo (SHA-256) de origem+tabela+registro,
+ * e apenas os últimos WELCOME_MAX: os mais antigos são apagados a cada gravação.
+ */
+const WELCOME_MAX = 200;
 const welcomePending = new Set<string>();
+async function welcomeKey(id: string): Promise<string> {
+  const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(id)));
+  return 'welcomed:' + [...bytes.slice(0, 16)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+async function pruneWelcomed(): Promise<void> {
+  const all = await chrome.storage.local.get(null);
+  const entries = Object.entries(all).filter(([k]) => k.startsWith('welcomed:'));
+  // Chaves antigas (até a 1.0.0) traziam a URL e o sys_id em texto: saem todas.
+  const legacy = entries.filter(([k]) => k.includes('://')).map(([k]) => k);
+  const kept = entries.filter(([k]) => !k.includes('://')).sort((a, b) => Number(b[1]) - Number(a[1]));
+  const remove = [...legacy, ...kept.slice(WELCOME_MAX).map(([k]) => k)];
+  if (remove.length) await chrome.storage.local.remove(remove);
+}
 function welcome(): void {
-  if (window !== window.top || !ctx.table || !ctx.sysId || !chrome.storage?.local) return;
-  const k = `welcomed:${origin}:${ctx.table}:${ctx.sysId}`;
-  if (welcomePending.has(k)) return;
-  welcomePending.add(k);
+  if (window !== window.top || !ctx.table || !ctx.sysId || !chrome.storage?.local || !globalThis.crypto?.subtle) return;
+  const id = `${origin}:${ctx.table}:${ctx.sysId}`;
+  if (welcomePending.has(id)) return;
+  welcomePending.add(id);
   const claim = async () => {
-    if (!checkContext() || k !== `welcomed:${origin}:${ctx.table}:${ctx.sysId}` || !canShowAssistantMessage()) return false;
+    if (!checkContext() || id !== `${origin}:${ctx.table}:${ctx.sysId}` || !canShowAssistantMessage()) return false;
+    const k = await welcomeKey(id);
     const o = await chrome.storage.local.get(k);
     if (o[k] || !canShowAssistantMessage()) return false;
     await chrome.storage.local.set({ [k]: Date.now() });
+    await pruneWelcomed().catch(() => undefined);
     return true;
   };
   // A trava evita que duas abas abertas no mesmo registro mostrem a saudação juntas.
-  const reserved = navigator.locks ? navigator.locks.request(k, claim) : claim();
+  const reserved = navigator.locks ? navigator.locks.request(`trail-welcome:${id}`, claim) : claim();
   void reserved.then((ok) => {
-    if (ok && checkContext() && k === `welcomed:${origin}:${ctx.table}:${ctx.sysId}`) showAssistantMessage(strings.bubbleWelcome, strings.welcomeTitle);
-  }).catch(() => undefined).finally(() => welcomePending.delete(k));
+    if (ok && checkContext() && id === `${origin}:${ctx.table}:${ctx.sysId}`) showAssistantMessage(strings.bubbleWelcome, strings.welcomeTitle);
+  }).catch(() => undefined).finally(() => welcomePending.delete(id));
 }
 const origin = location.origin;
 document.addEventListener('trail:bubble-visible', welcome);
@@ -426,6 +448,10 @@ function onRuntimeMessage(m: { type?: string; tabId?: number; origin?: string } 
   reply({ ok: true });
 }
 chrome.runtime?.onMessage?.addListener(onRuntimeMessage);
-// Gancho de teste (e2e): o mundo isolado do content script não é visível pela página.
-(window as unknown as { __trailOpenDiff?: typeof openDiffWindow }).__trailOpenDiff = openDiffWindow;
-(window as unknown as { __trailFloat?: unknown }).__trailFloat = { openFloat, showFloat, toggleFloat };
+// Ganchos de teste (e2e): só existem quando content.js roda numa página da própria extensão (o harness do e2e o
+// carrega com <script> em chrome-extension://). Numa instância (https) o content script nunca os cria; e, mesmo
+// que criasse, o mundo isolado não é visível pela página. Assim o e2e testa o mesmo dist que vai para a loja.
+if (location.protocol === 'chrome-extension:') {
+  (window as unknown as { __trailOpenDiff?: typeof openDiffWindow }).__trailOpenDiff = openDiffWindow;
+  (window as unknown as { __trailFloat?: unknown }).__trailFloat = { openFloat, showFloat, toggleFloat };
+}

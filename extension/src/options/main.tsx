@@ -4,7 +4,7 @@ import '../shared/ui.css';
 import { bootPage, getPrefs, applyTheme, savePrefs, type Prefs } from '../shared/prefs';
 import { t } from '../shared/i18n';
 import { Glyph, TrailMark } from '../shared/icons';
-import { listInstances, type InstanceSettings } from '../shared/instances';
+import { connectableOrigin, listInstances, type InstanceSettings } from '../shared/instances';
 import { send, type ProbeResult } from '../shared/messages';
 import type { AccessReport } from '@trail/core';
 
@@ -55,11 +55,42 @@ function Options() {
             ))}
           </ul>
         </div>
+        <CustomDomain onDone={refresh} />
         {list.length > 0 && <Diagnostics origins={list.map((i) => i.origin)} />}
         <h2>{s.privacyTitle}</h2>
         <div class="card flat"><p class="muted" style="margin:0">{s.privacy}</p></div>
       </main>
     </>
+  );
+}
+
+/**
+ * Instância com domínio próprio (não *.service-now.com): o Trail não adivinha pelo endereço, o usuário conecta aqui.
+ * permissions.request sai direto do clique, antes de qualquer await, para valer como gesto do usuário.
+ */
+function CustomDomain({ onDone }: { onDone: () => void }) {
+  const [url, setUrl] = useState('');
+  const [msg, setMsg] = useState<string>();
+  const connect = () => {
+    const origin = connectableOrigin(url);
+    if (!origin) { setMsg(s.customInvalid); return; }
+    setMsg(undefined);
+    void chrome.permissions.request({ origins: [`${origin}/*`] }).then(async (ok) => {
+      if (!ok) { setMsg(s.permissionDenied); return; }
+      await send({ type: 'activate', origin });
+      setUrl('');
+      onDone();
+    }, () => setMsg(s.permissionDenied));
+  };
+  return (
+    <details class="card flat custom-domain">
+      <summary><b>{s.customTitle}</b> <span class="muted small">{s.customHint}</span></summary>
+      <form class="row" style="margin-top:8px" onSubmit={(e) => { e.preventDefault(); if (!isDemo) connect(); }}>
+        <input class="grow" type="url" inputMode="url" placeholder="https://servicenow.empresa.com.br" value={url} onInput={(e) => setUrl((e.target as HTMLInputElement).value)} aria-label={s.customTitle} />
+        <button class="btn sm" type="submit">{Glyph.plug} {s.customConnect}</button>
+      </form>
+      {msg && <div class="notice bad small" style="margin-top:8px">{msg}</div>}
+    </details>
   );
 }
 
@@ -78,7 +109,8 @@ function Diagnostics({ origins }: { origins: string[] }) {
         <div><b>{s.probe}</b><p class="muted small">{s.probeExplain}</p></div>
         <button class="btn sm" disabled={busy} onClick={() => run(() => send<ProbeResult>({ type: 'probe-auth', origin }), setProbe)}>{Glyph.shield} {s.run}</button>
       </div>
-      {probe && <table class="simple">{probe.steps.map((st) => <tr><td style="width:18px">{st.ok ? '✅' : '❌'}</td><td>{st.label}</td><td><code>{String(st.status)}</code></td></tr>)}</table>}
+      {probe && <table class="simple">{probe.steps.map((st) => <tr><td style="width:18px">{st.ok ? '✅' : '❌'}</td><td>{s.probeStep[st.step] ?? st.step}</td><td><code>{st.step === 'htmlTokenMissing' ? s.probeMissing : String(st.status)}</code></td></tr>)}</table>}
+      {probe && <p class="muted small">{s.probeConclusion[probe.conclusion] ?? probe.conclusion}</p>}
       <div class="diag-row">
         <div><b>{s.checkAccess}</b><p class="muted small">{s.accessExplain}</p></div>
         <button class="btn sm" disabled={busy} onClick={() => run(() => send<AccessReport>({ type: 'check-access', origin, force: true }), setAccess)}>{Glyph.refresh} {s.run}</button>

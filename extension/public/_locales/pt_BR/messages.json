@@ -1,4 +1,10 @@
 {
+  "name": {
+    "message": "Trail — Perícia de registros ServiceNow"
+  },
+  "short_name": {
+    "message": "Trail"
+  },
   "description": {
     "message": "Perícia de registros para ServiceNow: o que alterou este campo, quando e por quê. Somente leitura."
   },

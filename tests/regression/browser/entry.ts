@@ -38,7 +38,14 @@ export async function runRegression(list: any[] = cases as any[]): Promise<unkno
     let detail = '', ok = false, calls = 0;
     try {
       // Casos gerados: o registro vem pelo short_description (sys_id muda a cada montagem).
-      if (c.sd && !c.sysId) c.sysId = (await client.query({ table: c.table, query: `short_description=${c.sd}`, fields: ['sys_id'], limit: 1 })).rows[0]?.sys_id;
+      if (c.sd && !c.sysId) {
+        const found = await client.query({ table: c.table, query: `short_description=${c.sd}`, fields: ['sys_id'], limit: 1 });
+        const sysId = found.rows[0]?.sys_id;
+        // Sem isso o caso seguia com number=undefined e o erro parecia do motor.
+        if (!sysId) throw new Error(`registro do caso não encontrado por short_description="${c.sd}" em ${c.table} (acesso: ${found.access}, HTTP ${found.status})`);
+        c.sysId = sysId;
+      }
+      if (!c.sysId && !c.number) throw new Error('caso sem sysId, number nem sd: não há registro para investigar');
       const r = await investigate(client, c.sysId ? { table: c.table, sysId: c.sysId, field: c.field } : { table: c.table, number: c.number, field: c.field });
       calls = r.timing.calls;
       if (c.expectUnaudited) { ok = !!r.unaudited; detail = r.unaudited ? `${r.unaudited.count} sem auditoria` : 'nada detectado'; }

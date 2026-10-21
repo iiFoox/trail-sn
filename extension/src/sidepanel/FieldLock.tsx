@@ -71,7 +71,7 @@ export function FieldLock({ target, origin, observed }: { target: { table: strin
     (async () => {
       try {
         const obs = observed ? { ...(observed.readOnly !== undefined ? { readOnly: observed.readOnly } : {}), ...(observed.mandatory !== undefined ? { mandatory: observed.mandatory } : {}), ...(observed.visible !== undefined ? { visible: observed.visible } : {}), ...(observed.onForm !== undefined ? { onForm: observed.onForm } : {}) } : undefined;
-        const out = isDemo ? (await demoFieldStates([target.field]))[0]! : await send<FieldStateResult & { error?: string }>({ type: 'field-state', origin, target: { table: target.table, sysId: target.sysId, field: target.field }, ...(obs ? { observed: obs } : {}) });
+        const out = isDemo ? (await demoFieldStates([target.field]))[0]! : await send<FieldStateResult & { error?: string }>({ type: 'field-state', origin, tabId: trackedTab(), target: { table: target.table, sysId: target.sysId, field: target.field }, ...(obs ? { observed: obs } : {}) });
         if (isDemo) await new Promise((x) => setTimeout(x, 350));
         if ((out as { error?: string }).error) throw new Error((out as { error?: string }).error);
         if (alive) setRes(out);
@@ -201,7 +201,7 @@ export function FormStates({ table, sysId, origin }: { table: string; sysId: str
       if (!active.length) return;
       try {
         const out = isDemo ? await demoFieldStates(active.map((f) => f.field))
-          : await send<FieldStateResult[] | { error?: string }>({ type: 'field-states', origin, table, sysId, fields: active.map(({ field, readOnly, mandatory, visible, onForm }) => ({ field, observed: { readOnly, mandatory, visible, onForm } })) });
+          : await send<FieldStateResult[] | { error?: string }>({ type: 'field-states', origin, tabId: trackedTab(), table, sysId, fields: active.map(({ field, readOnly, mandatory, visible, onForm }) => ({ field, observed: { readOnly, mandatory, visible, onForm } })) });
         if (!Array.isArray(out)) throw new Error(out?.error ?? '?');
         if (alive) setRes(out);
       } catch (e) { if (alive) setErr((e as Error).message); }

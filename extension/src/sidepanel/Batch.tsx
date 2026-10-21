@@ -17,6 +17,7 @@ import { FormStates } from './FieldLock';
 import { parts, humanField } from './Result';
 import { Loading } from './Loading';
 import { Val } from './Val';
+import { ErrorMsg } from './ErrorMsg';
 
 const P = t(getPrefs().lang).p;
 type B = NonNullable<TabState['batch']>;
@@ -136,7 +137,7 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
       {errors.length > 0 && !running && (
         <details class="box fold">
           <summary><h4 class="warnh"><span class="grow">{P.btErrors}</span><span class="pill">{errors.length}</span></h4></summary>
-          {errors.map((it) => <div class="li"><span class="ck w">!</span><div class="grow">{rec ? it.label ?? it.field : it.display}<div class="det">{it.error}</div></div></div>)}
+          {errors.map((it) => <div class="li"><span class="ck w">!</span><div class="grow">{rec ? it.label ?? it.field : it.display}<div class="det"><ErrorMsg msg={it.error ?? ''} /></div></div></div>)}
         </details>
       )}
       {/* Registro inteiro: os flows que rodaram neste registro e os configurados para a tabela. */}

@@ -12,6 +12,7 @@ import { setTrackedTab } from '../shared/tabRef';
 import { askForm, send, storageKey, type ObservedField, type TabState } from '../shared/messages';
 import { FieldLock, useObserved } from './FieldLock';
 import { isEnabled, looksLikeServiceNow } from '../shared/instances';
+import { ErrorMsg } from './ErrorMsg';
 
 const s = t(getPrefs().lang);
 const params = new URLSearchParams(location.search);
@@ -85,7 +86,7 @@ export function App() {
     if (isDemo) { runDemoField(f); return; }
     const tgt = state?.result?.target;
     if (!origin || !tgt) return;
-    void send({ type: 'investigate', origin, mode: here, target: { table: tgt.table, sysId: tgt.sysId, field: f } });
+    void send({ type: 'investigate', origin, mode: here, tabId: tracked.current, target: { table: tgt.table, sysId: tgt.sysId, field: f } });
   };
 
   // Demonstração: a página que hospeda o painel troca o campo; links não saem do site.
@@ -251,8 +252,8 @@ export function App() {
         )}
         {state?.access && !state.result && <AccessNotice report={state.access} />}
         {state?.status === 'running' && <Loading steps={s.p.loadSteps as string[]} />}
-        {state?.status === 'error' && <div class="notice bad"><div class="title">{s.errorTitle}</div>{state.error}</div>}
-        {state?.batch && !state.result && origin && state.status !== 'running' && <Batch b={state.batch} origin={origin} onOpen={(id, f) => { if (isDemo) { investigateField(f ?? state.batch!.field); return; } void send({ type: 'investigate', origin, mode: here, target: { table: state.batch!.table, sysId: id, field: f ?? state.batch!.field } }); }} />}
+        {state?.status === 'error' && <div class="notice bad"><div class="title">{s.errorTitle}</div><ErrorMsg msg={state.error ?? ''} /></div>}
+        {state?.batch && !state.result && origin && state.status !== 'running' && <Batch b={state.batch} origin={origin} onOpen={(id, f) => { if (isDemo) { investigateField(f ?? state.batch!.field); return; } void send({ type: 'investigate', origin, mode: here, tabId, target: { table: state.batch!.table, sysId: id, field: f ?? state.batch!.field } }); }} />}
         {state?.result && origin && state.status !== 'running' && <Result r={state.result} origin={origin} access={state.access} toast={(m) => showToast(m)} onField={investigateField} />}
         {!needsConnect && !state?.result && !state?.batch && state?.status !== 'running' && (
           <div class="empty">
@@ -354,9 +355,9 @@ function ManualDrawer({ origin, table, sysId, field, tabId, open, onDemo, onLock
     setOpen(false);
     if (isDemo) { onDemo(fld, whole); return; }
     if (!origin || tabId === undefined) return;
-    if (whole) { await send({ type: 'record', origin, mode: here, table: tbl, record: rec }); return; }
+    if (whole) { await send({ type: 'record', origin, mode: here, tabId, table: tbl, record: rec }); return; }
     const target = /^[0-9a-f]{32}$/.test(rec) ? { table: tbl, sysId: rec, field: fld } : { table: tbl, number: rec, field: fld };
-    await send({ type: 'investigate', origin, mode: here, target });
+    await send({ type: 'investigate', origin, mode: here, tabId, target });
   };
   return (
     <details class="drawer" open={isOpen} onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}>

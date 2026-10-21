@@ -4,9 +4,12 @@ import { demoTimeline } from '../shared/demo';
 import { fmt, t } from '../shared/i18n';
 import { Glyph } from '../shared/icons';
 import { send } from '../shared/messages';
+import { trackedTab } from '../shared/tabRef';
 import { getPrefs } from '../shared/prefs';
 import { parts, plural, refLink } from './Result';
 import { Val } from './Val';
+import { ErrorMsg } from './ErrorMsg';
+import { friendlyError } from '../shared/errors';
 
 const P = t(getPrefs().lang).p;
 const isDemo = new URLSearchParams(location.search).has('demo');
@@ -39,13 +42,13 @@ export function RecordTimeline({ origin, table, sysId, onField }: { origin: stri
   useEffect(() => {
     setData(undefined); setErr(undefined); setShown(PAGE);
     if (isDemo) { const id = setTimeout(() => setData(demoTimeline()), 450); return () => clearTimeout(id); }
-    send<TL & { error?: string }>({ type: 'timeline', origin, target: { table, sysId } })
+    send<TL & { error?: string }>({ type: 'timeline', origin, tabId: trackedTab(), target: { table, sysId } })
       .then((r) => (r?.error ? setErr(r.error) : setData(r)))
       .catch((e: Error) => setErr(e.message));
     return undefined;
   }, [origin, table, sysId]);
 
-  if (err) return <div class="notice bad small">{fmt(P.tlError, { msg: err })}</div>;
+  if (err) return <div class="notice bad small"><ErrorMsg msg={err} text={fmt(P.tlError, { msg: friendlyError(err, getPrefs().lang) })} /></div>;
   if (!data) return <div class="card"><div class="row"><span class="spin" /> <span class="muted">{P.tlLoading}</span></div><div class="skeleton" /><div class="skeleton" style="width:70%" /></div>;
   if (!data.saves.length) return <div class="muted small">{P.tlEmpty}</div>;
 

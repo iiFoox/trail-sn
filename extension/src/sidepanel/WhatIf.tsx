@@ -5,9 +5,11 @@ import { fmt, t } from '../shared/i18n';
 import { Glyph, typeGlyph } from '../shared/icons';
 import { recordLink } from '../shared/instances';
 import { send } from '../shared/messages';
+import { trackedTab } from '../shared/tabRef';
 import { getPrefs } from '../shared/prefs';
 import { fieldName } from './Result';
 import { Val } from './Val';
+import { ErrorMsg } from './ErrorMsg';
 
 const P = t(getPrefs().lang).p;
 const isDemo = new URLSearchParams(location.search).has('demo');
@@ -27,7 +29,7 @@ export function WhatIf({ r, origin }: { r: Investigation; origin: string; field?
     if (v === current) { setErr(P.wiSame); setSt('err'); return; }
     setSt('run');
     try {
-      const out = isDemo ? demoPreview(r, field, v) : await send<ChangePreview & { error?: string }>({ type: 'preview', origin, target: { table: r.target.table, sysId: r.target.sysId, field, value: v } });
+      const out = isDemo ? demoPreview(r, field, v) : await send<ChangePreview & { error?: string }>({ type: 'preview', origin, tabId: trackedTab(), target: { table: r.target.table, sysId: r.target.sysId, field, value: v } });
       if (isDemo) await new Promise((x) => setTimeout(x, 500));
       if ((out as { error?: string }).error) throw new Error((out as { error?: string }).error);
       setRes(out); setSt('done');
@@ -44,7 +46,7 @@ export function WhatIf({ r, origin }: { r: Investigation; origin: string; field?
           <button class="btn primary sm" disabled={!value || st === 'run'} onClick={() => void run()}>{Glyph.search} {P.wiRun}</button>
         </div>
         {st === 'run' && <div class="li"><span class="spin" /><span class="grow muted small">{P.wiRunning}</span></div>}
-        {st === 'err' && <div class="li"><span class="ck w">!</span><span class="grow">{err}</span></div>}
+        {st === 'err' && <div class="li"><span class="ck w">!</span><span class="grow">{err === P.wiSame ? err : <ErrorMsg msg={err} />}</span></div>}
       </div>
       {st === 'done' && res && <Outcome res={res} r={r} origin={origin} />}
     </div>

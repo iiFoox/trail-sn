@@ -9,6 +9,7 @@ const dist = resolve(dirname(fileURLToPath(import.meta.url)), '../../extension/d
 const ctx = await chromium.launchPersistentContext(mkdtempSync(resolve(tmpdir(), 'trail-')), {
   headless: true,
   channel: 'chromium',
+  locale: 'pt-BR', // sem idioma salvo, o Trail segue o idioma do navegador
   args: [`--disable-extensions-except=${dist}`, `--load-extension=${dist}`],
 });
 let [sw] = ctx.serviceWorkers();
@@ -26,6 +27,15 @@ panel.on('pageerror', (e) => errors.push('sidepanel: ' + e.message));
 await panel.goto(`chrome-extension://${extId}/src/sidepanel/index.html`);
 await panel.waitForSelector('.topbar');
 const panelText = await panel.textContent('body');
+// Erro técnico do motor vira texto simples; a mensagem original fica recolhida em "Detalhes técnicos".
+await panel.evaluate(async () => {
+  const tab = await chrome.tabs.getCurrent();
+  await chrome.storage.session.set({ [`tab:${tab.id}`]: { tabId: tab.id, status: 'error', error: 'Record unavailable: the instance did not answer (timeout)' } });
+});
+await panel.waitForSelector('.notice.bad .errmsg', { timeout: 5000 }).catch(() => undefined);
+const friendly = (await panel.locator('.notice.bad .errmsg').textContent().catch(() => '')) ?? '';
+const techOpen = await panel.locator('.notice.bad details.captech').evaluate((d) => d.open).catch(() => null);
+if (!friendly.startsWith('A instância não respondeu; tente de novo.') || !friendly.includes('Record unavailable') || techOpen !== false) errors.push('erro amigável inesperado: ' + JSON.stringify({ friendly, techOpen }));
 const opts = await ctx.newPage();
 opts.on('pageerror', (e) => errors.push('options: ' + e.message));
 await opts.goto(`chrome-extension://${extId}/src/options/index.html`);
@@ -77,6 +87,11 @@ const peopleGroups = await record.locator('.bt-group').count();
 const peopleHeaders = await record.locator('.bt-group summary').allTextContents();
 if (peopleGroups === 0 || peopleGroups >= allGroups || peopleHeaders.some((text) => !text.includes('salvou'))) errors.push('filtro Pessoas não reduziu os grupos: ' + JSON.stringify({ allGroups, peopleGroups, peopleHeaders }));
 
-console.log(JSON.stringify({ extId, popup: popupText.slice(0, 120), panel: panelText.slice(0, 120), cmpBtn, recRows, allGroups, peopleGroups, errors }, null, 1));
+// Nome localizado do manifest (__MSG_name__), conforme o idioma da interface do navegador (o headless fica em inglês).
+const self = await page.evaluate(() => chrome.management.getSelf());
+const extName = self.name, extShort = self.shortName;
+if (!['Trail — Perícia de registros ServiceNow', 'Trail — ServiceNow Record Forensics'].includes(extName) || extShort !== 'Trail') errors.push('nome da extensão inesperado: ' + JSON.stringify({ extName, extShort }));
+
+console.log(JSON.stringify({ extId, extName, extShort, popup: popupText.slice(0, 120), panel: panelText.slice(0, 120), cmpBtn, recRows, allGroups, peopleGroups, errors }, null, 1));
 await ctx.close();
 process.exit(errors.length ? 1 : 0);

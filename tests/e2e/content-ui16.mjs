@@ -9,7 +9,8 @@ const content = readFileSync(resolve(here, '../../extension/dist/content.js'), '
 const page_ = readFileSync(resolve(here, '../../extension/dist/page.js'), 'utf8');
 
 const browser = await chromium.launch({ channel: 'chromium' });
-const page = await browser.newPage();
+// Navegador em português: sem idioma salvo, o Trail segue o idioma do navegador.
+const page = await browser.newPage({ locale: 'pt-BR' });
 await page.route('https://dev000000.service-now.com/**', (route) => route.fulfill({
   contentType: 'text/html',
   body: `<!doctype html><html><body>

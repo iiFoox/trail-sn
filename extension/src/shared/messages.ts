@@ -15,20 +15,24 @@ export interface PageContext {
   surface: 'ui16' | 'workspace' | 'portal' | 'unknown';
 }
 
+/**
+ * `tabId` nos pedidos que vêm do painel: a aba da instância que o painel acompanha. Na janela separada,
+ * sender.tab é a aba da própria janela do Trail; sem isso o resultado ia para a aba errada.
+ */
 export type Message =
   | { type: 'context'; ctx: PageContext }
-  | { type: 'investigate'; origin: string; target: Target; token?: string; language?: string; mode?: import('./prefs').PanelMode }
+  | { type: 'investigate'; origin: string; target: Target; token?: string; language?: string; mode?: import('./prefs').PanelMode; tabId?: number }
   | { type: 'toggle-icons' }
-  | { type: 'timeline'; origin: string; target: { table: string; sysId: string }; language?: string }
+  | { type: 'timeline'; origin: string; target: { table: string; sysId: string }; language?: string; tabId?: number }
   | { type: 'scan-conflicts'; origin: string; table: string }
-  | { type: 'batch'; origin: string; table: string; field: string; sysIds: string[]; token?: string; language?: string; mode?: import('./prefs').PanelMode }
-  | { type: 'record'; origin: string; table: string; record: string; token?: string; language?: string; mode?: import('./prefs').PanelMode }
+  | { type: 'batch'; origin: string; table: string; field: string; sysIds: string[]; token?: string; language?: string; mode?: import('./prefs').PanelMode; tabId?: number }
+  | { type: 'record'; origin: string; table: string; record: string; token?: string; language?: string; mode?: import('./prefs').PanelMode; tabId?: number }
   | { type: 'field-map'; origin: string; table: string; field: string }
   | { type: 'flows'; origin: string; table: string; sysId: string }
   | { type: 'automations'; origin: string; table: string; sysId: string }
-  | { type: 'preview'; origin: string; target: { table: string; sysId: string; field: string; value: string }; language?: string }
-  | { type: 'field-state'; origin: string; target: { table: string; sysId: string; field: string }; observed?: import('@trail/core').FieldObserved; language?: string }
-  | { type: 'field-states'; origin: string; table: string; sysId: string; fields: { field: string; observed?: import('@trail/core').FieldObserved }[]; language?: string }
+  | { type: 'preview'; origin: string; target: { table: string; sysId: string; field: string; value: string }; language?: string; tabId?: number }
+  | { type: 'field-state'; origin: string; target: { table: string; sysId: string; field: string }; observed?: import('@trail/core').FieldObserved; language?: string; tabId?: number }
+  | { type: 'field-states'; origin: string; table: string; sysId: string; fields: { field: string; observed?: import('@trail/core').FieldObserved }[]; language?: string; tabId?: number }
   | { type: 'open-panel'; mode?: import('./prefs').PanelMode }
   | { type: 'float-get' }
   | { type: 'float-set'; open: boolean; min?: boolean }
@@ -39,12 +43,16 @@ export type Message =
   | { type: 'clear-cache'; origin: string }
   | { type: 'open-diff-popup'; key: string };
 
+export type ProbeStep = 'cookie' | 'pageToken' | 'htmlToken' | 'htmlTokenMissing';
+export type ProbeConclusion = 'cookieOnly' | 'tokenPage' | 'tokenHtml' | 'unauthorized' | 'inconclusive';
+
 export interface ProbeResult {
   origin: string;
   checkedAt: string;
   tokenSource: 'page' | 'html' | 'none';
-  steps: { label: string; status: number | string; ok: boolean; detail?: string }[];
-  conclusion: string;
+  /** Passos e conclusão vão como códigos; a página de opções traduz (pt/en). */
+  steps: { step: ProbeStep; status: number | string; ok: boolean; detail?: string }[];
+  conclusion: ProbeConclusion;
 }
 
 export interface TabState {

@@ -6,6 +6,7 @@ import { Glyph, typeGlyph } from '../shared/icons';
 import { recordLink } from '../shared/instances';
 import { send } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
+import { ErrorMsg } from './ErrorMsg';
 
 const P = t(getPrefs().lang).p;
 const isDemo = new URLSearchParams(location.search).has('demo');
@@ -29,7 +30,7 @@ export function FieldMapBox({ r, origin, field }: { r: Investigation; origin: st
       <h4>{fmt(P.fmTitle, { field })}{res && <span>{res.items.length}</span>}</h4>
       {st === 'idle' && <div class="li"><span class="grow muted small">{P.fmHint}</span><button class="btn sm" onClick={run}>{Glyph.search} {P.fmRun}</button></div>}
       {st === 'run' && <div class="li"><span class="spin" /><span class="grow muted small">{P.fmRunning}</span></div>}
-      {st === 'err' && <div class="li"><span class="ck w">!</span><span class="grow">{err}</span></div>}
+      {st === 'err' && <div class="li"><span class="ck w">!</span><span class="grow"><ErrorMsg msg={err} /></span></div>}
       {st === 'done' && res && <>
         {!res.items.length && <div class="li"><span class="ck">{Glyph.check}</span><span class="grow">{P.fmNone}</span></div>}
         {LANES.map((lane) => {

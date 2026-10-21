@@ -19,7 +19,7 @@ const mf = JSON.parse(readFileSync(resolve(dist, 'manifest.json'), 'utf8'));
 mf.host_permissions = [...(mf.host_permissions ?? []), `${ORIGIN}/*`];
 writeFileSync(resolve(dist, 'manifest.json'), JSON.stringify(mf));
 
-const ctx = await chromium.launchPersistentContext(mkdtempSync(resolve(tmpdir(), 'trail-reload-')), { headless: true, channel: 'chromium', args: [`--disable-extensions-except=${dist}`, `--load-extension=${dist}`] });
+const ctx = await chromium.launchPersistentContext(mkdtempSync(resolve(tmpdir(), 'trail-reload-')), { headless: true, channel: 'chromium', locale: 'pt-BR', args: [`--disable-extensions-except=${dist}`, `--load-extension=${dist}`] });
 const errors = [];
 const out = {};
 try {
@@ -70,6 +70,21 @@ try {
   await page.waitForFunction(() => document.querySelectorAll('.trail-host').length > 0 && !!document.getElementById('trail-assistant'));
   await page.waitForTimeout(400);
   if (await balloon.isVisible()) errors.push('boas-vindas repetidas ao voltar ao primeiro registro');
+  // Os registros saudados não viram histórico: só um resumo, sem URL nem sys_id, e no máximo os 200 últimos.
+  const welcomedKeys = () => sw.evaluate(async () => Object.keys(await chrome.storage.local.get(null)).filter((k) => k.startsWith('welcomed:')));
+  out.welcomedKeys = (await welcomedKeys()).length;
+  if ((await welcomedKeys()).some((k) => k.includes('://') || k.includes('incident') || k.includes('bbbb'))) errors.push('boas-vindas guardaram a URL ou o registro em texto');
+  await sw.evaluate(async () => {
+    const seed = { ['welcomed:https://antigo.service-now.com:incident:' + 'e'.repeat(32)]: 1 };
+    for (let i = 0; i < 250; i++) seed['welcomed:' + i.toString(16).padStart(32, '0')] = i + 1;
+    await chrome.storage.local.set(seed);
+  });
+  await page.goto(`${ORIGIN}/incident.do?sys_id=${'d'.repeat(32)}`);
+  await balloon.waitFor({ state: 'visible', timeout: 5000 });
+  await page.waitForTimeout(300);
+  const pruned = await welcomedKeys();
+  out.welcomedAfterPrune = pruned.length;
+  if (pruned.length > 200 || pruned.some((k) => k.includes('://'))) errors.push('limpeza das boas-vindas não aconteceu: ' + pruned.length);
 
   // Simula a falha de resposta do content sem recarregar a extensão: o worker deve
   // reinjetar na aba autorizada e abrir o painel, sem duplicar ícones ou a bolinha.
@@ -82,6 +97,31 @@ try {
   await page.waitForFunction(() => document.querySelectorAll('.trail-host').length > 0 && !!document.getElementById('trail-float'), null, { timeout: 10000 });
   out.reinjected = await count();
   if (out.reinjected.icons !== out.before.icons || out.reinjected.hosts !== 1 || out.reinjected.bubble !== 1) errors.push('reinjeção não recuperou uma interface única: ' + JSON.stringify(out.reinjected));
+  // O painel flutuante e a janela "lado a lado" são iframes da extensão numa página https: dependem de
+  // web_accessible_resources. Confere que carregam e que a conversa por postMessage (origem da extensão) funciona.
+  const floatFrame = async () => { for (let i = 0; i < 50; i++) { const f = page.frames().find((x) => x.url().includes('float=1')); if (f) return f; await page.waitForTimeout(100); } return undefined; };
+  const ff = await floatFrame();
+  out.floatIframe = !!ff && !!(await ff.waitForSelector('header.topbar', { timeout: 8000 }).catch(() => null));
+  if (!out.floatIframe) errors.push('o iframe do painel flutuante não carregou na página https');
+  if (ff) {
+    await ff.press('body', 'Escape');
+    out.floatEscClosed = await page.waitForFunction(() => !document.getElementById('trail-float'), null, { timeout: 5000 }).then(() => true, () => false);
+    if (!out.floatEscClosed) errors.push('Esc dentro do iframe não fechou o painel (postMessage da extensão recusado?)');
+    await sw.evaluate(async () => {
+      const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      await chrome.tabs.sendMessage(tab.id, { type: 'float-open', tabId: tab.id }, { frameId: 0 });
+    });
+    await page.waitForFunction(() => !!document.getElementById('trail-float'));
+  }
+  await sw.evaluate(async () => {
+    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    await chrome.tabs.sendMessage(tab.id, { type: 'diff-window', key: 'e2e', title: 'Diferença' }, { frameId: 0 });
+  });
+  await page.waitForSelector('#trail-diff-window', { state: 'attached', timeout: 5000 }).catch(() => undefined);
+  await page.waitForTimeout(4500); // sem o aviso "pronto" do iframe em 4 s, a janela fecha e vira popup
+  out.diffIframe = await page.evaluate(() => !!document.getElementById('trail-diff-window')) && page.frames().some((x) => x.url().includes('diff/index.html'));
+  if (!out.diffIframe) errors.push('a janela lado a lado não carregou o iframe da extensão na página https');
+  await page.keyboard.press('Escape');
   await sw.evaluate(async () => {
     const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
     await chrome.tabs.sendMessage(tab.id, { type: 'float-toggle', tabId: tab.id }, { frameId: 0 });

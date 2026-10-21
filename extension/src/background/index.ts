@@ -4,8 +4,8 @@
  * Nenhum estado em memória que importe: o worker pode ser encerrado a qualquer momento.
  */
 import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, batchItemFrom, fieldMap, previewChange, recordTimeline, scanTableConflicts, type AccessReport, type BatchItem, type MetaCache, type TableMeta, recordFlows, tableAutomations, fieldState, fieldStates } from '@trail/core';
-import { addInstance, isEnabled, listInstances, looksLikeServiceNow, removeInstance } from '../shared/instances';
-import { loadPrefs, PREFS_KEY, type PanelMode } from '../shared/prefs';
+import { addInstance, INSTANCES_KEY, isEnabled, listInstances, looksLikeServiceNow, removeInstance } from '../shared/instances';
+import { loadPrefs, PREFS_KEY, savePrefs, type PanelMode } from '../shared/prefs';
 import { normalizeInstanceLanguage, storageKey, type Message, type PageContext, type ProbeResult, type TabState } from '../shared/messages';
 
 const session = chrome.storage.session;
@@ -338,7 +338,7 @@ let lastToggle = 0;
 function toggleIcons(): void {
   if (Date.now() - lastToggle < 500) return;
   lastToggle = Date.now();
-  void loadPrefs().then((p) => chrome.storage.sync.set({ [PREFS_KEY]: { ...p, showIcons: !p.showIcons } }));
+  void loadPrefs().then((p) => savePrefs({ showIcons: !p.showIcons }));
 }
 chrome.commands?.onCommand.addListener((cmd) => { if (cmd === 'toggle-icons') toggleIcons(); });
 
@@ -396,17 +396,36 @@ chrome.action.onClicked.addListener((tab) => {
     else await openWindow();
   })();
 });
-chrome.storage.onChanged.addListener((ch, area) => { if (area === 'sync' && ch[PREFS_KEY]) void applyActionBehavior(); });
+chrome.storage.onChanged.addListener((ch, area) => {
+  if (area === 'sync' && ch[PREFS_KEY]) void applyActionBehavior();
+  if (area === 'sync' && ch[INSTANCES_KEY]) void syncPageMenu();
+});
 
 function createMenus(): void {
   chrome.contextMenus.removeAll(() => {
-    chrome.contextMenus.create({ id: 'trail-open', title: 'Trail', contexts: ['page'] });
+    void syncPageMenu();
     chrome.contextMenus.create({ id: 'trail-float', title: menuText('float'), contexts: ['action'] });
     chrome.contextMenus.create({ id: 'trail-side', title: menuText('side'), contexts: ['action'] });
     chrome.contextMenus.create({ id: 'trail-window', title: menuText('window'), contexts: ['action'] });
     chrome.contextMenus.create({ id: 'trail-icons', title: menuText('icons'), contexts: ['action'] });
     chrome.contextMenus.create({ id: 'trail-options', title: menuText('options'), contexts: ['action'] });
   });
+}
+/**
+ * Menu "Trail" do clique direito na página: só nas instâncias conectadas (documentUrlPatterns), nunca em
+ * qualquer site. Sem instância conectada, o item não existe. Refeito ao conectar/desconectar (storage.sync),
+ * no onInstalled e no onStartup (via createMenus).
+ */
+let pageMenuChain: Promise<void> = Promise.resolve();
+function syncPageMenu(): Promise<void> {
+  pageMenuChain = pageMenuChain.then(rebuildPageMenu, rebuildPageMenu);
+  return pageMenuChain;
+}
+async function rebuildPageMenu(): Promise<void> {
+  const patterns = (await listInstances().catch(() => [])).map((i) => `${i.origin}/*`);
+  await new Promise<void>((done) => chrome.contextMenus.remove('trail-open', () => { void chrome.runtime.lastError; done(); }));
+  if (!patterns.length) return;
+  await new Promise<void>((done) => chrome.contextMenus.create({ id: 'trail-open', title: 'Trail', contexts: ['page'], documentUrlPatterns: patterns }, () => { void chrome.runtime.lastError; done(); }));
 }
 function menuText(k: 'float' | 'side' | 'window' | 'icons' | 'options'): string {
   const pt = { float: 'Abrir na página', side: 'Abrir no painel lateral', window: 'Abrir em janela separada', icons: 'Mostrar ou esconder os ícones nos campos (Alt+Shift+T)', options: 'Opções do Trail' };
@@ -415,8 +434,14 @@ function menuText(k: 'float' | 'side' | 'window' | 'icons' | 'options'): string 
 }
 chrome.runtime.onInstalled.addListener((details) => {
   void syncRegistrations(); createMenus(); void applyActionBehavior();
-  if (details.reason === 'update') void notifyOpenTabs();
+  if (details.reason === 'update') { void notifyOpenTabs(); void dropLegacyWelcomed(); }
 });
+/** Até a 1.0.0 as boas-vindas guardavam origem, tabela e sys_id em texto, sem limite; a atualização apaga essas chaves. */
+async function dropLegacyWelcomed(): Promise<void> {
+  const all = await chrome.storage.local.get(null).catch(() => ({} as Record<string, unknown>));
+  const keys = Object.keys(all).filter((k) => k.startsWith('welcomed:') && k.includes('://'));
+  if (keys.length) await chrome.storage.local.remove(keys).catch(() => undefined);
+}
 chrome.runtime.onStartup.addListener(() => { void clearFloatStates(); void syncRegistrations(); createMenus(); void applyActionBehavior(); });
 
 /**
@@ -450,39 +475,40 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 async function probeAuth(origin: string): Promise<ProbeResult> {
   const url = `${origin}/api/now/table/sys_properties?sysparm_limit=1&sysparm_fields=sys_id`;
   const steps: ProbeResult['steps'] = [];
-  const get = async (label: string, headers: Record<string, string>) => {
+  const get = async (step: ProbeResult['steps'][number]['step'], headers: Record<string, string>) => {
     try {
       const r = await fetch(url, { headers: { Accept: 'application/json', ...headers }, credentials: 'include' });
       const body = (await r.text()).slice(0, 120);
-      steps.push({ label, status: r.status, ok: r.status === 200, detail: body });
+      steps.push({ step, status: r.status, ok: r.status === 200, detail: body });
       return r.status;
     } catch (e) {
-      steps.push({ label, status: String(e), ok: false });
+      steps.push({ step, status: String(e), ok: false });
       return 0;
     }
   };
-  const s1 = await get('GET só com cookie (sem X-UserToken)', {});
+  const s1 = await get('cookie', {});
   const o = await session.get(storageKey.token(origin));
   const pageToken = o[storageKey.token(origin)] as string | undefined;
   let tokenSource: ProbeResult['tokenSource'] = 'none';
   let s2 = 0;
   if (pageToken) {
     tokenSource = 'page';
-    s2 = await get('GET com X-UserToken vindo da página', { 'X-UserToken': pageToken });
+    s2 = await get('pageToken', { 'X-UserToken': pageToken });
   }
   const htmlToken = await fetchTokenFromHtml(origin).catch(() => null);
   let s3 = 0;
   if (htmlToken) {
     if (tokenSource === 'none') tokenSource = 'html';
-    s3 = await get('GET com X-UserToken obtido do HTML (/navpage.do)', { 'X-UserToken': htmlToken });
+    s3 = await get('htmlToken', { 'X-UserToken': htmlToken });
   } else {
-    steps.push({ label: 'Obter g_ck do HTML (/navpage.do)', status: 'não encontrado', ok: false });
+    steps.push({ step: 'htmlTokenMissing', status: '—', ok: false });
   }
-  const conclusion =
-    s1 === 200 ? 'Cookie puro basta: g_ck é opcional neste contexto.' :
-    s2 === 200 || s3 === 200 ? `g_ck é obrigatório e funciona a partir do service worker (fonte: ${s3 === 200 ? 'HTML' : 'página'}).` :
-    s1 === 401 || s2 === 401 || s3 === 401 ? 'Nem cookie nem token funcionaram: verifique se está logado e se a permissão de host foi concedida.' :
-    'Resultado inconclusivo; veja os passos.';
+  const conclusion: ProbeResult['conclusion'] =
+    s1 === 200 ? 'cookieOnly' :
+    s3 === 200 ? 'tokenHtml' :
+    s2 === 200 ? 'tokenPage' :
+    s1 === 401 || s2 === 401 || s3 === 401 ? 'unauthorized' :
+    'inconclusive';
   const result: ProbeResult = { origin, checkedAt: new Date().toISOString(), tokenSource, steps, conclusion };
   await session.set({ [storageKey.probe(origin)]: result });
   return result;
@@ -595,6 +621,19 @@ async function runInvestigation(tabId: number, origin: string, target: { table: 
 }
 
 // ---------- mensagens ----------
+/**
+ * Aba a que o pedido se refere. Do content script, a própria aba. De uma página da extensão (painel na janela
+ * separada, no iframe flutuante ou no painel lateral), a aba que o painel diz acompanhar: na janela separada,
+ * sender.tab é a aba da própria janela do Trail, e o resultado ia para tab:<id errado>.
+ */
+function fromExtensionPage(sender: chrome.runtime.MessageSender): boolean {
+  return sender.id === chrome.runtime.id && !!sender.url?.startsWith(chrome.runtime.getURL(''));
+}
+async function requestTab(msg: { tabId?: number }, sender: chrome.runtime.MessageSender): Promise<number | undefined> {
+  if (fromExtensionPage(sender) && typeof msg.tabId === 'number') return msg.tabId;
+  return sender.tab?.id ?? (await activeTabId());
+}
+
 chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
   (async () => {
     const tabId = sender.tab?.id;
@@ -622,7 +661,7 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
         toggleIcons();
         return true;
       case 'timeline':
-        return recordTimeline(makeClient(msg.origin), msg.target, { language: await languageFor(msg.origin, tabId ?? (await activeTabId()), msg.language) });
+        return recordTimeline(makeClient(msg.origin), msg.target, { language: await languageFor(msg.origin, await requestTab(msg, sender), msg.language) });
       case 'scan-conflicts':
         return scanTableConflicts(makeClient(msg.origin), msg.table);
       case 'automations':
@@ -634,29 +673,29 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
       case 'field-map':
         return fieldMap(makeClient(msg.origin), { table: msg.table, field: msg.field });
       case 'field-state':
-        return fieldState(makeClient(msg.origin), { ...msg.target, ...(msg.observed ? { observed: msg.observed } : {}), language: await languageFor(msg.origin, tabId ?? (await activeTabId()), msg.language) })
+        return fieldState(makeClient(msg.origin), { ...msg.target, ...(msg.observed ? { observed: msg.observed } : {}), language: await languageFor(msg.origin, await requestTab(msg, sender), msg.language) })
           .catch((e: Error) => ({ error: e.message }));
       case 'field-states':
-        return fieldStates(makeClient(msg.origin), { table: msg.table, sysId: msg.sysId, fields: msg.fields, language: await languageFor(msg.origin, tabId ?? (await activeTabId()), msg.language) })
+        return fieldStates(makeClient(msg.origin), { table: msg.table, sysId: msg.sysId, fields: msg.fields, language: await languageFor(msg.origin, await requestTab(msg, sender), msg.language) })
           .catch((e: Error) => ({ error: e.message }));
       case 'preview':
-        return previewChange(makeClient(msg.origin), { ...msg.target, language: await languageFor(msg.origin, tabId ?? (await activeTabId()), msg.language) });
+        return previewChange(makeClient(msg.origin), { ...msg.target, language: await languageFor(msg.origin, await requestTab(msg, sender), msg.language) });
       case 'investigate': {
-        const id = tabId ?? (await activeTabId());
+        const id = await requestTab(msg, sender);
         if (id === undefined) return;
         await openPanel(id, msg.mode);
         await runInvestigation(id, msg.origin, msg.target, await languageFor(msg.origin, id, msg.language), msg.token);
         return;
       }
       case 'record': {
-        const id = tabId ?? (await activeTabId());
+        const id = await requestTab(msg, sender);
         if (id === undefined) return;
         await openPanel(id, msg.mode);
         await runRecord(id, msg.origin, msg.table, msg.record, await languageFor(msg.origin, id, msg.language), msg.token);
         return;
       }
       case 'batch': {
-        const id = tabId ?? (await activeTabId());
+        const id = await requestTab(msg, sender);
         if (id === undefined) return;
         await openPanel(id, msg.mode);
         await runBatch(id, msg.origin, msg.table, msg.field, msg.sysIds.slice(0, 200), await languageFor(msg.origin, id, msg.language), msg.token);

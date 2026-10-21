@@ -13,6 +13,7 @@ const userDir = mkdtempSync(resolve(tmpdir(), 'trail-settings-'));
 const ctx = await chromium.launchPersistentContext(userDir, {
   headless: true,
   channel: 'chromium',
+  locale: 'pt-BR', // sem idioma salvo, o Trail segue o idioma do navegador
   args: [`--disable-extensions-except=${dist}`, `--load-extension=${dist}`],
 });
 

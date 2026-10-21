@@ -12,7 +12,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const dist = resolve(here, '../../extension/dist');
 const shotDir = process.argv[2];
 writeFileSync(resolve(dist, '_float-test.html'), '<!doctype html><meta charset="utf-8"><title>t</title><body style="margin:0;font:14px system-ui;background:#fff"><div style="padding:30px">Formulário de teste <input id="page-input" aria-label="Campo de teste"></div><script src="content.js"></script></body>');
-const ctx = await chromium.launchPersistentContext(mkdtempSync(resolve(tmpdir(), 'trail-float-')), { headless: true, channel: 'chromium', args: [`--disable-extensions-except=${dist}`, `--load-extension=${dist}`] });
+const ctx = await chromium.launchPersistentContext(mkdtempSync(resolve(tmpdir(), 'trail-float-')), { headless: true, channel: 'chromium', locale: 'pt-BR', args: [`--disable-extensions-except=${dist}`, `--load-extension=${dist}`] });
 const errors = [];
 try {
   let [sw] = ctx.serviceWorkers(); if (!sw) sw = await ctx.waitForEvent('serviceworker', { timeout: 15000 });

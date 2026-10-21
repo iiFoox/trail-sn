@@ -1,6 +1,7 @@
 /** Instâncias ativadas pelo usuário (chrome.storage.sync, por origem). */
 
-const KEY = 'instances';
+export const INSTANCES_KEY = 'instances';
+const KEY = INSTANCES_KEY;
 
 export interface InstanceSettings {
   origin: string;
@@ -27,13 +28,31 @@ export async function removeInstance(origin: string): Promise<void> {
   await chrome.storage.sync.set({ [KEY]: list });
 }
 
+/**
+ * Endereço com cara de ServiceNow: só os domínios do próprio ServiceNow. Instância com domínio próprio não é
+ * adivinhada pelo caminho (qualquer site tem .do): ela é conectada de propósito nas opções (connectableOrigin) e,
+ * a partir daí, reconhecida por estar na lista de instâncias.
+ */
 export function looksLikeServiceNow(url: string | undefined): boolean {
   if (!url) return false;
   try {
     const u = new URL(url);
-    return u.protocol === 'https:' && (/\.service-now\.com$/.test(u.hostname) || /\.servicenowservices\.com$/.test(u.hostname) || /now\/nav\/ui|\.do(\?|$)/.test(u.pathname + u.search));
+    return u.protocol === 'https:' && (/\.service-now\.com$/.test(u.hostname) || /\.servicenowservices\.com$/.test(u.hostname));
   } catch {
     return false;
+  }
+}
+
+/** Origem https que o usuário digitou nas opções para conectar uma instância com domínio próprio. */
+export function connectableOrigin(input: string): string | undefined {
+  const raw = input.trim();
+  if (!raw) return undefined;
+  try {
+    const u = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`);
+    if (u.protocol !== 'https:' || !u.hostname.includes('.') || u.username || u.password) return undefined;
+    return u.origin;
+  } catch {
+    return undefined;
   }
 }
 
