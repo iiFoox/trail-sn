@@ -54,7 +54,7 @@ Quem for mexer no site (`site/`, deploy Vercel do dono) deve fazer, nesta ordem:
    - dizer que `storage.sync` (preferências e lista de instâncias) passa pela sincronização da conta Google/Microsoft do navegador;
    - dizer que os textos da "diferença lado a lado" e do relatório PDF ficam em `storage.session` até o navegador fechar;
    - "Contato" com link (`https://github.com/iiFoox/trail-sn/issues`);
-   - conferir as mudanças da branch `fix-revisao` que afetam a política (ex.: registros com boas-vindas já mostradas deixam de ficar guardados para sempre) — o relatório do agente de correções lista quais.
+   - mudanças da 1.1.0 que afetam a política/ficha: boas-vindas guardam só um resumo SHA-256 dos últimos 200 registros (não o histórico); "Nada vai para fora da sua instância"; Conectar/Desconectar (não Ativar/Desativar) em textos e capturas; detecção automática só em `*.service-now.com`/`*.servicenowservices.com`, domínio próprio pelas Opções (justificativa de `https://*/*`: pedida só para o domínio digitado); menu "Trail" só nas instâncias conectadas; mínimo Chrome/Edge 120; recursos acessíveis só em páginas https e `page.js` não exposto; teste de autenticação traduzido (só GET).
 2. **Funcionalidades novas da extensão que precisam entrar no site** (regra do projeto: toda funcionalidade nova vai para `site/b3`):
    - "Por que este campo está bloqueado, obrigatório ou escondido?" (em desenvolvimento, branch `dev-bloqueado`);
    - janela separada que abre mesmo quando o navegador recusa a posição (só nota de versão);

@@ -10,6 +10,17 @@ Convenções:
 
 ---
 
+## 2026-10-21 (noite, 2) — Claude (coordenação): 1.1.0 com "Por que está bloqueado?", correções de loja e quatro motores novos
+
+- **"Por que este campo está bloqueado, obrigatório ou escondido?"** (`packages/core/src/fieldState.ts`, `extension/src/sidepanel/FieldLock.tsx`, `page/main.ts`): aba "Bloqueio?", cartão no topo quando o formulário mostra o campo travado, gaveta "Investigar › Um campo" com sugestões, e lista "Campos bloqueados, obrigatórios ou escondidos agora" no registro inteiro (a única entrada para campos escondidos). Graus Confirmado/Pode ser; ACL nunca avaliada e sempre avisada; sem acesso, só o estado observado + "Seus papéis não deixam ver as regras do formulário". e2e `fieldlock.mjs`.
+- **Correções da revisão de loja (15 itens)**: idioma padrão segue o navegador; boas-vindas sem histórico de navegação (SHA-256, últimos 200); nome localizado na loja (`__MSG_name__`); textos sem "papel do Trail"; "registro indisponível" separado de "sem permissão" (`RecordUnavailableError`); erros técnicos em texto simples com "Detalhes técnicos"; runner da bateria com erro claro; janela separada grava na aba que o painel acompanha (`requestTab`); `page.js` fora do WAR e `https://*/*` no lugar de `<all_urls>` (`use_dynamic_url` testado e descartado: quebra `windows.create`); textos fixos em pt → i18n; termos coerentes (Conectar/Desconectar, Clique, "Nada vai para fora da sua instância"); menu "Trail" só nas instâncias conectadas; detecção só `*.service-now.com`/`*.servicenowservices.com` + domínio próprio pelas Opções; `minimum_chrome_version` 120; ganchos de teste só em páginas `chrome-extension:`.
+- **Motores novos (só motor + testes; a tela vem na reorganização em 4 abas):** `fieldDeps.ts` (Mapa do campo: quem grava + quem depende + Simular um valor, com `SharedClient` para não repetir consultas), `saveTiming.ts` (salvamento lento), `visibility.ts` (Quem enxerga este registro), `compare.ts` (Comparar instâncias DEV × PROD, sem inventar diferença quando um lado não lê).
+- **Validação:** typecheck ok; **249 testes**; build ok; **11 suítes e2e** passando. Versão **1.1.0** (zip entregue ao dono).
+- **PDI:** a bateria escopada v2 foi interrompida a meio (artefatos [PT] v2 nos 3 apps, restritos aos próprios registros; scripts em `tests/regression/escopo/*-v2.js`); a sessão tinha ficado personificada como `pt.trail.escopo.user` e foi devolvida ao admin pelo menu "End impersonation" (o POST de impersonate para o admin deu 500 a partir desse usuário). Validação dos motores novos no PDI em andamento.
+- **Em aberto:** validação dos motores no PDI; reorganização em 4 abas + ajustes de UX aprovados (`docs/ux-revisao-2026-10-21.md`) + telas dos motores novos; bateria escopada v2; ajustes do site anotados em PROXIMOS-PASSOS.
+
+---
+
 ## 2026-10-21 (noite) — Claude (coordenação com subagentes): e2e completo, 11 erros do itil explicados, correção da janela separada
 
 - **e2e completo passando (item 4 da fila):** a cadeia `npm run e2e` (10 suítes) passou inteira no Linux. Causa real da falha do `prefs-window`: não era "headless sem janela". O Chromium headless simula tela 800×600 e `panelWindowBounds()` alinhava a janela destacada à borda direita da janela normal (1280 px), quase toda fora da tela; `chrome.windows.create` recusava ("Bounds must be at least 50% within visible screen space"). O teste agora usa `--screen-info={1920x1080}`, espera o evento de página e falha se `open-panel` devolver erro.
