@@ -237,3 +237,36 @@ describe('P2: obrigatório e vazio não fica somente leitura no UI16', () => {
     expect(d.aspects.read_only.rules).toBe(true);
   });
 });
+
+describe('P3: comments e work_notes no campo de notas combinado do UI16', () => {
+  const journalBase = (internal_type?: string) => {
+    const c = base({ state: '2', comments: '', work_notes: '' });
+    c.rows('sys_dictionary', internal_type ? [{ sys_id: 'dj', name: 'task', element: 'work_notes', read_only: 'false', mandatory: 'false', active: 'true', internal_type }] : []);
+    return c;
+  };
+  const go = (c: FakeRestClient, field: string) => fieldStates(c, { table: 'incident', sysId: ID, fields: [{ field, observed: { readOnly: false, mandatory: false, visible: false, onForm: true } }] }).then((x) => x[0]!);
+
+  it('journal_input escondido no formulário sem regra: não acusa escondido sem regra', async () => {
+    const r = await go(journalBase('journal_input'), 'work_notes');
+    expect(r.aspects.hidden).toMatchObject({ rules: false, unexplained: false, mismatch: false, journalCombined: true });
+    expect(r.aspects.hidden.observed).toBeUndefined();
+    expect(activeStates(r)).toEqual([]);
+  });
+
+  it('sem dicionário (itil): comments vale pelo nome; campo comum continua acusando', async () => {
+    const c = journalBase();
+    c.deny('sys_dictionary');
+    expect((await go(c, 'comments')).aspects.hidden.journalCombined).toBe(true);
+    const other = await go(journalBase('journal_input'), F);
+    expect(other.aspects.hidden).toMatchObject({ observed: true, unexplained: true });
+  });
+
+  it('regra que esconde de verdade continua aparecendo', async () => {
+    const c = journalBase('journal_input');
+    c.rows('sys_ui_policy', [policy({ sys_id: 'p1', short_description: 'Esconde notas', conditions: 'state=2^EQ' })]);
+    c.rows('sys_ui_policy_action', [action({ ui_policy: 'p1', field: 'work_notes', visible: 'false' })]);
+    const r = await go(c, 'work_notes');
+    expect(r.aspects.hidden.rules).toBe(true);
+    expect(activeStates(r)).toEqual([expect.objectContaining({ aspect: 'hidden', rule: expect.objectContaining({ sysId: 'p1' }) })]);
+  });
+});

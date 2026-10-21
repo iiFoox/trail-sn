@@ -104,6 +104,11 @@ export interface AspectSummary {
    * As travas das regras do formulário viram "pode ser" (`why: 'mandatory_empty'`): travam depois que o campo é preenchido.
    */
   mandatoryEmpty?: boolean;
+  /**
+   * Só em `hidden`: campo de diário (comments, work_notes). O UI16 esconde o elemento de cada um e mostra um campo de
+   * notas combinado; o "escondido" lido do formulário não é regra e fica de fora (`observed` some).
+   */
+  journalCombined?: boolean;
 }
 
 export interface FieldStateResult {
@@ -137,6 +142,8 @@ export interface FieldStateResult {
 const FORM_SOURCES = ['sys_dictionary', 'sys_dictionary_override', 'sys_ui_policy', 'sys_ui_policy_action', 'sys_data_policy2', 'sys_data_policy_rule', 'sys_script_client'];
 const CALL = /g_form\.(setReadOnly|setReadonly|setDisabled|setMandatory|setDisplay|setVisible)\(\s*(['"])([a-z0-9_.]+)\2\s*,/g;
 const PSEUDO: Record<StateAspect, string> = { read_only: '__trail_ro__', mandatory: '__trail_mand__', hidden: '__trail_vis__' };
+/** Campos de diário OOB que o UI16 mostra no campo de notas combinado. */
+const JOURNAL_FIELDS = ['comments', 'work_notes'];
 const truth = (v: string | undefined): boolean | undefined => (v === 'true' ? true : v === 'false' ? false : undefined);
 
 /** Um campo. `sysId` pode ser o número do registro (INC0010001). */
@@ -348,11 +355,15 @@ export async function fieldStates(
   // ---------- veredito por aspecto, na ordem em que o formulário aplica ----------
   const layer = (r: StateRule) => (r.kind === 'dictionary' ? 0 : r.kind === 'dictionary_override' ? 1 : r.kind === 'client_script' ? (r.why === 'onchange' ? 6 : 2) : r.kind === 'ui_policy' ? 3 : 5);
   const seq = rules.map((r, i) => ({ r, i })).sort((a, b) => layer(a.r) - layer(b.r) || a.r.order - b.r.order || a.i - b.i);
+  // Diário (journal): no UI16, comments e work_notes aparecem juntos no campo de notas e o elemento de cada um fica
+  // escondido. Sem ler o dicionário (itil), vale pelo nome.
+  const journal = d?.internal_type ? /^journal/.test(d.internal_type) : JOURNAL_FIELDS.includes(field);
+  const journalCombined = journal && observed?.visible === false && observed.onForm !== false;
   const obsOf: Record<StateAspect, boolean | undefined> = {
     read_only: observed?.readOnly,
     mandatory: observed?.mandatory,
-    // Fora do layout do formulário não é regra: fica sem estado observado.
-    hidden: observed?.visible === undefined || observed.onForm === false ? undefined : !observed.visible,
+    // Fora do layout do formulário não é regra: fica sem estado observado. Diário escondido também (campo combinado).
+    hidden: observed?.visible === undefined || observed.onForm === false || journalCombined ? undefined : !observed.visible,
   };
   const aspects = {} as Record<StateAspect, AspectSummary>;
   // Valor vazio agora: o do formulário quando lido; senão o do registro gravado.
@@ -389,6 +400,7 @@ export async function fieldStates(
       unexplained: obs === true && !ruleState && !maybeSets,
       mismatch: obs !== undefined && obs !== ruleState && maybe.length === 0,
       ...(mandatoryEmpty ? { mandatoryEmpty } : {}),
+      ...(aspect === 'hidden' && journalCombined ? { journalCombined } : {}),
     };
   }
 
