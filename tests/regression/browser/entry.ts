@@ -6,7 +6,8 @@ const order: Grade[] = ['candidate', 'probable', 'confirmed'];
 
 function makeClient() {
   const w = window as unknown as { g_ck?: string };
-  return new FetchRestClient({ baseUrl: location.origin, getToken: async () => w.g_ck ?? null, concurrency: 6 });
+  const z = window as unknown as { g_user_timezone?: string; g_tz?: string };
+  return new FetchRestClient({ baseUrl: location.origin, getToken: async () => w.g_ck ?? null, concurrency: 6, getTimeZone: async () => z.g_user_timezone || z.g_tz });
 }
 
 /** Investiga um alvo e devolve um resumo compacto (para conferir rastro, rótulos e evidências). */
@@ -59,6 +60,136 @@ export async function runRegression(list: any[] = cases as any[]): Promise<unkno
   return { access: access.level, denied: access.denied, results, median: ms[Math.floor(ms.length / 2)] };
 }
 export const allCases = cases as any[];
+
+export interface DifferentialTarget {
+  id: string;
+  table: string;
+  sysId: string;
+  field: string;
+  auditCount?: number;
+}
+
+export interface DifferentialItem {
+  id: string;
+  table: string;
+  sysId: string;
+  field: string;
+  auditCount?: number;
+  ok: boolean;
+  error?: string;
+  errorType?: string;
+  ms: number;
+  calls: number;
+  auditFrom?: string;
+  fieldNotInHistory?: boolean;
+  historyFields?: string[];
+  changeCount: number;
+  access?: Record<string, string>;
+  changes: Array<{
+    at: string;
+    oldvalue: string;
+    newvalue: string;
+    user: string;
+    topEvidence?: {
+      type: string;
+      grade: string;
+      score: number;
+      artifactName: string;
+      facts: Array<{ kind: string; points: number }>;
+    } | null;
+  }>;
+}
+
+/** Executa uma bateria diferencial gravando métricas detalhadas de cada alvo. */
+export async function runDifferential(
+  alvos: DifferentialTarget[],
+  onProgress?: (done: number, total: number, item: DifferentialItem) => void,
+  concurrency = 1,
+): Promise<{ access: string; denied: string[]; results: DifferentialItem[]; totalMs: number; medianMs: number }> {
+  const client = makeClient();
+  const acc = await detectAccess(client);
+  const results: DifferentialItem[] = [];
+  (globalThis as any)._differentialResults = results;
+  (globalThis as any)._differentialDone = false;
+  const tStart = performance.now();
+
+  let nextIdx = 0;
+  async function worker() {
+    while (nextIdx < alvos.length) {
+      const idx = nextIdx++;
+      const target = alvos[idx];
+      const t0 = performance.now();
+      const callsBefore = client.calls;
+      let ok = false;
+      let error: string | undefined;
+      let errorType: string | undefined;
+      let r: any;
+
+      try {
+        r = await investigate(client, { table: target.table, sysId: target.sysId, field: target.field });
+        ok = true;
+      } catch (err: any) {
+        error = err?.message || String(err);
+        errorType = err?.name || 'Error';
+      }
+      const ms = Math.round(performance.now() - t0);
+      const calls = client.calls - callsBefore;
+
+      const item: DifferentialItem = {
+        id: target.id,
+        table: target.table,
+        sysId: target.sysId,
+        field: target.field,
+        auditCount: target.auditCount,
+        ok,
+        ...(error ? { error, errorType } : {}),
+        ms,
+        calls,
+        auditFrom: r?.auditFrom,
+        fieldNotInHistory: r?.fieldNotInHistory,
+        historyFields: r?.historyFields,
+        changeCount: r?.changes?.length || 0,
+        access: r?.access,
+        changes: (r?.changes || []).map((c: any) => ({
+          at: c.at,
+          oldvalue: c.oldValue ?? '',
+          newvalue: c.newValue ?? '',
+          user: c.user ?? '',
+          topEvidence: c.evidence?.[0]
+            ? {
+                type: c.evidence[0].type,
+                grade: c.evidence[0].grade,
+                score: c.evidence[0].score,
+                artifactName: c.evidence[0].artifact?.name ?? '',
+                facts: (c.evidence[0].facts || []).map((f: any) => ({ kind: f.kind, points: f.points })),
+              }
+            : null,
+        })),
+      };
+
+      results.push(item);
+      const done = results.length;
+      (globalThis as any)._progress = `${done}/${alvos.length} (${Math.round((done / alvos.length) * 100)}%)`;
+      if (onProgress) onProgress(done, alvos.length, item);
+    }
+  }
+
+  const workers = Array.from({ length: Math.max(1, concurrency) }, () => worker());
+  await Promise.all(workers);
+
+  (globalThis as any)._differentialDone = true;
+  const totalMs = Math.round(performance.now() - tStart);
+  const sortedMs = [...results.map((x) => x.ms)].sort((a, b) => a - b);
+  const medianMs = sortedMs[Math.floor(sortedMs.length / 2)] || 0;
+
+  return {
+    access: acc.level,
+    denied: acc.denied,
+    results,
+    totalMs,
+    medianMs,
+  };
+}
 
 export async function preview(t: { table: string; sysId: string; field: string; value: string }): Promise<unknown> { return previewChange(makeClient(), t); }
 

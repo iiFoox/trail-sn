@@ -89,7 +89,7 @@ export async function investigate(
   if (access.sys_audit === 'denied' && client.history) {
     const h = await client.history(target.table, sysId).catch(() => null);
     if (h) {
-      audit = await historyToAudit(h, meta.tables, quiet);
+      audit = await historyToAudit(h, meta.tables, quiet, rec.sys_created_on);
       auditFrom = 'history';
       historyFields = h.fields;
     }

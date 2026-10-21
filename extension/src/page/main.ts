@@ -9,6 +9,8 @@
     g_ck?: string;
     g_lang?: string;
     g_user_lang?: string;
+    g_user_timezone?: string;
+    g_tz?: string;
     NOW?: { user_name?: string; language?: string };
     g_form?: { getTableName?: () => string; getUniqueValue?: () => string };
   };
@@ -18,6 +20,8 @@
       token: w.g_ck || undefined,
       userName: w.NOW?.user_name,
       language: w.g_user_lang || w.NOW?.language || w.g_lang || document.documentElement.lang || undefined,
+      // Fuso do usuário no ServiceNow (ex.: America/Los_Angeles): o histórico do formulário mostra datas nele.
+      timeZone: w.g_user_timezone || w.g_tz || undefined,
       table: safe(() => w.g_form?.getTableName?.()),
       sysId: safe(() => w.g_form?.getUniqueValue?.()),
     };

@@ -18,13 +18,21 @@ export interface QueryResult {
 /** Uma mudança de campo no histórico do formulário (valores como o formulário mostra). */
 export interface HistoryChange { field: string; label?: string; type?: string; oldValue: string; newValue: string }
 /** Uma gravação no histórico do formulário: quem, quando (UTC, "AAAA-MM-DD hh:mm:ss") e o que mudou. */
-export interface HistoryEntry { at: string; userId?: string; userName?: string; changes: HistoryChange[] }
+export interface HistoryEntry {
+  at: string; userId?: string; userName?: string; changes: HistoryChange[];
+  /** Fuso de quem está logado, em ms (hora local - UTC): o histórico mostra datas no fuso da pessoa. */
+  tzOffsetMs?: number;
+}
 /** Histórico do formulário: as gravações e os campos que ele mostra (os do Activity Stream da tabela). */
 export interface HistoryResult {
   entries: HistoryEntry[];
   fields: string[];
   /** Opções das listas como o formulário mostra (campo → rótulo → valor), de /api/now/ui/meta; quem não lê sys_choice vê isto. */
   choices?: Record<string, Record<string, string>>;
+  /** Campos de referência da tabela (campo → tabela referenciada), de /api/now/ui/meta: o histórico mostra o nome, não o sys_id. */
+  refs?: Record<string, string>;
+  /** Fuso do usuário (IANA): com ele, cada data volta para UTC com o horário de verão certo daquela data. */
+  timeZone?: string;
 }
 
 /**

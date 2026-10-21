@@ -10,6 +10,8 @@ export interface PageContext {
   userName?: string;
   /** Idioma da sessão do ServiceNow, vindo do mundo MAIN. */
   language?: string;
+  /** Fuso do usuário no ServiceNow (IANA), vindo do mundo MAIN. */
+  timeZone?: string;
   surface: 'ui16' | 'workspace' | 'portal' | 'unknown';
 }
 
@@ -62,6 +64,7 @@ export const storageKey = {
   access: (origin: string) => `access:${origin}`,
   token: (origin: string) => `token:${origin}`,
   language: (origin: string) => `language:${origin}`,
+  timeZone: (origin: string) => `tz:${origin}`,
   probe: (origin: string) => `probe:${origin}`,
 };
 

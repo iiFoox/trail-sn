@@ -12,6 +12,8 @@ export interface FetchRestClientOptions {
   concurrency?: number;
   /** Tempo máximo por chamada, em ms. */
   timeoutMs?: number;
+  /** Fuso do usuário no ServiceNow (IANA), para o histórico do formulário. */
+  getTimeZone?: () => Promise<string | undefined>;
 }
 
 /**
@@ -66,7 +68,11 @@ export class FetchRestClient implements RestClient {
         get(`${base}/api/now/ui/meta/${encodeURIComponent(table)}`),
       ]);
       const h = parseHistory(hist);
-      if (h) { const choices = parseMetaChoices(meta); if (choices) h.choices = choices; }
+      if (h) {
+        const choices = parseMetaChoices(meta); if (choices) h.choices = choices;
+        const refs = parseMetaRefs(meta); if (refs) h.refs = refs;
+        const tz = await this.opts.getTimeZone?.().catch(() => undefined); if (tz) h.timeZone = tz;
+      }
       return h;
     } finally {
       this.release();
@@ -138,7 +144,7 @@ export class FetchRestClient implements RestClient {
   }
 }
 
-type RawHistory = { entries?: { sys_timestamp?: number; sys_created_on?: string; user_id?: string; sys_created_by?: string; entries?: { changes?: { field_name?: string; field_label?: string; field_type?: string; old_value?: string; new_value?: string }[] } }[]; fields?: { name?: string; isJournal?: boolean }[] };
+type RawHistory = { entries?: { sys_timestamp?: number; sys_created_on?: string; sys_created_on_adjusted?: string; user_id?: string; sys_created_by?: string; entries?: { changes?: { field_name?: string; field_label?: string; field_type?: string; old_value?: string; new_value?: string }[] } }[]; fields?: { name?: string; isJournal?: boolean }[] };
 
 /** Converte a resposta do list_history. Gravações sem mudança de campo (só nota, anexo) ficam de fora. */
 export function parseHistory(json: unknown): HistoryResult | null {
@@ -151,6 +157,7 @@ export function parseHistory(json: unknown): HistoryResult | null {
       at: at(e),
       userId: e.user_id,
       userName: e.sys_created_by,
+      ...(e.sys_created_on && e.sys_created_on_adjusted ? { tzOffsetMs: utcMs(e.sys_created_on_adjusted) - utcMs(e.sys_created_on) } : {}),
       changes: (e.entries?.changes ?? []).filter((c) => c.field_name).map((c) => ({
         field: c.field_name!, label: c.field_label, type: c.field_type, oldValue: c.old_value ?? '', newValue: c.new_value ?? '',
       })),
@@ -159,6 +166,17 @@ export function parseHistory(json: unknown): HistoryResult | null {
     .sort((a, b) => a.at.localeCompare(b.at));
   const fields = (j.fields ?? []).filter((f) => f.name && !f.isJournal && !f.name.startsWith('*')).map((f) => f.name!);
   return { entries, fields };
+}
+
+const utcMs = (s: string) => Date.parse(s.replace(' ', 'T') + 'Z');
+
+/** Campos de referência de /api/now/ui/meta/<tabela>: campo → tabela referenciada. */
+export function parseMetaRefs(json: unknown): Record<string, string> | null {
+  const cols = (json as { result?: { columns?: Record<string, { type?: string; reference?: string }> } } | null)?.result?.columns;
+  if (!cols) return null;
+  const out: Record<string, string> = {};
+  for (const [name, col] of Object.entries(cols)) if (col.type === 'reference' && col.reference) out[name] = col.reference;
+  return out;
 }
 
 /** Opções das listas de /api/now/ui/meta/<tabela>: campo → rótulo → valor. */

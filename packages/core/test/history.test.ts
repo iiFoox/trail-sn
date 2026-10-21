@@ -28,6 +28,31 @@ const history = parseHistory({
   ],
 })!;
 
+describe('histórico do formulário: ajustes da bateria de 2000', () => {
+  it('referência volta ao sys_id, data volta para UTC, "System" vira system', async () => {
+    const USR = 'c'.repeat(32);
+    const h = parseHistory({
+      fields: [{ name: 'assigned_to' }, { name: 'due_date' }],
+      entries: [{ sys_timestamp: Date.UTC(2026, 9, 20, 12, 0, 0), sys_created_on: '2026-10-20 12:00:00', sys_created_on_adjusted: '2026-10-20 05:00:00', sys_created_by: 'System', entries: { changes: [
+        { field_name: 'assigned_to', field_type: 'reference', old_value: '', new_value: 'Beth Anglin' },
+        { field_name: 'due_date', field_type: 'glide_date_time', old_value: '', new_value: '2026-10-21 08:00:00' },
+      ] } }],
+    })!;
+    h.refs = { assigned_to: 'sys_user' };
+    const c = new FakeRestClient()
+      .rows('incident', [{ sys_id: SYS, number: 'INC0010001', sys_created_on: '2026-10-19 10:00:00' }])
+      .deny('sys_audit')
+      .rows('sys_user', [{ sys_id: USR, name: 'Beth Anglin', user_name: 'beth.anglin' }])
+      .withHistory(h);
+    const r = await investigate(c, { table: 'incident', sysId: SYS, field: 'assigned_to' });
+    expect(r.changes[0]!.newValue).toBe(USR);
+    expect(r.changes[0]!.user).toBe('system');
+    const d = await investigate(c, { table: 'incident', sysId: SYS, field: 'due_date' });
+    // O histórico mostra 08:00 no fuso de quem está logado (UTC-7): na auditoria é 15:00 UTC.
+    expect(d.changes[0]!.newValue).toBe('2026-10-21 15:00:00');
+  });
+});
+
 describe('histórico do formulário (quem não lê sys_audit)', () => {
   it('parseHistory ordena por tempo, ignora gravações sem mudança e campos de diário', () => {
     expect(history.entries.map((e) => e.at)).toEqual(['2026-10-20 10:00:00', '2026-10-20 12:00:00']);
@@ -38,7 +63,8 @@ describe('histórico do formulário (quem não lê sys_audit)', () => {
     const r = await investigate(itil().withHistory(history), { table: 'incident', sysId: SYS, field: 'impact' });
     expect(r.auditFrom).toBe('history');
     expect(r.fieldNotInHistory).toBeUndefined();
-    expect(r.changes.map((c) => [c.oldValue, c.newValue, c.user])).toEqual([['3', '1', 'admin'], ['', '3', 'admin']]);
+    // A gravação das 10:00 é a criação do registro: a auditoria não registra inserção, então ela fica de fora.
+    expect(r.changes.map((c) => [c.oldValue, c.newValue, c.user])).toEqual([['3', '1', 'admin']]);
     // Sem leitura das transações, a causa é o autor da gravação (candidato), não um "segundo plano" inventado.
     expect(r.changes[0]!.evidence[0]!.type).toBe('user_action');
     expect(r.changes[0]!.evidence[0]!.artifact.name).toBe('admin');
@@ -61,5 +87,15 @@ describe('histórico do formulário (quem não lê sys_audit)', () => {
     expect(asked).toBe(false);
     expect(r.auditFrom).toBeUndefined();
     expect(r.changes).toHaveLength(1);
+  });
+});
+
+describe('fuso do usuário com horário de verão', () => {
+  it('localToUtc usa o offset da própria data, não o do dia da gravação', async () => {
+    const { localToUtc } = await import('../src/history');
+    expect(localToUtc('2025-11-25 08:00:00', 'America/Los_Angeles')).toBe('2025-11-25 16:00:00'); // PST, UTC-8
+    expect(localToUtc('2026-10-21 08:00:00', 'America/Los_Angeles')).toBe('2026-10-21 15:00:00'); // PDT, UTC-7
+    expect(localToUtc('2026-10-21 08:00:00', 'America/Sao_Paulo')).toBe('2026-10-21 11:00:00');
+    expect(localToUtc('2026-10-21 08:00:00', 'Fuso/Inexistente')).toBeNull();
   });
 });

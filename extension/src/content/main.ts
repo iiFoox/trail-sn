@@ -189,12 +189,13 @@ const decorated = new WeakSet<Element>();
 
 function onPageContext(e: Event): void {
   if (!checkContext()) return;
-  const d = (e as CustomEvent<{ token?: string; userName?: string; language?: string; table?: string; sysId?: string }>).detail ?? {};
+  const d = (e as CustomEvent<{ token?: string; userName?: string; language?: string; timeZone?: string; table?: string; sysId?: string }>).detail ?? {};
   ctx = {
     ...ctx,
     token: d.token ?? ctx.token,
     userName: d.userName ?? ctx.userName,
     language: d.language ?? ctx.language,
+    timeZone: d.timeZone ?? ctx.timeZone,
     table: ctx.table ?? d.table,
     sysId: ctx.sysId ?? d.sysId,
     surface: ctx.surface === 'unknown' && d.table ? 'ui16' : ctx.surface,

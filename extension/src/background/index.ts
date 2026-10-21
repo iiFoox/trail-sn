@@ -197,7 +197,9 @@ async function tokenProvider(origin: string): Promise<string | null> {
   return fromHtml;
 }
 function makeClient(origin: string): FetchRestClient {
-  return new FetchRestClient({ baseUrl: origin, getToken: () => tokenProvider(origin), concurrency: 6 });
+  const tzKey = storageKey.timeZone(origin);
+  return new FetchRestClient({ baseUrl: origin, getToken: () => tokenProvider(origin), concurrency: 6,
+    getTimeZone: () => session.get(tzKey).then((o) => o[tzKey] as string | undefined, () => undefined) });
 }
 
 // ---------- cache de metadados (10 min, por instância+tabela) ----------
@@ -599,6 +601,7 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
         const safeCtx: PageContext = { ...msg.ctx, token: undefined, language }; // o token não fica no estado da aba
         await setTab({ ...prev, tabId, ctx: safeCtx });
         if (msg.ctx.language) await session.set({ [storageKey.language(msg.ctx.origin)]: normalizeInstanceLanguage(msg.ctx.language) });
+        if (msg.ctx.timeZone) await session.set({ [storageKey.timeZone(msg.ctx.origin)]: msg.ctx.timeZone });
         return;
       }
       case 'toggle-icons':

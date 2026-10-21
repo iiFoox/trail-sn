@@ -75,7 +75,7 @@ export async function recordTimeline(client: RestClient, target: Omit<Target, 'f
   let fromHistory: { auditFrom: 'history'; historyFields: string[] } | undefined;
   if (auditRes.access === 'denied' && client.history) {
     const h = await client.history(target.table, sysId).catch(() => null);
-    if (h) { audit = (await historyToAudit(h, tables, q)).reverse(); fromHistory = { auditFrom: 'history', historyFields: h.fields }; }
+    if (h) { audit = (await historyToAudit(h, tables, q, rec.sys_created_on)).reverse(); fromHistory = { auditFrom: 'history', historyFields: h.fields }; }
   }
   const truncated = audit.length >= MAX_AUDIT;
   const byCp = new Map<number, Row[]>();

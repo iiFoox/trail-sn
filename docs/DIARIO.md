@@ -10,6 +10,20 @@ Convenções:
 
 ---
 
+## 2026-10-21 — bateria de 2000 e 0.13.1
+
+- **Bateria de 2000** (Antigravity, `tests/regression/bateria2000/RELATORIO.md`):
+  - admin 1000/1000 sem erro, mediana de 2,6 s;
+  - itil 952 ok e 48 sem leitura do registro (esperado), zero erros, zero "segundo plano" inventado e zero artefato de fonte negada;
+  - 461 divergências do itil contra o admin (I2).
+- **0.13.1 corrige as quatro causas do I2** no histórico do formulário:
+  - a gravação da criação fica de fora;
+  - "System" vira `system`;
+  - referência por nome volta ao sys_id;
+  - datas voltam para UTC pelo fuso com nome do usuário (`g_user_timezone`, passado pela página → content → worker → `FetchRestClient.getTimeZone`, com horário de verão por data, `localToUtc`).
+- **Rodada de novo como itil nos 479 alvos que divergiam: 437 batem.** Os 42 que sobram são casos de borda aceitos e descritos no relatório.
+- **Ferramental da bateria no git:** `gerar-alvos.mjs`, `executar-bateria.mjs`, `analisar.mjs`, `refazer-i2.mjs`. Os resultados `res-*.json` ficam fora do git.
+
 ## 2026-10-20 (23h30) — bateria de 2000 em andamento
 
 Pedido do dono: 1000 investigações como admin e as mesmas 1000 como sem admin (`pt.trail.itil`), para achar tudo que falta. O Antigravity roda pela aba do Maestri (conectada a ele pelo dono), seguindo `tests/regression/BATERIA2000-TAREFA.md`: alvos, invariantes A1–A4 e I1–I6, regras de segurança. Só mede e reporta; não corrige código. **Resultado esperado em `tests/regression/bateria2000/RELATORIO.md`.** Quem pegar o projeto depois: ler o relatório e corrigir os achados, rodar de novo o que falhou e confirmar que a aba do PDI voltou ao admin.
