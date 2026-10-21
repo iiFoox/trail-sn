@@ -201,3 +201,39 @@ describe('Por que o campo está bloqueado, obrigatório ou escondido', () => {
     expect(c.calls - calls0).toBeLessThan(16);
   });
 });
+
+describe('P2: obrigatório e vazio não fica somente leitura no UI16', () => {
+  // PDI 21/10/2026: g_form.setReadOnly('caller_id', true) não travou o Caller obrigatório e vazio; preenchido, travou.
+  const setup = (caller: string) => {
+    const c = base({ state: '2', caller_id: caller });
+    c.rows('sys_dictionary', [{ sys_id: 'd1', name: 'incident', element: 'caller_id', read_only: 'false', mandatory: 'true', active: 'true', column_label: 'Caller', internal_type: 'reference' }]);
+    c.rows('sys_ui_policy', [policy({ sys_id: 'pA', short_description: '[PT] VAL-FS A', conditions: '', run_scripts: 'true', script_true: "function onCondition() { g_form.setReadOnly('caller_id', true); }" })]);
+    return c;
+  };
+  const go = (c: FakeRestClient, observed?: Parameters<typeof fieldState>[1]['observed']) => fieldState(c, { table: 'incident', sysId: ID, field: 'caller_id', ...(observed ? { observed } : {}) });
+
+  it('vazio: a trava vira "pode ser" (mandatory_empty) e não conflita com o formulário editável', async () => {
+    const r = await go(setup(''), { readOnly: false, mandatory: true, visible: true });
+    const rule = r.rules.find((x) => x.aspect === 'read_only')!;
+    expect(rule).toMatchObject({ kind: 'ui_policy', sets: true, grade: 'maybe', why: 'mandatory_empty', whyBefore: 'always' });
+    expect(r.aspects.read_only).toMatchObject({ rules: false, observed: false, mismatch: false, unexplained: false, mandatoryEmpty: true });
+    expect(r.aspects.mandatory.rules).toBe(true);
+  });
+
+  it('preenchido: a trava é confirmada', async () => {
+    const r = await go(setup('6816f79cc0a8016401c5a33be04be441'), { readOnly: true, mandatory: true, visible: true });
+    expect(r.rules.find((x) => x.aspect === 'read_only')).toMatchObject({ grade: 'confirmed', why: 'always' });
+    expect(r.aspects.read_only).toMatchObject({ rules: true, mismatch: false });
+    expect(r.aspects.read_only.mandatoryEmpty).toBeUndefined();
+  });
+
+  it('o valor do formulário (observed.empty) vale mais que o gravado; dicionário somente leitura não muda', async () => {
+    const r = await go(setup('6816f79cc0a8016401c5a33be04be441'), { readOnly: false, mandatory: true, visible: true, empty: true });
+    expect(r.aspects.read_only.mandatoryEmpty).toBe(true);
+    const c = setup('');
+    c.rows('sys_dictionary', [{ sys_id: 'd1', name: 'incident', element: 'caller_id', read_only: 'true', mandatory: 'true', active: 'true' }]);
+    const d = await go(c);
+    expect(d.rules.find((x) => x.kind === 'dictionary' && x.aspect === 'read_only')).toMatchObject({ grade: 'confirmed', why: 'dict' });
+    expect(d.aspects.read_only.rules).toBe(true);
+  });
+});

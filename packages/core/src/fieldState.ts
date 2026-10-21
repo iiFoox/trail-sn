@@ -26,6 +26,8 @@ export interface FieldObserved {
   visible?: boolean;
   /** O campo está no formulário (há elemento para ele). */
   onForm?: boolean;
+  /** O campo está vazio no formulário agora (pode diferir do registro gravado). undefined = usa o valor do registro. */
+  empty?: boolean;
 }
 
 export type StateRuleKind = 'dictionary' | 'dictionary_override' | 'client_script' | 'ui_policy' | 'data_policy';
@@ -46,7 +48,8 @@ export type StateWhy =
   | 'onload_unknown' // client script ao abrir, com condição que o Trail não avalia (ex.: papel)
   | 'onchange' // client script que só roda quando outro campo muda
   | 'value_unknown' // o valor passado não é fixo (variável, expressão)
-  | 'policy_script'; // vem do script da UI policy (executar script)
+  | 'policy_script' // vem do script da UI policy (executar script)
+  | 'mandatory_empty'; // trava o campo, mas no UI16 g_form.setReadOnly não trava campo obrigatório e vazio
 
 export interface StateRule {
   kind: StateRuleKind;
@@ -74,6 +77,8 @@ export interface StateRule {
   serverOnly?: boolean;
   /** Índice (em `rules`) da regra posterior que desfaz esta. */
   overriddenBy?: number;
+  /** Motivo original quando `why` virou `mandatory_empty`. */
+  whyBefore?: StateWhy;
 }
 
 export interface StateSkip { kind: StateRuleKind; name: string; table: string; sysId?: string; condition?: string; now?: Record<string, string>; why: 'cond_false' | 'not_inherited' }
@@ -94,6 +99,11 @@ export interface AspectSummary {
   unexplained: boolean;
   /** O formulário mostra diferente do que as regras confirmadas dizem. */
   mismatch: boolean;
+  /**
+   * Só em `read_only`: o campo é obrigatório e está vazio, e o formulário (UI16) ignora `setReadOnly(true)` nesse caso.
+   * As travas das regras do formulário viram "pode ser" (`why: 'mandatory_empty'`): travam depois que o campo é preenchido.
+   */
+  mandatoryEmpty?: boolean;
 }
 
 export interface FieldStateResult {
@@ -345,7 +355,20 @@ export async function fieldStates(
     hidden: observed?.visible === undefined || observed.onForm === false ? undefined : !observed.visible,
   };
   const aspects = {} as Record<StateAspect, AspectSummary>;
-  for (const aspect of STATE_ASPECTS) {
+  // Valor vazio agora: o do formulário quando lido; senão o do registro gravado.
+  const empty = observed?.empty ?? (recordReadable && field in record ? (record[field] ?? '') === '' : undefined);
+  // Obrigatório primeiro: no UI16, g_form.setReadOnly(campo, true) não trava campo obrigatório e vazio (visto no PDI em
+  // 21/10/2026 com o Caller). Vale para o que passa pelo g_form (client script, UI policy, data policy no formulário);
+  // o somente leitura do dicionário vem do servidor e continua valendo.
+  for (const aspect of ['mandatory', 'read_only', 'hidden'] as StateAspect[]) {
+    let mandatoryEmpty = false;
+    if (aspect === 'read_only' && empty === true && (aspects.mandatory.observed ?? aspects.mandatory.rules)) {
+      for (const r of rules) {
+        if (r.aspect !== 'read_only' || r.sets !== true || r.grade !== 'confirmed' || layer(r) <= 1 || r.serverOnly) continue;
+        mandatoryEmpty = true;
+        r.whyBefore = r.why; r.why = 'mandatory_empty'; r.grade = 'maybe';
+      }
+    }
     let state: boolean | undefined; let winner: number | undefined;
     const maybe: number[] = []; const conflicts: AspectSummary['conflicts'] = [];
     for (const { r, i } of seq) {
@@ -365,6 +388,7 @@ export async function fieldStates(
       aspect, ...(obs !== undefined ? { observed: obs } : {}), rules: ruleState, ...(winner !== undefined ? { winner } : {}), maybe, conflicts,
       unexplained: obs === true && !ruleState && !maybeSets,
       mismatch: obs !== undefined && obs !== ruleState && maybe.length === 0,
+      ...(mandatoryEmpty ? { mandatoryEmpty } : {}),
     };
   }
 
