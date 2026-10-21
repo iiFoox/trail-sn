@@ -199,3 +199,25 @@ describe('scripts: hash e diff', () => {
     expect(d).toEqual({ changedA: 0, changedB: 1, lines: [{ side: 'b', n: 3, text: 'novo();' }], more: 0 });
   });
 });
+
+describe('P7: lado sem sessão para cedo', () => {
+  it('B responde 401 (sem login): poucas chamadas, B inalcançável, nenhuma diferença inventada', async () => {
+    const a = inst({ tables: { sys_script: [br({ sys_id: 'b1', name: 'Set priority' })] } });
+    const b = { calls: 0, async query() { this.calls++; return { rows: [], status: 401, access: 'denied' as const }; } };
+    const c = await run(a, b as unknown as FakeRestClient);
+    expect(c.unreachable).toEqual(['b']);
+    expect(c.differences).toEqual([]);
+    expect(c.rules.every((r) => r.status === 'unknown')).toBe(true);
+    // A hierarquia (as primeiras consultas, em paralelo) vai; o resto não.
+    expect(b.calls).toBeLessThanOrEqual(8); // antes: dezenas (39 no PDI)
+    expect(c.timing.calls.b).toBe(b.calls);
+  });
+
+  it('B com 403 (sessão com papéis restritos) continua lendo o que puder', async () => {
+    const a = inst();
+    const b = new FakeRestClient();
+    b.rows('sysevent_email_action', []);
+    await run(a, b);
+    expect(b.log.some((r) => r.table === 'sysevent_email_action')).toBe(true);
+  });
+});

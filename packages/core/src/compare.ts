@@ -13,7 +13,7 @@
  *  4. Sem acesso: fonte negada ou lenta de um lado nunca vira "só existe no outro": vira "não deu para comparar".
  *  5. `describeComparison`: resumo em texto simples, ordenado pelo que mais explica comportamento diferente.
  */
-import type { RestClient } from './client/RestClient';
+import type { QueryRequest, QueryResult, RestClient } from './client/RestClient';
 import { fieldRules } from './fieldDeps';
 import { fieldStates } from './fieldState';
 import { SharedClient } from './sharedClient';
@@ -329,6 +329,30 @@ async function readSide(client: RestClient, target: { table: string; field: stri
   return { sc, tables: rules.tables, nominees, rulesNotSeen: rules.notSeen };
 }
 
+// ---------------------------------------------------------------- lado inalcançável
+
+/**
+ * Lado sem sessão (401) ou sem rede: depois de `limit` respostas assim, sem nenhuma resposta de verdade antes, as
+ * próximas consultas desse lado voltam na hora com o mesmo resultado, sem ir à instância. No PDI, o lado B sem login
+ * fazia 39 chamadas inúteis. 403 não conta: é uma sessão de verdade com papéis restritos, que ainda lê outras fontes.
+ */
+export class DeadSideGate implements RestClient {
+  private dead = 0;
+  private alive = false;
+  private last?: QueryResult;
+  constructor(readonly inner: RestClient, private readonly limit = 2) {}
+  get calls(): number { return this.inner.calls; }
+  get stopped(): boolean { return !this.alive && this.dead >= this.limit; }
+  async query(req: QueryRequest): Promise<QueryResult> {
+    if (this.stopped && this.last) return { ...this.last, rows: [] };
+    const r = await this.inner.query(req);
+    const isDead = r.status === 401 || (r.status === 0 && r.access === 'unknown');
+    if (isDead) { this.dead++; this.last = r; } else if (r.status !== 0) this.alive = true;
+    return r;
+  }
+  history(table: string, sysId: string) { return this.inner.history ? this.inner.history(table, sysId) : Promise.resolve(null); }
+}
+
 // ---------------------------------------------------------------- comparação
 
 export async function compareInstances(
@@ -339,7 +363,7 @@ export async function compareInstances(
 ): Promise<InstanceComparison> {
   const started = Date.now();
   const { table, field } = target;
-  const [A, B] = await Promise.all([readSide(a.client, target, opts), readSide(b.client, target, opts)]);
+  const [A, B] = await Promise.all([readSide(new DeadSideGate(a.client), target, opts), readSide(new DeadSideGate(b.client), target, opts)]);
   const S = { a: A, b: B };
   const tables = [...new Set([...A.tables, ...B.tables])];
   const inT = `IN${tables.join(',')}`;
