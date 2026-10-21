@@ -25,7 +25,10 @@ try {
     await page.goto(`chrome-extension://${id}/src/sidepanel/index.html?demo=1&float=1&lang=pt&theme=${theme}&${q}`);
   };
   const noOverflow = async (w, what) => { const x = await page.evaluate(() => document.documentElement.scrollWidth); if (x > w + 1) errors.push(`${what}: rolagem lateral em ${w}px (${x})`); };
-  const shot = async (name) => { if (shots) await page.screenshot({ path: resolve(shots, `${name}.png`), fullPage: true }); };
+  // Prints: espera as animações de entrada e esconde a gaveta fixa do rodapé (senão ela aparece no meio da imagem).
+  const settle = async () => { await page.waitForTimeout(900); await page.addStyleTag({ content: '.drawer{display:none!important}' }); };
+  const shot = async (name) => { if (shots) { await settle(); await page.screenshot({ path: resolve(shots, `${name}.png`), fullPage: true }); } };
+  const elShot = async (sel, name) => { if (shots) { await settle(); await page.addStyleTag({ content: '.topbar,.tabs-wrap{position:static!important}' }); await page.locator(sel).scrollIntoViewIfNeeded(); await page.locator(sel).screenshot({ path: resolve(shots, `${name}.png`) }); } };
   const text = (sel) => page.locator(sel).first().textContent({ timeout: 8000 }).catch(() => '');
 
   // 1. Navegação: 4 abas com nomes curtos; clique e setas; tudo cabe (ou degradê + seta) em 420/340, escuro e claro.
@@ -81,8 +84,7 @@ try {
   await page.waitForSelector('.save-card .sbar', { timeout: 8000 }).catch(() => errors.push('salvamento lento sem a barra'));
   out.slow = await text('.save-card');
   if (!/5,3 s/.test(out.slow) || !/Muito lento/.test(out.slow) || !/9× o normal/.test(out.slow)) errors.push('salvamento lento: ' + out.slow);
-  await page.locator('.save-card').scrollIntoViewIfNeeded();
-  if (shots) await page.locator('.save-card').screenshot({ path: resolve(shots, 'salvamento-lento-420-dark.png') });
+  await elShot('.save-card', 'salvamento-lento-420-dark');
   await open('tab=how&slow=denied');
   await page.waitForSelector('.save-card .save-text', { timeout: 8000 });
   out.denied = await text('.save-card .save-text');
@@ -97,7 +99,7 @@ try {
   if (!out.visWhy.some((x) => /"incident query" esconde/.test(x))) errors.push('motivos de quem enxerga: ' + JSON.stringify(out.visWhy));
   if (!/script/.test(await text('.vis .li .muted'))) errors.push('sem o limite honesto (scripts não avaliados)');
   if (!(await page.locator('.rruns').count())) errors.push('Histórico sem "O que rodou neste registro"');
-  if (shots) { await page.locator('#who-sees').scrollIntoViewIfNeeded(); await page.locator('#who-sees').screenshot({ path: resolve(shots, 'quem-enxerga-420-dark.png') }); }
+  await elShot('#who-sees', 'quem-enxerga-420-dark');
   await page.fill('.vis-in input', 'beth.anglin');
   await page.click('.vis-in .btn.primary');
   await page.waitForFunction(() => /Beth Anglin vê/.test(document.querySelector('.vis-verdict b')?.textContent ?? ''), null, { timeout: 8000 }).catch(() => errors.push('beth.anglin deveria ver'));
@@ -118,7 +120,7 @@ try {
   out.sim = await page.$$eval('.sim .box', (bs) => bs.map((b) => b.querySelector('h4')?.textContent));
   if (!out.sim.some((h) => /^Rodaria/.test(h ?? '')) || !out.sim.some((h) => /Como o registro ficaria/.test(h ?? ''))) errors.push('simulação: ' + JSON.stringify(out.sim));
   if (!(await page.locator('.sim .sim-row', { hasText: 'Fecha as tarefas filhas' }).count())) errors.push('simular Closed deveria rodar "Fecha as tarefas filhas"');
-  if (shots) await page.locator('.tool-panel.sim').screenshot({ path: resolve(shots, 'simular-420-dark.png') });
+  await elShot('.tool-panel.sim', 'simular-420-dark');
   await open('tab=whatif');
   await page.waitForSelector('.tool-panel.sim', { timeout: 8000 }).catch(() => errors.push('tab=whatif (apelido) não abriu o simular'));
 
@@ -128,7 +130,7 @@ try {
   if (!out.cmp.some((x) => /'mark_resolved' tem condição diferente/.test(x ?? ''))) errors.push('comparação: ' + JSON.stringify(out.cmp));
   if (!(await page.locator('.cmp-link').count())) errors.push('comparação sem links para os dois lados');
   if (!(await page.locator('.cmp-script').count())) errors.push('comparação sem o diff de script recolhido');
-  if (shots) await page.locator('.cmp-tool').screenshot({ path: resolve(shots, 'comparar-420-dark.png') });
+  await elShot('.cmp-tool', 'comparar-420-dark');
   await open('tab=rules&compare=nologin');
   await page.waitForSelector('.cmp-login', { timeout: 10000 }).catch(() => errors.push('sem aviso de login na outra instância'));
   out.nologin = await page.$$eval('.cmp-login .btn', (bs) => bs.map((b) => b.textContent.trim()));

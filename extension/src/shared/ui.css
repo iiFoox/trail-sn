@@ -1116,6 +1116,7 @@ details.tech-acc[open] > summary svg { transform: rotate(90deg); }
 .icon-btn svg { width: 17px; height: 17px; }
 .det { font: 12px/1.4 var(--font); }
 .headcard .old { text-decoration: none; color: var(--fg-2); font-weight: 600; }
+.headcard .old::after { display: none; }
 .nil { font-style: italic; color: var(--muted); }
 .headcard .nil, .h .c .nil, .bt-row .nil { font-weight: 400; }
 .bt-sum { font-size: 13px; line-height: 1.5; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--teal); border-radius: var(--r); padding: 10px 12px; box-shadow: var(--shadow); }
@@ -1134,3 +1135,5 @@ ul.fl .fbtn .v .o, table.cmpt .o, .wi-ft .o, .bt-row .vals .o { text-decoration:
   .acc-chip { padding: 5px 7px; }
 }
 @media (max-width: 400px) { .tabs-wrap .seg-tabs.t4 button { padding: 8px 6px; font-size: 12px; } }
+.cmp-diff .cmp-links { display: flex !important; flex-direction: row; flex-wrap: wrap; gap: 4px 14px; }
+.cmp-diff .cmp-links .cmp-link { display: inline-flex !important; width: auto; }
