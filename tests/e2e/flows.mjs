@@ -1,4 +1,4 @@
-/** Aba Flows (demo): execuções no registro e flows configurados para a tabela; também no registro inteiro; abas cabem em 340 px. */
+/** Aba Flows (demo): execuções no registro e flows configurados para a tabela; "O que roda neste registro" no registro inteiro; abas cabem em 340 px. */
 import { chromium } from 'playwright';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
@@ -27,7 +27,9 @@ try {
   }
   await page.setViewportSize({ width: 420, height: 1300 });
   await page.goto(`chrome-extension://${id}/src/sidepanel/index.html?demo=1&float=1&batch=rec`);
-  await page.waitForSelector('.fl-run', { timeout: 8000 }).catch(() => errors.push('registro inteiro sem a seção de flows'));
+  await page.waitForSelector('.rruns .grp', { timeout: 8000 }).catch(() => errors.push('registro inteiro sem "O que roda neste registro"'));
+  out.rec = await page.evaluate(() => [...document.querySelectorAll('.rruns .grp > summary b')].map((b) => b.textContent));
+  for (const g of ['Regras de negócio', 'Flows', 'Client scripts', 'Botões (UI actions)']) if (!out.rec.includes(g)) errors.push('faltou o grupo ' + g + ': ' + JSON.stringify(out.rec));
 } finally {
   console.log(JSON.stringify({ ...out, errors }, null, 1));
   await ctx.close();

@@ -894,3 +894,10 @@ details.grp > .li { padding-left: 52px; }
   .seg-tabs::-webkit-scrollbar { display: none; }
   .seg-tabs button { flex: none; padding: 7px 8px; font-size: 11.5px; }
 }
+
+/* O que roda neste registro */
+.rruns .grp .flows .box { box-shadow: none; border: 0; margin: 0; background: transparent; }
+.rr-row .lnk { color: var(--accent); font-weight: 600; }
+.rr-row.hit { box-shadow: inset 3px 0 0 var(--teal); }
+.rr-row small.fl-tag { display: inline-block; vertical-align: 1px; }
+.rr-row .fl-writes { display: block; margin-top: 3px; }

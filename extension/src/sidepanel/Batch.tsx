@@ -12,7 +12,7 @@ import { Glyph, typeGlyph } from '../shared/icons';
 import { recordLink } from '../shared/instances';
 import { getPrefs } from '../shared/prefs';
 import type { TabState } from '../shared/messages';
-import { FlowsTab } from './Flows';
+import { RecordRuns } from './RecordRuns';
 import { parts, humanField } from './Result';
 import { Loading } from './Loading';
 import { Val } from './Val';
@@ -139,7 +139,7 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
         </details>
       )}
       {/* Registro inteiro: os flows que rodaram neste registro e os configurados para a tabela. */}
-      {rec && b.sysId && !running && b.error === undefined && <FlowsTab target={{ table: b.table, sysId: b.sysId }} origin={origin} />}
+      {rec && b.sysId && !running && b.error === undefined && <RecordRuns table={b.table} sysId={b.sysId} origin={origin} items={b.items} />}
     </div>
   );
 }

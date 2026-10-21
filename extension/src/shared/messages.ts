@@ -25,6 +25,7 @@ export type Message =
   | { type: 'record'; origin: string; table: string; record: string; token?: string; language?: string; mode?: import('./prefs').PanelMode }
   | { type: 'field-map'; origin: string; table: string; field: string }
   | { type: 'flows'; origin: string; table: string; sysId: string }
+  | { type: 'automations'; origin: string; table: string; sysId: string }
   | { type: 'preview'; origin: string; target: { table: string; sysId: string; field: string; value: string }; language?: string }
   | { type: 'open-panel'; mode?: import('./prefs').PanelMode }
   | { type: 'float-get' }

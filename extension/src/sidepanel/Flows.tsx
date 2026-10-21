@@ -35,6 +35,11 @@ export function FlowsTab({ target, origin, field = '' }: { target: { table: stri
 
   if (err) return <div class="box"><div class="li"><span class="ck w">!</span><span class="grow">{err}</span></div></div>;
   if (!res) return <div class="box"><div class="li"><span class="spin" /><span class="grow muted small">{P.flLoading}</span></div></div>;
+  return <FlowsView res={res} origin={origin} field={field} />;
+}
+
+/** Desenho das duas listas (rodaram / configurados); usado na aba e dentro de "O que roda neste registro". */
+export function FlowsView({ res, origin, field = '' }: { res: RecordFlows; origin: string; field?: string }) {
   const states = P.flState as Record<string, string>;
   const triggers = P.flTrigger as Record<string, string>;
   return (
@@ -71,7 +76,7 @@ export function FlowsTab({ target, origin, field = '' }: { target: { table: stri
   );
 }
 
-function demoFlows(table: string): RecordFlows {
+export function demoFlows(table: string): RecordFlows {
   return {
     table,
     tables: [table, 'task'],

@@ -3,7 +3,7 @@
  * guarda estado em chrome.storage.session e abre o painel. Não toca no DOM.
  * Nenhum estado em memória que importe: o worker pode ser encerrado a qualquer momento.
  */
-import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, batchItemFrom, fieldMap, previewChange, recordTimeline, scanTableConflicts, type AccessReport, type BatchItem, type MetaCache, type TableMeta, recordFlows } from '@trail/core';
+import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, batchItemFrom, fieldMap, previewChange, recordTimeline, scanTableConflicts, type AccessReport, type BatchItem, type MetaCache, type TableMeta, recordFlows, tableAutomations } from '@trail/core';
 import { addInstance, isEnabled, listInstances, looksLikeServiceNow, removeInstance } from '../shared/instances';
 import { loadPrefs, PREFS_KEY, type PanelMode } from '../shared/prefs';
 import { normalizeInstanceLanguage, storageKey, type Message, type PageContext, type ProbeResult, type TabState } from '../shared/messages';
@@ -619,6 +619,9 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
         return recordTimeline(makeClient(msg.origin), msg.target, { language: await languageFor(msg.origin, tabId ?? (await activeTabId()), msg.language) });
       case 'scan-conflicts':
         return scanTableConflicts(makeClient(msg.origin), msg.table);
+      case 'automations':
+        return tableAutomations(makeClient(msg.origin), { table: msg.table, sysId: msg.sysId }, { lang: (await loadPrefs()).lang })
+          .catch((e: Error) => ({ error: e.message }));
       case 'flows':
         return recordFlows(makeClient(msg.origin), { table: msg.table, sysId: msg.sysId }, { lang: (await loadPrefs()).lang })
           .catch((e: Error) => ({ error: e.message }));

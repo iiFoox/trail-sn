@@ -10,6 +10,19 @@ Convenções:
 
 ---
 
+## 2026-10-21 — 0.14.1: "O que roda neste registro"
+
+Pedido do dono: no registro inteiro, ver tudo o que roda para aquele registro (flows, BRs etc.), com link clicável.
+- Motor: `core/src/automations.ts`, `tableAutomations(client, { table, sysId })`. Lê a tabela e as tabelas-pai:
+  - regras de negócio em ordem de execução (display → before → after → async), com os campos que gravam (`writtenFields`) e o escopo;
+  - script includes chamados por elas;
+  - client scripts, UI policies, botões, data lookups, regras de atribuição e jobs que citam a tabela;
+  - os flows de `recordFlows`;
+
+  Cada fonte negada fica em `access`. Teste em `automations.test.ts`.
+- Painel: seção no fim do registro inteiro (`sidepanel/RecordRuns.tsx`), com um grupo recolhível por tipo. A etiqueta "rodou aqui" vem das causas encontradas nos campos do registro. Cada nome é link para o registro na instância (no modo demonstração, texto). Os flows usam o mesmo desenho da aba Flows (`FlowsView`).
+- e2e `flows.mjs` confere os grupos. Agora são 149 testes unitários e 10 e2e.
+
 ## 2026-10-21 — 0.14.0: aba Flows; 0.13.3: bolinha livre
 
 - **Aba "Flows"** (pedido do dono: "não vi uma aba mostrando quais flows rodam naquele registro/tabela"):
