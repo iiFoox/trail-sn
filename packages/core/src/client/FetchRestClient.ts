@@ -113,7 +113,9 @@ export class FetchRestClient implements RestClient {
       this.token = await this.opts.getToken();
       if (this.token) return this.doQuery(req, false, attempt);
     }
-    if ((res.status === 429 || res.status >= 500) && attempt < 2) {
+    // Repete só o que costuma passar: limite de taxa e gateway/serviço indisponível. 500 da Table API é erro do pedido
+    // (no PDI, sys_choice para escopo.user dá 500 sempre): repetir só gasta tempo.
+    if ((res.status === 429 || res.status === 502 || res.status === 503 || res.status === 504) && attempt < 2) {
       await sleep(300 * 2 ** attempt);
       return this.doQuery(req, mayRetryAuth, attempt + 1);
     }
