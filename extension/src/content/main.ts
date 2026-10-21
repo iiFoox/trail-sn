@@ -34,6 +34,8 @@ function dispose(): void {
   clearTimeout(wsTimer);
   document.removeEventListener('click', scheduleWorkspaceScan, true);
   document.removeEventListener('keydown', onShortcut, true);
+  clearInterval(urlTimer);
+  removeEventListener('popstate', checkUrl);
   removeEventListener('message', onFrameKey);
   document.removeEventListener('trail:context', onPageContext);
   document.removeEventListener('trail:dispose-content', dispose);
@@ -196,8 +198,9 @@ function onPageContext(e: Event): void {
     userName: d.userName ?? ctx.userName,
     language: d.language ?? ctx.language,
     timeZone: d.timeZone ?? ctx.timeZone,
-    table: ctx.table ?? d.table,
-    sysId: ctx.sysId ?? d.sysId,
+    // O g_form da página é a fonte mais certa do registro aberto; a URL do shell pode estar atrasada.
+    table: d.table ?? ctx.table,
+    sysId: d.sysId ?? ctx.sysId,
     surface: ctx.surface === 'unknown' && d.table ? 'ui16' : ctx.surface,
   };
   pushContext();
@@ -351,18 +354,29 @@ for (const ms of [1500, 4000, 8000, 15000]) window.setTimeout(decorateWorkspace,
 // Reage a navegação dentro da página (Workspace é SPA) e a formulários que carregam depois.
 const mo = new MutationObserver(() => {
   if (!checkContext()) return;
-  const fromUrl = contextFromUrl(location.href);
-  if (fromUrl.sysId && fromUrl.sysId !== ctx.sysId) {
-    ctx = { ...ctx, ...fromUrl };
-    pushContext();
-    scheduleWorkspaceScan();
-    welcome();
-  }
+  checkUrl();
   decorateForm();
   decorateList();
   decoratePortal();
 });
 mo.observe(document.documentElement, { childList: true, subtree: true });
+
+// Troca de registro sem recarregar a página (shell do Next Experience, Workspace, portal): a URL muda sem que
+// o DOM de cima mude. Confere a URL a cada 0,7 s e no histórico do navegador; ao mudar, o registro é trocado
+// (não misturado com o anterior) e a página publica de novo o g_form.
+let lastHref = location.href;
+function checkUrl(): void {
+  if (!checkContext() || location.href === lastHref) return;
+  lastHref = location.href;
+  const fromUrl = contextFromUrl(location.href);
+  ctx = { ...ctx, table: fromUrl.table, sysId: fromUrl.sysId, surface: fromUrl.surface ?? ctx.surface };
+  pushContext();
+  document.dispatchEvent(new CustomEvent('trail:request-context'));
+  scheduleWorkspaceScan();
+  welcome();
+}
+const urlTimer = window.setInterval(checkUrl, 700);
+addEventListener('popstate', checkUrl);
 decorateForm();
 decorateList();
 decoratePortal();

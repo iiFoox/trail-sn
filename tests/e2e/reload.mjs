@@ -23,11 +23,12 @@ const ctx = await chromium.launchPersistentContext(mkdtempSync(resolve(tmpdir(),
 const errors = [];
 const out = {};
 try {
+  // O g_form da página falsa segue o sys_id da URL, como num formulário de verdade.
   await ctx.route(`${ORIGIN}/**`, (route) => route.fulfill({
     contentType: 'text/html',
     body: `<!doctype html><html><body>
       <script>window.g_ck='${'a'.repeat(72)}'; window.NOW={user_name:'admin'};
-        window.g_form={getTableName:()=>'incident',getUniqueValue:()=>'${'b'.repeat(32)}'};</script>
+        window.g_form={getTableName:()=>'incident',getUniqueValue:()=>new URLSearchParams(location.search).get('sys_id')||'${'b'.repeat(32)}'};</script>
       <label for="incident.state">State</label><input id="incident.state">
       <label for="incident.impact">Impact</label><input id="incident.impact">
     </body></html>` }));

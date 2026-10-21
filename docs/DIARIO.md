@@ -10,6 +10,20 @@ Convenções:
 
 ---
 
+## 2026-10-21 — 0.13.2: o painel acompanha o registro aberto
+
+- **Problema relatado:** o dono testou numa UI page (erro "registro não encontrado") e depois abriu um incidente. O painel só percebeu a troca depois de um clique num campo.
+- **Causa:**
+  - a troca de registro só era vista quando o DOM de cima mudava (no shell novo a URL muda sem isso);
+  - a URL antiga ganhava do `g_form`;
+  - o painel guardava o resultado ou o erro do registro anterior.
+- **Correção:**
+  - content: vigia de URL a cada 0,7 s e no `popstate`; o registro é substituído (não misturado) e o `g_form` ganha da URL;
+  - worker: quando o registro da aba muda e nada está rodando, o resultado anterior sai de cena; se era o "registro inteiro", ele é refeito para o registro novo;
+  - a mensagem de erro do registro inteiro ganhou espaçamento.
+- **Permissão "ler e alterar seus dados":** é o texto fixo do Chrome e do Edge para qualquer acesso a site, mesmo só leitura. O dono decidiu deixar como está.
+- **Teste no navegador real com o Claude in Chrome não serve para o painel:** a extensão Claude in Chrome não convive com iframes de outra extensão (recusa com "Cannot access a chrome-extension:// URL of different extension"), e o painel fica vazio enquanto ela controla a aba. O painel funciona no Chrome do dono sem ela. Testes de painel: e2e com Playwright ou o dono, à mão.
+
 ## 2026-10-21 — decisão: só no navegador
 
 O dono não quer nada instalado na instância de quem usa ("igual o SN Utils"). A **Fase 2 (app escopado) está arquivada**: o documento ficou só como histórico, e o roteiro do site trocou "Trail dentro da instância" por "nas lojas e no dia a dia". A extensão continua usando a sessão e as ACLs de quem está logado.

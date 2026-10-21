@@ -866,3 +866,7 @@ ol.rtl .hd .via { box-sizing: border-box; }
 .tlf input[type="search"], .tlf select { padding: 6px 8px; font-size: 12px; }
 .tlf select { flex: 0 0 auto; max-width: 48%; }
 details.grp > .li { padding-left: 52px; }
+
+/* Erro no cabeçalho do registro inteiro / lote: ícone e texto lado a lado, com respiro. */
+.bt-head .li { display: flex; gap: 10px; align-items: flex-start; margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--warn) 10%, transparent); line-height: 1.45; }
+.bt-head .li .ck { flex: none; margin-top: 1px; }

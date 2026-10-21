@@ -599,7 +599,15 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
         const prev = await getTab(tabId);
         const language = msg.ctx.language ?? (prev.ctx?.origin === msg.ctx.origin ? prev.ctx.language : undefined);
         const safeCtx: PageContext = { ...msg.ctx, token: undefined, language }; // o token não fica no estado da aba
-        await setTab({ ...prev, tabId, ctx: safeCtx });
+        // O painel acompanha o registro aberto: ao trocar de registro (e com nada rodando), o resultado do anterior
+        // sai de cena. Se a pessoa estava vendo o registro inteiro, ele é refeito para o registro novo.
+        const moved = !!safeCtx.sysId && !!prev.ctx?.sysId && (safeCtx.sysId !== prev.ctx.sysId || safeCtx.table !== prev.ctx.table);
+        const busy = prev.status === 'running' || prev.batch?.status === 'running';
+        if (moved && !busy && (prev.result || prev.error || prev.batch)) {
+          const wasRecord = prev.batch?.kind === 'fields' && !prev.batch.error;
+          await setTab({ tabId, ctx: safeCtx, status: 'idle', ...(prev.access ? { access: prev.access } : {}) });
+          if (wasRecord && safeCtx.table) void runRecord(tabId, safeCtx.origin, safeCtx.table, safeCtx.sysId!, await languageFor(safeCtx.origin, tabId, safeCtx.language), msg.ctx.token);
+        } else await setTab({ ...prev, tabId, ctx: safeCtx });
         if (msg.ctx.language) await session.set({ [storageKey.language(msg.ctx.origin)]: normalizeInstanceLanguage(msg.ctx.language) });
         if (msg.ctx.timeZone) await session.set({ [storageKey.timeZone(msg.ctx.origin)]: msg.ctx.timeZone });
         return;
