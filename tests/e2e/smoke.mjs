@@ -55,6 +55,27 @@ await demo.waitForSelector('.batch .bt-head.ok', { timeout: 3000 });
 const recRows = await demo.$$eval('.batch .bt-row:not(.wait)', (els) => els.length);
 if (recRows !== 7) errors.push('demoRecord esperava 7 linhas prontas, achou ' + recRows);
 
-console.log(JSON.stringify({ extId, popup: popupText.slice(0, 120), panel: panelText.slice(0, 120), cmpBtn, recRows, errors }, null, 1));
+// Registro inteiro direto no modo demo: grupos por gravação, recolher e filtro por pessoas.
+const record = await ctx.newPage();
+record.on('pageerror', (e) => errors.push('registro inteiro: ' + e.message));
+await record.goto(`chrome-extension://${extId}/src/sidepanel/index.html?demo=1&batch=rec`);
+await record.waitForSelector('.batch .bt-group');
+const allGroups = await record.locator('.bt-group').count();
+if (allGroups < 4) errors.push('registro inteiro esperava grupos separados, achou ' + allGroups);
+const openGroups = await record.locator('.bt-group').evaluateAll((els) => els.filter((el) => el.open).length);
+if (openGroups !== Math.min(3, allGroups)) errors.push('esperava os 3 grupos mais recentes abertos, achou ' + openGroups);
+const firstGroup = record.locator('.bt-group').first();
+const firstHeader = (await firstGroup.locator('summary').textContent())?.trim() ?? '';
+if (!firstHeader.includes('salvou') || !firstHeader.includes('campo')) errors.push('cabeçalho do grupo inesperado: ' + firstHeader);
+await firstGroup.locator('summary').click();
+if (await firstGroup.evaluate((el) => el.open) || await firstGroup.locator('.bt-row').first().isVisible()) errors.push('grupo não recolheu');
+await firstGroup.locator('summary').click();
+if (!(await firstGroup.evaluate((el) => el.open)) || !(await firstGroup.locator('.bt-row').first().isVisible())) errors.push('grupo não expandiu');
+await record.locator('.bt-chips button').filter({ hasText: 'Pessoas' }).click();
+const peopleGroups = await record.locator('.bt-group').count();
+const peopleHeaders = await record.locator('.bt-group summary').allTextContents();
+if (peopleGroups === 0 || peopleGroups >= allGroups || peopleHeaders.some((text) => !text.includes('salvou'))) errors.push('filtro Pessoas não reduziu os grupos: ' + JSON.stringify({ allGroups, peopleGroups, peopleHeaders }));
+
+console.log(JSON.stringify({ extId, popup: popupText.slice(0, 120), panel: panelText.slice(0, 120), cmpBtn, recRows, allGroups, peopleGroups, errors }, null, 1));
 await ctx.close();
 process.exit(errors.length ? 1 : 0);

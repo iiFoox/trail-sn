@@ -228,9 +228,10 @@ export function App() {
           )}
           <ThemeToggle />
           {!isWindow && !isFloat && (
-            <button class="icon-btn" title={s.detach} aria-label={s.detach} onClick={() => {
+            <button class="icon-btn" title={s.toFloat} aria-label={s.toFloat} onClick={() => {
               if (isDemo) { showToast(s.panelModeHint); return; }
-              void send({ type: 'open-panel', mode: 'window' }).then(() => window.close());
+              // Do painel lateral do Edge volta para o painel flutuante na página (sem o Trail na aba, o worker abre a janela).
+              void send({ type: 'open-panel', mode: 'float' }).then(() => window.close());
             }}>{Glyph.detach}</button>
           )}
         </div>

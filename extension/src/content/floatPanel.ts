@@ -29,7 +29,7 @@ const CSS = `
 :host{all:initial}
 .pane{position:fixed;z-index:2147483645;top:${GAP}px;height:calc(100vh - ${2 * GAP}px);box-sizing:border-box;display:flex;flex-direction:column;
   background:var(--bg);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.32),0 2px 8px rgba(0,0,0,.18);
-  animation:slide .42s cubic-bezier(.16,1,.3,1) both;transform-origin:100% 50%;
+  animation:slide .42s cubic-bezier(.16,1,.3,1) backwards;transform-origin:100% 50%;
   transition:left .28s cubic-bezier(.2,.8,.2,1),top .28s cubic-bezier(.2,.8,.2,1),height .28s cubic-bezier(.2,.8,.2,1),transform .38s cubic-bezier(.16,1,.3,1),border-radius .28s,box-shadow .28s}
 .body{flex:1;display:flex;min-height:0;border-radius:11px;overflow:hidden}
 .pane.left{animation-name:slidel;transform-origin:0 50%}

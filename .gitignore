@@ -5,3 +5,4 @@ dist/
 tests/regression/.env
 tests/regression/results/
 extension/dist-types/
+tests/e2e/.tmp/

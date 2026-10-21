@@ -9,6 +9,12 @@ Convenções:
 
 ---
 
+## 2026-10-20 (noite) — 0.12.4
+
+- Correção: a setinha da lateral não recolhia o painel. A animação de abrir usava `fill-mode: both` e prendia `transform: none`, anulando a classe `.shut`. Agora é `backwards`. O Codex achou o mesmo problema pelos testes novos.
+- O botão ↗ do painel lateral do Edge agora volta para o painel flutuante na página (antes abria uma janela separada).
+- Testes e2e (Codex): `float.mjs` cobre a borda de baixo, o canto com mínimos de 340×260, a setinha, o Esc (página, campo da página e iframe), as bolinhas e o botão do painel lateral. `smoke.mjs` cobre os grupos do registro inteiro, recolher e expandir, e o filtro Pessoas.
+
 ## 2026-10-20 (noite) — 0.12.3
 
 Pedidos do dono depois de testar a 0.12.2 no Edge:
