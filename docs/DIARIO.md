@@ -26,6 +26,8 @@ Pedido do dono: quem trabalha com App Engine ou sustentação muitas vezes não 
 - **Fato falso corrigido:** com `syslog_transaction` negada, o motor tomava "sem transação" como prova de processo em segundo plano. Agora, se nada mais explicar a mudança, a evidência é o autor da gravação (candidato), com a lacuna dita (`ChangeContext.txDenied`).
 - **No PDI como itil:** INC0010172 impacto 3 → 1 e prioridade 4 → 1, por admin, em grau candidato; urgência: "o histórico do formulário não mostra este campo". Antes, o itil não via nada.
 - **Aviso de acesso por capacidade:** "quem mudou e quando", regras automáticas, flows, jobs, eventos, botões e transações, cada um com ✓, ◐ ou –. As tabelas ficam em "detalhes técnicos".
+- **Bateria com o motor da 0.13.0, como admin: 440/441.** O F1-MANY passou na análise mas estourou o limite de 3 s (10,5 s) num momento em que o PDI estava lento (mediana de 4,0 s, contra 2,5 s antes, com as mesmas 26 chamadas). Rodado de novo três vezes: 2,4 a 2,8 s, passa. Para o admin, nada muda no caminho de consultas.
+- **Site:** FAQ "Preciso ser admin?", "Funciona sem admin" nas fases e simulador de acesso por capacidade, com os dados medidos (itil, itil + Flow Designer). README, PASSAGEM e textos da loja atualizados (Antigravity, revisado).
 - **Inspeção visual do Antigravity** (60 prints em 340–420 px, nos dois temas), 8 achados corrigidos:
   - tokens `--teal-2`, `--ok`, `--bad` e `--warn` que faltavam no escuro;
   - tons pastel trocados no tema claro;
