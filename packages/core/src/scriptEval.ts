@@ -35,7 +35,7 @@ export interface WriteScan { writes: Write[]; /** grava por nome dinâmico (setV
 // ---------------------------------------------------------------- máscara de strings e comentários
 
 /** Troca o conteúdo de strings e comentários por espaços (mesmo tamanho), para achar a estrutura sem ser enganado por texto. */
-function mask(src: string): string {
+export function mask(src: string): string {
   let out = '';
   let i = 0;
   while (i < src.length) {
@@ -54,7 +54,7 @@ function mask(src: string): string {
   return out;
 }
 
-function matchClose(m: string, open: number): number {
+export function matchClose(m: string, open: number): number {
   const o = m[open]!; const cl = o === '(' ? ')' : o === '{' ? '}' : ']';
   let d = 0;
   for (let i = open; i < m.length; i++) {
@@ -65,7 +65,7 @@ function matchClose(m: string, open: number): number {
 }
 
 /** Fim de um comando simples: `;` fora de parênteses/chaves, ou fim da linha quando não há `;`. */
-function stmtEnd(m: string, from: number): number {
+export function stmtEnd(m: string, from: number): number {
   let d = 0;
   for (let i = from; i < m.length; i++) {
     const c = m[i]!;
@@ -80,7 +80,7 @@ function stmtEnd(m: string, from: number): number {
   return m.length;
 }
 
-const skipWs = (m: string, i: number) => { while (i < m.length && /\s/.test(m[i]!)) i++; return i; };
+export const skipWs = (m: string, i: number) => { while (i < m.length && /\s/.test(m[i]!)) i++; return i; };
 
 // ---------------------------------------------------------------- onde o campo é gravado
 
