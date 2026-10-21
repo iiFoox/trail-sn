@@ -217,13 +217,13 @@ async function timed<T>(fn: (c: FetchRestClient) => Promise<T>): Promise<{ ms: n
 
 export const fieldState = (t: { table: string; sysId: string; field: string; observed?: FieldObserved; language?: string }) => timed((c) => coreFieldState(c, t));
 export const fieldStates = (t: { table: string; sysId: string; fields: { field: string; observed?: FieldObserved }[]; language?: string }) => timed((c) => coreFieldStates(c, t));
-export const fieldRules = (t: { table: string; field: string }, o: { references?: boolean; language?: string } = {}) => timed((c) => coreFieldRules(c, t, o));
-export const fieldDeps = (t: { table: string; field: string }, o: { references?: boolean; language?: string } = {}) => timed((c) => coreFieldDeps(c, t, o));
+export const fieldRules = (t: { table: string; field: string; sysId?: string }, o: { references?: boolean; language?: string } = {}) => timed((c) => coreFieldRules(c, t, o));
+export const fieldDeps = (t: { table: string; field: string; sysId?: string }, o: { references?: boolean; language?: string } = {}) => timed((c) => coreFieldDeps(c, t, o));
 export const simulateValue = (t: { table: string; sysId: string; field: string; value: string; language?: string; user?: { name?: string; sysId?: string } }) => timed((c) => coreSimulateValue(c, t));
-export const saveTiming = (t: { table: string; sysId: string; at?: string; checkpoint?: number }, o: { baselineHours?: number } = {}) => timed((c) => coreSaveTiming(c, t, o));
+export const saveTiming = (t: { table: string; sysId: string; at?: string; checkpoint?: number }, o: { baselineHours?: number; baselineTimeoutMs?: number } = {}) => timed((c) => coreSaveTiming(c, t, o));
 export const recordSaveTimes = (t: { table: string; sysId: string }, o: { days?: number; limit?: number } = {}) => timed((c) => coreRecordSaveTimes(c, t, o));
 export const timingFields = () => timed((c) => coreTimingFields(c));
-export const visibility = (t: { table: string; sysId: string; user?: string }, o: { fields?: string[]; language?: string } = {}) => timed((c) => coreVisibility(c, t, o));
+export const visibility = (t: { table: string; sysId: string; user?: string }, o: { fields?: string[]; language?: string; sessionUser?: string | false } = {}) => timed((c) => coreVisibility(c, t, o));
 export const readQueryScript = coreReadQueryScript;
 
 /** Comparar instâncias com o mesmo PDI nos dois lados (A×A) ou com um lado B sem sessão (cookies omitidos, sem token). */
