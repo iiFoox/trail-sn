@@ -30,6 +30,7 @@ const ASSISTANT_ID = 'trail-assistant';
 
 const ASSISTANT_CSS = `
 :host{all:initial}
+:host([data-motion="off"]) *{animation:none!important;transition:none!important}
 .bub{all:unset;position:fixed;z-index:2147483646;width:${BUBBLE_SIZE}px;height:${BUBBLE_SIZE}px;border-radius:50%;cursor:grab;touch-action:none;user-select:none;
   background:#032d42;display:grid;place-items:center;box-shadow:0 10px 28px rgba(0,0,0,.35),0 0 0 3px rgba(98,216,78,.25);
   animation:pop .36s cubic-bezier(.2,1.4,.4,1) backwards;transition:left .42s cubic-bezier(.2,1.35,.35,1),top .42s cubic-bezier(.2,1.35,.35,1),transform .18s,box-shadow .18s}
@@ -48,6 +49,7 @@ const ASSISTANT_CSS = `
 
 const CSS = `
 :host{all:initial}
+:host([data-motion="off"]) *{animation:none!important;transition:none!important}
 .pane{position:fixed;z-index:2147483645;top:${GAP}px;height:calc(100vh - ${2 * GAP}px);box-sizing:border-box;display:flex;flex-direction:column;
   background:var(--bg);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.32),0 2px 8px rgba(0,0,0,.18);
   animation:slide .42s cubic-bezier(.16,1,.3,1) backwards;transform-origin:100% 50%;
@@ -111,6 +113,21 @@ let balloonTimer: number | undefined;
 let tipLeaveTimer: number | undefined;
 let balloonKind: 'tip' | 'message' | null = null;
 let minimized = false;
+/** Animações (preferência "Animações" das configurações). */
+let motionOn = true;
+
+export function setFloatMotion(on: boolean): void {
+  motionOn = on;
+  for (const id of [HOST_ID, ASSISTANT_ID]) {
+    const h = document.getElementById(id);
+    if (h) { if (on) delete h.dataset.motion; else h.dataset.motion = 'off'; }
+  }
+}
+
+/** Atalho de teclado da página: abre o painel, ou esconde na bolinha se ele já está aberto. */
+export function toggleFloatByKey(tabId: number, theme?: 'dark' | 'light'): void {
+  if (st && !minimized) minimize(); else if (st) restore(); else openFloat(tabId, { theme });
+}
 let disposed = false;
 let onOutside: ((e: PointerEvent) => void) | null = null;
 const extOrigin = (() => { try { return new URL(chrome.runtime.getURL('')).origin; } catch { return ''; } })();
@@ -245,6 +262,7 @@ export async function initAssistant(tabId: number, origin: string, enabled: bool
   const p = stored[key] as { edge?: string; y?: number } | undefined;
   const host = document.createElement('div');
   host.id = ASSISTANT_ID;
+  if (!motionOn) host.dataset.motion = 'off';
   const root = host.attachShadow({ mode: 'open' });
   root.innerHTML = `<style>${ASSISTANT_CSS}</style><button class="bub" type="button" aria-label="Trail" hidden>${TRAIL_MINI(3)}</button><div class="balloon" role="status" hidden><button class="close" type="button" aria-label="Fechar">×</button><b></b><span class="text"></span></div>`;
   document.documentElement.appendChild(host);
@@ -314,6 +332,7 @@ export function openFloat(tabId: number, opts: { theme?: 'dark' | 'light'; minim
   const theme = opts.theme ?? 'dark';
   const host = document.createElement('div');
   host.id = HOST_ID;
+  if (!motionOn) host.dataset.motion = 'off';
   const root = host.attachShadow({ mode: 'open' });
   const src = chrome.runtime.getURL(`src/sidepanel/index.html?float=1&tab=${tabId}&theme=${theme}`);
   root.innerHTML = `<style>${CSS}</style><div class="snap"></div><div class="pane ${theme}" role="complementary" aria-label="Trail">${RZ}<button class="tab" type="button">${CHEVRON}</button><div class="body"><iframe src="${src}" title="Trail" allow="clipboard-write"></iframe></div></div>`;

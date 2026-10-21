@@ -10,6 +10,25 @@ Convenções:
 
 ---
 
+## 2026-10-20 (noite) — 0.12.8: cabeçalho novo, configurações no painel, falso "sem acesso"
+
+- **Cabeçalho do painel (pedido do dono):**
+  - sem as bolinhas do Mac; marca, nome e instância à esquerda;
+  - à direita, nesta ordem: ⚙ configurações, painel lateral do Edge, tema e ✕ (esconde na bolinha, com a animação de minimizar).
+- **Configurações dentro do painel** (`sidepanel/Settings.tsx`):
+  - tema, idioma, animações liga/desliga, atalho para abrir e fechar (grava a combinação apertada; padrão `Alt+Shift+P`), ícones nos campos, bolinha, onde o painel abre, "Sempre visível" e o link "Todas as opções";
+  - preferências novas `motion` e `panelKey`;
+  - animações desligadas: `data-motion="off"` nas páginas e `:host([data-motion=off])` no painel e na bolinha;
+  - o atalho apertado dentro do iframe do formulário chega ao quadro de cima por `postMessage` (mesma origem).
+- **Falso "sem acesso" (o dono, como admin, viu `sysevent`, `sys_flow_context`, `wf_context`… como negados):** pela aba do PDI as 8 tabelas respondem 200 para o admin. A causa era o prazo de 3 s contando a fila (cerca de 14 consultas, 6 por vez); com o PDI lento, as últimas estouravam e viravam "negado". Agora:
+  - o prazo é de 8 s e as que estouram são consultadas de novo;
+  - `AccessReport.slow` fica separado de `denied` (só 401/403);
+  - aviso leve "A instância demorou a responder", e o resultado com `slow` não fica guardado.
+
+  Teste novo em `fetchClient.test.ts`.
+- **Sobre acessos:** o Trail usa a sessão e os papéis de quem está logado e não tem conta própria. O papel `x_trail_reader` (`docs/papel-leitura.md`) só existe para quem não é admin, e o dono prefere atribuí-lo a poucas pessoas (admin ou papéis com bastante acesso), nunca a todos.
+- README e PASSAGEM atualizados para a 0.12.7 (Antigravity).
+
 ## 2026-10-20 (noite) — 0.12.7
 
 - **Registro inteiro e lote** usam a mesma animação da investigação de um campo: `sidepanel/Loading.tsx`, a trilha com a lupa, com etapas próprias. Ela fica durante toda a análise e os grupos entram embaixo.

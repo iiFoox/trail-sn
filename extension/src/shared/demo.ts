@@ -300,7 +300,7 @@ function withTrace(field: string, c: DemoChange): Change {
 }
 
 const access: AccessReport = {
-  level: 'partial', denied: ['sys_flow_context', 'wf_context'], checkedAt: '2026-10-19T12:00:00.000Z',
+  level: 'partial', denied: ['sys_flow_context', 'wf_context'], slow: [], checkedAt: '2026-10-19T12:00:00.000Z',
   states: { sys_audit: 'ok', syslog_transaction: 'ok', sysevent: 'empty', sysevent_script_action: 'ok', sys_flow_context: 'denied', wf_context: 'denied', sys_script: 'ok', sys_script_include: 'ok', sys_ui_action: 'ok', sysauto_script: 'ok', sys_db_object: 'ok' },
 };
 

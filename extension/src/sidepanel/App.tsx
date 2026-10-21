@@ -5,6 +5,7 @@ import { fmt, t } from '../shared/i18n';
 import { applyTheme, getPrefs, resolvedTheme, savePrefs } from '../shared/prefs';
 import { EmptyIllustration, Glyph, TrailMark } from '../shared/icons';
 import { Loading } from './Loading';
+import { Settings } from './Settings';
 import { Result } from './Result';
 import { Batch } from './Batch';
 import { setTrackedTab } from '../shared/tabRef';
@@ -52,6 +53,7 @@ export function App() {
   const [tabId, setTabId] = useState<number>();
   const [state, setState] = useState<TabState | undefined>(isDemo ? (params.has('batch') ? (params.get('batch') === 'rec' ? demoRecord(params.has('wait')) : demoBatch()) : demoState(params.get('field') ?? 'state')) : undefined);
   const [fallbackOrigin, setFallbackOrigin] = useState<string>();
+  const [settings, setSettings] = useState(false);
   const [toast, setToast] = useState<string>();
   const toastTimer = useRef<number>();
   // Todo aviso é um toast: some sozinho, some ao clicar e some quando a análise troca.
@@ -204,14 +206,6 @@ export function App() {
           el.addEventListener('pointermove', move); el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
         } : undefined}
         onDblClick={isFloat && !isPip ? (e) => { if (!(e.target as HTMLElement).closest('button,a')) toPage('trail-float-dock'); } : undefined}>
-        {/* Flutuante: botões no estilo de janela do Mac (fechar, minimizar, sempre visível). */}
-        {isFloat && (
-          <span class="lights">
-            <button class="light close" title={s.floatClose} aria-label={s.floatClose} onClick={() => toPage('trail-float-close')} />
-            <button class="light min" title={s.floatMin} aria-label={s.floatMin} onClick={() => toPage('trail-float-min')} />
-            <button class={`light pin ${isPip ? 'on' : ''}`} title={isPip ? s.floatUnpin : s.floatPin} aria-label={isPip ? s.floatUnpin : s.floatPin} aria-pressed={isPip} onClick={() => toPage('trail-float-pin')} />
-          </span>
-        )}
         {/* No painel do navegador, ele já mostra "Trail" em cima; no flutuante, este é o único cabeçalho e leva a marca. */}
         {isFloat && <span class="fmark" aria-hidden="true"><TrailMark /></span>}
         {isFloat && <b class="fname">Trail</b>}
@@ -219,6 +213,8 @@ export function App() {
         {level && <span class={`dot ${level === 'full' ? '' : level}`} title={level} />}
         <div class="actions">
           {isDemo && <span class="demo-badge">{s.demoBadge}</span>}
+          {/* Ordem pedida: configurações, painel lateral, tema, fechar. */}
+          <button class={`icon-btn ${settings ? 'on' : ''}`} title={s.settings} aria-label={s.settings} aria-expanded={settings} onClick={() => setSettings(!settings)}>{Glyph.gear}</button>
           {isFloat && !isDemo && (
             <button class="icon-btn" title={s.floatToSide} aria-label={s.floatToSide} onClick={() => {
               // sidePanel.open precisa do gesto: chamado direto no clique, antes de qualquer await.
@@ -228,6 +224,7 @@ export function App() {
             }}>{Glyph.toSide}</button>
           )}
           <ThemeToggle />
+          {isFloat && <button class="icon-btn" title={isPip ? s.floatUnpin : s.floatHide} aria-label={isPip ? s.floatUnpin : s.floatHide} onClick={() => toPage(isPip ? 'trail-float-pin' : 'trail-float-min')}>{Glyph.close}</button>}
           {!isWindow && !isFloat && (
             <button class="icon-btn" title={s.toFloat} aria-label={s.toFloat} onClick={() => {
               if (isDemo) { showToast(s.panelModeHint); return; }
@@ -237,6 +234,7 @@ export function App() {
           )}
         </div>
       </header>
+      {settings && <Settings demo={isDemo} canPin={isFloat && !isPip && !isDemo} onPin={() => { setSettings(false); toPage('trail-float-pin'); }} onClose={() => setSettings(false)} />}
       <main class="wrap">
         {needsConnect && !state?.result && (
           <div class="card connect">
@@ -268,6 +266,15 @@ export function App() {
 /** Enquanto investiga: o rastro se desenha e uma lupa percorre o caminho, com o passo atual da perícia. */
 function AccessNotice({ report }: { report: AccessReport }) {
   if (report.level === 'full') return null;
+  // Só demorou a responder (não é 401/403): aviso leve, sem pedir papel a ninguém.
+  if (report.level === 'partial' && !report.denied.length && report.slow?.length) {
+    return (
+      <div class="notice">
+        <div class="title">{s.accessSlowTitle}</div>
+        <div class="small">{fmt(s.accessSlow, { sources: report.slow.join(', ') })}</div>
+      </div>
+    );
+  }
   const sources = report.denied.join(', ');
   return (
     <div class={`notice ${report.level === 'none' ? 'bad' : ''}`}>

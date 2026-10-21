@@ -105,7 +105,7 @@ export function App() {
                 <span class="sdot" />
                 <div>
                   <b>{s.connected}</b>
-                  <div class="small">{!access ? s.checking : access.level === 'full' ? s.accessFullHint : access.level === 'partial' ? fmt(s.accessPartialHint, { what: denied }) : s.accessNoneHint}</div>
+                  <div class="small">{!access ? s.checking : access.level === 'full' ? s.accessFullHint : access.level === 'partial' ? (access.denied.length ? fmt(s.accessPartialHint, { what: denied }) : s.accessSlowTitle) : s.accessNoneHint}</div>
                 </div>
               </div>
               <button class="sw" role="switch" aria-checked={icons} onClick={toggleIcons}>

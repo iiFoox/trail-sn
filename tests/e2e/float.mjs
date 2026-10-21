@@ -84,9 +84,18 @@ try {
   await frame.waitForSelector('header.topbar.drag');
   const nTop = await frame.$$eval('header.topbar', (h) => h.length);
   if (nTop !== 1) errors.push('esperava um cabeçalho só, achei ' + nTop);
-  const lights = await frame.locator('header.topbar .lights .light').count();
-  if (lights !== 3) errors.push('esperava 3 bolinhas no cabeçalho, achei ' + lights);
-  if (!(await frame.$('header.topbar button[aria-label="Abrir no painel lateral do Edge"]'))) errors.push('faltou o botão do painel lateral do Edge');
+  // Cabeçalho: sem as bolinhas do Mac; à direita, nesta ordem, configurações, painel lateral, tema e fechar.
+  const actions = await frame.$$eval('header.topbar .actions .icon-btn', (bs) => bs.map((b) => b.getAttribute('aria-label')));
+  const want = ['Configurações', 'Abrir no painel lateral do Edge', 'Alternar tema claro/escuro', 'Fechar (fica a bolinha no canto)'];
+  if (JSON.stringify(actions) !== JSON.stringify(want)) errors.push('botões do cabeçalho fora da ordem: ' + JSON.stringify(actions));
+  if (await frame.locator('header.topbar .lights').count()) errors.push('as bolinhas do Mac ainda estão no cabeçalho');
+  // A engrenagem abre as configurações dentro do painel; Esc fecha só a folha.
+  await frame.click('header.topbar button[aria-label="Configurações"]');
+  await frame.waitForSelector('.st-sheet');
+  await frame.press('.st-sheet', 'Escape');
+  await page.waitForTimeout(300);
+  if (await frame.locator('.st-sheet').count()) errors.push('Esc não fechou as configurações');
+  if (!(await page.evaluate(() => !!document.getElementById('trail-float')))) errors.push('Esc nas configurações fechou o painel junto');
   if (shotDir) await page.screenshot({ path: resolve(shotDir, 'float-open.png') });
   // A borda de baixo reduz a altura sem tirar o painel da direita.
   await dragGrip('.rz.s', 0, -180);
@@ -141,8 +150,8 @@ try {
   await page.waitForTimeout(450);
   const unshut = await pane();
   if (!unshut.shown || unshut.x !== 1280 - unshut.w - 8) errors.push('a bolinha não trouxe o painel de volta pela setinha: ' + JSON.stringify(unshut));
-  // Minimizar e voltar.
-  await frame.click(`header.topbar button[aria-label^="Minimizar"]`);
+  // O X esconde na bolinha.
+  await frame.click(`header.topbar button[aria-label="Fechar (fica a bolinha no canto)"]`);
   await page.waitForTimeout(450);
   const mini = await pane();
   const bub = await bubble.isVisible();
@@ -152,12 +161,12 @@ try {
   await page.waitForTimeout(400);
   const again = await pane();
   if (!again.shown || again.w !== 420) errors.push('a bolinha não trouxe o painel de volta: ' + JSON.stringify(again));
-  // Fechar no X.
-  await frame.click(`header.topbar button[aria-label="Fechar o painel"]`);
+  // Esc dentro do painel fecha de vez; a bolinha fica.
+  await frame.press('header.topbar', 'Escape');
   await page.waitForTimeout(400);
   const gone = await page.evaluate(() => !document.getElementById('trail-float'));
-  if (!gone) errors.push('o X não fechou');
-  if (!(await bubble.isVisible())) errors.push('o X não devolveu a bolinha');
+  if (!gone) errors.push('o Esc não fechou');
+  if (!(await bubble.isVisible())) errors.push('o Esc não devolveu a bolinha');
   // Reabrir: volta ao tamanho padrão mesmo depois de ter mexido.
   await page.evaluate(() => window.__trailFloat.openFloat(1, { theme: 'light' }));
   await page.waitForTimeout(600);
@@ -177,8 +186,8 @@ try {
   const frameReady = page.waitForEvent('framenavigated', { predicate: (f) => f.url().includes('float=1'), timeout: 5000 });
   await page.evaluate(() => window.__trailFloat.openFloat(1, { theme: 'dark' }));
   const escapeFrame = await frameReady;
-  await escapeFrame.waitForSelector('header.topbar .light.min');
-  await escapeFrame.locator('header.topbar .light.min').press('Escape');
+  await escapeFrame.waitForSelector('header.topbar .fname');
+  await escapeFrame.locator('header.topbar .fname').press('Escape');
   await page.waitForTimeout(350);
   if (await page.locator('#trail-float').count()) errors.push('Esc dentro do iframe não fechou o painel');
   await page.evaluate(async () => {

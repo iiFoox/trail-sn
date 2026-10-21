@@ -38,6 +38,20 @@ describe('FetchRestClient', () => {
     expect(rep.level).toBe('none');
   });
 
+  it('detectAccess separa fonte lenta (timeout) de fonte negada (403)', async () => {
+    const fetchImpl = vi.fn(async (i: RequestInfo | URL) => {
+      const u = String(i);
+      if (u.includes('/sysevent?')) return json(403, { error: { message: 'ACL' } });
+      if (u.includes('/wf_context?')) return new Promise<Response>(() => undefined); // nunca responde
+      return json(200, { result: [{ sys_id: 'x' }] });
+    }) as unknown as typeof fetch;
+    const c = new FetchRestClient({ baseUrl: 'https://dev.example.com', getToken: async () => 't', fetchImpl });
+    const rep = await detectAccess(c, 50);
+    expect(rep.denied).toEqual(['sysevent']);
+    expect(rep.slow).toEqual(['wf_context']);
+    expect(rep.level).toBe('partial');
+  });
+
   it('fetchTokenFromHtml extrai g_ck do HTML', async () => {
     const fetchImpl = vi.fn(async () => new Response("<script>var g_ck = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567';</script>", { status: 200 })) as unknown as typeof fetch;
     expect(await fetchTokenFromHtml('https://dev.example.com', fetchImpl)).toHaveLength(72);

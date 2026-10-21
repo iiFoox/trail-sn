@@ -761,19 +761,6 @@ table.cmpt tr.rev { opacity: .7; }
 .topbar .icon-btn svg { width: 15px; height: 15px; }
 .topbar .fname { font-size: 13px; font-weight: 700; letter-spacing: .01em; color: #fff; margin-right: 2px; }
 
-/* Painel flutuante: botões no estilo de janela do Mac */
-.topbar .lights { display: inline-flex; gap: 8px; align-items: center; margin-right: 2px; }
-.topbar .light { all: unset; width: 12px; height: 12px; border-radius: 50%; cursor: pointer; position: relative; box-shadow: inset 0 0 0 .5px rgba(0,0,0,.25); }
-.topbar .light.close { background: #ff5f57; }
-.topbar .light.min { background: #febc2e; }
-.topbar .light.pin { background: #28c840; }
-.topbar .light::after { content: ""; position: absolute; inset: 0; display: grid; place-items: center; font: 700 9px/12px var(--sans, system-ui); color: rgba(0,0,0,.55); text-align: center; opacity: 0; transition: opacity .12s; }
-.topbar .light.close::after { content: "×"; font-size: 11px; }
-.topbar .light.min::after { content: "−"; }
-.topbar .light.pin::after { content: "↗"; }
-.topbar .light.pin.on::after { content: "↙"; }
-.topbar .lights:hover .light::after, .topbar .light:focus-visible::after { opacity: 1; }
-.topbar .light:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
 /* Mudanças do registro e do lote por momento de gravação */
 .bt-group { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; animation: rise .3s cubic-bezier(.2,.8,.2,1) both; }
@@ -800,3 +787,44 @@ table.cmpt tr.rev { opacity: .7; }
 .seg-tabs { grid-template-columns: repeat(5, auto); }
 .seg-tabs button { padding: 7px 8px; }
 .seg-tabs .ind { left: 0; width: var(--iw, 0); transform: translateX(var(--ix, 0)); transition: transform .38s cubic-bezier(.3,1.35,.5,1), width .3s cubic-bezier(.3,1.2,.5,1); }
+/* Painel estreito (o flutuante vai até 340 px): abas mais justas para caber sem encostar. */
+@media (max-width: 400px) {
+  .seg-tabs { gap: 2px; padding: 3px; }
+  .seg-tabs button { padding: 7px 4px; font-size: 11.5px; gap: 3px; }
+  .seg-tabs i { padding: 0 4px; }
+}
+
+/* Cabeçalho: marca, nome e instância à esquerda; ações (configurações, painel lateral, tema, fechar) à direita. */
+.topbar .host { margin-left: 2px; }
+.topbar .actions { margin-left: auto; }
+.topbar .icon-btn.on { background: rgba(255,255,255,.14); color: #fff; }
+
+/* Configurações dentro do painel */
+.st-sheet { position: fixed; inset: 46px 0 0 0; z-index: 30; display: flex; flex-direction: column; background: var(--bg); border-top: 1px solid var(--line); animation: stIn .3s cubic-bezier(.16,1,.3,1) both; }
+@keyframes stIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+.st-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 6px; }
+.st-head b { display: inline-flex; gap: 8px; align-items: center; font-size: 14px; }
+.st-head b svg { width: 16px; height: 16px; color: var(--teal-2); }
+.st-body { overflow: auto; padding: 6px 14px 18px; display: flex; flex-direction: column; gap: 8px; }
+.st-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.st-row.col { flex-direction: column; align-items: stretch; gap: 8px; }
+.st-row b { display: block; font-size: 13px; }
+.st-row small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+.st-sw { all: unset; cursor: pointer; flex: none; width: 36px; height: 20px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line-2); position: relative; transition: background .2s; }
+.st-sw i { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--muted); transition: transform .25s cubic-bezier(.3,1.35,.5,1), background .2s; }
+.st-sw.on { background: var(--teal); border-color: var(--teal); }
+.st-sw.on i { transform: translateX(16px); background: #fff; }
+.st-sw:focus-visible, .st-key:focus-visible, .st-seg button:focus-visible { outline: 2px solid var(--teal-2); outline-offset: 2px; }
+.st-seg { display: flex; gap: 4px; background: var(--surface-2); border-radius: 9px; padding: 3px; }
+.st-seg button { all: unset; cursor: pointer; flex: 1; text-align: center; padding: 6px 4px; border-radius: 7px; font-size: 12px; font-weight: 600; color: var(--muted); transition: background .2s, color .2s; }
+.st-seg button.on { background: var(--teal); color: #fff; }
+:root[data-theme="dark"] .st-seg button.on { background: #2bb39f; color: #04211d; }
+.st-key { all: unset; cursor: pointer; flex: none; font-size: 12px; padding: 5px 9px; border: 1px dashed var(--line-2); border-radius: 8px; color: var(--fg-2); }
+.st-key.rec { border-style: solid; border-color: var(--teal); color: var(--teal-2); animation: stPulse 1.2s ease-in-out infinite; }
+@keyframes stPulse { 50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--teal) 25%, transparent); } }
+.st-links { display: flex; gap: 10px; margin: -2px 2px 2px; }
+.btn.link { background: none; border: 0; color: var(--teal-2); padding: 4px 2px; min-height: 0; }
+.btn.link:hover { text-decoration: underline; }
+
+/* Animações desligadas nas configurações */
+:root[data-motion="off"] *, :root[data-motion="off"] *::before, :root[data-motion="off"] *::after { animation-duration: 0s !important; animation-iteration-count: 1 !important; transition-duration: 0s !important; }

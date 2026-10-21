@@ -470,7 +470,8 @@ async function checkAccess(origin: string, force = false): Promise<AccessReport>
     if (cached) return cached;
   }
   const report = await detectAccess(makeClient(origin));
-  await session.set({ [key]: report });
+  // Fonte que só demorou não fica guardada: a próxima análise confere de novo.
+  if (!report.slow?.length) await session.set({ [key]: report });
   return report;
 }
 

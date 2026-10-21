@@ -24,33 +24,36 @@ export type AccessLevel = 'full' | 'partial' | 'none';
 export interface AccessReport {
   level: AccessLevel;
   states: Record<Source, AccessState>;
-  /** Fontes negadas, por nome técnico, para o usuário copiar no chamado. */
+  /** Fontes negadas (401/403), por nome técnico, para o usuário copiar no chamado. */
   denied: Source[];
+  /** Fontes que não responderam a tempo nem na segunda tentativa: não é falta de acesso, é instância lenta. */
+  slow: Source[];
   checkedAt: string;
 }
 
 /**
  * Uma chamada GET com sysparm_limit=1 por fonte, todas em paralelo.
  * Decide o que o painel pode prometer: perícia completa, parcial ou só orientação.
+ *
+ * O prazo conta também o tempo na fila do cliente (6 por vez), então com a instância lenta as últimas fontes
+ * estouravam e apareciam como "sem acesso" para quem é admin. Agora: prazo maior, segunda tentativa só para as que
+ * estouraram, e o que continuar sem resposta vai para `slow`, separado de `denied` (401/403).
  */
-export async function detectAccess(client: RestClient, timeoutMs = 3000): Promise<AccessReport> {
-  const entries = await Promise.all(
-    SOURCES.map(async (table) => {
-      const r = await withTimeout(
-        client.query({ table, query: '', fields: ['sys_id'], limit: 1 }),
-        timeoutMs,
-        { rows: [], status: 0, access: 'timeout' as AccessState },
-      );
-      // Tabela vazia é acessível; só 403/401 é negado.
-      return [table, r.access] as const;
-    }),
-  );
-  const states = Object.fromEntries(entries) as Record<Source, AccessState>;
-  // Só 'ok' e 'empty' contam como leitura. Timeout e erro de rede também limitam o resultado.
+export async function detectAccess(client: RestClient, timeoutMs = 8000): Promise<AccessReport> {
+  const probe = (table: Source) => withTimeout(
+    client.query({ table, query: '', fields: ['sys_id'], limit: 1 }),
+    timeoutMs,
+    { rows: [], status: 0, access: 'timeout' as AccessState },
+  ).then((r) => [table, r.access] as const);
+  const states = Object.fromEntries(await Promise.all(SOURCES.map(probe))) as Record<Source, AccessState>;
+  const retry = SOURCES.filter((s) => states[s] === 'timeout');
+  if (retry.length) Object.assign(states, Object.fromEntries(await Promise.all(retry.map(probe))));
+  // Só 'ok' e 'empty' contam como leitura (tabela vazia é acessível).
   const readable = (s: AccessState) => s === 'ok' || s === 'empty';
-  const denied = SOURCES.filter((s) => !readable(states[s]));
-  const level: AccessLevel = !readable(states.sys_audit) ? 'none' : denied.length ? 'partial' : 'full';
-  return { level, states, denied, checkedAt: new Date().toISOString() };
+  const denied = SOURCES.filter((s) => states[s] === 'denied');
+  const slow = SOURCES.filter((s) => !readable(states[s]) && states[s] !== 'denied');
+  const level: AccessLevel = !readable(states.sys_audit) ? 'none' : denied.length || slow.length ? 'partial' : 'full';
+  return { level, states, denied, slow, checkedAt: new Date().toISOString() };
 }
 
 /** Retenção configurada em sys_auto_flush para as tabelas de rastro (só regras sem condição). Negado → vazio. */

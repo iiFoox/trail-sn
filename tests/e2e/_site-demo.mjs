@@ -44,8 +44,9 @@ await panelFrame.evaluate(() => document.querySelector('.btns a, .headcard a')?.
 await page.waitForTimeout(300);
 results.toast = await panelFrame.evaluate(() => document.querySelector('.toast')?.textContent);
 results.panelUrlAfterClick = panelFrame.url().replace(/^.*\/demo/, '/demo');
-const macLights = await panelFrame.$$eval('.topbar .lights .light', (ls) => ls.length);
-if (macLights !== 3) errs.push('esperava 3 bolinhas estilo Mac no topo do painel flutuante, achei ' + macLights);
+// Cabeçalho do painel flutuante: engrenagem das configurações e o X que esconde na bolinha (sem as bolinhas do Mac).
+const headBtns = await panelFrame.$$eval('.topbar .actions .icon-btn', (bs) => bs.map((b) => b.getAttribute('aria-label')));
+if (!headBtns.includes('Configurações') || !headBtns.some((l) => l?.startsWith('Fechar'))) errs.push('cabeçalho do painel sem configurações ou sem o X: ' + JSON.stringify(headBtns));
 // bolinha-assistente + balão no formulário (.compo .shot):
 // boas-vindas fecham após 5s, depois o balão só aparece com o mouse em cima da bolinha
 const balloonAfterWelcome = await page.$eval('#demo-balloon', (el) => el.hidden);

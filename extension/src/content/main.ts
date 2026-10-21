@@ -8,10 +8,10 @@ import { TRAIL_GLYPH } from '../shared/mark';
  * Convivência com o SN Utils: prefixo trail- em tudo, shadowRoot próprio, ícone depois dos badges.
  */
 import { fmt, t } from '../shared/i18n';
-import { loadPrefs, normalize, PREFS_KEY, resolvedTheme, type Prefs } from '../shared/prefs';
+import { comboFromEvent, loadPrefs, normalize, PREFS_KEY, resolvedTheme, type Prefs } from '../shared/prefs';
 import type { PageContext } from '../shared/messages';
 import { openDiffWindow, type DiffWindowRequest } from './diffWindow';
-import { canShowAssistantMessage, disposeFloat, initAssistant, openFloat, setAssistantEnabled, setFloatTheme, showAssistantMessage, showFloat, toggleFloat } from './floatPanel';
+import { canShowAssistantMessage, disposeFloat, initAssistant, openFloat, setAssistantEnabled, setFloatMotion, setFloatTheme, showAssistantMessage, showFloat, toggleFloat, toggleFloatByKey } from './floatPanel';
 // Se a cópia anterior ainda responde, ela solta observers e listeners antes desta assumir.
 document.dispatchEvent(new Event('trail:dispose-content'));
 for (const el of deepWalk(document)) {
@@ -34,6 +34,7 @@ function dispose(): void {
   clearTimeout(wsTimer);
   document.removeEventListener('click', scheduleWorkspaceScan, true);
   document.removeEventListener('keydown', onShortcut, true);
+  removeEventListener('message', onFrameKey);
   document.removeEventListener('trail:context', onPageContext);
   document.removeEventListener('trail:dispose-content', dispose);
   document.removeEventListener('trail:bubble-visible', welcome);
@@ -57,10 +58,13 @@ document.addEventListener('trail:dispose-content', dispose);
 let strings = t('pt');
 let panelMode: Prefs['panelMode'] | undefined;
 let theme: 'dark' | 'light' = 'dark';
+/** Atalho das configurações para abrir e fechar o painel, e a aba deste quadro (vem do worker). */
+let panelKey = '';
+let knownTabId: number | undefined;
 let showIcons = true;
 const hosts = new Set<HTMLElement>();
 const KEY_HINT = 'Alt+Shift+T';
-void loadPrefs().then((p) => { if (!checkContext()) return; strings = t(p.lang); panelMode = p.panelMode; theme = resolvedTheme(p.theme); applyIcons(p.showIcons); void restoreFloat(p); }).catch(() => undefined);
+void loadPrefs().then((p) => { if (!checkContext()) return; strings = t(p.lang); panelMode = p.panelMode; theme = resolvedTheme(p.theme); panelKey = p.panelKey; setFloatMotion(p.motion); applyIcons(p.showIcons); void restoreFloat(p); }).catch(() => undefined);
 
 // ---------- painel flutuante (só no quadro de cima) ----------
 /** Recarregou a página com o painel aberto: ele volta no mesmo estado (aberto ou minimizado). */
@@ -70,6 +74,7 @@ async function restoreFloat(p: Prefs): Promise<void> {
     const r = await chrome.runtime.sendMessage({ type: 'float-get' }) as { tabId?: number; open?: boolean; min?: boolean } | undefined;
     if (!checkContext()) return;
     if (typeof r?.tabId !== 'number') return;
+    knownTabId = r.tabId;
     if (r.open) openFloat(r.tabId, { theme, minimized: !!r.min && p.showBubble });
     await initAssistant(r.tabId, origin, p.showBubble, strings.bubbleTip);
     if (!checkContext()) return;
@@ -90,6 +95,8 @@ function onPrefsChanged(ch: { [key: string]: chrome.storage.StorageChange }, are
   panelMode = after.panelMode;
   theme = resolvedTheme(after.theme);
   setFloatTheme(theme);
+  panelKey = after.panelKey;
+  setFloatMotion(after.motion);
   if (window === window.top) {
     setAssistantEnabled(after.showBubble);
     if (!before.showBubble && after.showBubble) welcome();
@@ -104,11 +111,24 @@ chrome.storage?.onChanged?.addListener(onPrefsChanged);
 // (no Edge, Alt+Shift+T pode ficar sem atribuir se outra extensão ou o próprio navegador já usa).
 function onShortcut(e: KeyboardEvent): void {
   if (!checkContext()) return;
+  // Atalho do painel (configurável). Num iframe do formulário, o quadro de cima é quem tem o painel.
+  if (panelKey && comboFromEvent(e) === panelKey) {
+    e.preventDefault();
+    if (window !== window.top) { try { window.top?.postMessage({ trailKey: 'toggle-panel' }, location.origin); } catch { /* outra origem */ } }
+    else if (knownTabId !== undefined) toggleFloatByKey(knownTabId, theme);
+    return;
+  }
   if (!e.altKey || !e.shiftKey || e.ctrlKey || e.metaKey || e.code !== 'KeyT') return;
   e.preventDefault();
   chrome.runtime.sendMessage({ type: 'toggle-icons' }).catch(() => undefined);
 }
 document.addEventListener('keydown', onShortcut, true);
+// O atalho apertado dentro do iframe do formulário chega aqui, no quadro de cima.
+function onFrameKey(e: MessageEvent): void {
+  if (!checkContext() || window !== window.top || e.origin !== location.origin) return;
+  if ((e.data as { trailKey?: string } | null)?.trailKey === 'toggle-panel' && knownTabId !== undefined) toggleFloatByKey(knownTabId, theme);
+}
+addEventListener('message', onFrameKey);
 
 /** Boas-vindas uma vez para cada registro, quando a bolinha está visível. */
 const welcomePending = new Set<string>();
