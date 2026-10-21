@@ -25,7 +25,8 @@ import { historyToAudit } from './history';
 import { evalExpr, type Env } from './scriptEval';
 import { shared, type SharedClient } from './sharedClient';
 import type { AccessState, Row } from './types';
-import { evalCondition, isFormSubmitFor, isRecordWrite, isWorkspaceAction, shift, toMs } from './util';
+import type { QueryRequest, QueryResult } from './client/RestClient';
+import { evalCondition, isFormSubmitFor, isRecordWrite, isWorkspaceAction, mergeWindows, shift, toMs, withTimeout } from './util';
 
 // ---------------------------------------------------------------- campos de tempo
 
@@ -152,7 +153,27 @@ export interface SaveTimingOptions {
   baselineLimit?: number;
   /** Mínimo de amostras para comparar (padrão 5). */
   minBaseline?: number;
+  /** Prazo da mediana, sem segunda tentativa (padrão 2500 ms): estourou, desiste e avisa `baseline_slow`. */
+  baselineTimeoutMs?: number;
   timeoutMs?: number;
+}
+
+/**
+ * Uma tentativa só, com prazo próprio (a mediana é opcional: melhor desistir cedo que gastar 2× o prazo do
+ * `SharedClient`). Conta nas chamadas do cliente; a negação aparece como acesso.
+ */
+function quick(sc: SharedClient, req: QueryRequest, ms: number): Promise<QueryResult> {
+  return withTimeout(sc.inner.query(req).catch(() => ({ rows: [], status: 0, access: 'unknown' as AccessState })), ms, { rows: [], status: 0, access: 'timeout' as AccessState });
+}
+
+/**
+ * Janelas de `sys_created_on` em volta de cada instante, fundidas e unidas por ^NQ. `extra` (filtro de url) entra em
+ * cada bloco. Filtrar `syslog_transaction` só por url não usa índice (11 a 16 s no PDI); por janelas de horário, 184 ms
+ * para duas.
+ */
+export function windowsQuery(instants: string[], before: number, after: number, extra = ''): string {
+  const ws = mergeWindows(instants.filter(Boolean).map((t) => ({ from: shift(t, -before), to: shift(t, after) })));
+  return ws.map((w) => `${extra ? `${extra}^` : ''}sys_created_on>=${w.from}^sys_created_on<=${w.to}`).join('^NQ');
 }
 
 // ---------------------------------------------------------------- campos disponíveis
@@ -326,6 +347,8 @@ export async function saveTiming(
   if (!at) { notes.push('save_not_found'); return finish(base()); }
 
   // ---------- 2: a transação do salvamento ----------
+  const hours = opts.baselineHours ?? 24;
+  const bTimeout = opts.baselineTimeoutMs ?? 2500;
   const txRes = await sc.query({ table: 'syslog_transaction', query: `sys_created_on>=${shift(at, -5)}^sys_created_on<=${shift(at, 60)}^ORDERBYsys_created_on`, fields: requestFields(fset), limit: 200 });
   if (txRes.access === 'denied' || txRes.access === 'no_filter') { notes.push('tx_denied'); return finish({ ...base(), ran: await ranFromConditions() }); }
   const tf = probeFields(fset, txRes.rows);
@@ -342,7 +365,6 @@ export async function saveTiming(
   const via = txVia(row.url);
 
   // ---------- 3: o que rodou (rastros + condições) e a mediana ----------
-  const hours = opts.baselineHours ?? 24;
   const bscope = baselineScope(via, row.url ?? '', tables);
   let baselineSlow = false;
   const metricP = q('sys_db_object', `nameIN${RULE_METRIC_TABLES.join(',')}`, ['name'], 5);
@@ -352,9 +374,7 @@ export async function saveTiming(
     rulesP().then((brs) => brs.length ? q('syslog', `sys_created_on>=${shift(start, -1)}^sys_created_on<=${shift(end, 1)}^sourceIN${[...new Set(brs.map((b) => b.name ?? '').filter((n) => n && !/[,^]/.test(n)))].slice(0, 100).join(',')}`, ['source', 'sys_created_on'], 50) : []),
     q('sysevent', `instance=${sysId}^sys_created_on>=${shift(start, -1)}^sys_created_on<=${shift(end, 1)}`, ['sys_id', 'name', 'sys_created_on'], 50),
     q('sys_flow_context', `source_record=${sysId}^sys_created_on>=${shift(start, -1)}^sys_created_on<=${shift(end, 5)}`, ['sys_id', 'name', 'sys_created_on'], 20),
-    // Filtro por url em syslog_transaction não usa índice: no PDI levou 11 s (estoura o prazo duas vezes).
-    bscope ? sc.query({ table: 'syslog_transaction', query: `${bscope.query}^sys_created_on>=${shift(at, -hours * 3600)}^sys_created_on<=${at}^ORDERBYDESCsys_created_on`, fields: requestFields(fset), limit: opts.baselineLimit ?? 200 })
-      .then((r) => { if (r.access === 'timeout') baselineSlow = true; return r.rows; }) : Promise.resolve([] as Row[]),
+    baselineRows(),
     metricP,
   ]);
   for (const m of metric) if (m.name) notes.push(`rule_metrics_table:${m.name}`);
@@ -404,6 +424,22 @@ export async function saveTiming(
   };
   const w = whereOf(out);
   return finish(w ? { ...out, where: w } : out);
+
+  // ---------- mediana: salvamentos do mesmo tipo, sem varrer 24 h de syslog_transaction por url ----------
+  async function baselineRows(): Promise<Row[]> {
+    if (!bscope) return [];
+    const done = (r: QueryResult) => { if (r.access === 'timeout') baselineSlow = true; return r.rows; };
+    // Job/rotina: o mesmo url (exato), numa tentativa só.
+    if (bscope.scope === 'url') return done(await quick(sc, { table: 'syslog_transaction', query: `${bscope.query}^sys_created_on>=${shift(at, -hours * 3600)}^sys_created_on<=${at}`, fields: requestFields(fset), limit: opts.baselineLimit ?? 200 }, bTimeout));
+    // Formulário, API e Workspace: janelas em volta das últimas gravações de outros registros da tabela.
+    // Um prazo só para as duas consultas. Últimas gravações de outros registros da tabela (sys_updated_on costuma ter índice).
+    const deadline = Date.now() + bTimeout;
+    const others = await quick(sc, { table, query: `sys_updated_on>=${shift(at, -hours * 3600)}^sys_updated_on<=${at}^ORDERBYDESCsys_updated_on`, fields: ['sys_id', 'sys_updated_on'], limit: 21 }, bTimeout);
+    if (others.access === 'timeout') { baselineSlow = true; return []; }
+    const instants = others.rows.filter((r) => r.sys_id !== sysId).map((r) => r.sys_updated_on ?? '').filter((t) => t && t < shift(at, -2)).slice(0, 20);
+    if (!instants.length) return [];
+    return done(await quick(sc, { table: 'syslog_transaction', query: windowsQuery(instants, 2, 30, bscope.query), fields: requestFields(fset), limit: opts.baselineLimit ?? 200 }, Math.max(200, deadline - Date.now())));
+  }
 
   // ---------- regras cujas condições valem para esta gravação ----------
   function rulesP(): Promise<Row[]> {
@@ -501,25 +537,49 @@ export interface RecordSaveTimes {
 
 /**
  * Salvamentos deste registro nos últimos `days` dias (padrão 7), com tempo, mais recentes primeiro (para o Histórico).
+ * Os instantes vêm da auditoria (ou do histórico do formulário) e do próprio registro (criação e última gravação); a
+ * transação é procurada em janelas de `sys_created_on` em volta deles (`[t−5 s, t+60 s]`, até 20, unidas por ^NQ).
+ * Filtrar por `urlLIKE<sys_id>` em 7 dias levava 16 s no PDI e estourava o prazo.
  * Veredito por limites fixos (2 s / 5 s); a comparação com a mediana fica no `saveTiming` de cada um.
- * `syslog_transaction` negada → lista vazia com `tx_denied`.
+ * `syslog_transaction` negada → lista vazia com `tx_denied`. Sem nenhum instante: `saves_unknown`, sem consultar.
  */
 export async function recordSaveTimes(client: RestClient, input: { table: string; sysId: string }, opts: { days?: number; limit?: number; timeoutMs?: number } = {}): Promise<RecordSaveTimes> {
   const started = Date.now();
   const sc: SharedClient = shared(client, opts.timeoutMs);
   const calls0 = sc.calls;
   const notes: string[] = [];
-  const fset = await timingFields(sc);
-  if (fset.from === 'probe') notes.push('dict_unavailable');
+  const { table, sysId } = input;
   const since = new Date(Date.now() - (opts.days ?? 7) * 864e5).toISOString().replace('T', ' ').slice(0, 19);
-  const r = await sc.query({ table: 'syslog_transaction', query: `urlLIKE${input.sysId}^sys_created_on>=${since}^ORDERBYDESCsys_created_on`, fields: requestFields(fset), limit: opts.limit ?? 100 });
+  const [fset, recRes, auditRes] = await Promise.all([
+    timingFields(sc),
+    sc.query({ table, query: `sys_id=${sysId}`, fields: ['sys_id', 'sys_created_on', 'sys_updated_on'], limit: 1 }),
+    sc.query({ table: 'sys_audit', query: `tablename=${table}^documentkey=${sysId}^sys_created_on>=${since}^ORDERBYDESCsys_created_on`, fields: ['sys_created_on', 'record_checkpoint'], limit: 500 }),
+  ]);
+  if (fset.from === 'probe') notes.push('dict_unavailable');
+  let instants = auditRes.rows.map((a) => a.sys_created_on ?? '');
+  if (auditRes.access === 'ok') notes.push('saves_from_audit');
+  else if (auditRes.access === 'denied' && sc.inner.history) {
+    const h = await sc.inner.history(table, sysId).catch(() => null);
+    if (h?.entries.length) { instants = h.entries.map((e) => e.at); notes.push('saves_from_history'); }
+  }
+  const rec = recRes.rows[0];
+  // A última gravação pode não ter mexido em campo auditado; a criação também é um salvamento.
+  for (const t of [rec?.sys_updated_on, rec?.sys_created_on]) if (t) instants.push(t);
+  const recent = [...new Set(instants.filter((t) => t && t >= since))].sort().reverse().slice(0, 20);
+  const main = ['syslog_transaction'];
+  const done = (rows: Row[], tf: Partial<Record<TimingKey, string>>): RecordSaveTimes => {
+    const seen = new Set<string>();
+    const saves = rows.filter((t) => isRecordWrite(t.url, sysId) && !seen.has(t.sys_id ?? t.sys_created_on ?? '') && seen.add(t.sys_id ?? t.sys_created_on ?? '')).map((t): SaveTimeRow => {
+      const { parts, totalMs } = readParts(t, tf);
+      return { at: t.sys_created_on ?? '', ...(t.sys_id ? { txSysId: t.sys_id } : {}), url: t.url ?? '', via: txVia(t.url), user: t.sys_created_by ?? '', ...(totalMs !== undefined ? { totalMs } : {}), parts, verdict: verdictOf(totalMs).verdict };
+    }).sort((a, b) => b.at.localeCompare(a.at)).slice(0, opts.limit ?? 100);
+    return { saves, timingFields: tf, access: { ...sc.access }, denied: sc.denied(main), slow: sc.slow(main), notes: [...new Set(notes)], timing: { totalMs: Date.now() - started, calls: sc.calls - calls0 } };
+  };
+  if (!recent.length) { notes.push('saves_unknown'); return done([], fset.from === 'dictionary' ? fset.fields : {}); }
+  const r = await sc.query({ table: 'syslog_transaction', query: windowsQuery(recent, 5, 60, `urlLIKE${sysId}`), fields: requestFields(fset), limit: Math.min(1000, 50 * recent.length) });
   if (r.access === 'denied' || r.access === 'no_filter') notes.push('tx_denied');
-  const tf = probeFields(fset, r.rows);
-  const saves = r.rows.filter((t) => isRecordWrite(t.url, input.sysId)).map((t): SaveTimeRow => {
-    const { parts, totalMs } = readParts(t, tf);
-    return { at: t.sys_created_on ?? '', ...(t.sys_id ? { txSysId: t.sys_id } : {}), url: t.url ?? '', via: txVia(t.url), user: t.sys_created_by ?? '', ...(totalMs !== undefined ? { totalMs } : {}), parts, verdict: verdictOf(totalMs).verdict };
-  }).sort((a, b) => b.at.localeCompare(a.at));
-  return { saves, timingFields: tf, access: { ...sc.access }, denied: sc.denied(['syslog_transaction']), slow: sc.slow(['syslog_transaction']), notes, timing: { totalMs: Date.now() - started, calls: sc.calls - calls0 } };
+  if (r.access === 'timeout') notes.push('tx_timeout');
+  return done(r.rows, probeFields(fset, r.rows));
 }
 
 /** Só os salvamentos lentos ou muito lentos do registro. */

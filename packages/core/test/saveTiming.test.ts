@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { FakeRestClient } from '../src/client/FakeRestClient';
-import { describeSaveTiming, parseMs, recentSlowSaves, recordSaveTimes, saveTiming, verdictOf } from '../src/saveTiming';
+import { FakeRestClient, filterRows } from '../src/client/FakeRestClient';
+import { describeSaveTiming, parseMs, recentSlowSaves, recordSaveTimes, saveTiming, verdictOf, windowsQuery } from '../src/saveTiming';
 import { shift } from '../src/util';
 
 const ID = 'a'.repeat(32);
@@ -17,7 +17,10 @@ const history = (n: number, ms = 600) => Array.from({ length: n }, (_, i) => tx(
 function base(o: { tx?: Record<string, string>[]; dict?: Record<string, string>[] | null; brs?: Record<string, string>[] } = {}) {
   const c = new FakeRestClient();
   c.rows('sys_db_object', [{ name: 'incident', 'super_class.name': 'task' }, { name: 'task', 'super_class.name': '' }]);
-  c.rows('incident', [{ sys_id: ID, sys_created_on: '2026-10-20 09:00:00', sys_updated_on: AT, sys_updated_by: 'beth', state: '2', priority: '1', category: 'network' }]);
+  // Cada salvamento de outro registro nas transações também atualizou esse registro (sys_updated_on ~1 s antes do fim).
+  const others = (o.tx ?? []).map((t) => ({ id: (t.url ?? '').match(/sys_uniqueValue=([0-9a-f]{32})/)?.[1] ?? (t.url ?? '').match(/table\/incident\/([0-9a-f]{32})/)?.[1], at: t.sys_created_on ?? '' }))
+    .filter((x) => x.id && x.id !== ID).map((x) => ({ sys_id: x.id!, sys_updated_on: shift(x.at, -1) }));
+  c.rows('incident', [{ sys_id: ID, sys_created_on: '2026-10-20 09:00:00', sys_updated_on: AT, sys_updated_by: 'beth', state: '2', priority: '1', category: 'network' }, ...others]);
   c.rows('sys_audit', [
     { fieldname: 'state', oldvalue: '1', newvalue: '2', user: 'beth', sys_created_on: AT, record_checkpoint: '3', tablename: 'incident', documentkey: ID },
     { fieldname: 'priority', oldvalue: '3', newvalue: '1', user: 'beth', sys_created_on: shift(AT, -7200), record_checkpoint: '2', tablename: 'incident', documentkey: ID },
@@ -88,11 +91,38 @@ describe('saveTiming', () => {
     expect(describeSaveTiming(t, 'en')).toContain('Saved in 4.2 s — 3.1 s in business rules and 41 database queries (0.9 s).');
   });
 
-  it('mediana que estoura o prazo (filtro por url, lento no PDI): avisa baseline_slow, não "poucos salvamentos"', async () => {
-    const c = base();
-    const rows = [tx({ sys_id: 'T1', sys_created_on: shift(AT, 1), response_time: '2500' })];
-    c.respond('syslog_transaction', (req) => (req.query.startsWith('urlLIKE') ? { rows: [], status: 0, access: 'timeout' } : rows));
+  it('mediana: janelas em volta das gravações de outros registros, unidas por ^NQ, sem varrer 24 h por url', async () => {
+    const c = base({ tx: [tx({ sys_id: 'T1', sys_created_on: shift(AT, 1), response_time: '650' }), ...history(12)] });
     const t = await saveTiming(c, { table: 'incident', sysId: ID, checkpoint: 3 });
+    expect(t.baseline).toMatchObject({ n: 12, scope: 'table' });
+    const upd = c.log.find((r) => r.table === 'incident' && r.query.startsWith('sys_updated_on>='))!;
+    expect(upd).toMatchObject({ limit: 21, fields: ['sys_id', 'sys_updated_on'] });
+    const q = c.log.filter((r) => r.table === 'syslog_transaction').map((r) => r.query);
+    expect(q).toHaveLength(2);
+    const blocks = q[1]!.split('^NQ');
+    expect(blocks).toHaveLength(12);
+    // Cada bloco: o filtro de url do tipo + uma janela curta de sys_created_on (nunca as 24 h inteiras).
+    for (const b of blocks) {
+      const m = b.match(/^urlLIKE\/incident\.do\?\^urlLIKEsys_uniqueValue=\^sys_created_on>=(.{19})\^sys_created_on<=(.{19})$/)!;
+      expect(m).toBeTruthy();
+      expect(Date.parse(m[2]!.replace(' ', 'T') + 'Z') - Date.parse(m[1]!.replace(' ', 'T') + 'Z')).toBe(32_000);
+    }
+  });
+
+  it('mediana que estoura o prazo: desiste cedo (uma tentativa), avisa baseline_slow, não "poucos salvamentos"', async () => {
+    const rows = [tx({ sys_id: 'T1', sys_created_on: shift(AT, 1), response_time: '2500' }), ...history(8)];
+    const c = base({ tx: rows });
+    let slowCalls = 0;
+    c.respond('syslog_transaction', async (req) => {
+      if (!req.query.startsWith('urlLIKE')) return filterRows(rows, req.query);
+      slowCalls++;
+      await new Promise((r) => setTimeout(r, 300));
+      return filterRows(rows, req.query);
+    });
+    const t0 = Date.now();
+    const t = await saveTiming(c, { table: 'incident', sysId: ID, checkpoint: 3 }, { baselineTimeoutMs: 40 });
+    expect(Date.now() - t0).toBeLessThan(250);
+    expect(slowCalls).toBe(1);
     expect(t.txSysId).toBe('T1');
     expect(t.notes).toContain('baseline_slow');
     expect(t.notes.some((n) => n.startsWith('baseline_few'))).toBe(false);
@@ -198,19 +228,48 @@ describe('saveTiming', () => {
 });
 
 describe('recordSaveTimes / recentSlowSaves', () => {
-  it('lista as gravações do registro com tempo, sem recargas da página', async () => {
+  it('lista as gravações do registro com tempo, sem recargas da página: janelas pela auditoria, não urlLIKE em 7 dias', async () => {
     const now = new Date(Date.now() - 3600_000).toISOString().replace('T', ' ').slice(0, 19);
     const c = base({ tx: [
       tx({ sys_id: 'S1', sys_created_on: now, response_time: '6200' }),
       tx({ sys_id: 'S2', sys_created_on: shift(now, -600), response_time: '400' }),
       tx({ sys_id: 'R', url: `/incident.do?sys_id=${ID}`, sys_created_on: shift(now, -300), response_time: '100' }),
       tx({ sys_id: 'API', url: `/api/now/table/incident/${ID}`, sys_created_on: shift(now, -900), response_time: '2500' }),
+      tx({ sys_id: 'LONGE', sys_created_on: shift(now, -3 * 864e2), response_time: '9000' }),
     ] });
+    // Gravações vistas na auditoria (a transação termina um pouco depois do instante gravado).
+    c.rows('sys_audit', [shift(now, -1), shift(now, -601), shift(now, -901)].map((at, i) => ({ fieldname: 'state', user: 'beth', sys_created_on: at, record_checkpoint: String(5 - i), tablename: 'incident', documentkey: ID })));
     const r = await recordSaveTimes(c, { table: 'incident', sysId: ID });
     expect(r.saves.map((s) => [s.txSysId, s.via, s.verdict])).toEqual([['S1', 'form', 'muito_lento'], ['S2', 'form', 'normal'], ['API', 'api', 'lento']]);
+    expect(r.notes).toContain('saves_from_audit');
+    const q = c.log.filter((x) => x.table === 'syslog_transaction');
+    expect(q).toHaveLength(1);
+    expect(q[0]!.query.split('^NQ').every((b) => b.startsWith(`urlLIKE${ID}^sys_created_on>=`))).toBe(true);
     const slow = await recentSlowSaves(c, { table: 'incident', sysId: ID });
     expect(slow.saves.map((s) => s.txSysId)).toEqual(['S1', 'API']);
   });
+
+  it('auditoria negada: instantes pelo histórico do formulário; sem instante nenhum, não consulta', async () => {
+    const now = new Date(Date.now() - 3600_000).toISOString().replace('T', ' ').slice(0, 19);
+    const c = base({ tx: [tx({ sys_id: 'S1', sys_created_on: shift(now, 2), response_time: '700' })] });
+    c.deny('sys_audit').deny('incident');
+    c.withHistory({ entries: [{ at: now, userId: 'u1', changes: [{ field: 'state', oldValue: 'New', newValue: 'In Progress' }] }], fields: ['state'] });
+    const r = await recordSaveTimes(c, { table: 'incident', sysId: ID });
+    expect(r.saves.map((s) => s.txSysId)).toEqual(['S1']);
+    expect(r.notes).toContain('saves_from_history');
+    const none = base({ tx: [tx({ sys_id: 'S1', sys_created_on: now })] });
+    none.deny('sys_audit').deny('incident');
+    const e = await recordSaveTimes(none, { table: 'incident', sysId: ID });
+    expect(e.saves).toEqual([]);
+    expect(e.notes).toContain('saves_unknown');
+    expect(none.log.some((x) => x.table === 'syslog_transaction')).toBe(false);
+  });
+
+  it('windowsQuery funde janelas que se sobrepõem', () => {
+    expect(windowsQuery(['2026-10-21 12:00:00', '2026-10-21 12:00:30', '2026-10-21 13:00:00'], 5, 60, 'urlLIKEx')).toBe(
+      'urlLIKEx^sys_created_on>=2026-10-21 11:59:55^sys_created_on<=2026-10-21 12:01:30^NQurlLIKEx^sys_created_on>=2026-10-21 12:59:55^sys_created_on<=2026-10-21 13:01:00');
+  });
+
   it('syslog_transaction negada: lista vazia com tx_denied', async () => {
     const c = base();
     c.deny('syslog_transaction');
