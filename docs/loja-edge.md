@@ -41,7 +41,7 @@ Ao abrir qualquer formulário ou lista no ServiceNow (UI16 clássico, Workspace,
 - **Funciona com ou sem admin (sem instalar nada):** conversa com o servidor usando a sua sessão já autenticada no navegador e respeita rigorosamente as ACLs da instância. Com admin, cruza auditoria, transações, eventos, flows, jobs e scripts; sem admin (como perfil `itil` ou `Flow Designer`), utiliza o histórico do formulário e todas as fontes legíveis, com transparência total sobre o que entrou na análise e o que ficou de fora.
 - **Bolinha-assistente e painel flutuante livre:** a bolinha pode ser arrastada e solta em qualquer lugar da tela (lembra a posição exata), dá boas-vindas uma vez por registro e exibe a dica apenas ao passar o mouse. Um clique abre o painel flutuante com cantos arredondados, redimensionável por qualquer borda ou canto.
 - **Configurações rápidas e modo Sempre Visível:** o cabeçalho conta com acesso direto a **⚙ Configurações** dentro do próprio painel (ligar/desligar animações, gravar atalho de teclado customizado — padrão `Alt+Shift+P`, alternar tema claro/escuro, idioma, modo de abertura e controle dos ícones), botão para enviar ao painel lateral do navegador, e modo **Sempre visível** (Document Picture-in-Picture) que mantém o painel flutuando por cima de tudo, inclusive de outros programas.
-- **Resposta clara com nomes e rótulos do formulário:** informa quem mudou o campo, quando, de qual valor para qual (com rótulos reais via `sys_documentation`, valores legíveis em vez de `sys_id` e links clicáveis nas referências) e o grau de certeza (alta, média ou baixa), acompanhado de um resumo pronto para colar no chamado.
+- **Resposta clara com nomes e rótulos do formulário:** informa quem mudou o campo, quando, de qual valor para qual (com os rótulos reais do formulário, valores legíveis em vez de `sys_id` e links clicáveis nas referências) e o grau de certeza (alta, média ou baixa), acompanhado de um resumo pronto para colar no chamado.
 - **Rastro segundo a segundo e provas verificáveis:** reconstrói a janela temporal da alteração (salvamento do formulário, regras disparadas, eventos, execuções de flow e jobs agendados), listando os fatos concretos que sustentam a conclusão, o motivo do descarte de outras hipóteses e alertas quando há regras em conflito.
 - **Aba Flows com subflows aninhados:** visualização das execuções de flows que rodaram no registro (com hierarquia visual de subflows recuados logo abaixo do flow pai, horário, status e links para a execução) e dos flows configurados para a tabela (com gatilhos descritos em linguagem natural e indicação dos campos que gravam).
 - **"O que roda neste registro":** mapa completo no fim da visualização do registro com as regras de negócio em ordem de execução (display → before → after → async) e indicação dos campos gravados, script includes chamados, client scripts, UI policies, botões e jobs, com busca por texto ou campos gravados, grupos recolhíveis e filtro "Só o que rodou aqui".
@@ -71,7 +71,7 @@ When opening any form or list in ServiceNow (classic UI16, Workspace, Service Op
 - **Works with or without admin (zero installation):** communicates with the ServiceNow instance using your existing authenticated browser session, strictly following server-enforced ACLs. With admin rights, it inspects audit logs, transactions, events, flows, jobs, and scripts; without admin (such as `itil` or `Flow Designer` roles), it uses the form history and all readable sources, providing full transparency on which capabilities were evaluated.
 - **Free-floating assistant bubble & panel:** the assistant bubble can be dragged and placed anywhere on the screen (retains its proportional position across reloads), welcomes you once per record, and displays its tip balloon only on hover. A single click opens the floating panel with rounded corners, resizable from any edge or corner.
 - **Quick settings & Always on Top mode:** the header includes immediate access to in-panel **⚙ Settings** (toggle animations, record custom keyboard shortcuts — default `Alt+Shift+P`, switch light/dark theme, choose language, select open mode, and toggle field icons), a button to dock into the browser's side panel, and **Always on top** (Document Picture-in-Picture) to keep the forensic panel floating above all application windows.
-- **Clear verdict with native form labels:** reveals who changed the field, when, from which value to which (using dictionary labels via `sys_documentation`, human-readable display values instead of technical `sys_id`s, and clickable reference links), accompanied by certainty scoring (high, medium, or low) and a plain-text summary ready to paste into work notes.
+- **Clear verdict with native form labels:** reveals who changed the field, when, from which value to which (using the form's own field labels, human-readable display values instead of technical `sys_id`s, and clickable reference links), accompanied by certainty scoring (high, medium, or low) and a plain-text summary ready to paste into work notes.
 - **Second-by-second trace & verifiable proofs:** reconstructs the time window around the change (form save, business rules, events, flow executions, and scheduled jobs), detailing the facts supporting the conclusion, why alternative causes were ruled out, and warnings for conflicting rules.
 - **Flows tab with nested subflows:** inspects flows that executed on the record (with nested subflows indented under their parent flow, execution status, timestamps, and direct execution links) as well as flows configured for the table (with human-readable triggers and fields written).
 - **"What runs on this record":** comprehensive automation map at the bottom of the whole-record view, displaying business rules in execution sequence (display → before → after → async) with written fields, called script includes, client scripts, UI policies, form buttons, and jobs, complete with text/field search, collapsible groups, and a "Ran here only" filter.
@@ -120,7 +120,7 @@ When opening any form or list in ServiceNow (classic UI16, Workspace, Service Op
 | **Captura 3 (Rastro/Lote)** | PNG ou JPEG | **1280 × 800 px** | [`docs/store/shot-3-rastro.png`](store/shot-3-rastro.png) |
 | **Captura 4 (Comparador)** | PNG ou JPEG | **1280 × 800 px** | [`docs/store/shot-4-comparar.png`](store/shot-4-comparar.png) |
 | **Captura 5 (Flows)** | PNG ou JPEG | **1280 × 800 px** | [`docs/store/shot-5-flows.png`](store/shot-5-flows.png) |
-| **Tile promocional pequeno** | PNG ou JPEG (opcional) | **440 × 280 px** | Não preparado |
+| **Tile promocional pequeno** | PNG ou JPEG (opcional) | **440 × 280 px** | [`docs/store/tile-440x280.png`](store/tile-440x280.png) |
 | **Tile promocional grande** | PNG ou JPEG (opcional) | **1400 × 560 px** | Opcional |
 
 *Nota Edge:* Até 6 capturas; tamanhos aceitos: 640×480 ou 1280×800 px. As 5 capturas preparadas em docs/store estão no segundo formato. Tiles promocionais são opcionais. [Requisitos oficiais do Edge Add-ons](https://learn.microsoft.com/en-us/microsoft-edge/extensions/publish/publish-extension).
@@ -131,7 +131,7 @@ When opening any form or list in ServiceNow (classic UI16, Workspace, Service Op
 |---|---|---|---|
 | **Ícone da extensão** | PNG (embutido no pacote) | **128 × 128 px** | [`extension/public/icons/icon128.png`](../extension/public/icons/icon128.png) |
 | **Capturas de tela** | PNG ou JPEG (mínimo 1, máximo 5) | **1280 × 800 px** (ou 640×400) | [`docs/store/shot-1-resposta.png`](store/shot-1-resposta.png) a `shot-5-flows.png` |
-| **Tile promocional pequeno** | PNG ou JPEG (obrigatório) | **440 × 280 px** | Não preparado |
+| **Tile promocional pequeno** | PNG ou JPEG (obrigatório) | **440 × 280 px** | [`docs/store/tile-440x280.png`](store/tile-440x280.png) |
 | **Tile promocional marquee** | PNG ou JPEG (opcional) | **1400 × 560 px** | Opcional |
 
 *Nota Chrome:* são aceitas de 1 a 5 capturas de 1280×800 ou 640×400 px. O tile promocional pequeno de 440×280 px é obrigatório; o marquee de 1400×560 px é opcional. [Requisitos oficiais de imagens](https://developer.chrome.com/docs/webstore/images) e [campos da listagem](https://developer.chrome.com/docs/webstore/cws-dashboard-listing).
@@ -150,6 +150,7 @@ Enable ServiceNow developers, administrators, and support analysts to inspect wh
 
 Permissions Justification:
 - storage: Saves client-side preferences (theme, language, animation toggle, keyboard shortcut, panel display mode, bubble position) and the user's explicitly connected ServiceNow instance domains.
+- contextMenus: Adds a "Trail" entry to the page right-click menu and right-click entries on the toolbar icon (open floating panel, side panel or window, show/hide field icons, options).
 - sidePanel: Provides side panel integration when the user selects browser side panel mode.
 - activeTab & scripting: Detects the active ServiceNow record context (table, sys_id, and session token) and renders the non-intrusive field icons, floating assistant bubble, and forensic panel on connected tabs.
 - optional_host_permissions (https://*/*): Requested at runtime strictly on user demand via chrome.permissions.request when the user clicks "Connect this instance". Never requests wildcards upon installation.
@@ -166,7 +167,7 @@ https://trail-sn.vercel.app/b3/
 
 ### Declaração de privacidade nas lojas
 
-- **Declaração de dados:** não marque que a extensão não trata dados. Ela lê e processa localmente conteúdo do ServiceNow e usa a sessão do usuário para consultar a instância conectada. Declare no painel os tipos de dados aplicáveis e a finalidade conforme a política publicada; o processamento local não elimina a obrigação de declarar. Revise os campos atuais de cada loja antes de enviar. O Chrome exige transparência sobre dados processados localmente, incluindo conteúdo de sites, dados de formulário e atividade de navegação ([FAQ oficial](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq)). A política publicada hoje ainda afirma que não são tratados dados pessoais; é preciso atualizá-la para descrever esse processamento antes de enviar.
+- **Declaração de dados:** não marque que a extensão não trata dados. Ela lê e processa localmente conteúdo do ServiceNow e usa a sessão do usuário para consultar a instância conectada. Declare no painel os tipos de dados aplicáveis e a finalidade conforme a política publicada; o processamento local não elimina a obrigação de declarar. Revise os campos atuais de cada loja antes de enviar. O Chrome exige transparência sobre dados processados localmente, incluindo conteúdo de sites, dados de formulário e atividade de navegação ([FAQ oficial](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq)). A política publicada já descreve esse processamento (revisada em 21/10/2026).
 - **Uso único (Single Purpose):** *"Investigação pericial e leitura de auditoria e automações em registros do ServiceNow diretamente pelo navegador."*
 - **URL da Política de Privacidade:**
   `https://trail-sn.vercel.app/privacidade/`
@@ -207,11 +208,11 @@ https://trail-sn.vercel.app/b3/
    - Nome: `Trail — Perícia de registros ServiceNow` (ou configurado pelo manifest em `_locales`).
    - Descrição curta e descrição longa: copie os textos das seções 2 e 4.
    - Categoria: **Ferramentas para desenvolvedores**.
-   - Envie as 5 capturas `1280×800 px` (`docs/store/shot-1-resposta.png` a `shot-5-flows.png`). Adicione também o tile promocional obrigatório de 440×280 px, que ainda não foi preparado.
+   - Envie as 5 capturas `1280×800 px` (`docs/store/shot-1-resposta.png` a `shot-5-flows.png`). Adicione também o tile promocional obrigatório `docs/store/tile-440x280.png`.
    - Ícone: o Chrome extrai automaticamente o ícone `128×128 px` do manifest.
 5. Em **Privacidade**:
    - Justificativa do propósito único (Single Purpose): copie da seção 7.
-   - Justificativa de permissões: cole a explicação de cada permissão (`storage`, `sidePanel`, `activeTab`, `scripting`, `optional_host_permissions`) conforme a seção 7.
+   - Justificativa de permissões: cole a explicação de cada permissão (`storage`, `sidePanel`, `activeTab`, `scripting`, `contextMenus`, `optional_host_permissions`) conforme a seção 7.
    - Declaração de uso de dados: declare que os dados do ServiceNow e da navegação são processados para a função anunciada, localmente e em consultas à instância escolhida. Revise cada categoria conforme a tela atual; não use a opção “não coleta dados”. Confirme compartilhamento e finalidade com a política de privacidade vigente.
    - Política de privacidade: `https://trail-sn.vercel.app/privacidade/`.
 6. Em **Instruções para a equipe de revisão**:
