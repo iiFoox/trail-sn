@@ -3,6 +3,7 @@
 Registro contínuo do que foi feito, por quem e o que ficou pendente. Quem continuar o projeto (outra sessão do Claude, outro agente ou outra pessoa) lê daqui para baixo, junto com `docs/PASSAGEM.md`. Entrada nova sempre no topo; cada entrada termina com o que está em aberto.
 
 Convenções:
+- **Toda funcionalidade nova da extensão entra também no site** (`site/b3`), no estilo dele: motion, animações, texto curto. Quem coordena revisa o que outro agente fizer no site antes de publicar.
 - Datas absolutas. Commit e push depois de cada bloco de trabalho.
 - Nada de e-mail, senha ou dado pessoal aqui: o repositório é público.
 - Resultados completos da bateria ficam em `tests/regression/results/` (fora do git); aqui vai só o resumo.
