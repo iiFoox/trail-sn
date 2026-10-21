@@ -11,6 +11,7 @@ import { recordLink } from '../shared/instances';
 import { send } from '../shared/messages';
 import { getPrefs, resolvedTheme } from '../shared/prefs';
 import { trackedTab } from '../shared/tabRef';
+import { FlowsTab } from './Flows';
 import { RecordTimeline } from './Timeline';
 import { WhatIf } from './WhatIf';
 import { FieldMapBox } from './FieldMap';
@@ -24,8 +25,8 @@ const s = t(lang);
 const P = s.p;
 const WINDOW = { before: 3, after: 15 };
 
-type Tab = 'answer' | 'trace' | 'proof' | 'history' | 'whatif';
-const TABS: Tab[] = ['answer', 'trace', 'proof', 'history', 'whatif'];
+type Tab = 'answer' | 'trace' | 'proof' | 'history' | 'flows' | 'whatif';
+const TABS: Tab[] = ['answer', 'trace', 'proof', 'history', 'flows', 'whatif'];
 const demoParams = new URLSearchParams(location.search);
 const isDemo = demoParams.has('demo');
 const forcedHist: 'field' | 'record' = isDemo && demoParams.get('hist') === 'record' ? 'record' : 'field';
@@ -105,7 +106,11 @@ export function Result({ r, origin, access, toast, onField }: { r: Investigation
     if (!box) return;
     const measure = () => {
       const b = box.querySelector<HTMLElement>('button[aria-selected="true"]');
-      if (b) setInd({ x: b.offsetLeft, w: b.offsetWidth });
+      if (!b) return;
+      setInd({ x: b.offsetLeft, w: b.offsetWidth });
+      // Painel estreito: a barra rola para o lado; a aba ativa fica sempre à vista.
+      if (b.offsetLeft < box.scrollLeft) box.scrollLeft = b.offsetLeft - 8;
+      else if (b.offsetLeft + b.offsetWidth > box.scrollLeft + box.clientWidth) box.scrollLeft = b.offsetLeft + b.offsetWidth - box.clientWidth + 8;
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -183,7 +188,7 @@ export function Result({ r, origin, access, toast, onField }: { r: Investigation
       {c && (
         <div class="seg-tabs" role="tablist" ref={tabsRef} style={`--ix:${ind.x}px;--iw:${ind.w}px`}>
           <span class="ind" aria-hidden="true" />
-          {([['answer', P.tabAnswer, 0], ['trace', P.tabTrace, c.trace?.length ?? 0], ['proof', P.tabProof, c.evidence[0]?.facts.length ?? 0], ['history', P.tabHistory, r.changes.length + (r.unaudited ? 1 : 0)], ['whatif', P.wiTab, 0]] as [Tab, string, number][]).map(([k, label, n]) => (
+          {([['answer', P.tabAnswer, 0], ['trace', P.tabTrace, c.trace?.length ?? 0], ['proof', P.tabProof, c.evidence[0]?.facts.length ?? 0], ['history', P.tabHistory, r.changes.length + (r.unaudited ? 1 : 0)], ['flows', P.tabFlows, 0], ['whatif', P.wiTab, 0]] as [Tab, string, number][]).map(([k, label, n]) => (
             <button role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>
               {label}{k !== 'answer' && n > 0 && <i>{n}</i>}{k === 'proof' && (denied.length > 0 || r.unaudited || expired) && <span class="wdot" />}
             </button>
@@ -196,6 +201,7 @@ export function Result({ r, origin, access, toast, onField }: { r: Investigation
       {c && tab === 'answer' && <Answer r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} goProof={() => setTab('proof')} copy={copy} toastFn={toast} />}
       {c && tab === 'trace' && <Trace r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} />}
       {c && tab === 'proof' && <Proof r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} access={access} copy={copy} />}
+      {c && tab === 'flows' && <FlowsTab target={r.target} origin={origin} field={r.target.field} />}
       {c && tab === 'whatif' && <WhatIf r={r} origin={origin} field={field} />}
       {c && tab === 'history' && (
         <>

@@ -10,6 +10,19 @@ Convenções:
 
 ---
 
+## 2026-10-21 — 0.14.0: aba Flows; 0.13.3: bolinha livre
+
+- **Aba "Flows"** (pedido do dono: "não vi uma aba mostrando quais flows rodam naquele registro/tabela"):
+  - motor: `core/src/flows.ts`, `recordFlows(client, { table, sysId })`;
+  - **rodaram neste registro:** `sys_flow_context` com `source_record` = registro, com estado, horário e se é subflow;
+  - **configurados para a tabela:** gatilhos de registro (`sys_hub_trigger_instance_v2`) na tabela ou nas tabelas-pai, com gatilho em palavras, condição, campos que as ações gravam (`sys_hub_action_instance_v2`), escopo e se já rodou aqui;
+  - painel: aba entre Histórico e "E se?" (destaca os flows que gravam o campo investigado) e uma seção no fim do registro inteiro; links para a execução e para o Flow Designer;
+  - sem leitura das execuções ou das definições, a aba diz isso;
+  - em painel estreito as 6 abas rolam para o lado e a aba ativa fica à vista;
+  - testes: `flows.test.ts` e o e2e `tests/e2e/flows.mjs` (agora 10 e2e).
+  - **Falta validar no PDI** com flows reais. O Codex está montando flows nos apps escopados.
+- **0.13.3:** a bolinha fica onde for solta, em qualquer lugar da tela (posição x e y proporcional, sem grudar nas laterais).
+
 ## 2026-10-21 — testes em aplicações escopadas (em andamento, Codex)
 
 A bateria só cobria tabelas globais. O dono pediu testes em apps escopados (o dia a dia do App Engine).
