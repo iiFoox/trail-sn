@@ -24,30 +24,58 @@ export interface MapItem {
 }
 export interface FieldMap { table: string; field: string; tables: string[]; items: MapItem[]; timing: { totalMs: number; calls: number } }
 
-export async function fieldMap(client: RestClient, target: { table: string; field: string }): Promise<FieldMap> {
-  const started = Date.now();
-  const calls0 = client.calls;
-  const q = async (t: string, query: string, fields: string[], limit: number): Promise<Row[]> => { try { return (await client.query({ table: t, query, fields, limit })).rows; } catch { return []; } };
-  const { table, field } = target;
+export interface SharedQuery { table: string; query: string; fields: string[]; limit: number }
+/**
+ * Consultas que o "Quem grava" e o "Quem depende" fazem iguais, para o `SharedClient` ler cada uma uma vez só.
+ * São mais largas do que o "Quem grava" precisa (ex.: client scripts do onChange do campo, policies com o campo na
+ * condição); o filtro fino fica no código de cada módulo.
+ */
+export function sharedQueries(tables: string[], field: string) {
+  const inT = `IN${tables.join(',')}`;
+  return {
+    businessRules: { table: 'sys_script', query: `collection${inT}^active=true`, fields: ['sys_id', 'name', 'when', 'order', 'collection', 'script', 'template', 'condition', 'filter_condition', 'action_insert', 'action_update', 'action_delete', 'action_query'], limit: 1000 },
+    clientScripts: { table: 'sys_script_client', query: `table${inT}^active=true^field=${field}^ORscriptLIKE${field}`, fields: ['sys_id', 'name', 'type', 'field', 'table', 'script', 'ui_type'], limit: 300 },
+    uiPolicies: { table: 'sys_ui_policy', query: `table${inT}^active=true^conditionsLIKE${field}^ORscript_trueLIKE${field}^ORscript_falseLIKE${field}`, fields: ['sys_id', 'short_description', 'table', 'conditions', 'run_scripts', 'script_true', 'script_false', 'reverse_if_false', 'on_load', 'ui_type', 'order'], limit: 300 },
+    uiActions: { table: 'sys_ui_action', query: `table${inT}^active=true^scriptLIKE${field}^ORconditionLIKE${field}`, fields: ['sys_id', 'name', 'table', 'script', 'condition', 'order'], limit: 300 },
+    scriptIncludes: { table: 'sys_script_include', query: `active=true^scriptLIKE${field}`, fields: ['sys_id', 'name', 'script'], limit: 200 },
+    assignmentRules: { table: 'sysrule_assignment', query: `active=true^table${inT}`, fields: ['sys_id', 'name', 'table', 'condition', 'group', 'user', 'order'], limit: 200 },
+    flowTriggers: { table: 'sys_hub_trigger_instance_v2', query: 'flow.active=true^flow.sys_class_name=sys_hub_flow^trigger_typeSTARTSWITHrecord', fields: ['flow', 'flow.name', 'trigger_type', 'trigger_inputs'], limit: 200 },
+    flowActions: (flow: string): SharedQuery => ({ table: 'sys_hub_action_instance_v2', query: `flow=${flow}^ORDERBYorder`, fields: ['order', 'values'], limit: 50 }),
+  } satisfies Record<string, SharedQuery | ((x: string) => SharedQuery)>;
+}
+
+/** Sobe a hierarquia da tabela (incident → task). Com o `SharedClient`, as consultas são reaproveitadas. */
+export async function tableHierarchy(q: (t: string, query: string, fields: string[], limit: number) => Promise<Row[]>, table: string): Promise<string[]> {
   const tables: string[] = [];
   let cur: string | undefined = table;
   for (let i = 0; cur && i < 10; i++) {
     tables.push(cur);
     cur = (await q('sys_db_object', `name=${cur}`, ['super_class.name'], 1))[0]?.['super_class.name'] || undefined;
   }
-  const inT = `IN${tables.join(',')}`;
+  return tables;
+}
+
+export async function fieldMap(client: RestClient, target: { table: string; field: string }): Promise<FieldMap> {
+  const started = Date.now();
+  const calls0 = client.calls;
+  const q = async (t: string, query: string, fields: string[], limit: number): Promise<Row[]> => { try { return (await client.query({ table: t, query, fields, limit })).rows; } catch { return []; } };
+  const { table, field } = target;
+  const tables = await tableHierarchy(q, table);
   const isAssign = field === 'assignment_group' || field === 'assigned_to';
+  const S = sharedQueries(tables, field);
+  const run = (x: SharedQuery) => q(x.table, x.query, x.fields, x.limit);
+  const inT = `IN${tables.join(',')}`;
   const [brs, cs, pols, dls, rules, uas, sis, jobs, entries, triggers] = await Promise.all([
-    q('sys_script', `collection${inT}^active=true`, ['sys_id', 'name', 'when', 'order', 'collection', 'script', 'template', 'condition', 'filter_condition', 'action_insert', 'action_update'], 1000),
-    q('sys_script_client', `table${inT}^active=true^scriptLIKE${field}`, ['sys_id', 'name', 'type', 'field', 'table', 'script', 'ui_type'], 200),
-    q('sys_ui_policy', `table${inT}^active=true^run_scripts=true^script_trueLIKE${field}^ORscript_falseLIKE${field}`, ['sys_id', 'short_description', 'table', 'conditions', 'script_true', 'script_false', 'order'], 100),
+    run(S.businessRules),
+    run(S.clientScripts),
+    run(S.uiPolicies),
     q('dl_definition_rel_set', `source_table_field=${field}^dl_definition.active=true^dl_definition.source_table${inT}`, ['dl_definition', 'dl_definition.name', 'dl_definition.source_table', 'dl_definition.run_on_form_change', 'dl_definition.run_on_update'], 50),
-    isAssign ? q('sysrule_assignment', `active=true^table${inT}`, ['sys_id', 'name', 'table', 'condition', 'group', 'user', 'order'], 200) : Promise.resolve([] as Row[]),
-    q('sys_ui_action', `table${inT}^active=true^scriptLIKE${field}`, ['sys_id', 'name', 'table', 'script', 'condition', 'order'], 200),
-    q('sys_script_include', `active=true^scriptLIKE${field}`, ['sys_id', 'name', 'script'], 200),
+    isAssign ? run(S.assignmentRules) : Promise.resolve([] as Row[]),
+    run(S.uiActions),
+    run(S.scriptIncludes),
     q('sysauto_script', `active=true^scriptLIKE${field}^scriptLIKE${table}`, ['sys_id', 'name', 'script', 'run_type', 'run_time', 'run_dayofweek'], 50),
     q('sys_transform_entry', `target_table${inT}^target_field=${field}^map.active=true`, ['map', 'map.name', 'source_field', 'use_source_script', 'target_table'], 50),
-    q('sys_hub_trigger_instance_v2', `flow.active=true^flow.sys_class_name=sys_hub_flow^trigger_typeSTARTSWITHrecord`, ['flow', 'flow.name', 'trigger_type', 'trigger_inputs'], 200),
+    run(S.flowTriggers),
   ]);
   const items: MapItem[] = [];
   const writes = (script: string | undefined, template?: string) => writtenFields(script, template).includes(field);
@@ -59,6 +87,7 @@ export async function fieldMap(client: RestClient, target: { table: string; fiel
     items.push({ lane: 'client', kind: 'client_script', name: c.name ?? '?', table: 'sys_script_client', ...(c.sys_id ? { sysId: c.sys_id } : {}), on: c.table ?? '', order: 0, when: c.type === 'onChange' ? `onChange de ${c.field}` : c.type ?? '', values: lits(c.script) });
   }
   for (const p of pols) {
+    if (p.run_scripts !== 'true') continue;
     const both = [p.script_true, p.script_false].filter((x) => new RegExp(`setValue\\(\\s*['"]${field}['"]`).test(x ?? ''));
     if (!both.length) continue;
     items.push({ lane: 'client', kind: 'ui_policy', name: p.short_description ?? '?', table: 'sys_ui_policy', ...(p.sys_id ? { sysId: p.sys_id } : {}), on: p.table ?? '', order: Number(p.order ?? 100), when: short(humanQuery(p.conditions)) || 'sempre', values: both.flatMap((x) => lits(x)) });
@@ -102,7 +131,7 @@ export async function fieldMap(client: RestClient, target: { table: string; fiel
     const inputs = (await decodeFlowValues(t.trigger_inputs)) ?? [];
     const pick = (n: string) => inputs.find((x) => x.name === n)?.value ?? '';
     if (!tables.includes(pick('table'))) continue;
-    const acts = t.flow ? await q('sys_hub_action_instance_v2', `flow=${t.flow}^ORDERBYorder`, ['order', 'values'], 50) : [];
+    const acts = t.flow ? await run(S.flowActions(t.flow)) : [];
     const vals: string[] = [];
     let hit = false;
     for (const a of acts) {
