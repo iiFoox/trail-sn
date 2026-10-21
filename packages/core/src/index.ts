@@ -19,5 +19,6 @@ export * from './automations';
 export * from './fieldState';
 export * from './sharedClient';
 export * from './fieldDeps';
+export * from './compare';
 export * from './saveTiming';
 export * from './visibility';
