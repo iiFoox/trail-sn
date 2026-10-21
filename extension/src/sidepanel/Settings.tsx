@@ -76,12 +76,10 @@ export function Settings({ demo, canPin, onPin, onClose }: { demo: boolean; canP
             {recording ? s.stKeyPress : p.panelKey ? <kbd>{p.panelKey}</kbd> : s.stKeyNone}
           </button>
         </div>
-        {(p.panelKey !== DEFAULT_PANEL_KEY || !p.panelKey) && (
-          <div class="st-links">
-            <button type="button" class="btn link sm" onClick={() => set({ panelKey: DEFAULT_PANEL_KEY })}>{s.stKeyReset}</button>
-            {p.panelKey && <button type="button" class="btn link sm" onClick={() => set({ panelKey: '' })}>{s.stKeyOff}</button>}
-          </div>
-        )}
+        <div class="st-links">
+          {p.panelKey !== DEFAULT_PANEL_KEY && <button type="button" class="btn link sm" onClick={() => set({ panelKey: DEFAULT_PANEL_KEY })}>{s.stKeyReset}</button>}
+          {p.panelKey && <button type="button" class="btn link sm" onClick={() => set({ panelKey: '' })}>{s.stKeyOff}</button>}
+        </div>
         <Switch on={p.showIcons} label={s.stIcons} hint={s.stIconsHint} onChange={(showIcons) => set({ showIcons })} />
         <Switch on={p.showBubble} label={s.stBubble} hint={s.stBubbleHint} onChange={(showBubble) => set({ showBubble })} />
         <Choice label={s.stMode} value={p.panelMode} options={[['float', s.stModeFloat], ['side', s.stModeSide], ['window', s.stModeWindow]]} onChange={(panelMode) => set({ panelMode })} />

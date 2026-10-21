@@ -127,7 +127,14 @@ async function doReinjectConnectedTab(tabId: number): Promise<boolean> {
   const top = { target: { tabId, frameIds: [0] }, world: 'MAIN' as const, func: probe };
   const topFrame = await chrome.scripting.executeScript(top).catch(() => []);
   if (!topFrame.length) return false;
-  const frames = await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, world: 'MAIN', func: probe }).catch(() => topFrame);
+  const frames = await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, world: 'MAIN', func: probe }).catch(() => null);
+  if (!frames) {
+    // A sondagem em todos os quadros falhou (um quadro navegou ou é de outra origem): injeta direto em todos.
+    // O content se identifica e descarta cópias antigas, então injetar de novo onde já está não duplica nada.
+    const all = { tabId, allFrames: true };
+    await chrome.scripting.executeScript({ target: all, files: ['page.js'], world: 'MAIN' }).catch(() => undefined);
+    return chrome.scripting.executeScript({ target: all, files: ['content.js'] }).then((r) => r.some((x) => x.frameId === 0), () => false);
+  }
   let topInjected = false;
   for (const frame of frames) {
     if (frame.result?.origin !== origin) continue;
@@ -310,7 +317,7 @@ chrome.permissions.onRemoved.addListener((p) => {
       await Promise.all(tabs.filter((tab) => tab.id !== undefined).map(async (tab) => {
         const message = { type: 'trail-dispose', origin };
         const topRemoved = await chrome.tabs.sendMessage(tab.id!, message, { frameId: 0 }).then((r) => !!r, () => false);
-        if (topRemoved) await session.remove(`float:${tab.id}`).catch(() => undefined);
+        if (topRemoved) await floatStore.remove(`float:${tab.id}`).catch(() => undefined);
         await chrome.tabs.sendMessage(tab.id!, message).catch(() => undefined); // demais quadros da instância
       }));
     })().catch(() => undefined);
@@ -402,7 +409,19 @@ chrome.runtime.onInstalled.addListener((details) => {
   void syncRegistrations(); createMenus(); void applyActionBehavior();
   if (details.reason === 'update') void notifyOpenTabs();
 });
-chrome.runtime.onStartup.addListener(() => { void syncRegistrations(); createMenus(); void applyActionBehavior(); });
+chrome.runtime.onStartup.addListener(() => { void clearFloatStates(); void syncRegistrations(); createMenus(); void applyActionBehavior(); });
+
+/**
+ * Estado do painel flutuante por aba (aberto/minimizado). Fica no storage.local, não no session: o session é apagado
+ * quando a extensão recarrega (auto-reload em desenvolvimento, atualização), e o painel aberto voltava como bolinha.
+ * Os ids de aba só valem enquanto o navegador está aberto, então tudo é limpo quando ele reinicia.
+ */
+const floatStore = chrome.storage.local;
+async function clearFloatStates(): Promise<void> {
+  const all = await floatStore.get(null).catch(() => ({} as Record<string, unknown>));
+  const keys = Object.keys(all).filter((k) => k.startsWith('float:'));
+  if (keys.length) await floatStore.remove(keys).catch(() => undefined);
+}
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   switch (info.menuItemId) {
     case 'trail-side': if (tab?.id !== undefined) void chrome.sidePanel.open({ tabId: tab.id }).catch(() => undefined); return;
@@ -617,11 +636,11 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
       case 'float-get': {
         if (tabId === undefined) return;
         const k = `float:${tabId}`;
-        return { tabId, ...((await session.get(k))[k] as { open?: boolean; min?: boolean } | undefined ?? {}) };
+        return { tabId, ...((await floatStore.get(k))[k] as { open?: boolean; min?: boolean } | undefined ?? {}) };
       }
       case 'float-set': {
         if (tabId === undefined) return;
-        await session.set({ [`float:${tabId}`]: { open: msg.open, min: msg.min } });
+        await floatStore.set({ [`float:${tabId}`]: { open: msg.open, min: msg.min } });
         return true;
       }
       case 'open-panel': {
@@ -656,4 +675,4 @@ async function activeTabId(): Promise<number | undefined> {
   return tab?.id;
 }
 
-chrome.tabs.onRemoved.addListener((tabId) => void session.remove([storageKey.tab(tabId), `float:${tabId}`]));
+chrome.tabs.onRemoved.addListener((tabId) => { void session.remove(storageKey.tab(tabId)); void floatStore.remove(`float:${tabId}`); });

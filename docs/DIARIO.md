@@ -10,6 +10,14 @@ Convenções:
 
 ---
 
+## 2026-10-20 (noite) — 0.12.9
+
+- **Estado do painel flutuante** (aberto ou minimizado, por aba) foi do `storage.session` para o `storage.local`, com a chave `float:<tabId>`. O session é apagado quando a extensão recarrega, e o painel aberto voltava como bolinha (achado médio do Codex). Os ids de aba só valem enquanto o navegador está aberto: `clearFloatStates()` limpa tudo no `onStartup`.
+- **Reinjeção:** se a sondagem em todos os frames falhar, injeta direto `page.js` (MAIN) e `content.js` em todos os frames (antes era só o frame 0). O content descarta cópias antigas, então não duplica (outro achado médio do Codex).
+- **Configurações:** o botão "Desligar atalho" sumia quando o atalho era o padrão. Achado pelo e2e novo `tests/e2e/settings.mjs` (Antigravity), que cobre a folha, animações, atalho, onde abrir e tema. Agora são 9 e2e.
+- **Site:** a galeria saiu de "Popup" e "Painel · claro" e abre no painel escuro (pedido do dono).
+- **Ainda sem teste automático:** o painel continuar aberto depois de um reload. No Playwright a extensão não volta do `chrome.runtime.reload()`.
+
 ## 2026-10-20 (noite) — site mais leve
 
 O dono achou o site pesado. Medido com `tests/e2e/.tmp/site-perf.mjs` (fora do git): rolagem pela página inteira com a CPU 4× mais lenta, contando quadros pelo rAF e tarefas longas.
