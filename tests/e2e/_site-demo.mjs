@@ -64,7 +64,7 @@ await page.waitForTimeout(1000);
 const recGroupTitle = await panelFrame.$eval('.bt-group summary', (el) => el.textContent.trim()).catch(() => '');
 if (!recGroupTitle.includes('salvou')) errs.push('clique na bolinha-assistente não abriu Tudo que mudou em grupos: ' + recGroupTitle);
 // galeria
-for (const label of ['Registro inteiro', 'Lote', 'E se?', 'Opções', 'Painel · escuro']) {
+for (const label of ['Registro inteiro', 'Lote', 'Flows', 'E se?', 'Opções', 'Painel · escuro']) {
   await page.click(`#galseg button:has-text("${label}")`);
   await page.waitForTimeout(900);
 }
@@ -79,7 +79,7 @@ if (S) await page.locator('#telas .story').screenshot({ path: S + 'gal-story.png
 await page.locator('#painel').scrollIntoViewIfNeeded();
 const shotPosition = await page.$eval('#inside-shot', (el) => getComputedStyle(el).position);
 if (shotPosition === 'sticky') errs.push('#inside-shot ainda está sticky');
-for (const i of [0, 3, 4, 6, 7, 8]) {
+for (const i of [0, 3, 4, 6, 7, 8, 9]) {
   await page.click(`.co >> nth=${i}`);
   await page.waitForTimeout(600);
 }

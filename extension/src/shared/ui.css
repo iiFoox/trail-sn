@@ -901,3 +901,9 @@ details.grp > .li { padding-left: 52px; }
 .rr-row.hit { box-shadow: inset 3px 0 0 var(--teal); }
 .rr-row small.fl-tag { display: inline-block; vertical-align: 1px; }
 .rr-row .fl-writes { display: block; margin-top: 3px; }
+/* 361–400 px (ex.: o painel do site, de 400 px): as 6 abas cabem com menos folga; só abaixo disso elas rolam. */
+@media (min-width: 361px) and (max-width: 400px) {
+  .seg-tabs { display: grid; grid-template-columns: repeat(6, auto); overflow: visible; gap: 1px; }
+  .seg-tabs button { padding: 7px 4px; font-size: 11.5px; }
+  .seg-tabs i { padding: 0 3px; }
+}
