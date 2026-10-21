@@ -96,10 +96,12 @@ describe('Quem depende', () => {
       trig({ flow: 'f2', name: 'Outra tabela', table: 'problem', condition: 'state=6^EQ' }),
       trig({ flow: 'f3', name: 'Sem o campo', condition: 'priority=1^EQ' }),
     ]);
-    c.rows('sys_hub_action_instance_v2', [{ flow: 'f1', order: '1', values: JSON.stringify([{ name: 'values', value: 'u_resolved=true' }]) }]);
+    c.rows('sys_hub_action_instance_v2', [{ flow: 'f1', order: '1', values: JSON.stringify([{ name: 'values', value: 'u_resolved=true^close_notes=fd-scripted' }]) }]);
     const r = await deps(c);
     expect(r.dependents).toHaveLength(1);
-    expect(r.dependents[0]).toMatchObject({ phase: 'async', kind: 'flow', name: 'Avisa resolvido', table: 'sys_hub_flow', sysId: 'f1', how: [{ code: 'condition' }], does: [{ type: 'write', field: 'u_resolved', value: 'true' }], ops: { insert: false, update: true } });
+    // "fd-scripted" é o marcador do Flow Designer para valor calculado por script: não é um valor fixo.
+    expect(r.dependents[0]).toMatchObject({ phase: 'async', kind: 'flow', name: 'Avisa resolvido', table: 'sys_hub_flow', sysId: 'f1', how: [{ code: 'condition' }], does: [{ type: 'write', field: 'u_resolved', value: 'true' }, { type: 'write', field: 'close_notes' }], ops: { insert: false, update: true } });
+    expect(r.dependents[0]!.does[1]).not.toHaveProperty('value');
   });
 
   it('notificação, SLA e regra de atribuição', async () => {
@@ -119,6 +121,21 @@ describe('Quem depende', () => {
     expect(r.dependents.some((d) => d.kind === 'assignment_rule')).toBe(false); // a condição não usa state
     const rc = await deps(c, 'category');
     expect(rc.dependents.find((d) => d.kind === 'assignment_rule')).toMatchObject({ phase: 'before', does: [{ type: 'write', field: 'assignment_group', value: 'grp_net' }] });
+  });
+
+  it('incidente: state e incident_state são gêmeos (SLA e notificação com incident_state dependem de state)', async () => {
+    const c = base();
+    c.rows('sysevent_email_action', [{ sys_id: 'n1', name: 'Incident resolved', collection: 'incident', active: 'true', condition: 'incident_stateCHANGESTO6^universal_requestISEMPTY^EQ', action_insert: 'false', action_update: 'true', generation_type: 'engine' }]);
+    c.rows('contract_sla', [{ sys_id: 's1', name: 'Priority 1 resolution', collection: 'incident', active: 'true', start_condition: 'active=true^priority=1^EQ', stop_condition: 'incident_stateIN6,7^EQ', pause_condition: 'incident_state=3^EQ' }]);
+    const r = await deps(c);
+    expect(r.dependents.find((d) => d.kind === 'notification')).toMatchObject({ how: [{ code: 'changes_to', detail: '6' }] });
+    expect(r.dependents.find((d) => d.kind === 'sla')!.stages!.map((x) => x.stage)).toEqual(['pause', 'stop']);
+    // Fora do incidente não há gêmeo: em problem, incident_state não é state.
+    const p = new FakeRestClient();
+    p.rows('sys_db_object', [{ name: 'problem', 'super_class.name': 'task' }, { name: 'task', 'super_class.name': '' }]);
+    for (const t of SOURCES) p.rows(t, []);
+    p.rows('contract_sla', [{ sys_id: 's2', name: 'X', collection: 'problem', active: 'true', stop_condition: 'incident_stateIN6,7^EQ' }]);
+    expect((await fieldDeps(p, { table: 'problem', field: 'state' })).dependents.some((d) => d.kind === 'sla')).toBe(false);
   });
 
   it('script include chamado por BR que lê o campo', async () => {

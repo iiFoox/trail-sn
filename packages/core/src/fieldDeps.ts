@@ -19,7 +19,7 @@ import { previewChange, type ChangePreview, type PreviewStep, type PreviewWrite 
 import { evalExpr, fieldsRead, type Env } from './scriptEval';
 import { SharedClient, shared } from './sharedClient';
 import type { AccessState, Row } from './types';
-import { assignedLiterals, decodeFlowValues, escapeRegExp, evalCondition, humanQuery, parseFieldValues } from './util';
+import { assignedLiterals, decodeFlowValues, escapeRegExp, evalCondition, humanQuery, isDynamicFlowValue, parseFieldValues } from './util';
 import { resolveDisplay } from './display';
 
 // ---------------------------------------------------------------- tipos
@@ -217,6 +217,12 @@ export const sortDependents = <T extends { phase: DepPhase; kind: DepKind | Prev
 
 // ---------------------------------------------------------------- "Quem depende"
 
+/** Campos gêmeos: no incidente, `state` e `incident_state` são mantidos iguais pelo sistema. */
+export function twinFields(tables: string[], field: string): string[] {
+  if (tables.includes('incident') && (field === 'state' || field === 'incident_state')) return field === 'state' ? ['state', 'incident_state'] : ['incident_state', 'state'];
+  return [field];
+}
+
 export interface FieldDepsOptions {
   /** Inclui as tabelas que apontam para esta (sys_dictionary). Padrão: só quando o campo é sys_id ("o registro"). */
   references?: boolean;
@@ -231,6 +237,11 @@ export async function fieldDeps(client: RestClient, target: { table: string; fie
   const q = async (t: string, query: string, fields: string[], limit: number): Promise<Row[]> => (await sc.query({ table: t, query, fields, limit })).rows;
   const { table, field } = target;
   const tables = await tableHierarchy(q, table);
+  // No incidente, state e incident_state andam juntos (BR do sistema): regra, SLA ou notificação com um vale para o outro.
+  const twins = twinFields(tables, field);
+  const cu = (c: string | undefined): DepHow[] => { const seen = new Set<string>(); return twins.flatMap((f) => conditionUses(c, f)).filter((h) => { const k = `${h.code}|${h.detail ?? ''}`; if (seen.has(k)) return false; seen.add(k); return true; }); };
+  const sr = (sc_: string | undefined, o: { anyRecord?: boolean } = {}) => twins.map((f) => serverReads(sc_, f, o)).reduce((a, b) => ({ reads: a.reads || b.reads, changes: a.changes || b.changes }));
+  const fr = (sc_: string | undefined) => twins.some((f) => formReads(sc_, f));
   const inT = `IN${tables.join(',')}`;
   const S = sharedQueries(tables, field);
   const run = (x: { table: string; query: string; fields: string[]; limit: number }) => q(x.table, x.query, x.fields, x.limit);
@@ -263,8 +274,8 @@ export async function fieldDeps(client: RestClient, target: { table: string; fie
     if (c.ui_type === '1') continue; // só celular / portal
     const how: DepHow[] = [];
     const type = c.type ?? '';
-    if ((type === 'onChange' || type === 'onCellEdit') && c.field === field) how.push({ code: 'onchange' });
-    else if (formReads(c.script, field)) how.push({ code: 'form_reads' });
+    if ((type === 'onChange' || type === 'onCellEdit') && twins.includes(c.field ?? '')) how.push({ code: 'onchange' });
+    else if (fr(c.script)) how.push({ code: 'form_reads' });
     if (!how.length) continue;
     const when = type === 'onChange' || type === 'onCellEdit' ? `${type} de ${c.field ?? '?'}` : type;
     out.push({ phase: 'client', kind: 'client_script', name: c.name ?? '?', ...link('sys_script_client', c.sys_id), on: c.table ?? '', order: 0, when, how,
@@ -274,8 +285,8 @@ export async function fieldDeps(client: RestClient, target: { table: string; fie
 
   // ---------- navegador: UI policies (condição com o campo, ou script que lê o campo) ----------
   const polHits = pols.filter((p) => p.ui_type !== '1').map((p) => {
-    const how = conditionUses(p.conditions, field);
-    if (p.run_scripts === 'true' && (formReads(p.script_true, field) || formReads(p.script_false, field))) how.push({ code: 'form_reads' });
+    const how = cu(p.conditions);
+    if (p.run_scripts === 'true' && (fr(p.script_true) || fr(p.script_false))) how.push({ code: 'form_reads' });
     return { p, how };
   }).filter((x) => x.how.length);
   const polIds = polHits.map((x) => x.p.sys_id ?? '').filter(Boolean);
@@ -311,14 +322,14 @@ export async function fieldDeps(client: RestClient, target: { table: string; fie
   }
 
   // ---------- servidor: regras de negócio (e script includes chamados por elas) ----------
-  const siReaders = sis.filter((s) => serverReads(s.script, field, { anyRecord: true }).reads);
+  const siReaders = sis.filter((s) => sr(s.script, { anyRecord: true }).reads);
   for (const b of brs) {
     const { phase, kind } = brLane(b.when, b.action_query);
-    const how: DepHow[] = [...conditionUses(b.filter_condition, field)];
-    const cr = serverReads(b.condition, field);
+    const how: DepHow[] = [...cu(b.filter_condition)];
+    const cr = sr(b.condition);
     if (cr.reads) how.push({ code: cr.changes ? 'script_changes' : 'script_condition' });
-    const sr = serverReads(b.script, field);
-    if (sr.reads) how.push({ code: sr.changes ? 'script_changes' : 'script_reads' });
+    const br = sr(b.script);
+    if (br.reads) how.push({ code: br.changes ? 'script_changes' : 'script_reads' });
     const o = ops(b);
     const when = [opsText(o), short(humanQuery(b.filter_condition)), short(b.condition)].filter(Boolean).join(' · ') || 'sempre';
     const common = { on: b.collection ?? '', order: Number(b.order ?? 100), when, ops: o, ...(blankCond(b.filter_condition) ? {} : { cond: b.filter_condition! }), ...(b.condition?.trim() ? { jsCond: b.condition } : {}) };
@@ -333,14 +344,14 @@ export async function fieldDeps(client: RestClient, target: { table: string; fie
 
   // ---------- antes de gravar: regras de atribuição e data policies ----------
   for (const r of rules) {
-    const how = conditionUses(r.condition, field);
+    const how = cu(r.condition);
     if (!how.length) continue;
     const does: DepEffect[] = [...(r.group ? [{ type: 'write', field: 'assignment_group', value: r.group } as DepEffect] : []), ...(r.user ? [{ type: 'write', field: 'assigned_to', value: r.user } as DepEffect] : [])];
     out.push({ phase: 'before', kind: 'assignment_rule', name: r.name ?? '?', ...link('sysrule_assignment', r.sys_id), on: r.table ?? '', order: Number(r.order ?? 100),
       when: `${short(humanQuery(r.condition)) || 'sempre'} · com o grupo/responsável vazio`, how, does, cond: r.condition ?? '' });
   }
   for (const p of dps) {
-    const how = conditionUses(p.conditions, field);
+    const how = cu(p.conditions);
     if (!how.length) continue;
     const does: DepEffect[] = [];
     for (const r of dpRules.filter((x) => x.sys_data_policy === p.sys_id)) {
@@ -354,7 +365,7 @@ export async function fieldDeps(client: RestClient, target: { table: string; fie
 
   // ---------- depois de gravar: SLAs ----------
   for (const s of slas) {
-    const stages = SLA_COLS.filter(([, c]) => conditionUses(s[c], field).length).map(([stage, c]) => ({ stage, cond: s[c] ?? '' }));
+    const stages = SLA_COLS.filter(([, c]) => cu(s[c]).length).map(([stage, c]) => ({ stage, cond: s[c] ?? '' }));
     if (!stages.length) continue;
     const how: DepHow[] = stages.map((x) => ({ code: `sla_${x.stage}` as DepHowCode, detail: short(humanQuery(x.cond)) }));
     out.push({ phase: 'after', kind: 'sla', name: s.name ?? '?', ...link('contract_sla', s.sys_id), on: s.collection ?? '', order: 1000,
@@ -363,8 +374,8 @@ export async function fieldDeps(client: RestClient, target: { table: string; fie
 
   // ---------- segundo plano: notificações ----------
   for (const n of mails) {
-    const how = conditionUses(n.condition, field);
-    const ar = serverReads(n.advanced_condition, field);
+    const how = cu(n.condition);
+    const ar = sr(n.advanced_condition);
     if (ar.reads) how.push({ code: ar.changes ? 'script_changes' : 'script_condition' });
     if (!how.length) continue;
     const o = { insert: n.action_insert === 'true', update: n.action_update === 'true' };
@@ -375,14 +386,14 @@ export async function fieldDeps(client: RestClient, target: { table: string; fie
   }
 
   // ---------- segundo plano: flows com gatilho de registro nesta tabela ----------
-  const pill = new RegExp(`\\{\\{[^}]*\\.${escapeRegExp(field)}\\}\\}`);
+  const pill = new RegExp(`\\{\\{[^}]*\\.(?:${twins.map(escapeRegExp).join('|')})\\}\\}`);
   for (const t of triggers) {
     const inputs = (await decodeFlowValues(t.trigger_inputs)) ?? [];
     const pick = (n: string) => inputs.find((x) => x.name === n)?.value ?? '';
     const on = pick('table');
     if (!tables.includes(on)) continue;
     const c = pick('condition');
-    const how = conditionUses(c, field);
+    const how = cu(c);
     const acts = t.flow ? await run(S.flowActions(t.flow)) : [];
     const does: DepEffect[] = [];
     let step = false;
@@ -391,7 +402,7 @@ export async function fieldDeps(client: RestClient, target: { table: string; fie
       const ps = (await decodeFlowValues(a.values)) ?? [];
       if (ps.some((x) => pill.test(x.value ?? ''))) step = true;
       const w = parseFieldValues(ps.find((x) => x.name === 'values')?.value || ps.find((x) => x.name === 'fields')?.value);
-      for (const [f, v] of Object.entries(w)) does.push(v.includes('{{') ? { type: 'write', field: f } : { type: 'write', field: f, value: v });
+      for (const [f, v] of Object.entries(w)) does.push(isDynamicFlowValue(v) ? { type: 'write', field: f } : { type: 'write', field: f, value: v });
     }
     if (step) how.push({ code: 'flow_step' });
     if (!how.length) continue;
@@ -404,9 +415,9 @@ export async function fieldDeps(client: RestClient, target: { table: string; fie
   // ---------- outro: botões que aparecem conforme o campo, ou cujo script lê o campo ----------
   for (const u of uas) {
     const how: DepHow[] = [];
-    const cr = serverReads(u.condition, field);
+    const cr = sr(u.condition);
     if (cr.reads) how.push({ code: 'script_condition' });
-    if (serverReads(u.script, field).reads || formReads(u.script, field)) how.push({ code: 'script_reads' });
+    if (sr(u.script).reads || fr(u.script)) how.push({ code: 'script_reads' });
     if (!how.length) continue;
     out.push({ phase: 'other', kind: 'ui_action', name: u.name ?? '?', ...link('sys_ui_action', u.sys_id), on: u.table ?? '', order: Number(u.order ?? 100),
       when: `botão${u.condition ? ` · ${short(u.condition)}` : ''}`, how, does: [...(cr.reads ? [{ type: 'show' } as DepEffect] : []), ...scriptEffects(u.script)], ...(u.condition?.trim() ? { jsCond: u.condition } : {}) });
