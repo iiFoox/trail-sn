@@ -16,3 +16,4 @@ export * from './fieldMap';
 export * from './display';
 export * from './flows';
 export * from './automations';
+export * from './fieldState';
