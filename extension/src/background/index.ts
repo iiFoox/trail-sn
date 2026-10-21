@@ -4,7 +4,7 @@
  * Nenhum estado em memória que importe: o worker pode ser encerrado a qualquer momento.
  */
 import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, batchItemFrom, fieldMap, previewChange, recordTimeline, scanTableConflicts, type AccessReport, type BatchItem, type MetaCache, type TableMeta, recordFlows, tableAutomations } from '@trail/core';
-import { addInstance, isEnabled, listInstances, looksLikeServiceNow, removeInstance } from '../shared/instances';
+import { addInstance, INSTANCES_KEY, isEnabled, listInstances, looksLikeServiceNow, removeInstance } from '../shared/instances';
 import { loadPrefs, PREFS_KEY, savePrefs, type PanelMode } from '../shared/prefs';
 import { normalizeInstanceLanguage, storageKey, type Message, type PageContext, type ProbeResult, type TabState } from '../shared/messages';
 
@@ -396,17 +396,36 @@ chrome.action.onClicked.addListener((tab) => {
     else await openWindow();
   })();
 });
-chrome.storage.onChanged.addListener((ch, area) => { if (area === 'sync' && ch[PREFS_KEY]) void applyActionBehavior(); });
+chrome.storage.onChanged.addListener((ch, area) => {
+  if (area === 'sync' && ch[PREFS_KEY]) void applyActionBehavior();
+  if (area === 'sync' && ch[INSTANCES_KEY]) void syncPageMenu();
+});
 
 function createMenus(): void {
   chrome.contextMenus.removeAll(() => {
-    chrome.contextMenus.create({ id: 'trail-open', title: 'Trail', contexts: ['page'] });
+    void syncPageMenu();
     chrome.contextMenus.create({ id: 'trail-float', title: menuText('float'), contexts: ['action'] });
     chrome.contextMenus.create({ id: 'trail-side', title: menuText('side'), contexts: ['action'] });
     chrome.contextMenus.create({ id: 'trail-window', title: menuText('window'), contexts: ['action'] });
     chrome.contextMenus.create({ id: 'trail-icons', title: menuText('icons'), contexts: ['action'] });
     chrome.contextMenus.create({ id: 'trail-options', title: menuText('options'), contexts: ['action'] });
   });
+}
+/**
+ * Menu "Trail" do clique direito na página: só nas instâncias conectadas (documentUrlPatterns), nunca em
+ * qualquer site. Sem instância conectada, o item não existe. Refeito ao conectar/desconectar (storage.sync),
+ * no onInstalled e no onStartup (via createMenus).
+ */
+let pageMenuChain: Promise<void> = Promise.resolve();
+function syncPageMenu(): Promise<void> {
+  pageMenuChain = pageMenuChain.then(rebuildPageMenu, rebuildPageMenu);
+  return pageMenuChain;
+}
+async function rebuildPageMenu(): Promise<void> {
+  const patterns = (await listInstances().catch(() => [])).map((i) => `${i.origin}/*`);
+  await new Promise<void>((done) => chrome.contextMenus.remove('trail-open', () => { void chrome.runtime.lastError; done(); }));
+  if (!patterns.length) return;
+  await new Promise<void>((done) => chrome.contextMenus.create({ id: 'trail-open', title: 'Trail', contexts: ['page'], documentUrlPatterns: patterns }, () => { void chrome.runtime.lastError; done(); }));
 }
 function menuText(k: 'float' | 'side' | 'window' | 'icons' | 'options'): string {
   const pt = { float: 'Abrir na página', side: 'Abrir no painel lateral', window: 'Abrir em janela separada', icons: 'Mostrar ou esconder os ícones nos campos (Alt+Shift+T)', options: 'Opções do Trail' };

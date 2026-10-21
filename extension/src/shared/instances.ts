@@ -1,6 +1,7 @@
 /** Instâncias ativadas pelo usuário (chrome.storage.sync, por origem). */
 
-const KEY = 'instances';
+export const INSTANCES_KEY = 'instances';
+const KEY = INSTANCES_KEY;
 
 export interface InstanceSettings {
   origin: string;
