@@ -28,6 +28,12 @@ O Codex #2 e o Antigravity #2 pararam por limite de uso; o Claude fechou a rodad
 - Ícone do Trail em cada entrada do Activity Stream do formulário.
 - "A regra foi alterada?" (versões da automação via `sys_update_version`).
 - E-mails do registro (`sys_email`) — exige ajuste na política de privacidade.
+- **Para admin (ordem sugerida pelo Claude):**
+  1. **Mapa do campo** = "Quem grava" (o atual "Outras regras que mexem em X") + **"Quem depende"** (raio de impacto: condições de BR, scripts que leem o campo, client scripts onChange, UI/data policies condicionadas, flows disparados, notificações, SLAs, regras de atribuição, tabelas que referenciam). Fica na aba "Automações".
+  2. **Por que este salvamento foi lento?** (tempos de `syslog_transaction`: regras, SQL, cliente; regras que rodaram no save).
+  3. **Rastro reverso: o que esta regra/flow/job fez** nos últimos dias (registros e campos que ela realmente mudou).
+  4. Comparar instâncias (acima).
+  5. Rastro de um usuário/integração; "Por que fulano não vê este registro?" (com limite honesto de ACL); leitor de regra em linguagem simples; "O que mudou na instância ontem?"; detector de más práticas; mapa de calor da tabela; automações fantasmas.
 
 ## Ajustes pendentes no SITE (anotados em 21/10/2026, noite — o dono pediu para não mexer no site agora)
 Quem for mexer no site (`site/`, deploy Vercel do dono) deve fazer, nesta ordem:
