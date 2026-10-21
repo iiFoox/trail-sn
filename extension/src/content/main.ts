@@ -418,6 +418,10 @@ function onRuntimeMessage(m: { type?: string; tabId?: number; origin?: string } 
   reply({ ok: true });
 }
 chrome.runtime?.onMessage?.addListener(onRuntimeMessage);
-// Gancho de teste (e2e): o mundo isolado do content script não é visível pela página.
-(window as unknown as { __trailOpenDiff?: typeof openDiffWindow }).__trailOpenDiff = openDiffWindow;
-(window as unknown as { __trailFloat?: unknown }).__trailFloat = { openFloat, showFloat, toggleFloat };
+// Ganchos de teste (e2e): só existem quando content.js roda numa página da própria extensão (o harness do e2e o
+// carrega com <script> em chrome-extension://). Numa instância (https) o content script nunca os cria; e, mesmo
+// que criasse, o mundo isolado não é visível pela página. Assim o e2e testa o mesmo dist que vai para a loja.
+if (location.protocol === 'chrome-extension:') {
+  (window as unknown as { __trailOpenDiff?: typeof openDiffWindow }).__trailOpenDiff = openDiffWindow;
+  (window as unknown as { __trailFloat?: unknown }).__trailFloat = { openFloat, showFloat, toggleFloat };
+}
