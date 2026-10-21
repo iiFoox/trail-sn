@@ -221,3 +221,20 @@ export class RecordNotFoundError extends Error {
     this.name = 'RecordNotFoundError';
   }
 }
+
+/**
+ * A consulta do registro não teve resposta útil (estourou o prazo ou a instância respondeu com erro, como 500).
+ * Diferente de RecordNotFoundError: o registro pode existir e ser legível; vale tentar de novo.
+ * A mensagem começa sempre com "Record unavailable" (é por ela que a extensão reconhece o caso).
+ */
+export class RecordUnavailableError extends Error {
+  constructor(public readonly target: Target, public readonly reason: 'timeout' | 'error', public readonly status?: number) {
+    super(`Record unavailable: the instance did not answer (${reason === 'timeout' ? 'timeout' : `HTTP ${status ?? '?'}`})`);
+    this.name = 'RecordUnavailableError';
+  }
+}
+
+/** Consulta do registro sem resposta útil: estourou o prazo ou veio erro que não é 401/403. */
+export function recordUnanswered(access: AccessState): boolean {
+  return access === 'timeout' || access === 'unknown';
+}

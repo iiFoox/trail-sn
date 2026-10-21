@@ -1,7 +1,7 @@
 import type { QueryRequest, RestClient } from './client/RestClient';
 import { documentation, fieldLabels } from './display';
 import { historyToAudit } from './history';
-import { RecordNotFoundError, type AccessState, type Row, type Target } from './types';
+import { RecordNotFoundError, RecordUnavailableError, recordUnanswered, type AccessState, type Row, type Target } from './types';
 import { isFormSubmitFor, isWorkspaceAction, shift, toMs, uiActionMatches, uiActionQuery, uiActionRef, withTimeout } from './util';
 
 /**
@@ -59,12 +59,19 @@ export async function recordTimeline(client: RestClient, target: Omit<Target, 'f
 
   // ---------- registro e hierarquia ----------
   const recQuery = target.sysId ? `sys_id=${target.sysId}` : `number=${target.number ?? ''}`;
-  const [recRows, tables] = await Promise.all([
-    q(target.table, recQuery, ['sys_id', 'number', 'name', 'short_description', 'sys_created_on', 'sys_created_by'], 1),
+  const recReq: QueryRequest = { table: target.table, query: recQuery, fields: ['sys_id', 'number', 'name', 'short_description', 'sys_created_on', 'sys_created_by'], limit: 1 };
+  const recTimeout = { rows: [] as Row[], status: 0, access: 'timeout' as AccessState };
+  const [recFirst, tables] = await Promise.all([
+    withTimeout(client.query(recReq), timeout, recTimeout),
     hierarchy(target.table),
   ]);
-  const rec = recRows[0];
-  if (!rec) throw new RecordNotFoundError({ ...target, field: '' });
+  // Sem resposta útil (prazo ou 5xx): uma segunda tentativa com mais folga antes de desistir.
+  const recRes = !recFirst.rows[0] && recordUnanswered(recFirst.access) ? await withTimeout(client.query(recReq), timeout * 3, recTimeout) : recFirst;
+  const rec = recRes.rows[0];
+  if (!rec) {
+    if (recordUnanswered(recRes.access)) throw new RecordUnavailableError({ ...target, field: '' }, recRes.access === 'timeout' ? 'timeout' : 'error', recRes.status);
+    throw new RecordNotFoundError({ ...target, field: '' });
+  }
   const sysId = rec.sys_id ?? '';
 
   // ---------- auditoria completa (mais recentes primeiro) ----------

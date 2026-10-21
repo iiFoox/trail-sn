@@ -10,6 +10,8 @@ import { runSignatures, type ChangeContext, type TableMeta, type Traces } from '
 import {
   DEFAULT_OPTIONS,
   RecordNotFoundError,
+  RecordUnavailableError,
+  recordUnanswered,
   type AccessState,
   type Change,
   type Investigation,
@@ -62,12 +64,23 @@ export async function investigate(
 
   // ---------- rodada 1: registro, auditoria e metadados ----------
   const recQuery = target.sysId ? `sys_id=${target.sysId}` : `number=${target.number ?? ''}`;
-  const [recRows, metaOrNull] = await Promise.all([
-    q(target.table, recQuery, ['sys_id', 'number', 'name', 'short_description', 'sys_mod_count', 'sys_created_on', 'sys_updated_on', 'sys_updated_by'], 1, 'record'),
+  const recReq: QueryRequest = { table: target.table, query: recQuery, fields: ['sys_id', 'number', 'name', 'short_description', 'sys_mod_count', 'sys_created_on', 'sys_updated_on', 'sys_updated_by'], limit: 1 };
+  const recTimeout = { rows: [] as Row[], status: 0, access: 'timeout' as AccessState };
+  const [recFirst, metaOrNull] = await Promise.all([
+    withTimeout(client.query(recReq), opts.sourceTimeoutMs, recTimeout),
     loadMeta(target.table, target.field),
   ]);
-  const rec = recRows[0];
-  if (!rec) throw new RecordNotFoundError(target);
+  // Sem resposta útil (prazo estourado ou erro 5xx): tenta de novo uma vez, com mais folga, como nas regras de negócio.
+  const recRes = !recFirst.rows[0] && recordUnanswered(recFirst.access)
+    ? await withTimeout(client.query(recReq), opts.sourceTimeoutMs * 3, recTimeout)
+    : recFirst;
+  access.record = recRes.access;
+  const rec = recRes.rows[0];
+  if (!rec) {
+    // Vazio por falta de resposta não é "não encontrado": o registro pode existir.
+    if (recordUnanswered(recRes.access)) throw new RecordUnavailableError(target, recRes.access === 'timeout' ? 'timeout' : 'error', recRes.status);
+    throw new RecordNotFoundError(target);
+  }
   const sysId = rec.sys_id ?? '';
   const meta = metaOrNull;
 
