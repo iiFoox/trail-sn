@@ -326,3 +326,12 @@ Pedidos do dono depois de testar a 0.12.2 no Edge:
 - `entry.ts` agora expõe `flows` e `automations` no bundle de regressão. Rodaram no PDI em incidentes [PT] reais: o flow que rodou aparece como "rodou aqui", e as fontes vêm todas com acesso "ok" (detalhes em `docs/PROXIMOS-PASSOS.md`).
 - Encontrado: subflows não aparecem, porque o contexto deles aponta para a execução pai. O teste foi escrito (vermelho) e a correção ficou para o Codex.
 - O Claude saiu por limite de tokens; o **Codex #2 coordena** a partir daqui. Roteiro completo em `docs/PROXIMOS-PASSOS.md`.
+
+## 21/10/2026: materiais das lojas para 1.0.0
+- Preparados os textos de listagem em português e inglês, notas 1.0.0, justificativas para revisão e instruções exclusivas do proprietário em `docs/loja-edge.md`.
+- `docs/store/` contém cinco capturas (todas 1280×800 px), incluindo `shot-5-flows.png`, e `logo-300.png` (300×300 px). Revisão conferiu dimensões e corrigiu links de arquivos locais.
+- Conferidas as especificações oficiais: Edge aceita até 6 capturas (640×480 ou 1280×800); Chrome aceita até 5 capturas e exige tile promocional 440×280. Esse tile ainda não foi preparado; fica pendente antes do envio pelo dono.
+- Verificação local do coordenador: `npm run typecheck` passou; `npm test` e `npm run build` foram bloqueados quando esbuild tentou ler diretórios fora do workspace (`Acesso negado`). O relatório do Gemini diz Vitest 150/150 e `_site-demo.mjs` sem erros/overflow; confirmei dimensões PNG e `git diff --check`.
+- A orientação de privacidade agora informa que o Trail processa localmente conteúdo do ServiceNow e envia as consultas diretamente à instância escolhida. Removida a instrução imprecisa de declarar “não coleta dados”; o dono deve confirmar as categorias no painel conforme a política vigente.
+- Pendência identificada na revisão: `site/privacidade/index.html` ainda afirma que não há tratamento de dados pessoais. Atualizar a política publicada para refletir leitura/processamento local de conteúdo do ServiceNow e consultas à instância antes de enviar a listagem.
+- Próximo item da fila: site em inglês com alternador PT/EN (`site/b3`). Nenhum envio às lojas foi feito.
