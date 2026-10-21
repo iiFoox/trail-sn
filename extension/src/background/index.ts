@@ -5,7 +5,7 @@
  */
 import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, batchItemFrom, fieldMap, previewChange, recordTimeline, scanTableConflicts, type AccessReport, type BatchItem, type MetaCache, type TableMeta, recordFlows, tableAutomations } from '@trail/core';
 import { addInstance, isEnabled, listInstances, looksLikeServiceNow, removeInstance } from '../shared/instances';
-import { loadPrefs, PREFS_KEY, type PanelMode } from '../shared/prefs';
+import { loadPrefs, PREFS_KEY, savePrefs, type PanelMode } from '../shared/prefs';
 import { normalizeInstanceLanguage, storageKey, type Message, type PageContext, type ProbeResult, type TabState } from '../shared/messages';
 
 const session = chrome.storage.session;
@@ -338,7 +338,7 @@ let lastToggle = 0;
 function toggleIcons(): void {
   if (Date.now() - lastToggle < 500) return;
   lastToggle = Date.now();
-  void loadPrefs().then((p) => chrome.storage.sync.set({ [PREFS_KEY]: { ...p, showIcons: !p.showIcons } }));
+  void loadPrefs().then((p) => savePrefs({ showIcons: !p.showIcons }));
 }
 chrome.commands?.onCommand.addListener((cmd) => { if (cmd === 'toggle-icons') toggleIcons(); });
 

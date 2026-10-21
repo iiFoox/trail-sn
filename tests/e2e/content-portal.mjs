@@ -7,7 +7,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const content = readFileSync(resolve(here, '../../extension/dist/content.js'), 'utf8');
 const ID = 'd'.repeat(32);
 const browser = await chromium.launch({ channel: 'chromium' });
-const page = await browser.newPage();
+// Navegador em português: sem idioma salvo, o Trail segue o idioma do navegador.
+const page = await browser.newPage({ locale: 'pt-BR' });
 await page.route('https://dev000000.service-now.com/**', (route) => route.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>
   <div class="form-group"><label class="field-label" for="sp_formfield_category"><span id="sp_field_label_category">Category</span></label><select id="sp_formfield_category"></select></div>
   <div class="form-group"><label class="field-label" for="sp_formfield_urgency"><span id="sp_field_label_urgency">Urgency</span></label><select id="sp_formfield_urgency"></select></div>

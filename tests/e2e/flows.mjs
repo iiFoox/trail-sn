@@ -5,7 +5,7 @@ import { dirname, resolve } from 'node:path';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 const dist = resolve(dirname(fileURLToPath(import.meta.url)), '../../extension/dist');
-const ctx = await chromium.launchPersistentContext(mkdtempSync(resolve(tmpdir(), 'trail-flows-')), { headless: true, channel: 'chromium', args: [`--disable-extensions-except=${dist}`, `--load-extension=${dist}`] });
+const ctx = await chromium.launchPersistentContext(mkdtempSync(resolve(tmpdir(), 'trail-flows-')), { headless: true, channel: 'chromium', locale: 'pt-BR', args: [`--disable-extensions-except=${dist}`, `--load-extension=${dist}`] });
 const errors = [];
 const out = {};
 try {

@@ -1,6 +1,6 @@
 import type { EvidenceType, Grade } from '@trail/core';
 
-import type { Lang } from './prefs';
+import { browserLang, type Lang } from './prefs';
 
 const dict = {
   pt: {
@@ -549,12 +549,12 @@ const dict = {
 
 export type Strings = typeof dict.pt;
 
+/** Idioma do navegador (o mesmo que as preferências usam quando a pessoa não escolheu um). */
 export function detectLang(): Lang {
-  const l = (typeof navigator !== 'undefined' ? navigator.language : 'pt').toLowerCase();
-  return l.startsWith('pt') ? 'pt' : 'en';
+  return browserLang();
 }
 
-/** Português é o padrão; as páginas passam getPrefs().lang. */
+/** As páginas passam getPrefs().lang (idioma escolhido ou, sem escolha, o do navegador). */
 export function t(lang: Lang = 'pt'): Strings {
   return dict[lang];
 }

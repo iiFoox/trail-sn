@@ -19,7 +19,7 @@ const mf = JSON.parse(readFileSync(resolve(dist, 'manifest.json'), 'utf8'));
 mf.host_permissions = [...(mf.host_permissions ?? []), `${ORIGIN}/*`];
 writeFileSync(resolve(dist, 'manifest.json'), JSON.stringify(mf));
 
-const ctx = await chromium.launchPersistentContext(mkdtempSync(resolve(tmpdir(), 'trail-reload-')), { headless: true, channel: 'chromium', args: [`--disable-extensions-except=${dist}`, `--load-extension=${dist}`] });
+const ctx = await chromium.launchPersistentContext(mkdtempSync(resolve(tmpdir(), 'trail-reload-')), { headless: true, channel: 'chromium', locale: 'pt-BR', args: [`--disable-extensions-except=${dist}`, `--load-extension=${dist}`] });
 const errors = [];
 const out = {};
 try {

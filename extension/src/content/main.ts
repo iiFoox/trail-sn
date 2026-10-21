@@ -56,8 +56,8 @@ function checkContext(): boolean {
 const livenessTimer = window.setInterval(checkContext, 2000);
 document.addEventListener('trail:dispose-content', dispose);
 
-// Português até a preferência chegar do storage; os ícones criados depois já saem no idioma escolhido.
-let strings = t('pt');
+// Idioma do navegador até a preferência chegar do storage; os ícones criados depois já saem no idioma escolhido.
+let strings = t(normalize(undefined).lang);
 let panelMode: Prefs['panelMode'] | undefined;
 let theme: 'dark' | 'light' = 'dark';
 /** Atalho das configurações para abrir e fechar o painel, e a aba deste quadro (vem do worker). */

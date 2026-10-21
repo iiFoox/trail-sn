@@ -8,7 +8,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const content = readFileSync(resolve(here, '../../extension/dist/content.js'), 'utf8');
 const A = 'a'.repeat(32), B = 'b'.repeat(32), C = 'c'.repeat(32);
 const browser = await chromium.launch({ channel: 'chromium' });
-const page = await browser.newPage();
+// Navegador em português: sem idioma salvo, o Trail segue o idioma do navegador.
+const page = await browser.newPage({ locale: 'pt-BR' });
 await page.route('https://dev000000.service-now.com/**', (route) => route.fulfill({
   contentType: 'text/html',
   body: `<!doctype html><html><body><table class="list_table" glide_table="incident"><thead><tr>

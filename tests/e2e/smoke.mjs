@@ -9,6 +9,7 @@ const dist = resolve(dirname(fileURLToPath(import.meta.url)), '../../extension/d
 const ctx = await chromium.launchPersistentContext(mkdtempSync(resolve(tmpdir(), 'trail-')), {
   headless: true,
   channel: 'chromium',
+  locale: 'pt-BR', // sem idioma salvo, o Trail segue o idioma do navegador
   args: [`--disable-extensions-except=${dist}`, `--load-extension=${dist}`],
 });
 let [sw] = ctx.serviceWorkers();
