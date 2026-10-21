@@ -16,13 +16,14 @@ Antes de tudo, leia `docs/DIARIO.md` (registro contínuo) e `docs/PASSAGEM.md`.
 - Anotar tudo em `docs/DIARIO.md` e fazer commit e push com frequência (repo público `iiFoox/trail-sn`, branch master).
 - Testar antes de dizer que está pronto: `npm test` (vitest), `npm run build` e a cadeia e2e (`npm run e2e`).
 
-## Tarefa em andamento (deixada pela metade)
-**Subflows na aba Flows.** No PDI, a execução de um subflow (`sys_flow_context`) tem `source_table=sys_flow_context` e `source_record` = sys_id da execução do flow pai, e não o registro. Hoje `recordFlows` (`packages/core/src/flows.ts`) só busca `source_record=<registro>`, então o subflow some.
-1. O teste já foi escrito e está **vermelho** de propósito: `packages/core/test/flows.test.ts` (espera o subflow logo abaixo do pai, com `parentSysId: 'c1'`). Rode na raiz: `npx vitest run packages/core/test/flows.test.ts`.
-2. Em `flows.ts`: adicionar `parentSysId?: string` em `FlowRun`; depois da primeira consulta, buscar `source_recordIN<ids das execuções>` (campos iguais e mais `source_record`) por até 3 níveis; inserir cada filho logo depois do pai.
-3. Em `extension/src/sidepanel/Flows.tsx`: recuar as linhas com `parentSysId` (ex.: classe `fl-run sub`, `padding-left` maior e um traço à esquerda em `ui.css`). Atualizar `demoFlows` para o c2 ter `parentSysId: 'c1'`.
-4. Validar no PDI: o incidente `d0d544b9c3c893101cbdb8e1b4013171` tem o "[PT] F14 flow chama subflow", que chama "[PT] F14 subflow descricao" (contexto `0dd544b953c89310cce665d6ce09f19f`). Procedimento: `npx vite build -c tests/regression/browser/vite.config.ts`, depois `node -e "import('./tests/regression/bateria2000/injetar.mjs').then(m=>m.injectBundle())"` com o portal `dev457034.service-now.com #2` numa página que tenha `g_ck` (ex.: `/now/nav/ui/home`; o `incident_list.do` deu erro 500 hoje), e então `TrailRegression.flows({table:'incident',sysId:'...'})`.
-5. Versão 0.14.6, zip, site (mencionar subflows no passo de Flows), diário, commit.
+## Tarefa em andamento
+**Subflows na aba Flows — implementada para a versão 0.14.6.** `recordFlows` busca contextos-filhos por `source_recordIN` em lotes e até três níveis, mostra cada filho logo abaixo do pai e marca o vínculo em `parentSysId`. O painel recua a linha; a demonstração e os testes do site/extensão cobrem o comportamento. A API do PDI não devolveu `flow.sys_class_name` para o subflow, então ele é classificado pela relação com o contexto pai.
+
+Validação no PDI: o flow `[PT] F14 flow chama subflow` foi retornado com o contexto do subflow `[PT] F14 subflow descricao` logo abaixo, ambos em `COMPLETE`; `parentSysId` e `subflow: true` corretos. Consulte a entrada `2026-10-21 — 0.14.6` em `docs/DIARIO.md` para métricas e validação detalhada.
+
+Validação local: typecheck passou e Vitest programático passou 150/150. `npm test` e `npm run build` no caminho padrão são bloqueados pelo sandbox ao ler diretórios acima do workspace; o build foi concluído com Vite `configLoader: runner`. O e2e completo para em `prefs-window.mjs` porque o Chromium headless não abriu janela separada; os testes `float`, `reload`, `flows` e `settings` passaram isoladamente. O teste do site só apontou bloqueio de rede na fonte externa, sem erros de conteúdo ou overflow.
+
+O pacote `0.14.6` foi copiado para `../trail-extensao` e zipado manualmente (a execução do script Bash foi bloqueada pelo sandbox). Falta revisar o diff final, fazer commit/push deste bloco e continuar pelo item 1 da fila abaixo.
 
 ## Validação já feita hoje (registrar no diário junto)
 `TrailRegression.flows` e `TrailRegression.automations` (novos em `tests/regression/browser/entry.ts`) rodaram como admin em incidentes reais [PT] (F14, F7). O flow que rodou aparece marcado "rodou aqui"; o resto: 4 definições de flow, 226 regras de negócio, 23 script includes, 46 client scripts, 23 UI policies, 63 UI actions, 2 data lookups, 6 regras de atribuição e 13 jobs. Acesso "ok" em todas as fontes. Cerca de 2,4 s e 20 chamadas. "Copy State to Incident State" sem campos gravados é correto (o script está vazio na instância).

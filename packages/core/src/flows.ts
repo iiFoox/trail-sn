@@ -18,6 +18,8 @@ export interface FlowRun {
   updatedAt?: string;
   flowSysId?: string;
   subflow: boolean;
+  /** sys_flow_context pai que chamou este subflow. */
+  parentSysId?: string;
 }
 
 export interface FlowDefinition {
@@ -67,14 +69,47 @@ export async function recordFlows(client: RestClient, target: { table: string; s
     cur = (await q('sys_db_object', `name=${cur}`, ['super_class.name'], 1))[0]?.['super_class.name'] || undefined;
   }
 
-  const [runs, triggers] = await Promise.all([
+  const [rootRuns, triggers] = await Promise.all([
     q('sys_flow_context', `source_record=${target.sysId}^ORDERBYDESCsys_created_on`,
       ['sys_id', 'name', 'state', 'flow', 'flow.sys_class_name', 'sys_created_on', 'sys_updated_on'], 100, 'runs'),
     q('sys_hub_trigger_instance_v2', 'flow.active=true^flow.sys_class_name=sys_hub_flow^trigger_typeSTARTSWITHrecord',
       ['flow', 'flow.name', 'flow.sys_scope.name', 'trigger_type', 'trigger_inputs'], 300, 'definitions'),
   ]);
 
-  const ranFlows = new Set(runs.map((r) => r.flow ?? '').filter(Boolean));
+  // Execuções de subflow apontam source_record para o contexto do flow pai.
+  // Buscamos por lotes e limitamos a profundidade para manter poucas chamadas.
+  const runRows = [...rootRuns];
+  let parents = rootRuns;
+  const seen = new Set(rootRuns.map((r) => r.sys_id).filter(Boolean));
+  for (let depth = 0; depth < 3 && parents.length; depth++) {
+    const parentIds = parents.map((r) => r.sys_id).filter((id): id is string => !!id);
+    if (!parentIds.length) break;
+    const children = await q('sys_flow_context', `source_recordIN${parentIds.join(',')}^ORDERBYsys_created_on`,
+      ['sys_id', 'name', 'state', 'flow', 'flow.sys_class_name', 'source_record', 'sys_created_on', 'sys_updated_on'], 100);
+    const fresh = children.filter((r) => r.sys_id && !seen.has(r.sys_id) && parentIds.includes(r.source_record ?? ''));
+    for (const child of fresh) seen.add(child.sys_id!);
+    runRows.push(...fresh);
+    parents = fresh;
+  }
+
+  const childrenByParent = new Map<string, Row[]>();
+  for (const row of runRows) {
+    const parentId = row.source_record;
+    if (parentId && seen.has(parentId) && parentId !== target.sysId) {
+      const group = childrenByParent.get(parentId) ?? [];
+      group.push(row);
+      childrenByParent.set(parentId, group);
+    }
+  }
+  const orderedRuns: Row[] = [];
+  const appendRun = (row: Row, depth: number) => {
+    orderedRuns.push(row);
+    if (depth >= 3) return;
+    for (const child of childrenByParent.get(row.sys_id ?? '') ?? []) appendRun(child, depth + 1);
+  };
+  for (const row of rootRuns) appendRun(row, 0);
+
+  const ranFlows = new Set(rootRuns.map((r) => r.flow ?? '').filter(Boolean));
   const definitions: FlowDefinition[] = [];
   for (const t of triggers) {
     const inputs = (await decodeFlowValues(t.trigger_inputs)) ?? [];
@@ -106,14 +141,16 @@ export async function recordFlows(client: RestClient, target: { table: string; s
   return {
     table: target.table,
     tables,
-    runs: runs.map((r): FlowRun => ({
+    runs: orderedRuns.map((r): FlowRun => ({
       sysId: r.sys_id ?? '',
       name: r.name ?? '',
       state: r.state ?? '',
       at: r.sys_created_on ?? '',
       ...(r.sys_updated_on ? { updatedAt: r.sys_updated_on } : {}),
       ...(r.flow ? { flowSysId: r.flow } : {}),
-      subflow: r['flow.sys_class_name'] === SUBFLOW,
+      // A API nem sempre devolve flow.sys_class_name; a relação com um contexto pai identifica o subflow.
+      subflow: r['flow.sys_class_name'] === SUBFLOW || (!!r.source_record && r.source_record !== target.sysId),
+      ...(r.source_record && r.source_record !== target.sysId ? { parentSysId: r.source_record } : {}),
     })),
     definitions,
     access,

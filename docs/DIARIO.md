@@ -10,6 +10,18 @@ Convenções:
 
 ---
 
+## 2026-10-21 — 0.14.6: subflows aninhados na aba Flows (Codex #2 + Antigravity #2)
+
+- **Motor (`packages/core/src/flows.ts`):** além das execuções ligadas ao registro, busca os contextos-filhos com `source_recordIN<sys_ids dos flows pais>`, em lotes e por até três níveis. Insere cada subflow logo após o flow que o chamou e expõe `parentSysId`; o teste unitário verifica três níveis encadeados.
+- **Detecção:** no incidente `[PT] F14-SUB1 Flow com subflow`, a API não retornou `flow.sys_class_name`; o motor marca a execução como subflow pela relação com o contexto pai. O teste unitário cobre essa ausência.
+- **Painel e demonstração (`extension/src/sidepanel/Flows.tsx`, `extension/src/shared/ui.css`):** filhos ficam recuados e com um traço lateral; a demonstração usa o mesmo formato. `tests/e2e/flows.mjs` verifica a hierarquia em 340 e 420 px.
+- **Site (Antigravity #2):** `site/b3/index.html` explica a hierarquia; assets da demonstração sincronizados; `tests/e2e/_site-demo.mjs` verifica a linha recuada.
+- **Teste no PDI:** bundle de regressão compilado e executado, só leitura, no registro `[PT]` `INC0010156`. O flow `[PT] F14 flow chama subflow` (contexto `0dd544b953c89310cce665d6ce09f19f`, estado `COMPLETE`) aparece primeiro; `[PT] F14 subflow descricao` (contexto `a9d584b9fdc89310f69a99b0c3ed21f8`, `source_record` do pai, estado `COMPLETE`) aparece em seguida, com `parentSysId` correto e `subflow: true`. Definições e execuções: acesso `ok`; 10 chamadas, ~1,8 s. Nenhum registro foi alterado, nenhum papel foi criado e não foi preciso elevar `security_admin`; a sessão permaneceu no admin e no app Global.
+- **Validação local:** `npm run typecheck` passou. A suíte unitária completa passou pelo Vitest programático (150/150). O carregador padrão de `npm test` e `npm run build` falha neste sandbox ao tentar ler diretórios acima do workspace (`Acesso negado`); com Vite `configLoader: runner` e `__dirname` global, os três builds da extensão e o bundle de regressão compilaram. `float.mjs`, `reload.mjs`, `flows.mjs` e `settings.mjs` passaram. A cadeia `npm run e2e` para em `prefs-window.mjs`: o Chromium headless não abriu a janela destacada (`windowOpened: false`); o teste isolado do painel flutuante passou. `_site-demo.mjs` completou as verificações de conteúdo, imagens e overflow, mas retorna 1 porque o sandbox bloqueou a fonte remota do Google (`ERR_NETWORK_ACCESS_DENIED`); Antigravity #2 registrou a execução sem esse erro como aprovada.
+- **Versão/pacote:** manifest `0.14.6`; pasta `../trail-extensao` atualizada manualmente arquivo a arquivo (o serviço Bash bloqueou a execução do script `tools/atualizar-extensao.sh`) e zip `../trail-edge-0.14.6.zip` gerado. Falta rever o diff final, fazer commit/push e avançar para o item 1 da fila (validação como ITIL e usuário de escopo).
+
+---
+
 ## 2026-10-21 — bateria de escopos e 0.14.5
 
 **Bateria de escopos (Codex, `tests/regression/escopo/RELATORIO.md`):**

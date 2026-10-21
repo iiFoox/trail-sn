@@ -50,7 +50,7 @@ export function FlowsView({ res, origin, field = '', filtered = false }: { res: 
         {res.access.runs === 'denied' && <div class="li"><span class="ck w">!</span><span class="grow small">{P.flRunsDenied}</span></div>}
         {res.access.runs !== 'denied' && !res.runs.length && <div class="li"><span class="ck">{Glyph.check}</span><span class="grow small muted">{P.flNoRuns}</span></div>}
         {res.runs.map((x, i) => (
-          <div class="li fl-run" style={`--i:${Math.min(i, 10)}`}>
+          <div class={`li fl-run ${x.parentSysId ? 'sub' : ''}`} style={`--i:${Math.min(i, 10)}`}>
             <span class={`fl-st ${x.state.replace(/\s+/g, '-')}`}>{states[x.state] ?? x.state}</span>
             <span class="grow"><b>{x.name}</b>{x.subflow && <small class="fl-tag">{P.flSubflow}</small>}<small class="muted"> · {when(x.at)}</small></span>
             {!isDemo && <a class="see" href={`${origin}/$flow-designer.do#/operations/context/${x.sysId}`} target="_blank" rel="noreferrer" title={P.flOpenRun} aria-label={P.flOpenRun}>{Glyph.open}</a>}
@@ -83,7 +83,7 @@ export function demoFlows(table: string): RecordFlows {
     tables: [table, 'task'],
     runs: [
       { sysId: 'c1', name: 'Notificar prioridade crítica', state: 'complete', at: '2026-10-17 22:37:03', subflow: false },
-      { sysId: 'c2', name: 'Aprovação de mudança', state: 'error', at: '2026-10-17 22:37:04', subflow: true },
+      { sysId: 'c2', name: 'Aprovação de mudança', state: 'error', at: '2026-10-17 22:37:04', subflow: true, parentSysId: 'c1' },
     ],
     definitions: [
       { sysId: 'f1', name: 'Notificar prioridade crítica', trigger: 'record_update', table, condition: 'Priority é 1 - Critical', writes: ['notify'], scope: 'Global', ranHere: true },

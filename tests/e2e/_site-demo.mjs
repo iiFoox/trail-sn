@@ -67,6 +67,11 @@ if (!recGroupTitle.includes('salvou')) errs.push('clique na bolinha-assistente n
 for (const label of ['Registro inteiro', 'Lote', 'Flows', 'E se?', 'Opções', 'Painel · escuro']) {
   await page.click(`#galseg button:has-text("${label}")`);
   await page.waitForTimeout(900);
+  if (label === 'Flows') {
+    const galFrame = await (await page.$('#galimg')).contentFrame();
+    const hasSubflow = await galFrame?.$eval('.fl-run.sub', (el) => el.textContent.includes('subflow')).catch(() => false);
+    if (!hasSubflow) errs.push('galeria Flows sem subflow recuado abaixo do flow pai (.fl-run.sub)');
+  }
 }
 await page.locator('#telas .gal').scrollIntoViewIfNeeded();
 await page.click('#galseg button:has-text("Opções")'); await page.waitForTimeout(900);

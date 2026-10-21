@@ -13,11 +13,15 @@ function client() {
     // Como na instância: o subflow aponta para a execução do flow pai, não para o registro.
     .respond('sys_flow_context', (req): Row[] => (req.query.startsWith(`source_record=${SYS}`)
       ? [
-          { sys_id: 'c3', name: '[PT] Outro flow', state: 'complete', flow: F2, 'flow.sys_class_name': 'sys_hub_flow', sys_created_on: '2026-10-20 12:00:09' },
+          { sys_id: 'c3', name: '[PT] Outro flow', state: 'complete', flow: F3, 'flow.sys_class_name': 'sys_hub_flow', sys_created_on: '2026-10-20 12:00:09' },
           { sys_id: 'c1', name: '[PT] Notifica prioridade', state: 'complete', flow: F1, 'flow.sys_class_name': 'sys_hub_flow', sys_created_on: '2026-10-20 12:00:00', sys_updated_on: '2026-10-20 12:00:05' },
         ]
       : req.query.startsWith('source_recordINc3,c1')
-        ? [{ sys_id: 'c2', name: '[PT] Subflow de aprovação', state: 'error', flow: SUB, 'flow.sys_class_name': 'sys_hub_sub_flow', source_record: 'c1', sys_created_on: '2026-10-20 12:00:01' } as Row]
+        ? [{ sys_id: 'c2', name: '[PT] Subflow de aprovação', state: 'error', flow: SUB, source_record: 'c1', sys_created_on: '2026-10-20 12:00:01' } as Row]
+        : req.query.startsWith('source_recordINc2')
+          ? [{ sys_id: 'c4', name: '[PT] Subflow de notificação', state: 'complete', flow: SUB, source_record: 'c2', sys_created_on: '2026-10-20 12:00:02' } as Row]
+          : req.query.startsWith('source_recordINc4')
+            ? [{ sys_id: 'c5', name: '[PT] Subflow de registro', state: 'complete', flow: SUB, source_record: 'c4', sys_created_on: '2026-10-20 12:00:03' } as Row]
         : []))
     .respond('sys_hub_trigger_instance_v2', (): Row[] => [
       { flow: F1, 'flow.name': '[PT] Notifica prioridade', 'flow.sys_scope.name': 'Global', trigger_type: 'record_update', trigger_inputs: inputs('incident', 'priority=1') },
@@ -38,6 +42,8 @@ describe('aba Flows: o que rodou no registro e o que está configurado na tabela
       ['[PT] Outro flow', 'complete', false, ''],
       ['[PT] Notifica prioridade', 'complete', false, ''],
       ['[PT] Subflow de aprovação', 'error', true, 'c1'],
+      ['[PT] Subflow de notificação', 'complete', true, 'c2'],
+      ['[PT] Subflow de registro', 'complete', true, 'c4'],
     ]);
     // O de problem fica de fora; o que já rodou aqui vem primeiro.
     expect(r.definitions.map((d) => d.name)).toEqual(['[PT] Notifica prioridade', '[PT] Fecha tarefas']);

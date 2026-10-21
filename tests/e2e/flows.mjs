@@ -20,9 +20,11 @@ try {
     out[w] = await page.evaluate(() => {
       const t = document.querySelector('.seg-tabs'), a = t.querySelector('button[aria-selected="true"]');
       const tr = t.getBoundingClientRect(), ar = a.getBoundingClientRect();
-      return { runs: document.querySelectorAll('.fl-run').length, defs: document.querySelectorAll('.fl-def').length, active: a.textContent, activeVisible: ar.left >= tr.left - 1 && ar.right <= tr.right + 1 };
+      const runs = [...document.querySelectorAll('.fl-run')];
+      return { runs: runs.length, nested: runs.filter((r) => r.classList.contains('sub')).length, secondIsNested: runs[1]?.classList.contains('sub'), defs: document.querySelectorAll('.fl-def').length, active: a.textContent, activeVisible: ar.left >= tr.left - 1 && ar.right <= tr.right + 1 };
     });
     if (out[w].runs !== 2 || out[w].defs !== 2) errors.push(`aba Flows sem as listas em ${w}px: ` + JSON.stringify(out[w]));
+    if (out[w].nested !== 1 || !out[w].secondIsNested) errors.push(`subflow sem recuo logo abaixo do flow pai em ${w}px: ` + JSON.stringify(out[w]));
     if (out[w].active !== 'Flows' || !out[w].activeVisible) errors.push(`aba Flows ativa fora da vista em ${w}px: ` + JSON.stringify(out[w]));
   }
   await page.setViewportSize({ width: 420, height: 1300 });
