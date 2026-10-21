@@ -267,7 +267,7 @@ const dict = {
       lkWhy: {
         dict: 'Está assim no dicionário do campo ({on}).', override: 'O dicionário foi mudado só para a tabela {on}.', inactive: 'O campo está desligado no dicionário.',
         always: 'Não tem condição: vale sempre.', cond_true: 'A condição vale para este registro agora.', cond_false_reverse: 'A condição não vale agora, e a policy desfaz o que faria ("reverter se falso").',
-        cond_unknown: 'A condição usa algo que o Trail não avalia daqui (script, "ou", campo de outra tabela).', record_unreadable: 'O Trail não conseguiu ler o registro para conferir a condição.',
+        cond_unknown: 'A condição usa algo que o Trail não avalia daqui (script, "ou", campo de outra tabela).', mandatory_empty: 'Campo obrigatório e vazio não fica somente leitura no formulário clássico: a trava vale depois que ele for preenchido.', record_unreadable: 'O Trail não conseguiu ler o registro para conferir a condição.',
         not_on_load: 'Não roda ao abrir o formulário; só depois que um campo da condição muda.', view: 'Só vale na view "{view}".',
         onload: 'Roda ao abrir o formulário, e a condição do script vale.', onload_unknown: 'Roda ao abrir o formulário, mas a condição do script usa algo que o Trail não avalia (por exemplo, o papel de quem está logado).',
         onchange: 'Só roda quando {trigger} muda no formulário.', value_unknown: 'O valor passado não é fixo: o Trail não sabe se liga ou desliga.', policy_script: 'Vem do script da policy, que tem uma condição que o Trail não avalia.',
@@ -326,7 +326,7 @@ const dict = {
         simTitle: 'Simular um valor para {field}', simHint: 'Escolha um valor e veja o que rodaria, o que cada coisa faz e o que não roda. Nada é gravado.', simRun: 'Simular',
         simRuns: 'Rodaria', simNoRuns: 'Nada rodaria com este valor.', simMaybe: 'Pode rodar', simWont: 'Dependem do campo, mas não rodariam', simNoRecord: 'O Trail não conseguiu ler o registro: as condições não foram avaliadas.', simSummary: '{n} com efeito, lido em {ms} ms',
         simWhy: {
-          preview: 'Prevista pela simulação da gravação.', always: 'Roda em toda atualização.', cond_true: 'A condição vale com este valor.', cond_false: 'A condição não vale com este valor.', cond_unknown: 'A condição usa algo que o Trail não avalia daqui.',
+          preview: 'Prevista pela simulação da gravação.', always: 'Roda em toda atualização.', cond_true: 'A condição vale com este valor.', cond_false: 'A condição não vale com este valor.', cond_unknown: 'A condição usa algo que o Trail não avalia daqui.', sla_not_attached: 'Este SLA não está anexado a este registro.', sla_already_attached: 'Este SLA já está anexado a este registro.', sla_attach_unknown: 'Não deu para ver os SLAs anexados a este registro.',
           onchange: 'Roda no formulário quando o campo muda.', other_field: 'Reage a outro campo, que não muda.', on_load: 'Só roda ao abrir o formulário.', on_submit: 'Roda ao salvar o formulário.', not_on_update: 'Só roda ao criar ou apagar.',
           policy_true: 'A política passa a valer.', policy_false_reverse: 'A política deixa de valer e desfaz o que fazia.', policy_unchanged: 'A política não muda com este valor.',
           field_not_empty: 'O campo que ela preencheria já está preenchido.', sla_stage: 'Uma etapa do SLA passa a valer.', sla_none: 'Nenhuma etapa do SLA muda.', not_simulated: 'Não se aplica a uma gravação.',
@@ -643,7 +643,7 @@ const dict = {
       lkWhy: {
         dict: 'Set in the field dictionary ({on}).', override: 'The dictionary was overridden for table {on} only.', inactive: 'The field is inactive in the dictionary.',
         always: 'No condition: always applies.', cond_true: 'The condition is true for this record now.', cond_false_reverse: 'The condition is false now, and the policy undoes its actions ("reverse if false").',
-        cond_unknown: 'The condition uses something Trail cannot evaluate from here (script, "or", a field of another table).', record_unreadable: 'Trail could not read the record to check the condition.',
+        cond_unknown: 'The condition uses something Trail cannot evaluate from here (script, "or", a field of another table).', mandatory_empty: 'A mandatory empty field is not read-only on the classic form: the lock applies once it is filled in.', record_unreadable: 'Trail could not read the record to check the condition.',
         not_on_load: 'Does not run when the form opens; only after a field in the condition changes.', view: 'Only applies in view "{view}".',
         onload: 'Runs when the form opens, and the script condition is true.', onload_unknown: 'Runs when the form opens, but the script condition uses something Trail cannot evaluate (for example, the role of the signed-in user).',
         onchange: 'Only runs when {trigger} changes on the form.', value_unknown: 'The value passed is not fixed: Trail cannot tell if it turns it on or off.', policy_script: 'Comes from the policy script, which has a condition Trail cannot evaluate.',
@@ -702,7 +702,7 @@ const dict = {
         simTitle: 'Simulate a value for {field}', simHint: 'Pick a value and see what would run, what each thing does and what does not run. Nothing is saved.', simRun: 'Simulate',
         simRuns: 'Would run', simNoRuns: 'Nothing would run with this value.', simMaybe: 'May run', simWont: 'Depend on the field, but would not run', simNoRecord: "Trail couldn't read the record: conditions were not evaluated.", simSummary: '{n} with effect, read in {ms} ms',
         simWhy: {
-          preview: 'Predicted by the save simulation.', always: 'Runs on every update.', cond_true: 'The condition holds with this value.', cond_false: 'The condition does not hold with this value.', cond_unknown: "The condition uses something Trail can't evaluate from here.",
+          preview: 'Predicted by the save simulation.', always: 'Runs on every update.', cond_true: 'The condition holds with this value.', cond_false: 'The condition does not hold with this value.', cond_unknown: "The condition uses something Trail can't evaluate from here.", sla_not_attached: 'This SLA is not attached to this record.', sla_already_attached: 'This SLA is already attached to this record.', sla_attach_unknown: "Couldn't see the SLAs attached to this record.",
           onchange: 'Runs on the form when the field changes.', other_field: 'Reacts to another field, which does not change.', on_load: 'Only runs when the form opens.', on_submit: 'Runs when the form is saved.', not_on_update: 'Only runs on create or delete.',
           policy_true: 'The policy starts to apply.', policy_false_reverse: 'The policy stops applying and undoes what it did.', policy_unchanged: 'The policy does not change with this value.',
           field_not_empty: 'The field it would fill is already filled.', sla_stage: 'An SLA stage starts to apply.', sla_none: 'No SLA stage changes.', not_simulated: 'Does not apply to a save.',

@@ -36,7 +36,7 @@ export function RulesTab({ r, origin, field, observed, tool, setTool }: { r: Inv
     setRes(undefined); setErr('');
     (async () => {
       try {
-        const out = isDemo ? await demoFieldRules(r.target.field) : await send<FieldRules & { error?: string }>({ type: 'field-rules', origin, tabId: trackedTab(), target: { table: r.target.table, field: r.target.field } });
+        const out = isDemo ? await demoFieldRules(r.target.field) : await send<FieldRules & { error?: string }>({ type: 'field-rules', origin, tabId: trackedTab(), target: { table: r.target.table, field: r.target.field, sysId: r.target.sysId } });
         if ((out as { error?: string }).error) throw new Error((out as { error?: string }).error);
         if (alive) setRes(out);
       } catch (e) { if (alive) setErr((e as Error).message); }

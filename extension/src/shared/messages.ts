@@ -43,7 +43,7 @@ export type Message =
   | { type: 'clear-cache'; origin: string }
   | { type: 'open-diff-popup'; key: string }
   // Telas novas (4 abas): cada uma chama um motor que já existe no core; todas só leem.
-  | { type: 'field-rules'; origin: string; target: { table: string; field: string }; language?: string; tabId?: number }
+  | { type: 'field-rules'; origin: string; target: { table: string; field: string; sysId?: string }; language?: string; tabId?: number }
   | { type: 'simulate-value'; origin: string; target: { table: string; sysId: string; field: string; value: string }; language?: string; tabId?: number }
   | { type: 'save-timing'; origin: string; target: { table: string; sysId: string; at?: string; checkpoint?: number }; tabId?: number }
   | { type: 'visibility'; origin: string; target: { table: string; sysId: string; user?: string; field?: string }; language?: string; tabId?: number }
