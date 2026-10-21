@@ -21,6 +21,13 @@ O Codex #2 e o Antigravity #2 pararam por limite de uso; o Claude fechou a rodad
 - Antigravity #2: livre. Entregou o tile 440×280 e a política revisada.
 - O sandbox do Codex não alcança o GitHub nem roda esbuild. Por isso a integração final (build, zip, push) deve ser feita por quem tiver acesso: Claude ou o dono.
 
+## Fila de funcionalidades escolhida pelo dono (21/10/2026, 18h18) — nesta ordem, depois de "Por que está bloqueado?"
+1. **Mapa do campo** — "Quem grava" (o atual "Outras regras que mexem em X") + **"Quem depende"** (raio de impacto). Fica na aba "Automações" da reorganização 6→4.
+2. **Por que este salvamento foi lento?** — tempos da transação (regras, SQL, navegador) e as regras que rodaram no save.
+3. **Quem vê este registro?** (nome provisório; o dono pediu outro nome que não "Por que fulano não vê") — regras que filtram a consulta (before query), condições e papéis; limite honesto: ACL com script não é avaliada.
+4. **Comparar instâncias (DEV × PROD).**
+Implementação: motor primeiro (módulos em `packages/core/src` com testes), interface depois da reorganização das abas (UX aprovada em `docs/ux-revisao-2026-10-21.md`).
+
 ## Ideias de funcionalidades guardadas (backlog, 21/10/2026 — não implementar sem o dono escolher)
 - **Comparar instâncias (DEV × PROD)** — o dono pediu para NÃO perder esta ideia. Para o mesmo campo/tabela, lado a lado o que pode gravá-lo em cada instância conectada (regras, policies, flows, data lookups, client scripts): o que só existe numa, o que está diferente (condição, ordem, script). Responde "por que funciona em DEV e não em PROD?". Precisa estar logado nas duas; só leitura.
 - Novidades no registro (desde a última visita + aviso quando alguém salva com o formulário aberto).
