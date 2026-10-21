@@ -294,3 +294,8 @@ Pedidos do dono depois de testar a 0.12.2 no Edge:
 - Testar o painel flutuante no Edge real com o PDI. Precisa da extensão carregada no Edge do dono; o portal do Maestri não carrega extensões.
 - Fase 2 (app escopado): `docs/fase2-app-escopado.md`.
 - Loja do Edge: só o dono envia.
+
+## 21/10/2026: validação de Flows com dados reais e passagem ao Codex
+- `entry.ts` agora expõe `flows` e `automations` no bundle de regressão. Rodaram no PDI em incidentes [PT] reais: o flow que rodou aparece como "rodou aqui", e as fontes vêm todas com acesso "ok" (detalhes em `docs/PROXIMOS-PASSOS.md`).
+- Encontrado: subflows não aparecem, porque o contexto deles aponta para a execução pai. O teste foi escrito (vermelho) e a correção ficou para o Codex.
+- O Claude saiu por limite de tokens; o **Codex #2 coordena** a partir daqui. Roteiro completo em `docs/PROXIMOS-PASSOS.md`.

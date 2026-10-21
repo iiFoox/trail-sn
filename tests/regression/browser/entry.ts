@@ -1,5 +1,5 @@
 /** Bundle para rodar a bateria dentro de uma aba logada da instância (console/devtools). */
-import { FetchRestClient, detectAccess, investigate, previewChange, fieldMap, type Grade } from '../../../packages/core/src/index';
+import { FetchRestClient, detectAccess, investigate, previewChange, fieldMap, recordFlows, tableAutomations, type Grade } from '../../../packages/core/src/index';
 import cases from '../cases.json';
 
 const order: Grade[] = ['candidate', 'probable', 'confirmed'];
@@ -194,3 +194,6 @@ export async function runDifferential(
 export async function preview(t: { table: string; sysId: string; field: string; value: string }): Promise<unknown> { return previewChange(makeClient(), t); }
 
 export async function map(t: { table: string; field: string }): Promise<unknown> { return fieldMap(makeClient(), t); }
+
+export async function flows(t: { table: string; sysId: string }): Promise<unknown> { return recordFlows(makeClient(), t); }
+export async function automations(t: { table: string; sysId: string }): Promise<unknown> { return tableAutomations(makeClient(), t); }
