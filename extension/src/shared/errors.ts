@@ -5,14 +5,16 @@
 import { t } from './i18n';
 import type { Lang } from './prefs';
 
-export type ErrorKind = 'notFound' | 'unavailable' | 'offline' | 'reloaded' | 'other';
+export type ErrorKind = 'notFound' | 'unavailable' | 'offline' | 'reloaded' | 'session' | 'other';
 
 const RULES: [ErrorKind, RegExp][] = [
   // Antes de "not found": "Record unavailable" (RecordUnavailableError do motor) é falta de resposta, não ausência.
   ['unavailable', /record unavailable|timeout|timed out|abort|HTTP 5\d\d|\b(500|502|503|504)\b|service unavailable|internal server error/i],
   ['reloaded', /receiving end does not exist|extension context invalidated|could not establish connection|message port closed/i],
   ['offline', /failed to fetch|networkerror|network error|net::err|load failed|err_internet_disconnected/i],
-  ['notFound', /record not found|not readable|not found|\b(401|403)\b/i],
+  // 401: a sessão do ServiceNow acabou (403 continua sendo falta de permissão no registro).
+  ['session', /\b401\b|unauthori[sz]ed/i],
+  ['notFound', /record not found|not readable|not found|\b403\b/i],
 ];
 
 export function errorKind(msg: string | undefined): ErrorKind {
@@ -27,6 +29,7 @@ export function friendlyError(msg: string | undefined, lang: Lang): string {
     case 'unavailable': return s.errUnavailable;
     case 'offline': return s.errOffline;
     case 'reloaded': return s.errReloaded;
+    case 'session': return s.errSession;
     default: return s.errOther;
   }
 }

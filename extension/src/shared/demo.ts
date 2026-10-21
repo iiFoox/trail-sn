@@ -362,7 +362,7 @@ export function demoRecord(wait = false): TabState {
 /** Demonstração do lote: 12 incidentes, a categoria mudou por três causas. */
 export function demoBatch(): TabState {
   const mk = (n: number, type: string, name: string, grade: string, user = 'system', at?: string) => ({ sysId: n.toString(16).padStart(32, '0'), display: `INC00${10100 + n}`, title: ['Impressora sem rede', 'VPN cai toda hora', 'Notebook lento', 'E-mail não sincroniza'][n % 4], status: 'done' as const,
-    at: at ?? `2026-10-${10 + (n % 9)} 1${n % 9}:2${n % 6}:00`, oldValue: 'inquiry', newValue: n % 3 ? 'network' : 'hardware', user, changes: 1 + (n % 2), cause: { type, name, grade, score: grade === 'confirmed' ? 85 : 55, sysId: 'demo', table: 'sys_script' } });
+    at: at ?? `2026-10-${10 + (n % 9)} 1${n % 9}:2${n % 6}:00`, oldValue: 'inquiry', newValue: n % 3 ? 'network' : 'hardware', oldDisplay: 'Inquiry / Help', newDisplay: n % 3 ? 'Network' : 'Hardware', user, changes: 1 + (n % 2), cause: { type, name, grade, score: grade === 'confirmed' ? 85 : 55, sysId: 'demo', table: 'sys_script' } });
   const items = [
     ...[1, 2, 3, 4, 5, 6, 7].map((n) => mk(n, 'br_before', 'Categoria pelo grupo de suporte', 'confirmed', 'system', n <= 3 ? '2026-10-19 19:21:00' : undefined)),
     ...[8, 9, 10].map((n) => mk(n, 'user_action', 'beth.anglin', 'confirmed', 'beth.anglin')),

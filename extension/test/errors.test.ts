@@ -12,6 +12,8 @@ describe('erros em linguagem simples', () => {
     expect(errorKind('Extension context invalidated.')).toBe('reloaded');
     expect(errorKind('Cannot read properties of undefined')).toBe('other');
     expect(errorKind(undefined)).toBe('other');
+    expect(errorKind('HTTP 401 Unauthorized')).toBe('session');
+    expect(errorKind('HTTP 403 Forbidden')).toBe('notFound');
   });
 
   it('devolve o texto do i18n no idioma pedido; registro indisponível pede para tentar de novo', () => {

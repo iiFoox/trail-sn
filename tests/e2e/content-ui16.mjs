@@ -50,7 +50,8 @@ const ctx = msgs.find((m) => m.type === 'context');
 const errors = [];
 if (icons !== 6) errors.push(`esperava 6 ícones (2 comuns, 2 referências, 1 caixa com dois rótulos, 1 lista), achei ${icons}`);
 const refField = await page.evaluate(() => document.querySelector('label[for="sys_display.incident.business_service"] .trail-host')?.shadowRoot.querySelector('button').getAttribute('aria-label'));
-if (!refField?.includes('(business_service)')) errors.push('referência sem ícone ou com campo errado: ' + refField);
+// O ícone mostra o rótulo do formulário (Service), não o nome técnico (business_service).
+if (!refField?.includes('(Service)')) errors.push('referência sem ícone ou com campo errado: ' + refField);
 if (!ctx || ctx.ctx.table !== 'incident' || ctx.ctx.token?.length !== 72) errors.push('contexto não publicado com tabela e token: ' + JSON.stringify(ctx));
 const inv = msgs.find((m) => m.type === 'investigate');
 if (!inv || inv.target.field !== 'state' || inv.target.table !== 'incident' || inv.token?.length !== 72) errors.push('clique não gerou investigate correto: ' + JSON.stringify(inv));

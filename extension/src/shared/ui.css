@@ -1110,3 +1110,18 @@ details.tech-acc[open] > summary svg { transform: rotate(90deg); }
 .drawer details.md-adv > summary { cursor: pointer; color: var(--accent); font-weight: 600; padding: 2px 0; font-size: 12px; }
 .drawer details.md-adv > summary::-webkit-details-marker { display: revert; }
 .drawer details.md-adv .grid2 { margin-top: 6px; }
+
+/* ===== Ajustes da revisão de UX (itens 6, 21, 22, 15/16, 23) ===== */
+.icon-btn { width: 32px; height: 32px; border-radius: 8px; }
+.icon-btn svg { width: 17px; height: 17px; }
+.det { font: 12px/1.4 var(--font); }
+.headcard .old { text-decoration: none; color: var(--fg-2); font-weight: 600; }
+.nil { font-style: italic; color: var(--muted); }
+.headcard .nil, .h .c .nil, .bt-row .nil { font-weight: 400; }
+.bt-sum { font-size: 13px; line-height: 1.5; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--teal); border-radius: var(--r); padding: 10px 12px; box-shadow: var(--shadow); }
+.st-keyrow .st-keyline { display: flex; gap: 10px; align-items: center; }
+.st-keyrow .st-links { margin: 0; padding: 0; display: flex; gap: 6px; flex-wrap: wrap; }
+.st-keys small { color: var(--muted); }
+/* Valor antigo sem risco (contraste melhor, principalmente no claro): "X → Y" com X em --fg-2. */
+ul.fl .fbtn .v .o, table.cmpt .o, .wi-ft .o, .bt-row .vals .o { text-decoration: none; opacity: 1; color: var(--fg-2); }
+.topbar .host { min-width: 64px; flex: 0 1 auto; }
