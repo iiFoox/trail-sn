@@ -28,6 +28,12 @@ O Codex #2 e o Antigravity #2 pararam por limite de uso; o Claude fechou a rodad
 4. **Comparar instâncias (DEV × PROD).**
 Implementação: motor primeiro (módulos em `packages/core/src` com testes), interface depois da reorganização das abas (UX aprovada em `docs/ux-revisao-2026-10-21.md`).
 
+**Reorganização aprovada pelo dono (21/10, 18h29): 4 abas.**
+1. **Resposta** — frase-resposta no topo, causa, certeza, "Copiar para o chamado".
+2. **Como aconteceu** — Rastro + Provas; o "salvamento lento" entra aqui (tempos de cada save).
+3. **Histórico** — campo + registro inteiro numa visão só; "O que rodou neste registro" (flows do registro, sai a aba Flows); "Quem enxerga este registro" (nome escolhido no lugar de "Por que fulano não vê").
+4. **Regras do campo** — Estado agora (o "Bloqueio?"); Quem grava (o atual "Outras regras" + mapa de automações); Quem depende, com o botão **"Simular um valor"** (o antigo "E se?" deixa de ser aba); botão "Comparar com outra instância".
+
 ## Ideias de funcionalidades guardadas (backlog, 21/10/2026 — não implementar sem o dono escolher)
 - **Comparar instâncias (DEV × PROD)** — o dono pediu para NÃO perder esta ideia. Para o mesmo campo/tabela, lado a lado o que pode gravá-lo em cada instância conectada (regras, policies, flows, data lookups, client scripts): o que só existe numa, o que está diferente (condição, ordem, script). Responde "por que funciona em DEV e não em PROD?". Precisa estar logado nas duas; só leitura.
 - Novidades no registro (desde a última visita + aviso quando alguém salva com o formulário aberto).
