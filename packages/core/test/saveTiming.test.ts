@@ -293,3 +293,11 @@ describe('auxiliares', () => {
     expect(verdictOf(5000).verdict).toBe('muito_lento');
   });
 });
+
+describe('P7: additional_debug_count', () => {
+  it('não é pedido nem na sondagem (não existe no PDI)', async () => {
+    const c = base({ dict: [], tx: [tx({ sys_id: 'T1', sys_created_on: shift(AT, 1), response_time: '800' })] });
+    await saveTiming(c, { table: 'incident', sysId: ID, checkpoint: 3 });
+    expect(c.log.filter((r) => r.table === 'syslog_transaction').every((r) => !r.fields.includes('additional_debug_count'))).toBe(true);
+  });
+});

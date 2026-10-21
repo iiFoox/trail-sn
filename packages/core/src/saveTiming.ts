@@ -34,7 +34,8 @@ import { evalCondition, isFormSubmitFor, isRecordWrite, isWorkspaceAction, merge
  * Campos de tempo candidatos em `syslog_transaction`, em ordem de preferência (o primeiro que existir ganha).
  * Nomes conhecidos (Washington/Xanadu): response_time, sql_time, sql_count, business_rule_time, business_rule_count,
  * acl_time, client_response_time, client_network_time, browser_time, semaphore_wait_time, session_wait_time,
- * total_wait_time, output_length, additional_debug_count, additional_info. Os alternativos (br_time, network_time...) são
+ * total_wait_time, output_length, additional_info (`additional_debug_count` não existe no PDI de 21/10/2026; existe
+ * `additional_debug_info`, que não é contagem, e por isso não é pedido). Os alternativos (br_time, network_time...) são
  * de versões antigas ou de documentação; só entram se o dicionário disser que existem. A conferir no PDI.
  * Tempos em milissegundos (inteiros). Um campo glide_duration ("1970-01-01 00:00:04") também é lido.
  */
@@ -55,7 +56,6 @@ export const TIMING_FIELDS = {
   sessionWait: ['session_wait_time'],
   totalWait: ['total_wait_time'],
   output: ['output_length'],
-  debugCount: ['additional_debug_count'],
   info: ['additional_info'],
 } as const;
 export type TimingKey = keyof typeof TIMING_FIELDS;
