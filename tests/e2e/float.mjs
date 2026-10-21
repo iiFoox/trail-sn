@@ -86,20 +86,20 @@ try {
   await page.waitForTimeout(450);
   const back = await pane();
   if (back.x !== 1280 - 420 - 8 || back.cls.includes('left')) errors.push('duplo clique não encostou na direita: ' + JSON.stringify(back));
-  // A setinha esconde o painel e continua visível na borda.
+  // A setinha esconde o painel na bolinha do Trail; a bolinha traz de volta encostado na direita.
+  // O aviso de boas-vindas fica no mesmo canto da bolinha; fecha antes de clicar nela.
+  await page.evaluate(() => document.getElementById('trail-notice')?.remove());
   await page.locator('#trail-float').locator('.tab').click();
   await page.waitForTimeout(450);
   const shut = await page.evaluate(() => {
     const root = document.getElementById('trail-float').shadowRoot;
-    const pane = root.querySelector('.pane'), tab = root.querySelector('.tab');
-    const p = pane.getBoundingClientRect(), t = tab.getBoundingClientRect();
-    return { cls: pane.className, paneX: Math.round(p.left), tabX: Math.round(t.left), tabRight: Math.round(t.right), expanded: tab.getAttribute('aria-expanded'), transform: getComputedStyle(pane).transform, animation: getComputedStyle(pane).animationName };
+    return { shown: root.querySelector('.pane').style.display !== 'none', bubble: !!root.querySelector('.bub') };
   });
-  if (!shut.cls.includes('shut') || shut.paneX < 1280 || shut.tabX >= 1280 || shut.tabRight <= 1250 || shut.expanded !== 'false') errors.push('setinha não recolheu na borda: ' + JSON.stringify(shut));
-  await page.locator('#trail-float').locator('.tab').click();
+  if (shut.shown || !shut.bubble) errors.push('setinha não virou a bolinha: ' + JSON.stringify(shut));
+  await page.locator('#trail-float').locator('.bub').click();
   await page.waitForTimeout(450);
   const unshut = await pane();
-  if (unshut.cls.includes('shut') || unshut.x !== 1280 - unshut.w - 8) errors.push('setinha não reabriu o painel: ' + JSON.stringify(unshut));
+  if (!unshut.shown || unshut.x !== 1280 - unshut.w - 8) errors.push('a bolinha não trouxe o painel de volta pela setinha: ' + JSON.stringify(unshut));
   // Minimizar e voltar.
   await frame.click(`header.topbar button[aria-label^="Minimizar"]`);
   await page.waitForTimeout(450);

@@ -46,15 +46,24 @@ await page.waitForTimeout(300);
 results.toast = await panelFrame.evaluate(() => document.querySelector('.toast')?.textContent);
 results.panelUrlAfterClick = panelFrame.url().replace(/^.*\/demo/, '/demo');
 // galeria
-for (const label of ['Popup', 'Opções', 'Painel · escuro', 'Painel · claro']) {
+for (const label of ['Registro inteiro', 'Lote', 'E se?', 'Popup', 'Opções', 'Painel · escuro', 'Painel · claro']) {
   await page.click(`#galseg button:has-text("${label}")`);
   await page.waitForTimeout(900);
 }
 await page.locator('#telas .gal').scrollIntoViewIfNeeded();
 await page.click('#galseg button:has-text("Opções")'); await page.waitForTimeout(900);
 if (S) await page.locator('#telas .gal').screenshot({ path: S + 'gal-options.png' });
+await page.locator('#telas .story').scrollIntoViewIfNeeded();
+await page.waitForTimeout(400);
+if (S) await page.locator('#telas .story').screenshot({ path: S + 'gal-story.png' });
 // dentro do painel: cada callout
 await page.locator('#painel').scrollIntoViewIfNeeded();
-for (const i of [0, 3, 4, 6, 7]) { await page.click(`.co >> nth=${i}`); await page.waitForTimeout(1100); if (S) await page.locator('.inside').screenshot({ path: S + `inside-${i}.png` }); }
-console.log(JSON.stringify({ results, navs, errs }, null, 1));
+for (const i of [0, 3, 4, 6, 7, 8]) { await page.click(`.co >> nth=${i}`); await page.waitForTimeout(1100); if (S) await page.locator('.inside').screenshot({ path: S + `inside-${i}.png` }); }
+const brokenImgs = await page.$$eval('img', (is) => is.filter((i) => !i.complete || i.naturalWidth === 0).map((i) => i.getAttribute('src')));
+const overflow1280 = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+await page.setViewportSize({ width: 390, height: 844 });
+await page.waitForTimeout(400);
+const overflow390 = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+if (S) await page.screenshot({ path: S + 'b3-390.png', fullPage: true });
+console.log(JSON.stringify({ results, brokenImgs, overflow1280, overflow390, navs, errs }, null, 1));
 await b.close(); srv.close();

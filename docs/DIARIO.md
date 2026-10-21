@@ -9,6 +9,16 @@ Convenções:
 
 ---
 
+## 2026-10-20 (noite) — 0.12.5 e site
+
+- A setinha da lateral agora esconde o painel na bolinha do Trail, com a mesma animação de minimizar (pedido do dono). O estado "recolhido na borda" foi retirado.
+- O aviso "Trail conectado" fica no mesmo canto da bolinha e cobre o clique nela. No e2e ele é fechado antes; o certo é o aviso virar balão da bolinha (tarefa do Codex).
+- Site (Antigravity):
+  - página b3 com as novidades da 0.12 e mais telas na galeria (Registro inteiro, Lote, E se?);
+  - as 10 imagens refeitas a partir da demonstração em português, sem URL de instância;
+  - `site/tools` com caminhos relativos.
+- Os protótipos antigos `site/a`, `b`, `b2` e `c` ainda citam a URL do PDI. Já citavam no site antigo; o dono decide se remove.
+
 ## 2026-10-20 (noite) — 0.12.4
 
 - Correção: a setinha da lateral não recolhia o painel. A animação de abrir usava `fill-mode: both` e prendia `transform: none`, anulando a classe `.shut`. Agora é `backwards`. O Codex achou o mesmo problema pelos testes novos.

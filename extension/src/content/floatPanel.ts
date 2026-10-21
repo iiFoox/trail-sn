@@ -9,7 +9,7 @@ import { TRAIL_MINI } from '../shared/mark';
  *    Duplo clique no cabeçalho encosta na direita. A borda de dentro muda a largura.
  *  - Sobrevive a recarregar a página: o worker guarda, por aba, se está aberto ou minimizado.
  *  - Muda de tamanho por qualquer borda ou canto (encostado: a borda de dentro e a de baixo).
- *  - Setinha na lateral: recolhe o painel encostado para fora da tela, deixando só a setinha; outro clique abre de novo.
+ *  - Setinha na lateral: esconde o painel na bolinha do Trail (o mesmo que minimizar); um clique na bolinha traz de volta.
  *  - Esc fecha (com o foco no painel, ou na página fora de um campo).
  *  - Visual de janela do Mac: cantos arredondados, uma pequena margem da borda, bolinhas fechar/minimizar/sempre visível.
  *  - "Sempre visível" (bolinha verde): o painel passa para uma janela de Picture-in-Picture de documento, que o navegador
@@ -64,10 +64,6 @@ iframe{flex:1;width:100%;border:0;background:var(--bg);display:block}
 .pane.left .tab{left:auto;right:-22px;border-right:1px solid var(--line);border-left:0;border-radius:0 10px 10px 0;box-shadow:6px 0 16px rgba(0,0,0,.18)}
 .pane.left .tab svg{transform:rotate(180deg)}
 .pane.free .tab{display:none}
-.pane.shut{transform:translateX(calc(100% + ${GAP}px));box-shadow:none}
-.pane.left.shut{transform:translateX(calc(-100% - ${GAP}px))}
-.pane.shut .tab svg{transform:rotate(180deg)}
-.pane.left.shut .tab svg{transform:none}
 .snap{position:fixed;top:${GAP}px;height:calc(100vh - ${2 * GAP}px);border-radius:12px;width:${W}px;z-index:2147483644;background:rgba(43,179,159,.12);border:2px dashed rgba(43,179,159,.6);box-sizing:border-box;pointer-events:none;opacity:0;transition:opacity .15s}
 .snap.on{opacity:1}
 .bub{all:unset;position:fixed;right:20px;bottom:20px;z-index:2147483645;width:46px;height:46px;border-radius:50%;cursor:pointer;
@@ -92,8 +88,6 @@ interface State {
   host: HTMLElement; root: ShadowRoot; pane: HTMLElement; tabId: number; dock: Dock; w: number; ready: boolean; src: string; theme: 'dark' | 'light';
   /** Altura escolhida pela pessoa quando encostado; sem ela, a tela toda. */
   h?: number;
-  /** Recolhido pela setinha. */
-  shut: boolean;
 }
 let st: State | null = null;
 let bubble: HTMLButtonElement | null = null;
@@ -109,10 +103,8 @@ function place(s: State): void {
   const p = s.pane;
   p.classList.toggle('left', s.dock === 'left');
   p.classList.toggle('free', s.dock === 'free');
-  if (s.dock === 'free') { s.shut = false; p.classList.remove('shut'); }
   p.style.width = `${s.w}px`;
   if (s.dock === 'free') return;
-  p.classList.toggle('shut', s.shut);
   p.style.top = `${GAP}px`;
   p.style.height = s.h ? `${Math.min(s.h, innerHeight - 2 * GAP)}px` : `calc(100vh - ${2 * GAP}px)`;
   p.style.left = s.dock === 'right' ? `${vw - s.w - GAP}px` : `${GAP}px`;
@@ -137,7 +129,7 @@ export function openFloat(tabId: number, opts: { theme?: 'dark' | 'light'; minim
   root.innerHTML = `<style>${CSS}</style><div class="snap"></div><div class="pane ${theme}" role="complementary" aria-label="Trail">${RZ}<button class="tab" type="button">${CHEVRON}</button><div class="body"><iframe src="${src}" title="Trail" allow="clipboard-write"></iframe></div></div>`;
   document.documentElement.appendChild(host);
   const pane = root.querySelector<HTMLElement>('.pane')!;
-  st = { host, root, pane, tabId, dock: 'right', w: W, ready: false, src, theme, shut: false };
+  st = { host, root, pane, tabId, dock: 'right', w: W, ready: false, src, theme };
   place(st);
   save(true);
   // Instância que bloqueia o iframe da extensão (política de segurança): cai para a janela separada.
@@ -188,7 +180,6 @@ function restore(): void {
   const s = st;
   if (!s) return;
   bubble?.remove(); bubble = null;
-  s.shut = false;
   s.pane.style.display = '';
   s.pane.style.animation = 'none'; void s.pane.offsetWidth; s.pane.style.animation = '';
   place(s);
@@ -197,7 +188,7 @@ function restore(): void {
 
 /** Abrir de novo ou investigar outra coisa com o painel minimizado: ele volta a aparecer. */
 export function showFloat(tabId: number, theme?: 'dark' | 'light'): void {
-  if (!st) openFloat(tabId, { theme }); else if (bubble) restore(); else if (st.shut) { st.shut = false; place(st); }
+  if (!st) openFloat(tabId, { theme }); else if (bubble) restore();
 }
 
 // ---------- arrastar ----------
@@ -219,7 +210,6 @@ function dragMove(s: State, x: number, y: number, px: number): void {
     drag.moved = true;
     s.pane.classList.add('moving');
     if (s.dock !== 'free') {
-      s.shut = false;
       // Solta da borda: vira um cartão um pouco menor que a tela, sob o ponteiro.
       s.dock = 'free';
       place(s);
@@ -284,15 +274,12 @@ function wireResize(s: State): void {
   }
 }
 
-/** Setinha da lateral: recolhe o painel encostado para fora da tela e traz de volta. */
+/** Setinha da lateral: esconde o painel na bolinha do Trail, como minimizar. */
 function wireTab(s: State): void {
   const tab = s.root.querySelector<HTMLButtonElement>('.tab')!;
-  const label = () => {
-    const t = s.shut ? 'Abrir o painel' : 'Recolher o painel';
-    tab.title = t; tab.setAttribute('aria-label', t); tab.setAttribute('aria-expanded', String(!s.shut));
-  };
-  label();
-  tab.addEventListener('click', () => { s.shut = !s.shut; place(s); label(); });
+  tab.title = 'Esconder o painel';
+  tab.setAttribute('aria-label', 'Esconder o painel');
+  tab.addEventListener('click', () => minimize());
 }
 
 // ---------- sempre visível (Picture-in-Picture de documento) ----------

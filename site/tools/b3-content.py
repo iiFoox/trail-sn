@@ -114,7 +114,7 @@ STORY = r'''
     <div class="frame rv"><div class="pic" style="--pos:50% 0"><img src="img/panel-verdict.png" alt="Veredito: business rule assíncrona confirmada com 80 pontos" loading="lazy"></div><div class="n">04 · VEREDITO</div><h3>Causa, fatos e link</h3><p>Quem, quando, de que valor pra qual, e o artefato responsável com os fatos que pontuaram. Clique e abre o script.</p></div>
   </div>
   <div class="compo rv">
-    <div class="shot"><div class="chrome"><i></i><i></i><i></i><span>dev457034.service-now.com/incident.do?sys_id=ad7b…31f3</span></div><img src="img/ui16-form-hot.png" alt="Formulário UI16 com o Trail ativo no campo State" loading="lazy"></div>
+    <div class="shot"><div class="chrome"><i></i><i></i><i></i><span>sua-instancia.service-now.com/incident.do?sys_id=ad7b…31f3</span></div><img src="img/ui16-form-hot.png" alt="Formulário UI16 com o Trail ativo no campo State" loading="lazy"></div>
     <div class="side"><img src="img/panel-full.png" alt="Painel lateral do Trail com a investigação do campo State" loading="lazy" style="object-fit:cover;object-position:top;height:100%"></div>
   </div>
 </div></section>
