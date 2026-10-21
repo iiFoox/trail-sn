@@ -223,10 +223,15 @@ const and3 = (xs: Tri[]): Tri => (xs.some((x) => x === false) ? false : xs.some(
 const or3 = (xs: Tri[]): Tri => (xs.some((x) => x === true) ? true : xs.some((x) => x === undefined) ? undefined : false);
 const not3 = (x: Tri): Tri => (x === undefined ? undefined : !x);
 
+/** Papel que todo mundo tem sem estar em sys_user_has_role (as ACLs do KB pedem "public"). */
+const IMPLICIT_ROLES = new Set(['public']);
+
 function hasRole(ctx: Ctx | undefined, list: string): Tri {
+  const roles = list.split(',').map((r) => r.trim()).filter(Boolean);
+  if (roles.some((r) => IMPLICIT_ROLES.has(r))) return true;
   if (!ctx || !ctx.rolesKnown) return undefined;
   if (ctx.isAdmin) return true;
-  return list.split(',').map((r) => r.trim()).filter(Boolean).some((r) => ctx.roles.has(r));
+  return roles.some((r) => ctx.roles.has(r));
 }
 
 // ---------------------------------------------------------------- leitura de encoded query
@@ -606,6 +611,7 @@ export function aclKeyOrder(tables: string[], field?: string): string[] {
 function judgeAcl(a: AclCheck, rec: Record<string, string> | undefined, ctx: Ctx | undefined): void {
   if (ctx && a.adminOverrides && ctx.rolesKnown && ctx.isAdmin) { a.byAdmin = true; a.roleOk = true; a.conditionOk = true; a.passes = true; return; }
   if (!a.roles.length && a.rolesKnown) a.roleOk = true;
+  else if (a.roles.some((r) => IMPLICIT_ROLES.has(r))) a.roleOk = true;
   else if (!a.rolesKnown || !ctx || !ctx.rolesKnown) a.roleOk = undefined;
   else if (ctx.isAdmin) a.roleOk = true;
   else { a.roleOk = a.roles.some((r) => ctx.roles.has(r)); if (!a.roleOk) a.missingRoles = [...a.roles]; }

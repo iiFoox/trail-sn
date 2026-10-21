@@ -154,6 +154,12 @@ export async function decodeFlowValues(raw: string | undefined): Promise<{ name?
   } catch { return undefined; }
 }
 
+/**
+ * Valor de um campo numa ação de flow que não é fixo: pílula (`{{Trigger.current.x}}`) ou script. No PDI (21/10/2026) o
+ * valor calculado por script aparece literalmente como `fd-scripted` em `values` ("close_notes=fd-scripted").
+ */
+export const isDynamicFlowValue = (v: string): boolean => v.includes('{{') || v.trim() === 'fd-scripted';
+
 /** "notify=3^urgency=1" → { notify: '3', urgency: '1' } (campos que a ação de flow grava). */
 export function parseFieldValues(q: string | undefined): Record<string, string> {
   const out: Record<string, string> = {};

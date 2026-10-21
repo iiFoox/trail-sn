@@ -15,7 +15,9 @@ await page.route('https://dev000000.service-now.com/**', (route) => route.fulfil
   contentType: 'text/html',
   body: `<!doctype html><html><body>
     <script>window.g_ck='${'a'.repeat(72)}'; window.NOW={user_name:'admin'};
-      window.g_form={getTableName:()=>'incident',getUniqueValue:()=>'${'b'.repeat(32)}',isMandatory:(f)=>f==='impact',getLabelOf:(f)=>({state:'State',impact:'Impact',parent_incident:'Parent Incident'})[f]||f};</script>
+      window.g_form={getTableName:()=>'incident',getUniqueValue:()=>'${'b'.repeat(32)}',isMandatory:(f)=>f==='impact',
+        // Igual ao UI16: isReadOnly(ge, control), true quando falta o control.
+        isReadOnly:function(ge, control){ if (!control) return true; return control.disabled || control.readOnly; },getGlideUIElement:(f)=>({fieldName:f}),getLabelOf:(f)=>({state:'State',impact:'Impact',parent_incident:'Parent Incident'})[f]||f};</script>
     <div id="element.incident.state"><label for="incident.state">State</label><input id="incident.state" readonly></div>
     <div id="element.incident.impact"><label for="incident.impact">Impact</label><input id="incident.impact"></div>
     <div id="element.incident.parent_incident" style="display:none"><input id="incident.parent_incident"></div>
@@ -63,6 +65,7 @@ const one = formState.one;
 if (!one || one.readOnly !== true || one.mandatory !== false || one.visible !== true || one.label !== 'State') errors.push('estado do campo errado: ' + JSON.stringify(one));
 if (formState.other) errors.push('respondeu para outra tabela: ' + JSON.stringify(formState.other));
 const byName = Object.fromEntries((formState.all?.fields ?? []).map((f) => [f.field, f]));
+if (byName.impact?.readOnly !== false) errors.push('campo editável dado como somente leitura (g_form.isReadOnly do UI16): ' + JSON.stringify(byName.impact));
 if (byName.impact?.mandatory !== true || byName.parent_incident?.visible !== false || byName.parent_incident?.label !== 'Parent Incident') errors.push('lista do formulário errada: ' + JSON.stringify(formState.all));
 // Reinjeção antes de o contexto antigo invalidar: a nova cópia desliga a anterior.
 await page.addScriptTag({ content });

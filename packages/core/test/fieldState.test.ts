@@ -133,6 +133,7 @@ describe('Por que o campo está bloqueado, obrigatório ou escondido', () => {
     expect(r.dictionaryHidden).toBe(true);
     expect(r.denied).toEqual(expect.arrayContaining(['sys_ui_policy', 'sys_ui_policy_action', 'sys_script_client']));
     expect(r.aspects.read_only).toMatchObject({ observed: true, rules: false, unexplained: true });
+    expect(r.aclNote).toBe(false); // sem ver as policies, não dá para apontar ACL (visto no PDI como itil)
     expect(r.aspects.mandatory.observed).toBe(true);
     // Nenhuma chamada fora de leitura: o cliente falso só responde a GET de tabela.
     expect(c.log.every((x) => typeof x.query === 'string')).toBe(true);

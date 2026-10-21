@@ -9,7 +9,7 @@
 import type { RestClient } from './client/RestClient';
 import { writtenFields } from './conflicts';
 import { evalExpr, scriptVerdict, type Env } from './scriptEval';
-import { conditionFields, decodeFlowValues, evalCondition, parseFieldValues, sameVal } from './util';
+import { conditionFields, decodeFlowValues, evalCondition, isDynamicFlowValue, parseFieldValues, sameVal } from './util';
 import type { Row } from './types';
 import { resolveDisplay } from './display';
 
@@ -245,7 +245,7 @@ export async function previewChange(client: RestClient, target: { table: string;
       const pick = (n: string) => params.find((x) => x.name === n)?.value ?? '';
       const tb = pick('table_name');
       if (tb && !tables.includes(tb)) continue;
-      for (const [f, v] of Object.entries(parseFieldValues(pick('values') || pick('fields')))) writes.push(v.includes('{{') ? { field: f } : { field: f, value: v });
+      for (const [f, v] of Object.entries(parseFieldValues(pick('values') || pick('fields')))) writes.push(isDynamicFlowValue(v) ? { field: f } : { field: f, value: v });
     }
     apply({ phase: 'async', kind: 'flow', name: t['flow.name'] || 'Flow', table: 'sys_hub_flow', ...(t.flow ? { sysId: t.flow } : {}), order: 0, will: ok ? 'yes' : 'maybe', reacts, writes, why: 'o gatilho do flow passa a valer com este valor' });
   }

@@ -1,5 +1,5 @@
 /** Bundle para rodar a bateria dentro de uma aba logada da instância (console/devtools). */
-import { FetchRestClient, detectAccess, investigate, previewChange, fieldMap, recordFlows, tableAutomations, type Grade } from '../../../packages/core/src/index';
+import { FetchRestClient, detectAccess, investigate, previewChange, fieldMap, recordFlows, tableAutomations, fieldState as coreFieldState, fieldStates as coreFieldStates, fieldRules as coreFieldRules, fieldDeps as coreFieldDeps, simulateValue as coreSimulateValue, saveTiming as coreSaveTiming, recordSaveTimes as coreRecordSaveTimes, timingFields as coreTimingFields, visibility as coreVisibility, readQueryScript as coreReadQueryScript, compareInstances as coreCompareInstances, type Grade, type FieldObserved } from '../../../packages/core/src/index';
 import cases from '../cases.json';
 
 const order: Grade[] = ['candidate', 'probable', 'confirmed'];
@@ -204,3 +204,42 @@ export async function map(t: { table: string; field: string }): Promise<unknown>
 
 export async function flows(t: { table: string; sysId: string }): Promise<unknown> { return recordFlows(makeClient(), t); }
 export async function automations(t: { table: string; sysId: string }): Promise<unknown> { return tableAutomations(makeClient(), t); }
+
+// ---------------------------------------------------------------- motores novos (validação no PDI, 21/10/2026)
+
+/** Mede um motor: tempo e chamadas, além do resultado. */
+async function timed<T>(fn: (c: FetchRestClient) => Promise<T>): Promise<{ ms: number; calls: number; result: T }> {
+  const c = makeClient();
+  const t0 = performance.now();
+  const result = await fn(c);
+  return { ms: Math.round(performance.now() - t0), calls: c.calls, result };
+}
+
+export const fieldState = (t: { table: string; sysId: string; field: string; observed?: FieldObserved; language?: string }) => timed((c) => coreFieldState(c, t));
+export const fieldStates = (t: { table: string; sysId: string; fields: { field: string; observed?: FieldObserved }[]; language?: string }) => timed((c) => coreFieldStates(c, t));
+export const fieldRules = (t: { table: string; field: string }, o: { references?: boolean; language?: string } = {}) => timed((c) => coreFieldRules(c, t, o));
+export const fieldDeps = (t: { table: string; field: string }, o: { references?: boolean; language?: string } = {}) => timed((c) => coreFieldDeps(c, t, o));
+export const simulateValue = (t: { table: string; sysId: string; field: string; value: string; language?: string; user?: { name?: string; sysId?: string } }) => timed((c) => coreSimulateValue(c, t));
+export const saveTiming = (t: { table: string; sysId: string; at?: string; checkpoint?: number }, o: { baselineHours?: number } = {}) => timed((c) => coreSaveTiming(c, t, o));
+export const recordSaveTimes = (t: { table: string; sysId: string }, o: { days?: number; limit?: number } = {}) => timed((c) => coreRecordSaveTimes(c, t, o));
+export const timingFields = () => timed((c) => coreTimingFields(c));
+export const visibility = (t: { table: string; sysId: string; user?: string }, o: { fields?: string[]; language?: string } = {}) => timed((c) => coreVisibility(c, t, o));
+export const readQueryScript = coreReadQueryScript;
+
+/** Comparar instâncias com o mesmo PDI nos dois lados (A×A) ou com um lado B sem sessão (cookies omitidos, sem token). */
+export async function compareInstances(t: { table: string; field: string }, mode: 'same' | 'nosession' = 'same', o: { language?: string; versions?: boolean } = {}): Promise<unknown> {
+  const a = makeClient();
+  const b = mode === 'same' ? makeClient() : new FetchRestClient({ baseUrl: location.origin, getToken: async () => null, concurrency: 6,
+    fetchImpl: (input, init) => fetch(input, { ...init, credentials: 'omit' }) });
+  const t0 = performance.now();
+  const result = await coreCompareInstances({ client: a, label: 'A' }, { client: b, label: mode === 'same' ? 'A2' : 'SEM' }, t, o);
+  return { ms: Math.round(performance.now() - t0), calls: { a: a.calls, b: b.calls }, result };
+}
+
+/** Sonda uma tabela: status HTTP, linhas e tempo (para a tabela de acesso por perfil). */
+export async function probe(table: string, query = '', fields: string[] = ['sys_id'], limit = 1): Promise<{ table: string; status: number; access: string; rows: number; ms: number; sample?: unknown }> {
+  const c = makeClient();
+  const t0 = performance.now();
+  const r = await c.query({ table, query, fields, limit });
+  return { table, status: r.status, access: r.access, rows: r.rows.length, ms: Math.round(performance.now() - t0), ...(r.rows[0] ? { sample: r.rows[0] } : {}) };
+}

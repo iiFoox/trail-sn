@@ -14,7 +14,9 @@
     NOW?: { user_name?: string; language?: string };
     g_form?: {
       getTableName?: () => string; getUniqueValue?: () => string;
-      getControl?: (f: string) => HTMLElement | null; isMandatory?: (f: string) => boolean; isReadOnly?: (f: string) => boolean; hasField?: (f: string) => boolean;
+      getControl?: (f: string) => HTMLElement | null; isMandatory?: (f: string) => boolean; hasField?: (f: string) => boolean;
+      /** UI16: isReadOnly(ge, control) — com um nome de campo (sem control) responde sempre true. Outros g_form: isReadOnly(campo). */
+      isReadOnly?: (...args: unknown[]) => boolean; getGlideUIElement?: (f: string) => unknown;
       isVisible?: (f: string) => boolean; getLabelOf?: (f: string) => string; getFieldNames?: () => string[]; elements?: { fieldName?: string }[];
     };
   };
@@ -50,8 +52,14 @@
     const roMark = byId(`sys_readonly.${table}.${f}`) || byId(`sys_readonly.sys_display.${table}.${f}`);
     const onForm = !!(box || ctrl || display || roMark || safe(() => g.hasField?.(f)));
     const input = (display ?? ctrl) as (HTMLInputElement & { readOnly?: boolean; disabled?: boolean }) | null;
-    const domRO = !!roMark || !!(input && (input.readOnly || input.disabled || input.getAttribute('readonly') !== null || input.classList.contains('readonly') || input.classList.contains('disabled')));
-    const apiRO = safe(() => (typeof g.isReadOnly === 'function' ? !!g.isReadOnly(f) : undefined));
+    const domRO = !!roMark || !!(input && (input.readOnly || input.disabled || input.getAttribute('readonly') !== null || input.getAttribute('writeaccess') === 'false' || input.classList.contains('readonly') || input.classList.contains('disabled')));
+    // No UI16 o g_form.isReadOnly é (ge, control) e devolve true quando falta o control: chamado só com o nome do campo,
+    // dizia "somente leitura" para TODOS os campos (visto no PDI, 21/10/2026). Lá passamos o elemento e o input visível.
+    const apiRO = safe(() => {
+      if (typeof g.isReadOnly !== 'function') return undefined;
+      if (g.isReadOnly.length >= 2) return input ? !!g.isReadOnly(safe(() => g.getGlideUIElement?.(f)), input) : undefined;
+      return !!g.isReadOnly(f);
+    });
     const style = box ? getComputedStyle(box) : undefined;
     const domVisible = box && style ? !(box.style.display === 'none' || style.display === 'none' || style.visibility === 'hidden') : undefined;
     const apiVisible = safe(() => (typeof g.isVisible === 'function' ? !!g.isVisible(f) : undefined));

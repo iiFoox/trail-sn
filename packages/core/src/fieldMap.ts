@@ -4,7 +4,7 @@
  */
 import type { RestClient } from './client/RestClient';
 import { writtenFields } from './conflicts';
-import { assignedLiterals, decodeFlowValues, humanQuery, parseFieldValues } from './util';
+import { assignedLiterals, decodeFlowValues, humanQuery, isDynamicFlowValue, parseFieldValues } from './util';
 import type { Row } from './types';
 
 export type MapLane = 'client' | 'before' | 'after' | 'async' | 'other';
@@ -137,7 +137,7 @@ export async function fieldMap(client: RestClient, target: { table: string; fiel
     for (const a of acts) {
       const ps = (await decodeFlowValues(a.values)) ?? [];
       const w = parseFieldValues(ps.find((x) => x.name === 'values')?.value || ps.find((x) => x.name === 'fields')?.value);
-      if (field in w) { hit = true; if (!w[field]!.includes('{{')) vals.push(w[field]!); }
+      if (field in w) { hit = true; if (!isDynamicFlowValue(w[field]!)) vals.push(w[field]!); }
     }
     if (hit) items.push({ lane: 'async', kind: 'flow', name: t['flow.name'] || 'Flow', table: 'sys_hub_flow', ...(t.flow ? { sysId: t.flow } : {}), on: pick('table'), order: 0, when: `${t.trigger_type ?? ''}${pick('condition') ? ` · ${short(humanQuery(pick('condition')))}` : ''}`, values: vals });
   }

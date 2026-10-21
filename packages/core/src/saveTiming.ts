@@ -138,7 +138,7 @@ export interface SaveTiming {
   slow: string[];
   /**
    * Códigos: tx_denied, tx_not_found, tx_job_by_time, no_time_fields, no_rule_time, no_client_time, dict_unavailable,
-   * baseline_few:<n>, baseline_none, rules_denied, rules_unevaluated:<n>, rules_need_audit, async_separate,
+   * baseline_few:<n>, baseline_slow (a consulta da mediana estourou o prazo), baseline_none, rules_denied, rules_unevaluated:<n>, rules_need_audit, async_separate,
    * per_rule_time_unknown, rule_metrics_table:<nome>, save_not_found.
    */
   notes: string[];
@@ -344,6 +344,7 @@ export async function saveTiming(
   // ---------- 3: o que rodou (rastros + condições) e a mediana ----------
   const hours = opts.baselineHours ?? 24;
   const bscope = baselineScope(via, row.url ?? '', tables);
+  let baselineSlow = false;
   const metricP = q('sys_db_object', `nameIN${RULE_METRIC_TABLES.join(',')}`, ['name'], 5);
   const [ranCond, asyncTx, logs, events, flows, bRows, metric] = await Promise.all([
     ranFromConditions(),
@@ -351,7 +352,9 @@ export async function saveTiming(
     rulesP().then((brs) => brs.length ? q('syslog', `sys_created_on>=${shift(start, -1)}^sys_created_on<=${shift(end, 1)}^sourceIN${[...new Set(brs.map((b) => b.name ?? '').filter((n) => n && !/[,^]/.test(n)))].slice(0, 100).join(',')}`, ['source', 'sys_created_on'], 50) : []),
     q('sysevent', `instance=${sysId}^sys_created_on>=${shift(start, -1)}^sys_created_on<=${shift(end, 1)}`, ['sys_id', 'name', 'sys_created_on'], 50),
     q('sys_flow_context', `source_record=${sysId}^sys_created_on>=${shift(start, -1)}^sys_created_on<=${shift(end, 5)}`, ['sys_id', 'name', 'sys_created_on'], 20),
-    bscope ? sc.query({ table: 'syslog_transaction', query: `${bscope.query}^sys_created_on>=${shift(at, -hours * 3600)}^sys_created_on<=${at}^ORDERBYDESCsys_created_on`, fields: requestFields(fset), limit: opts.baselineLimit ?? 200 }).then((r) => r.rows) : Promise.resolve([] as Row[]),
+    // Filtro por url em syslog_transaction não usa índice: no PDI levou 11 s (estoura o prazo duas vezes).
+    bscope ? sc.query({ table: 'syslog_transaction', query: `${bscope.query}^sys_created_on>=${shift(at, -hours * 3600)}^sys_created_on<=${at}^ORDERBYDESCsys_created_on`, fields: requestFields(fset), limit: opts.baselineLimit ?? 200 })
+      .then((r) => { if (r.access === 'timeout') baselineSlow = true; return r.rows; }) : Promise.resolve([] as Row[]),
     metricP,
   ]);
   for (const m of metric) if (m.name) notes.push(`rule_metrics_table:${m.name}`);
@@ -386,7 +389,7 @@ export async function saveTiming(
     const samples = bRows.filter((r) => r.sys_id !== row.sys_id && bscope.keep(r)).map((r) => readParts(r, tf).totalMs).filter((x): x is number => x !== undefined);
     const min = opts.minBaseline ?? 5;
     if (samples.length >= min) baseline = { medianMs: median(samples), n: samples.length, hours, scope: bscope.scope };
-    else notes.push(`baseline_few:${samples.length}`);
+    else notes.push(baselineSlow ? 'baseline_slow' : `baseline_few:${samples.length}`);
   } else notes.push('baseline_none');
 
   const v = verdictOf(totalMs, baseline?.medianMs);
@@ -570,6 +573,7 @@ export function describeSaveTiming(t: SaveTiming, lang: 'pt' | 'en' = 'pt'): str
     } else {
       const few = t.notes.find((n) => n.startsWith('baseline_few:'));
       if (few) out.push(pt ? `Poucos salvamentos parecidos nas últimas horas (${few.split(':')[1]}) para dizer o que é normal.` : `Too few similar saves in recent hours (${few.split(':')[1]}) to say what is normal.`);
+      else if (t.notes.includes('baseline_slow')) out.push(pt ? 'A instância demorou demais para comparar com outros salvamentos; o veredito usa limites fixos.' : 'The instance took too long to compare with other saves; the verdict uses fixed limits.');
     }
     const ratio = t.baseline && t.baseline.medianMs > 0 ? Math.round(t.totalMs / t.baseline.medianMs) : 0;
     if (t.verdict === 'muito_lento') out.push(pt ? `Está muito lento${ratio >= 2 ? ` (${ratio}× o normal)` : ''}.` : `This is very slow${ratio >= 2 ? ` (${ratio}× normal)` : ''}.`);
