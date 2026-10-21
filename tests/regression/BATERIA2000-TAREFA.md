@@ -4,7 +4,13 @@ Objetivo: 1000 investigações como **admin** e as mesmas 1000 como **sem admin*
 
 ## Regras (obrigatórias)
 - Nunca digite senha. Use só a aba do Maestri já logada (`dev457034.service-now.com #2`). Se ela não estiver conectada a você em `maestri list`, peça ao dono para conectá-la no canvas e espere.
-- **Nada de gravar no PDI**: nenhum registro novo, nenhuma alteração. A única ação permitida é personificar (POST `/api/now/ui/impersonate/<sys_id>`) e **voltar ao admin no fim** (admin sys_id `6816f79cc0a8016401c5a33be04be441`; itil `3fc011fdc3c4d3101cbdb8e1b401311c`). Confira com GET `/api/now/ui/user/current_user`.
+- **Autorizado pelo dono (2026-10-20):** personificar **qualquer usuário** (POST `/api/now/ui/impersonate/<sys_id>`) e **criar registros no PDI** para montar cenários (mudanças em campos fora do Activity Stream, regras, jobs, flows, perfis de papel variados).
+- Salvaguardas que continuam valendo:
+  - tudo que for criado leva o prefixo **[PT]** no nome ou na descrição;
+  - nunca alterar nem apagar registros que já existiam;
+  - nunca mudar propriedades do sistema;
+  - **voltar ao admin no fim** (admin `6816f79cc0a8016401c5a33be04be441`; itil `3fc011fdc3c4d3101cbdb8e1b401311c`). Confira com GET `/api/now/ui/user/current_user`.
+- Liste no relatório tudo que criou (tabela, sys_id) e quais usuários personificou.
 - Não faça commit. Arquivos que pode criar ou mudar: `tests/regression/browser/entry.ts`, `tests/regression/bateria2000/*` (novo) e `tests/regression/results/*` (fora do git).
 
 ## Como rodar no PDI (o mesmo jeito que o Claude usa)
