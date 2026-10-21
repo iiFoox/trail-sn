@@ -214,7 +214,8 @@ const brLane = (when: string | undefined, query?: string): { phase: DepPhase; ki
   if (w === 'display' || query === 'true') return { phase: 'other', kind: 'br_display' };
   if (w.startsWith('async')) return { phase: 'async', kind: 'br_async' };
   if (w === 'after') return { phase: 'after', kind: 'br_after' };
-  if (w === 'before') return { phase: 'before', kind: 'br_before' };
+  // `before_display` aparece em sys_script de outras tabelas no PDI (21/10/2026): roda como before.
+  if (w === 'before' || w === 'before_display') return { phase: 'before', kind: 'br_before' };
   return { phase: 'other', kind: 'br_after' };
 };
 const PHASE_ORDER: Record<DepPhase, number> = { client: 0, before: 1, after: 2, async: 3, other: 4 };

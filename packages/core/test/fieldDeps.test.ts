@@ -383,3 +383,12 @@ describe('Simular um valor', () => {
     });
   });
 });
+
+describe('P7: when=before_display', () => {
+  it('BR before_display entra como before', async () => {
+    const c = base();
+    c.rows('sys_script', [br({ sys_id: 'bd', name: 'Antes de mostrar', when: 'before_display', filter_condition: 'stateVALCHANGES^EQ', script: "current.u_x = 'y';" })]);
+    const d = await fieldDeps(c, { table: 'incident', field: 'state' });
+    expect(d.dependents.find((x) => x.sysId === 'bd')).toMatchObject({ phase: 'before', kind: 'br_before' });
+  });
+});
