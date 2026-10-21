@@ -3,7 +3,7 @@
  * guarda estado em chrome.storage.session e abre o painel. Não toca no DOM.
  * Nenhum estado em memória que importe: o worker pode ser encerrado a qualquer momento.
  */
-import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, batchItemFrom, fieldMap, previewChange, recordTimeline, scanTableConflicts, type AccessReport, type BatchItem, type MetaCache, type TableMeta, recordFlows, tableAutomations, fieldState, fieldStates } from '@trail/core';
+import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, batchItemFrom, fieldMap, previewChange, recordTimeline, scanTableConflicts, type AccessReport, type BatchItem, type MetaCache, type TableMeta, recordFlows, tableAutomations, fieldState, fieldStates, fieldRules, simulateValue, saveTiming, visibility, compareInstances } from '@trail/core';
 import { addInstance, INSTANCES_KEY, isEnabled, listInstances, looksLikeServiceNow, removeInstance } from '../shared/instances';
 import { loadPrefs, PREFS_KEY, savePrefs, type PanelMode } from '../shared/prefs';
 import { normalizeInstanceLanguage, storageKey, type Message, type PageContext, type ProbeResult, type TabState } from '../shared/messages';
@@ -603,10 +603,12 @@ async function runRecord(tabId: number, origin: string, table: string, record: s
   } catch (e) { await fail((e as Error).message); }
 }
 
-async function runInvestigation(tabId: number, origin: string, target: { table: string; sysId?: string; number?: string; field: string }, language: string, token?: string): Promise<void> {
+async function runInvestigation(tabId: number, origin: string, target: { table: string; sysId?: string; number?: string; field: string }, language: string, token?: string, shown: { label?: string; display?: string } = {}): Promise<void> {
   await rememberToken(origin, token);
   const prev = await getTab(tabId);
-  await setTab({ ...prev, tabId, status: 'running', startedAt: new Date().toISOString(), result: undefined, error: undefined, batch: undefined });
+  const display = shown.display || target.number;
+  const pending = { target, ...(shown.label ? { label: shown.label } : {}), ...(display ? { display } : {}) };
+  await setTab({ ...prev, tabId, status: 'running', startedAt: new Date().toISOString(), result: undefined, error: undefined, batch: undefined, pending });
   try {
     const client = makeClient(origin);
     const retention = await retentionFor(origin, client);
@@ -684,7 +686,7 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
         const id = await requestTab(msg, sender);
         if (id === undefined) return;
         await openPanel(id, msg.mode);
-        await runInvestigation(id, msg.origin, msg.target, await languageFor(msg.origin, id, msg.language), msg.token);
+        await runInvestigation(id, msg.origin, msg.target, await languageFor(msg.origin, id, msg.language), msg.token, { ...(msg.label ? { label: msg.label } : {}), ...(msg.display ? { display: msg.display } : {}) });
         return;
       }
       case 'record': {
@@ -730,6 +732,30 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
       case 'clear-cache':
         await clearCache(msg.origin);
         return true;
+      case 'field-rules':
+        return fieldRules(makeClient(msg.origin), msg.target, { language: await languageFor(msg.origin, await requestTab(msg, sender), msg.language) })
+          .catch((e: Error) => ({ error: e.message }));
+      case 'simulate-value': {
+        const id = await requestTab(msg, sender);
+        const ctx = id !== undefined ? (await getTab(id)).ctx : undefined;
+        const user = ctx?.origin === msg.origin && ctx.userName ? { user: { name: ctx.userName } } : {};
+        return simulateValue(makeClient(msg.origin), { ...msg.target, language: await languageFor(msg.origin, id, msg.language), ...user })
+          .catch((e: Error) => ({ error: e.message }));
+      }
+      case 'save-timing':
+        return saveTiming(makeClient(msg.origin), msg.target).catch((e: Error) => ({ error: e.message }));
+      case 'visibility':
+        return visibility(makeClient(msg.origin), { table: msg.target.table, sysId: msg.target.sysId, ...(msg.target.user ? { user: msg.target.user } : {}) },
+          { ...(msg.target.field ? { fields: [msg.target.field] } : {}), language: await languageFor(msg.origin, await requestTab(msg, sender), msg.language) })
+          .catch((e: Error) => ({ error: e.message }));
+      case 'compare-instances': {
+        // A outra instância precisa estar conectada (permissão de host concedida); a sessão dela é a do navegador.
+        if (!(await isEnabled(msg.other)) || !(await chrome.permissions.contains({ origins: [`${msg.other}/*`] }).catch(() => false))) return { error: 'not connected: ' + msg.other };
+        const label = (o: string) => o.replace(/^https?:\/\//, '').split('.')[0] ?? o;
+        return compareInstances({ client: makeClient(msg.origin), label: label(msg.origin) }, { client: makeClient(msg.other), label: label(msg.other) }, msg.target,
+          { language: await languageFor(msg.origin, await requestTab(msg, sender), msg.language) })
+          .catch((e: Error) => ({ error: e.message }));
+      }
       case 'open-diff-popup':
         await chrome.windows.create({ url: chrome.runtime.getURL(`src/diff/index.html?k=${encodeURIComponent(msg.key)}`), type: 'popup', width: 1200, height: 860 });
         return true;
