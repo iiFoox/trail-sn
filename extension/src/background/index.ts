@@ -79,8 +79,31 @@ async function openWindow(): Promise<void> {
  * página que não é do ServiceNow), cai para a janela separada, que não depende de gesto do usuário.
  */
 async function openFloat(tabId: number, toggle = false): Promise<void> {
-  const ok = await chrome.tabs.sendMessage(tabId, { type: toggle ? 'float-toggle' : 'float-open', tabId }, { frameId: 0 }).then((r) => !!r, () => false);
+  const send = () => chrome.tabs.sendMessage(tabId, { type: toggle ? 'float-toggle' : 'float-open', tabId }, { frameId: 0 }).then((r) => !!r, () => false);
+  let ok = await send();
+  if (!ok && await reinjectConnectedTab(tabId)) ok = await send();
   if (!ok) await openWindow();
+}
+/** Reinjeta só em aba cuja origem está conectada e tem permissão de host. */
+const reinjections = new Map<number, Promise<boolean>>();
+function reinjectConnectedTab(tabId: number): Promise<boolean> {
+  const pending = reinjections.get(tabId);
+  if (pending) return pending;
+  const task = doReinjectConnectedTab(tabId).finally(() => reinjections.delete(tabId));
+  reinjections.set(tabId, task);
+  return task;
+}
+async function doReinjectConnectedTab(tabId: number): Promise<boolean> {
+  const tab = await chrome.tabs.get(tabId).catch(() => undefined);
+  let origin: string;
+  try { origin = new URL(tab?.url ?? '').origin; } catch { return false; }
+  if (!(await listInstances()).some((i) => i.origin === origin)) return false;
+  if (!(await chrome.permissions.contains({ origins: [`${origin}/*`] }).catch(() => false))) return false;
+  try {
+    await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['page.js'], world: 'MAIN' });
+    await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['content.js'] });
+    return true;
+  } catch { return false; }
 }
 async function openPanel(tabId: number | undefined, mode?: PanelMode): Promise<void> {
   // Com o modo conhecido, sidePanel.open é chamado antes de qualquer await: o Edge descarta o gesto do usuário
@@ -179,35 +202,27 @@ async function syncRegistrations(): Promise<void> {
     if (granted) await registerScripts(i.origin).catch(() => { /* já registrado */ });
   }
 }
-/** Scripts antigos continuam nas abas abertas após reload; a pessoa decide quando recarregar o formulário. */
+/** A atualização já reativa o Trail nas abas abertas e autorizadas. */
 async function notifyOpenTabs(): Promise<void> {
-  if (!(await isDevelopmentInstall())) return;
   for (const i of await listInstances()) {
     const granted = await chrome.permissions.contains({ origins: [`${i.origin}/*`] }).catch(() => false);
     if (!granted) continue;
     const tabs = await chrome.tabs.query({ url: `${i.origin}/*` }).catch(() => [] as chrome.tabs.Tab[]);
     for (const tab of tabs) {
       if (tab.id === undefined) continue;
-      await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: () => {
-        if (document.getElementById('trail-update-notice')) return;
-        const pt = (document.documentElement.lang || navigator.language).toLowerCase().startsWith('pt');
-        const box = document.createElement('div');
-        box.id = 'trail-update-notice';
-        box.setAttribute('role', 'status');
-        box.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:2147483647;padding:12px 14px;border-radius:10px;background:#16212a;color:#fff;box-shadow:0 8px 24px #0005;font:13px/1.4 system-ui,sans-serif;max-width:320px';
-        const text = document.createElement('span');
-        text.textContent = pt ? 'O Trail foi atualizado. Recarregue esta aba para usar a nova versão.' : 'Trail was updated. Reload this tab to use the new version.';
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.textContent = pt ? 'Recarregar aba' : 'Reload tab';
-        button.style.cssText = 'display:block;margin-top:8px;border:0;background:#5fd3c1;color:#09222a;border-radius:5px;padding:5px 9px;cursor:pointer;font:inherit;font-weight:600';
-        button.addEventListener('click', () => location.reload());
-        box.append(text, button);
-        document.documentElement.appendChild(box);
-      } }).catch(() => undefined);
+      const alive = await chrome.tabs.sendMessage(tab.id, { type: 'trail-ping' }, { frameId: 0 }).then((r) => !!r, () => false);
+      if (alive) continue;
+      await reinjectConnectedTab(tab.id);
     }
   }
 }
+// storage.session sobrevive ao sono do worker e é limpa no reload da extensão.
+// Assim o reload em desenvolvimento reativa as abas mesmo quando onInstalled não dispara.
+void session.get('trail:tabs-ready').then(async (o) => {
+  if (o['trail:tabs-ready']) return;
+  await notifyOpenTabs();
+  await session.set({ 'trail:tabs-ready': true });
+}).catch(() => undefined);
 /** Liga a instância: guarda, registra os scripts e já injeta nas abas abertas, sem precisar recarregar. */
 const activations = new Map<string, Promise<void>>();
 function activateOrigin(origin: string): Promise<void> {

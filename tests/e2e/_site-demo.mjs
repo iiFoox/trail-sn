@@ -1,4 +1,6 @@
-// Verifica a demonstração do site: clique em cada campo troca a análise; links não navegam.
+// Verifica a demonstração do site: clique em cada campo troca a análise; links não navegam;
+// confere também #painel (sem sticky, linha do tempo vertical + autoplay), #tbl (30 de 441 + Ver mais),
+// #faq (todos fechados) e #roadmap (5 visíveis + Ver mais).
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
@@ -24,9 +26,6 @@ await page.goto('http://localhost:4481/b3/');
 await page.addStyleTag({ content: 'html{scroll-behavior:auto!important}' });
 await page.locator('.compo').scrollIntoViewIfNeeded();
 await page.waitForTimeout(1500);
-const form = page.frameLocator('#cform');
-const panelF = () => page.frames().find((f) => f.url().includes('/demo/panel.html') && f.parentFrame() && f.name() === '' && f === page.frame({ url: /panel\.html/ }));
-const cpanel = page.frames().find((f) => f.url().includes('/demo/panel.html'));
 const panelFrame = await (await page.$('#cpanel')).contentFrame();
 const formFrame = await (await page.$('#cform')).contentFrame();
 const results = {};
@@ -56,14 +55,85 @@ if (S) await page.locator('#telas .gal').screenshot({ path: S + 'gal-options.png
 await page.locator('#telas .story').scrollIntoViewIfNeeded();
 await page.waitForTimeout(400);
 if (S) await page.locator('#telas .story').screenshot({ path: S + 'gal-story.png' });
-// dentro do painel: cada callout
+
+// dentro do painel (#painel): sem sticky, linha do tempo vertical e autoplay
 await page.locator('#painel').scrollIntoViewIfNeeded();
-for (const i of [0, 3, 4, 6, 7, 8]) { await page.click(`.co >> nth=${i}`); await page.waitForTimeout(1100); if (S) await page.locator('.inside').screenshot({ path: S + `inside-${i}.png` }); }
+const shotPosition = await page.$eval('#inside-shot', (el) => getComputedStyle(el).position);
+if (shotPosition === 'sticky') errs.push('#inside-shot ainda está sticky');
+for (const i of [0, 3, 4, 6, 7, 8]) {
+  await page.click(`.co >> nth=${i}`);
+  await page.waitForTimeout(600);
+}
+const seenCount = await page.$$eval('#callouts .co.seen', (els) => els.length);
+if (seenCount < 4) errs.push('esperava passos já vistos (.seen) marcados na linha do tempo, achei ' + seenCount);
+await page.mouse.move(10, 10); // fora de #inside-box para o autoplay rodar
+await page.click('.co >> nth=0');
+await page.mouse.move(10, 10);
+await page.waitForTimeout(1200);
+const progVal = await page.$eval('.co.on', (el) => parseFloat(el.style.getPropertyValue('--p') || '0'));
+if (!(progVal > 0)) errs.push('barra de progresso do autoplay não avançou: ' + progVal);
+if (S) await page.locator('#painel').screenshot({ path: S + 'painel-timeline-1280.png' });
+
+// tabela de casos (#tbl): 30 iniciais, Ver mais (+30), Ver menos
+await page.locator('#numeros').scrollIntoViewIfNeeded();
+const tblInit = await page.$$eval('#tbl tbody tr', (rs) => rs.length);
+const tblTxt0 = await page.$eval('#tbl-count', (el) => el.textContent.trim());
+if (tblInit !== 30 || tblTxt0 !== 'Mostrando 30 de 441') errs.push(`tabela inicial inesperada: ${tblInit} (${tblTxt0})`);
+if (S) await page.locator('#numeros').screenshot({ path: S + 'tbl-30.png' });
+await page.click('#tbl-more');
+await page.waitForTimeout(200);
+const tblAfter1 = await page.$$eval('#tbl tbody tr', (rs) => rs.length);
+const tblTxt1 = await page.$eval('#tbl-count', (el) => el.textContent.trim());
+if (tblAfter1 !== 60 || tblTxt1 !== 'Mostrando 60 de 441') errs.push(`tabela após 1 clique: ${tblAfter1} (${tblTxt1})`);
+await page.click('#tbl-less');
+await page.waitForTimeout(200);
+const tblReset = await page.$$eval('#tbl tbody tr', (rs) => rs.length);
+if (tblReset !== 30) errs.push('Ver menos não voltou para 30 linhas: ' + tblReset);
+
+// FAQ (#faq): todos fechados no início
+await page.locator('#faq').scrollIntoViewIfNeeded();
+const faqOpen = await page.$$eval('#faq details[open]', (ds) => ds.length);
+if (faqOpen !== 0) errs.push('FAQ deveria começar com 0 abertos, achei ' + faqOpen);
+if (S) await page.locator('#faq').screenshot({ path: S + 'faq-closed.png' });
+
+// Roadmap (#roadmap): no máximo 5 itens visíveis + Ver mais (+22) / Ver menos
+await page.locator('#roadmap').scrollIntoViewIfNeeded();
+const roadVis0 = await page.$$eval('#roadmap .now ul li', (lis) => lis.filter((li) => getComputedStyle(li).display !== 'none').length);
+const roadBtn0 = await page.$eval('#roadmap .road-more', (b) => b.textContent.trim());
+if (roadVis0 !== 5 || !roadBtn0.startsWith('Ver mais')) errs.push(`roadmap inicial inesperado: ${roadVis0} (${roadBtn0})`);
+if (S) await page.locator('#roadmap').screenshot({ path: S + 'roadmap-collapsed.png' });
+await page.click('#roadmap .road-more');
+await page.waitForTimeout(200);
+const roadVis1 = await page.$$eval('#roadmap .now ul li', (lis) => lis.filter((li) => getComputedStyle(li).display !== 'none').length);
+const roadBtn1 = await page.$eval('#roadmap .road-more', (b) => b.textContent.trim());
+if (roadVis1 <= 5 || roadBtn1 !== 'Ver menos') errs.push(`roadmap expandido inesperado: ${roadVis1} (${roadBtn1})`);
+await page.click('#roadmap .road-more');
+
 const brokenImgs = await page.$$eval('img', (is) => is.filter((i) => !i.complete || i.naturalWidth === 0).map((i) => i.getAttribute('src')));
 const overflow1280 = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+
+// Mobile 390px: sem rolagem horizontal e painel acima da linha do tempo em #painel
 await page.setViewportSize({ width: 390, height: 844 });
 await page.waitForTimeout(400);
 const overflow390 = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
-if (S) await page.screenshot({ path: S + 'b3-390.png', fullPage: true });
-console.log(JSON.stringify({ results, brokenImgs, overflow1280, overflow390, navs, errs }, null, 1));
+await page.locator('#painel').scrollIntoViewIfNeeded();
+await page.waitForTimeout(300);
+const stack390 = await page.evaluate(() => {
+  const s = document.getElementById('inside-shot').getBoundingClientRect();
+  const c = document.getElementById('callouts').getBoundingClientRect();
+  return { shotTop: Math.round(s.top), shotBottom: Math.round(s.bottom), calloutsTop: Math.round(c.top) };
+});
+if (!(stack390.calloutsTop >= stack390.shotBottom - 4)) errs.push('em 390px a linha do tempo não ficou abaixo do painel: ' + JSON.stringify(stack390));
+if (S) await page.locator('#painel').screenshot({ path: S + 'painel-timeline-390.png' });
+
+console.log(JSON.stringify({
+  results,
+  checks: { shotPosition, seenCount, progVal, tblInit, tblAfter1, tblReset, faqOpen, roadVis0, roadVis1, stack390 },
+  brokenImgs,
+  overflow1280,
+  overflow390,
+  navs,
+  errs,
+}, null, 1));
 await b.close(); srv.close();
+if (errs.length) process.exit(1);

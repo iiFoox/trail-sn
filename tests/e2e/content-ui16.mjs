@@ -27,7 +27,7 @@ await page.goto('https://dev000000.service-now.com/incident.do?sys_id=' + 'b'.re
 
 await page.evaluate(() => {
   window.__msgs = [];
-  window.chrome = { runtime: { sendMessage: (m) => { window.__msgs.push(m); return Promise.resolve(); } } };
+  window.chrome = { runtime: { id: 'trail-test', sendMessage: (m) => { window.__msgs.push(m); return Promise.resolve(); } } };
 });
 await page.addScriptTag({ content: page_ });
 await page.addScriptTag({ content });
@@ -48,6 +48,14 @@ if (!refField?.includes('(business_service)')) errors.push('referência sem íco
 if (!ctx || ctx.ctx.table !== 'incident' || ctx.ctx.token?.length !== 72) errors.push('contexto não publicado com tabela e token: ' + JSON.stringify(ctx));
 const inv = msgs.find((m) => m.type === 'investigate');
 if (!inv || inv.target.field !== 'state' || inv.target.table !== 'incident' || inv.token?.length !== 72) errors.push('clique não gerou investigate correto: ' + JSON.stringify(inv));
-console.log(JSON.stringify({ icons, messages: msgs.map((m) => m.type), errors }));
+// O contexto antigo se invalida após reload da extensão; a cópia nova não duplica ícones.
+await page.evaluate(() => { window.chrome.runtime.id = undefined; });
+await page.waitForFunction(() => document.querySelectorAll('.trail-host').length === 0, null, { timeout: 4000 });
+await page.evaluate(() => { window.chrome.runtime.id = 'trail-test'; });
+await page.addScriptTag({ content });
+await page.waitForSelector('.trail-host');
+const afterReload = await page.locator('.trail-host').count();
+if (afterReload !== icons) errors.push('reinjeção duplicou ou perdeu ícones: ' + afterReload);
+console.log(JSON.stringify({ icons, afterReload, messages: msgs.map((m) => m.type), errors }));
 await browser.close();
 process.exit(errors.length ? 1 : 0);

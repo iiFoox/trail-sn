@@ -24,6 +24,27 @@ const MIN_W = 340;
 const MIN_H = 260;
 const SNAP = 28;
 const GAP = 8; // margem do painel encostado até a borda da tela
+const BUBBLE_SIZE = 46;
+const BUBBLE_MARGIN = 20;
+const ASSISTANT_ID = 'trail-assistant';
+
+const ASSISTANT_CSS = `
+:host{all:initial}
+.bub{all:unset;position:fixed;z-index:2147483646;width:${BUBBLE_SIZE}px;height:${BUBBLE_SIZE}px;border-radius:50%;cursor:grab;touch-action:none;user-select:none;
+  background:#032d42;display:grid;place-items:center;box-shadow:0 10px 28px rgba(0,0,0,.35),0 0 0 3px rgba(98,216,78,.25);
+  animation:pop .36s cubic-bezier(.2,1.4,.4,1) backwards;transition:left .42s cubic-bezier(.2,1.35,.35,1),top .42s cubic-bezier(.2,1.35,.35,1),transform .18s,box-shadow .18s}
+.bub:hover{transform:scale(1.08)}.bub.dragging{cursor:grabbing;transition:none;transform:scale(1.12);box-shadow:0 20px 42px rgba(0,0,0,.45),0 0 0 4px rgba(98,216,78,.3)}
+.bub[hidden]{display:none}
+.bub:focus-visible,.close:focus-visible{outline:2px solid #62d84e;outline-offset:3px}.bub svg{width:24px;height:24px}
+.balloon{position:fixed;z-index:2147483646;max-width:min(270px,calc(100vw - 100px));box-sizing:border-box;padding:11px 32px 11px 13px;
+  font:13px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;color:#e8eef2;background:#16212a;border:1px solid #2a3a46;border-radius:13px;
+  box-shadow:0 12px 32px rgba(0,0,0,.35);animation:pop .22s ease-out backwards}
+.balloon[hidden]{display:none}.balloon:after{content:"";position:absolute;top:16px;width:9px;height:9px;background:#16212a;border:solid #2a3a46;transform:rotate(45deg)}
+.balloon.left:after{left:-6px;border-width:0 0 1px 1px}.balloon.right:after{right:-6px;border-width:1px 1px 0 0}
+.balloon b{display:block;color:#fff;margin-bottom:2px}.close{all:unset;position:absolute;right:8px;top:5px;cursor:pointer;font-size:18px;line-height:1;color:#a9bac3}
+@keyframes pop{from{transform:scale(.55);opacity:0}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.bub,.balloon{animation:none!important;transition:none!important}}
+`;
 
 const CSS = `
 :host{all:initial}
@@ -66,12 +87,6 @@ iframe{flex:1;width:100%;border:0;background:var(--bg);display:block}
 .pane.free .tab{display:none}
 .snap{position:fixed;top:${GAP}px;height:calc(100vh - ${2 * GAP}px);border-radius:12px;width:${W}px;z-index:2147483644;background:rgba(43,179,159,.12);border:2px dashed rgba(43,179,159,.6);box-sizing:border-box;pointer-events:none;opacity:0;transition:opacity .15s}
 .snap.on{opacity:1}
-.bub{all:unset;position:fixed;right:20px;bottom:20px;z-index:2147483645;width:46px;height:46px;border-radius:50%;cursor:pointer;
-  background:#032d42;display:grid;place-items:center;box-shadow:0 10px 28px rgba(0,0,0,.35),0 0 0 3px rgba(98,216,78,.25);
-  animation:pop .32s cubic-bezier(.2,1.3,.4,1) both;transition:transform .15s}
-.bub:hover{transform:scale(1.08)}
-.bub:focus-visible{outline:2px solid #62d84e;outline-offset:3px}
-.bub svg{width:24px;height:24px}
 @keyframes slide{from{transform:translateX(36px) scale(.96);opacity:0;filter:blur(3px)}60%{opacity:1;filter:none}to{transform:none;opacity:1}}
 @keyframes slidel{from{transform:translateX(-36px) scale(.96);opacity:0;filter:blur(3px)}60%{opacity:1;filter:none}to{transform:none;opacity:1}}
 @keyframes slidef{from{transform:scale(.92) translateY(10px);opacity:0;filter:blur(3px)}to{transform:none;opacity:1}}
@@ -91,7 +106,147 @@ interface State {
 }
 let st: State | null = null;
 let bubble: HTMLButtonElement | null = null;
+let assistant: { host: HTMLElement; balloon: HTMLElement; edge: 'left' | 'right'; y: number; origin: string; tabId: number; enabled: boolean; tip: string } | null = null;
+let balloonTimer: number | undefined;
+let minimized = false;
+let onOutside: ((e: PointerEvent) => void) | null = null;
 const extOrigin = (() => { try { return new URL(chrome.runtime.getURL('')).origin; } catch { return ''; } })();
+
+const bubbleKey = (origin: string) => `trail.bubble:${origin}`;
+const maxBubbleTop = () => Math.max(BUBBLE_MARGIN, innerHeight - BUBBLE_MARGIN - BUBBLE_SIZE);
+const bubbleTop = (y: number) => BUBBLE_MARGIN + y * (maxBubbleTop() - BUBBLE_MARGIN);
+
+function placeBubble(): void {
+  if (!bubble || !assistant) return;
+  bubble.style.left = `${assistant.edge === 'left' ? BUBBLE_MARGIN : Math.max(BUBBLE_MARGIN, innerWidth - BUBBLE_MARGIN - BUBBLE_SIZE)}px`;
+  bubble.style.top = `${bubbleTop(assistant.y)}px`;
+  placeBalloon();
+}
+
+function placeBalloon(): void {
+  if (!assistant || !bubble) return;
+  const card = assistant.balloon;
+  const r = bubble.getBoundingClientRect();
+  card.classList.toggle('left', assistant.edge === 'left');
+  card.classList.toggle('right', assistant.edge === 'right');
+  card.style.left = assistant.edge === 'left' ? `${r.right + 12}px` : '';
+  card.style.right = assistant.edge === 'right' ? `${innerWidth - r.left + 12}px` : '';
+  card.style.top = `${Math.max(8, Math.min(innerHeight - card.offsetHeight - 8, r.top + 4))}px`;
+}
+
+function hideBalloon(): void {
+  if (balloonTimer) clearTimeout(balloonTimer);
+  if (assistant) assistant.balloon.hidden = true;
+}
+
+export function showAssistantMessage(text: string, title?: string): void {
+  if (!assistant?.enabled || !bubble) return;
+  const card = assistant.balloon;
+  const heading = card.querySelector<HTMLElement>('b')!;
+  heading.textContent = title ?? '';
+  heading.hidden = !title;
+  card.querySelector<HTMLElement>('.text')!.textContent = text;
+  card.hidden = false;
+  placeBalloon();
+  if (balloonTimer) clearTimeout(balloonTimer);
+  balloonTimer = window.setTimeout(hideBalloon, 5000);
+}
+
+function ensureBubble(): void {
+  if (!assistant?.enabled || (st && !minimized)) return;
+  if (bubble) { placeBubble(); return; }
+  const a = assistant;
+  const b = a.host.shadowRoot!.querySelector<HTMLButtonElement>('.bub')!;
+  bubble = b;
+  b.hidden = false;
+  placeBubble();
+  if (b.dataset.wired) return;
+  b.dataset.wired = '1';
+  let drag: { id: number; x: number; y: number; left: number; top: number; moved: boolean } | null = null;
+  let suppressClick = false;
+  b.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    hideBalloon();
+    const r = b.getBoundingClientRect();
+    drag = { id: e.pointerId, x: e.clientX, y: e.clientY, left: r.left, top: r.top, moved: false };
+    b.setPointerCapture(e.pointerId);
+  });
+  b.addEventListener('pointermove', (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) < 5) return;
+    drag.moved = true;
+    b.classList.add('dragging');
+    b.style.left = `${Math.max(BUBBLE_MARGIN, Math.min(innerWidth - BUBBLE_MARGIN - BUBBLE_SIZE, drag.left + dx))}px`;
+    b.style.top = `${Math.max(BUBBLE_MARGIN, Math.min(maxBubbleTop(), drag.top + dy))}px`;
+  });
+  const end = (e: PointerEvent) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (drag.moved) {
+      suppressClick = true;
+      a.edge = b.getBoundingClientRect().left + BUBBLE_SIZE / 2 < innerWidth / 2 ? 'left' : 'right';
+      a.y = (parseFloat(b.style.top) - BUBBLE_MARGIN) / Math.max(1, maxBubbleTop() - BUBBLE_MARGIN);
+      b.classList.remove('dragging');
+      placeBubble();
+      void chrome.storage.local.set({ [bubbleKey(a.origin)]: { edge: a.edge, y: a.y } }).catch(() => undefined);
+    }
+    drag = null;
+  };
+  b.addEventListener('pointerup', end);
+  b.addEventListener('pointercancel', end);
+  b.addEventListener('click', () => {
+    if (suppressClick) { suppressClick = false; return; }
+    hideBalloon();
+    showFloat(a.tabId);
+  });
+  b.addEventListener('pointerenter', () => { if (!drag && a.tip) showAssistantMessage(a.tip); });
+}
+
+function hideBubble(): void {
+  hideBalloon();
+  if (bubble) { bubble.hidden = true; bubble = null; }
+}
+
+export async function initAssistant(tabId: number, origin: string, enabled: boolean, tip: string): Promise<void> {
+  if (assistant) { assistant.tabId = tabId; assistant.tip = tip; setAssistantEnabled(enabled); return; }
+  const key = bubbleKey(origin);
+  const stored: Record<string, unknown> = await chrome.storage.local.get(key).catch(() => ({}));
+  try { if (!chrome.runtime.id) return; } catch { return; }
+  const p = stored[key] as { edge?: string; y?: number } | undefined;
+  const host = document.createElement('div');
+  host.id = ASSISTANT_ID;
+  const root = host.attachShadow({ mode: 'open' });
+  root.innerHTML = `<style>${ASSISTANT_CSS}</style><button class="bub" type="button" aria-label="Trail" hidden>${TRAIL_MINI(3)}</button><div class="balloon" role="status" hidden><button class="close" type="button" aria-label="Fechar">×</button><b></b><span class="text"></span></div>`;
+  document.documentElement.appendChild(host);
+  assistant = { host, balloon: root.querySelector('.balloon')!, edge: p?.edge === 'left' ? 'left' : 'right', y: typeof p?.y === 'number' && Number.isFinite(p.y) ? Math.max(0, Math.min(1, p.y)) : 1, origin, tabId, enabled, tip };
+  root.querySelector('.close')!.addEventListener('click', hideBalloon);
+  onOutside = (e) => { if (assistant && !e.composedPath().includes(host)) hideBalloon(); };
+  document.addEventListener('pointerdown', onOutside, true);
+  ensureBubble();
+}
+
+export function setAssistantEnabled(enabled: boolean): void {
+  if (!assistant) return;
+  assistant.enabled = enabled;
+  if (!enabled) { if (st && minimized) restore(); hideBubble(); }
+  else ensureBubble();
+}
+
+/** Remove toda a interface desta cópia quando o contexto da extensão perde validade. */
+export function disposeFloat(): void {
+  st = null;
+  minimized = false;
+  pip?.close(); pip = null;
+  hideBalloon();
+  bubble = null;
+  assistant?.host.remove(); assistant = null;
+  if (onOutside) document.removeEventListener('pointerdown', onOutside, true);
+  onOutside = null;
+  removeEventListener('keydown', onEscape);
+  removeEventListener('message', onMessage);
+  removeEventListener('resize', onResize);
+  document.getElementById(HOST_ID)?.remove();
+}
 
 function save(open: boolean, min = false): void {
   chrome.runtime.sendMessage({ type: 'float-set', open, min }).catch(() => undefined);
@@ -117,10 +272,12 @@ export function setFloatTheme(theme: 'dark' | 'light'): void {
   st.pane.classList.toggle('light', theme === 'light');
 }
 
-export function isFloatOpen(): boolean { return !!st || !!bubble; }
+export function isFloatOpen(): boolean { return !!st; }
 
 export function openFloat(tabId: number, opts: { theme?: 'dark' | 'light'; minimized?: boolean } = {}): void {
-  if (st) { if (bubble) restore(); return; }
+  if (st) { if (minimized) restore(); return; }
+  hideBubble();
+  minimized = false;
   const theme = opts.theme ?? 'dark';
   const host = document.createElement('div');
   host.id = HOST_ID;
@@ -141,36 +298,35 @@ export function openFloat(tabId: number, opts: { theme?: 'dark' | 'light'; minim
 }
 
 export function toggleFloat(tabId: number, theme?: 'dark' | 'light'): void {
-  if (st && !bubble) closeFloat(); else if (st) restore(); else openFloat(tabId, { theme });
+  if (st && !minimized) closeFloat(); else if (st) restore(); else openFloat(tabId, { theme });
 }
 
 export function closeFloat(persist = true): void {
   const s = st;
   if (!s) return;
   st = null;
+  minimized = false;
   pip?.close(); pip = null;
-  bubble?.remove(); bubble = null;
   if (persist) save(false);
   s.pane.classList.add('out');
   setTimeout(() => s.host.remove(), 260);
+  ensureBubble();
 }
 
 function minimize(instant = false): void {
   const s = st;
-  if (!s || bubble) return;
+  if (!s || minimized) return;
+  if (assistant && !assistant.enabled) { closeFloat(); return; }
+  minimized = true;
   const r = s.pane.getBoundingClientRect();
-  s.pane.style.setProperty('--gx', `${innerWidth - 43 - (r.left + r.width / 2)}px`);
-  s.pane.style.setProperty('--gy', `${innerHeight - 43 - (r.top + r.height / 2)}px`);
+  const bx = assistant?.edge === 'left' ? BUBBLE_MARGIN : innerWidth - BUBBLE_MARGIN - BUBBLE_SIZE;
+  s.pane.style.setProperty('--gx', `${bx + BUBBLE_SIZE / 2 - (r.left + r.width / 2)}px`);
+  s.pane.style.setProperty('--gy', `${bubbleTop(assistant?.y ?? 1) + BUBBLE_SIZE / 2 - (r.top + r.height / 2)}px`);
   const done = () => {
+    if (st !== s || !minimized) return;
     s.pane.style.display = 'none';
     s.pane.classList.remove('mini');
-    bubble = document.createElement('button');
-    bubble.className = 'bub';
-    bubble.title = 'Trail';
-    bubble.setAttribute('aria-label', 'Trail');
-    bubble.innerHTML = TRAIL_MINI(3);
-    bubble.addEventListener('click', restore);
-    s.root.appendChild(bubble);
+    ensureBubble();
   };
   if (instant) done(); else { s.pane.classList.add('mini'); setTimeout(done, 280); }
   save(true, true);
@@ -179,7 +335,8 @@ function minimize(instant = false): void {
 function restore(): void {
   const s = st;
   if (!s) return;
-  bubble?.remove(); bubble = null;
+  minimized = false;
+  hideBubble();
   s.pane.style.display = '';
   s.pane.style.animation = 'none'; void s.pane.offsetWidth; s.pane.style.animation = '';
   place(s);
@@ -188,7 +345,7 @@ function restore(): void {
 
 /** Abrir de novo ou investigar outra coisa com o painel minimizado: ele volta a aparecer. */
 export function showFloat(tabId: number, theme?: 'dark' | 'light'): void {
-  if (!st) openFloat(tabId, { theme }); else if (bubble) restore();
+  if (!st) openFloat(tabId, { theme }); else if (minimized) restore();
 }
 
 // ---------- arrastar ----------
@@ -311,7 +468,7 @@ async function togglePin(): Promise<void> {
   w.addEventListener('message', (e: MessageEvent) => { if (e.origin === extOrigin) onPanelMessage(e.data, true); });
   w.addEventListener('pagehide', () => {
     if (pip === w) pip = null;
-    if (st === s && !bubble) { s.pane.style.display = ''; place(s); }
+    if (st === s && !minimized) { s.pane.style.display = ''; place(s); }
   });
 }
 
@@ -342,16 +499,19 @@ function onPanelMessage(d: PanelMsg, fromPip: boolean): void {
 }
 
 // Esc na página fecha o painel, menos quando a pessoa está digitando num campo ou há um diálogo aberto.
-addEventListener('keydown', (e: KeyboardEvent) => {
-  if (e.key !== 'Escape' || !st || bubble || e.defaultPrevented) return;
+function onEscape(e: KeyboardEvent): void {
+  if (e.key !== 'Escape' || !st || minimized || e.defaultPrevented) return;
   const a = document.activeElement as HTMLElement | null;
   if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
   if (document.querySelector('dialog[open], .modal.in, .modal.show, [role="dialog"][aria-modal="true"]')) return;
   closeFloat();
-});
+}
+addEventListener('keydown', onEscape);
 
-addEventListener('message', (e: MessageEvent) => {
+function onMessage(e: MessageEvent): void {
   if (!st || e.origin !== extOrigin) return;
   onPanelMessage(e.data as PanelMsg, false);
-});
-addEventListener('resize', () => { if (st) place(st); });
+}
+function onResize(): void { if (st) place(st); placeBubble(); }
+addEventListener('message', onMessage);
+addEventListener('resize', onResize);

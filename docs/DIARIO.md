@@ -9,6 +9,19 @@ Convenções:
 
 ---
 
+## 2026-10-20 (noite) — 0.12.6: bolinha-assistente e conserto do auto-reload
+
+- **Problema que o dono viu:** depois do auto-reload, o clique no ícone não fazia nada. A aba ficava com o script de conteúdo órfão (sem ligação com a extensão nova). O F5 resolvia.
+- **Conserto (Codex):** o script órfão percebe que ficou sem extensão, desliga observers e listeners e tira da página os ícones, o painel e a bolinha. O worker reinjeta `page.js` e `content.js` nas abas conectadas ao subir ou atualizar e quando a aba não responde ao pedido de painel, e tenta de novo antes de cair na janela.
+- **Teste novo `tests/e2e/reload.mjs`** (no `npm run e2e`): cobre a metade do órfão (ícones e bolinha somem e a página continua funcionando). A reinjeção não dá para testar no Playwright, porque lá a extensão carregada por linha de comando não volta depois do `chrome.runtime.reload()`. Só se vê no Edge de verdade.
+- **Bolinha-assistente (Codex, pedido do dono):**
+  - sempre visível nas páginas da instância conectada; clique abre o painel; X, Esc e minimizar voltam para a bolinha;
+  - dá para arrastar (mouse e toque); ao soltar, encosta na borda mais próxima; posição guardada por instância;
+  - balão de boas-vindas e dica ao passar o mouse; o aviso "Trail conectado" agora sai da bolinha e não a cobre mais;
+  - opção para desligar a bolinha.
+- Abas do resultado com o tamanho do texto; o realce acompanha a aba ativa.
+- `cpSync` derruba o processo no Node 24 para Windows (sai sem mensagem, código 127). Nos scripts, usar cópia manual.
+
 ## 2026-10-20 (noite) — 0.12.5 e site
 
 - A setinha da lateral agora esconde o painel na bolinha do Trail, com a mesma animação de minimizar (pedido do dono). O estado "recolhido na borda" foi retirado.

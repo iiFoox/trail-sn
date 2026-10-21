@@ -22,7 +22,41 @@ try {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(`chrome-extension://${id}/_float-test.html`);
   await page.waitForFunction(() => !!window.__trailFloat);
-  await page.evaluate(() => window.__trailFloat.openFloat(1, { theme: 'dark' }));
+  const assistant = page.locator('#trail-assistant');
+  const bubble = assistant.locator('.bub');
+  await bubble.waitFor({ state: 'visible' });
+  if (await page.locator('#trail-float').count()) errors.push('painel abriu antes do clique na bolinha');
+  const balloon = assistant.locator('.balloon');
+  await bubble.hover();
+  await balloon.waitFor({ state: 'visible' });
+  const overlaps = await page.evaluate(() => {
+    const root = document.getElementById('trail-assistant').shadowRoot;
+    const a = root.querySelector('.bub').getBoundingClientRect(), b = root.querySelector('.balloon').getBoundingClientRect();
+    return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+  });
+  if (overlaps) errors.push('balão cobre a bolinha');
+  await page.mouse.click(150, 150);
+  if (await balloon.isVisible()) errors.push('clique fora não fechou o balão');
+  const b0 = await bubble.boundingBox();
+  await page.mouse.move(b0.x + 23, b0.y + 23);
+  await page.mouse.down();
+  await page.mouse.move(90, 220, { steps: 12 });
+  await page.mouse.up();
+  await page.waitForTimeout(500);
+  const moved = await bubble.boundingBox();
+  if (Math.abs(moved.x - 20) > 2 || Math.abs(moved.y - 197) > 20) errors.push('bolinha não encaixou à esquerda mantendo a altura: ' + JSON.stringify(moved));
+  await page.reload();
+  await bubble.waitFor({ state: 'visible' });
+  await page.waitForTimeout(450);
+  const remembered = await bubble.boundingBox();
+  if (Math.abs(remembered.x - moved.x) > 2 || Math.abs(remembered.y - moved.y) > 2) errors.push('posição da bolinha não foi lembrada: ' + JSON.stringify({ moved, remembered }));
+  await page.setViewportSize({ width: 900, height: 600 });
+  await page.waitForTimeout(450);
+  const resized = await bubble.boundingBox();
+  if (Math.abs(resized.x - 20) > 2 || resized.y < 20 || resized.y + resized.height > 580) errors.push('bolinha saiu da tela após resize: ' + JSON.stringify(resized));
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.waitForTimeout(450);
+  await bubble.click();
   const pane = () => page.evaluate(() => { const p = document.getElementById('trail-float').shadowRoot.querySelector('.pane'); const r = p.getBoundingClientRect(); return { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height), cls: p.className, shown: p.style.display !== 'none' }; });
   const dragGrip = async (selector, dx, dy) => {
     const box = await page.locator('#trail-float').locator(selector).boundingBox();
@@ -87,16 +121,14 @@ try {
   const back = await pane();
   if (back.x !== 1280 - 420 - 8 || back.cls.includes('left')) errors.push('duplo clique não encostou na direita: ' + JSON.stringify(back));
   // A setinha esconde o painel na bolinha do Trail; a bolinha traz de volta encostado na direita.
-  // O aviso de boas-vindas fica no mesmo canto da bolinha; fecha antes de clicar nela.
-  await page.evaluate(() => document.getElementById('trail-notice')?.remove());
   await page.locator('#trail-float').locator('.tab').click();
   await page.waitForTimeout(450);
   const shut = await page.evaluate(() => {
     const root = document.getElementById('trail-float').shadowRoot;
-    return { shown: root.querySelector('.pane').style.display !== 'none', bubble: !!root.querySelector('.bub') };
+    return { shown: root.querySelector('.pane').style.display !== 'none', bubble: !document.getElementById('trail-assistant').shadowRoot.querySelector('.bub').hidden };
   });
   if (shut.shown || !shut.bubble) errors.push('setinha não virou a bolinha: ' + JSON.stringify(shut));
-  await page.locator('#trail-float').locator('.bub').click();
+  await bubble.click();
   await page.waitForTimeout(450);
   const unshut = await pane();
   if (!unshut.shown || unshut.x !== 1280 - unshut.w - 8) errors.push('a bolinha não trouxe o painel de volta pela setinha: ' + JSON.stringify(unshut));
@@ -104,10 +136,10 @@ try {
   await frame.click(`header.topbar button[aria-label^="Minimizar"]`);
   await page.waitForTimeout(450);
   const mini = await pane();
-  const bub = await page.evaluate(() => !!document.getElementById('trail-float').shadowRoot.querySelector('.bub'));
+  const bub = await bubble.isVisible();
   if (mini.shown || !bub) errors.push('minimizar não virou bolinha');
   if (shotDir) await page.screenshot({ path: resolve(shotDir, 'float-mini.png') });
-  await page.evaluate(() => document.getElementById('trail-float').shadowRoot.querySelector('.bub').click());
+  await bubble.click();
   await page.waitForTimeout(400);
   const again = await pane();
   if (!again.shown || again.w !== 420) errors.push('a bolinha não trouxe o painel de volta: ' + JSON.stringify(again));
@@ -116,6 +148,7 @@ try {
   await page.waitForTimeout(400);
   const gone = await page.evaluate(() => !document.getElementById('trail-float'));
   if (!gone) errors.push('o X não fechou');
+  if (!(await bubble.isVisible())) errors.push('o X não devolveu a bolinha');
   // Reabrir: volta ao tamanho padrão mesmo depois de ter mexido.
   await page.evaluate(() => window.__trailFloat.openFloat(1, { theme: 'light' }));
   await page.waitForTimeout(600);
@@ -130,6 +163,7 @@ try {
   await page.keyboard.press('Escape');
   await page.waitForTimeout(350);
   if (await page.locator('#trail-float').count()) errors.push('Esc na página não fechou o painel');
+  if (!(await bubble.isVisible())) errors.push('Esc na página não devolveu a bolinha');
   // Esc dentro do iframe também fecha pelo aviso enviado à página.
   const frameReady = page.waitForEvent('framenavigated', { predicate: (f) => f.url().includes('float=1'), timeout: 5000 });
   await page.evaluate(() => window.__trailFloat.openFloat(1, { theme: 'dark' }));
@@ -138,6 +172,17 @@ try {
   await escapeFrame.locator('header.topbar .light.min').press('Escape');
   await page.waitForTimeout(350);
   if (await page.locator('#trail-float').count()) errors.push('Esc dentro do iframe não fechou o painel');
+  await page.evaluate(async () => {
+    const key = 'trail.prefs', p = (await chrome.storage.sync.get(key))[key] ?? {};
+    await chrome.storage.sync.set({ [key]: { ...p, showBubble: false } });
+  });
+  await page.waitForTimeout(150);
+  if (await bubble.isVisible()) errors.push('desligar a bolinha nas opções não a escondeu');
+  await page.evaluate(async () => {
+    const key = 'trail.prefs', p = (await chrome.storage.sync.get(key))[key] ?? {};
+    await chrome.storage.sync.set({ [key]: { ...p, showBubble: true } });
+  });
+  await bubble.waitFor({ state: 'visible' });
   console.log(JSON.stringify({ opened, short, full, free, smallest, larger, left, back, shut, unshut, again, re, errors }, null, 1));
 } finally {
   await ctx.close();

@@ -259,6 +259,9 @@ const dict = {
       import_set: 'Importação',
       unknown_background: 'Processo em segundo plano',
     } as Record<EvidenceType, string>,
+    showBubble: 'Mostrar a bolinha do Trail nas páginas da instância',
+    bubbleWelcome: 'Trail está aqui. Toque na bolinha para investigar este registro.',
+    bubbleTip: 'Clique para investigar este registro',
   },
   en: {
     prefsTitle: 'Appearance and language',
@@ -516,6 +519,9 @@ const dict = {
       import_set: 'Import',
       unknown_background: 'Background process',
     } as Record<EvidenceType, string>,
+    showBubble: 'Show the Trail bubble on instance pages',
+    bubbleWelcome: 'Trail is here. Tap the bubble to investigate this record.',
+    bubbleTip: 'Click to investigate this record',
   },
 };
 

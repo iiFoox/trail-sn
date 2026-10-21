@@ -11,9 +11,9 @@ export type Theme = 'dark' | 'light' | 'system';
 export type Lang = 'pt' | 'en';
 /** float: painel dentro da própria página (padrão desde a 0.12); side: painel lateral do navegador; window: janela separada. */
 export type PanelMode = 'float' | 'side' | 'window';
-export interface Prefs { theme: Theme; lang: Lang; panelMode: PanelMode; showIcons: boolean; /** Versão da escolha do painel: antes da 0.12 'side' era o padrão gravado, não uma escolha. */ modeV?: number }
+export interface Prefs { theme: Theme; lang: Lang; panelMode: PanelMode; showIcons: boolean; showBubble: boolean; /** Versão da escolha do painel: antes da 0.12 'side' era o padrão gravado, não uma escolha. */ modeV?: number }
 
-export const DEFAULT_PREFS: Prefs = { theme: 'dark', lang: 'pt', panelMode: 'float', showIcons: true, modeV: 2 };
+export const DEFAULT_PREFS: Prefs = { theme: 'dark', lang: 'pt', panelMode: 'float', showIcons: true, showBubble: true, modeV: 2 };
 const KEY = 'trail.prefs';
 export const PREFS_KEY = KEY;
 
@@ -32,6 +32,7 @@ export function normalize(p: Partial<Prefs> | undefined): Prefs {
     // 'side' gravado antes da 0.12 era só o padrão da época: quem não escolheu passa para o flutuante.
     panelMode: p?.panelMode === 'window' ? 'window' : p?.panelMode === 'side' && p.modeV === 2 ? 'side' : 'float',
     showIcons: p?.showIcons !== false,
+    showBubble: p?.showBubble !== false,
     modeV: 2,
   };
 }
