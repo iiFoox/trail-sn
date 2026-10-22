@@ -645,7 +645,9 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
         await rememberToken(msg.ctx.origin, msg.ctx.token);
         const prev = await getTab(tabId);
         const language = msg.ctx.language ?? (prev.ctx?.origin === msg.ctx.origin ? prev.ctx.language : undefined);
-        const safeCtx: PageContext = { ...msg.ctx, token: undefined, language }; // o token não fica no estado da aba
+        // O número do registro só vem do quadro com o formulário; o quadro de cima (só URL) não apaga o que já se sabe.
+        const display = msg.ctx.display ?? (prev.ctx?.sysId && prev.ctx.sysId === msg.ctx.sysId ? prev.ctx.display : undefined);
+        const safeCtx: PageContext = { ...msg.ctx, token: undefined, language, ...(display ? { display } : {}) }; // o token não fica no estado da aba
         // O painel acompanha o registro aberto: ao trocar de registro (e com nada rodando), o resultado do anterior
         // sai de cena. Se a pessoa estava vendo o registro inteiro, ele é refeito para o registro novo.
         const moved = !!safeCtx.sysId && !!prev.ctx?.sysId && (safeCtx.sysId !== prev.ctx.sysId || safeCtx.table !== prev.ctx.table);

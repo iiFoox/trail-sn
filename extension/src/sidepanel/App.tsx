@@ -265,12 +265,14 @@ export function App() {
           <div class="empty">
             <EmptyIllustration />
             <div class="title">{s.emptyTitle}</div>
-            <div>{s.noContext}</div>
+            {state?.ctx?.sysId
+              ? <div>{fmt(s.p.ux.emptyOnRecord, { rec: state.ctx.display ?? state.ctx.table ?? '' })}</div>
+              : <div>{s.noContext}</div>}
           </div>
         )}
         </>}
       </main>
-      <ManualDrawer origin={origin} table={state?.ctx?.table ?? state?.result?.target.table ?? state?.batch?.table} sysId={state?.ctx?.sysId ?? state?.result?.target.sysId ?? state?.batch?.sysId} field={state?.result?.target.field} tabId={tabId} open={!state?.result && !state?.batch && !lock}
+      <ManualDrawer origin={origin} table={state?.ctx?.table ?? state?.result?.target.table ?? state?.batch?.table} sysId={state?.ctx?.sysId ?? state?.result?.target.sysId ?? state?.batch?.sysId} display={state?.ctx?.display ?? (state?.ctx?.sysId && state.ctx.sysId !== state?.result?.target.sysId ? undefined : state?.result?.target.display) ?? state?.batch?.display} field={state?.result?.target.field} tabId={tabId} open={!state?.result && !state?.batch && !lock}
         onDemo={(f, whole) => (whole ? runDemoRecord() : runDemoField(f))} onLock={(t) => { setLock(t); scrollTo(0, 0); }} />
       {toast && <div class="toast" role="status" onClick={() => showToast()}>{toast}</div>}
     </>
@@ -359,8 +361,10 @@ export function tableForNumber(n: string): string | undefined {
  * Gaveta "Investigar": pede só o número do registro (a tabela sai do prefixo) e o campo por uma lista com os nomes
  * do formulário. Tabela e campo técnicos ficam em "Avançado".
  */
-function ManualDrawer({ origin, table, sysId, field, tabId, open, onDemo, onLock }: { origin?: string; table?: string; sysId?: string; field?: string; tabId?: number; open: boolean; onDemo: (field: string, whole: boolean) => void; onLock: (t: { table: string; sysId: string; field: string }) => void }) {
-  const [rec, setRec] = useState(sysId && !/^[0-9a-f]{32}$/.test(sysId) ? sysId : '');
+function ManualDrawer({ origin, table, sysId, display, field, tabId, open, onDemo, onLock }: { origin?: string; table?: string; sysId?: string; display?: string; field?: string; tabId?: number; open: boolean; onDemo: (field: string, whole: boolean) => void; onLock: (t: { table: string; sysId: string; field: string }) => void }) {
+  // O registro aberto na página já vem preenchido (número lido do formulário); a pessoa pode trocar.
+  const [rec, setRec] = useState(display ?? (sysId && !/^[0-9a-f]{32}$/.test(sysId) ? sysId : ''));
+  useEffect(() => { setRec(display ?? ''); }, [sysId, display]);
   const [fld, setFld] = useState(field ?? 'state');
   const [advTable, setAdvTable] = useState('');
   const [adv, setAdv] = useState(false);
