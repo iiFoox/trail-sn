@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact';
 /**
  * Aba "Regras do campo": o desenho da instância para este campo, em três partes —
  *  1. Estado agora: por que está somente leitura, obrigatório ou escondido neste registro;
@@ -68,16 +69,29 @@ export function RulesTab({ r, origin, field, observed, tool, setTool }: { r: Inv
       {res && <Dependents res={res} origin={origin} labels={labels} field={field} />}
       {res && <NotSeen res={res} />}
 
-      <div class="rules-tools" role="group" ref={toolsRef}>
-        <button class={`btn ${tool === 'sim' ? 'on' : ''}`} aria-pressed={tool === 'sim'} onClick={() => toggle('sim')}>{Glyph.compare} {U.simBtn}</button>
-        <button class={`btn ${tool === 'cmp' ? 'on' : ''}`} aria-pressed={tool === 'cmp'} onClick={() => toggle('cmp')}>{Glyph.server} {U.cmpBtn}</button>
+      <h3 class="sec-h" id="rules-tools">{U.secTools}<Help text={fmt(U.secToolsHint, { field })} /></h3>
+      <div class="stack" ref={toolsRef}>
+        <ToolFold open={tool === 'sim'} onToggle={(o) => setTool(o ? 'sim' : tool === 'sim' ? undefined : tool)} icon={Glyph.compare} title={U.simBtn}>
+          <Simulate r={r} origin={origin} field={field} labels={labels} onClose={() => setTool(undefined)} />
+        </ToolFold>
+        <ToolFold open={tool === 'cmp'} onToggle={(o) => setTool(o ? 'cmp' : tool === 'cmp' ? undefined : tool)} icon={Glyph.server} title={U.cmpBtn}>
+          <CompareTool r={r} origin={origin} field={field} onClose={() => setTool(undefined)} />
+        </ToolFold>
       </div>
-      {tool === 'sim' && <Simulate r={r} origin={origin} field={field} labels={labels} onClose={() => setTool(undefined)} />}
-      {tool === 'cmp' && <CompareTool r={r} origin={origin} field={field} onClose={() => setTool(undefined)} />}
 
       <FormStates table={r.target.table} sysId={r.target.sysId} origin={origin} />
       <TableScan r={r} origin={origin} />
     </div>
+  );
+}
+
+/** Ferramenta como seção recolhível (mesma seta das outras): o conteúdo só é montado aberto, para não consultar a instância à toa. */
+function ToolFold({ open, onToggle, icon, title, children }: { open: boolean; onToggle: (open: boolean) => void; icon: ComponentChildren; title: ComponentChildren; children: ComponentChildren }) {
+  return (
+    <details class="box fold fold2 tool" open={open} onToggle={(e) => { const o = (e.currentTarget as HTMLDetailsElement).open; if (o !== open) onToggle(o); }}>
+      <summary><h4><span class="caret" aria-hidden="true" /><span class="ic sm">{icon}</span><span class="grow">{title}</span></h4></summary>
+      {open && children}
+    </details>
   );
 }
 

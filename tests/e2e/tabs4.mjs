@@ -108,7 +108,7 @@ try {
   await open('tab=rules');
   await page.waitForSelector('.deps .dep', { state: 'attached', timeout: 10000 }).catch(() => errors.push('sem "Quem depende"'));
   out.secs = await page.$$eval('.rules .sec-h', (hs) => hs.map((h) => h.firstChild.textContent));
-  if (JSON.stringify(out.secs) !== JSON.stringify(['Estado agora', 'Quem grava', 'Quem depende'])) errors.push('seções de Regras: ' + JSON.stringify(out.secs));
+  if (JSON.stringify(out.secs) !== JSON.stringify(['Estado agora', 'Quem grava', 'Quem depende', 'Simular e comparar'])) errors.push('seções de Regras: ' + JSON.stringify(out.secs));
   out.writers = await page.$$eval('.writers .li a', (as) => as.map((a) => a.textContent));
   if (!out.writers.includes('[PERICIA-TESTE] Resolve incidente por palavra-chave')) errors.push('quem grava: ' + JSON.stringify(out.writers));
   out.deps = await page.$$eval('.deps .dep', (xs) => xs.length);
@@ -232,9 +232,9 @@ try {
   if (await page.locator('.rules .lk-box').count()) errors.push('Regras: o cartão "Por que … está assim?" ainda aparece');
   if (await page.locator('details.st-why').evaluate((d) => d.open)) errors.push('Regras: "Ver por quê" deveria vir fechado com o campo livre');
   out.writersHead = await text('details.writers > summary');
-  if (!/^2 regras podem gravar State/.test(out.writersHead.trim())) errors.push('resumo de "Quem grava": ' + out.writersHead);
+  if (!/^Regras que podem gravar State/.test(out.writersHead.trim())) errors.push('resumo de "Quem grava": ' + out.writersHead);
   out.depsHead = await text('details.deps > summary');
-  if (!/^11 regras dependem de State/.test(out.depsHead.trim())) errors.push('resumo de "Quem depende": ' + out.depsHead);
+  if (!/^Regras que dependem de State/.test(out.depsHead.trim())) errors.push('resumo de "Quem depende": ' + out.depsHead);
   // Ordem: o que manda no campo vem antes das ferramentas.
   out.order = await page.evaluate(() => [...document.querySelectorAll('.rules > *')].map((e) => e.id || e.className.split(' ').find((c) => ['st-now', 'writers', 'deps', 'rules-tools', 'lk-list', 'scan'].includes(c)) || '').filter(Boolean));
   if (out.order.indexOf('deps') > out.order.indexOf('rules-tools')) errors.push('ordem da aba Regras: ' + JSON.stringify(out.order));
