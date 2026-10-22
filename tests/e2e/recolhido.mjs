@@ -70,6 +70,17 @@ try {
   out.answerOpen = await page.locator('.tabpane details[open]').count();
   if (out.answerOpen) errors.push('Resposta: algo veio aberto');
 
+  // Caminho do campo no cabeçalho: valores do mais antigo ao mais recente; clicar num valor abre a mudança que o gravou.
+  await page.goto(`${base}&field=state&tab=answer`);
+  await page.waitForSelector('.cpath button');
+  out.path = await page.locator('.cpath').innerText();
+  const before = await page.locator('.headcard .chg').innerText();
+  await page.locator('.cpath button:not(.on)').last().click();
+  await page.waitForTimeout(300);
+  const after = await page.locator('.headcard .chg').innerText();
+  if (before === after) errors.push('Caminho: clicar num valor não trocou a mudança');
+  if (!(await page.locator('.cpath .cp-t').innerText()).match(/2 DE 3|2 de 3/i)) errors.push('Caminho: posição não atualizou: ' + (await page.locator('.cpath .cp-t').innerText()));
+
   // Rastro: continua aberto, com os passos à vista.
   await page.goto(`${base}&field=state&tab=trace`);
   await page.waitForSelector('ol.tl > li');

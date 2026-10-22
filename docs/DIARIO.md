@@ -411,3 +411,21 @@ Pedidos do dono depois de testar a 0.12.2 no Edge:
 - O e2e `recolhido.mjs` agora confere a ordem decrescente e que o destaque e a bolinha verde só aparecem no topo.
 - Ordem lógica, não só pelo relógio: a transação que causou a mudança é gravada no log no fim da requisição (até 3 s depois), então pode aparecer com horário 1 s maior logo abaixo da mudança. É de propósito (o motor já ordenava assim).
 - Lição: mudar ordem/destaque de lista visual pede print e medida antes de entregar, nos dois temas.
+
+## 21/10/2026, 23h50 — 1.4.4
+- **Certeza baixa com 3 salvamentos seguidos** (o dono mudou Category 3 vezes de propósito).
+  - **Causa:** `userTransaction` pegava o primeiro envio de formulário da janela (−3 s / +15 s) que tivesse o campo. Na mudança do meio, isso era o salvamento ANTERIOR (que enviou "Access & Password"). O valor diferia, então caía em "servidor alterou" → regra automática com certeza baixa. O Rastro também marcava "Causa" nos 3 salvamentos.
+  - **Correção:** `formSubmitOf(ctx)` em `sameTransaction.ts`. Ela descarta envios que terminaram mais de 2 s antes da auditoria (o log registra a transação no FIM) e escolhe o do mesmo usuário mais próximo do instante. O `buildTrace` usa a mesma escolha para marcar a causa. No Rastro, as outras gravações do registro agora incluem o próprio campo (ex.: "Category: Inquiry → Security").
+  - **Teste:** "três salvamentos seguidos do mesmo campo" em `cases.test.ts`. Falha sem a correção e passa com ela.
+- **Histórico difícil de entender:** novo `ChangePath` no cabeçalho. Quando o campo mudou mais de uma vez, mostra "Mudança N de T" e o caminho (`New → In Progress → Resolved`), com a mudança atual destacada. Cada valor abre a mudança que o gravou. Some quando os valores são longos (scripts). A introdução do Histórico agora diz a ordem ("da mais recente para a mais antiga"). Coberto no e2e `recolhido.mjs`.
+- **Espaçamento:** o seletor "Este campo / Registro inteiro" estava a 0 px da lista. Agora tem `margin-bottom: 12px`.
+- **Revisão contra a 1.0.0** (subagente, 89 prints pareados):
+  - **Regressões corrigidas:**
+    - o anel da mudança selecionada sumia (`.box .hist-in .h:not(.on)`);
+    - o resumo repetia o conteúdo com a seção aberta (agora some ao abrir);
+    - a seta ficava no meio do bloco título+resumo (agora fica na linha do título);
+    - "Tudo que pode gravar" e "Conflitos" estavam sem resumo quando recolhidos;
+    - um `.grow` com `inline-flex` herdado deixava o resumo ao lado do título.
+  - **Sem mudança:** o resto bate pixel a pixel com a 1.0.0 (popup, E se?, balão, relatório, diff), e nenhuma chave de texto nem token de CSS sumiu.
+- **Site:** `docs/PEDIDO-SITE.md`, pacote completo para outra IA.
+- **Vídeo:** `docs/VIDEO-LINKEDIN.md`, com roteiro de 40 s, trilha, legendas pt/en e prompt para o Fable. Os prints 2× ficam em `video-assets/`.

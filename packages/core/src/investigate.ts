@@ -21,6 +21,7 @@ import {
   type TraceItem,
 } from './types';
 import { isSaveButton } from './signatures/uiAction';
+import { formSubmitOf } from './signatures/sameTransaction';
 import { decodeFlowValues, isBatchCall, isFormSubmitFor, isMultiUpdate, isRecordWrite, isWorkspaceAction, parseFieldValues, uiActionMatches, uiActionQuery, uiActionRef } from './util';
 import { conditionFields, mergeWindows, refsField, shift, toMs, withTimeout } from './util';
 
@@ -447,6 +448,7 @@ export async function investigate(
 function buildTrace(ctx: ChangeContext, top: Change['evidence'][number] | undefined): TraceItem[] {
   const items: TraceItem[] = [];
   const name = top?.artifact.name ?? '';
+  const submit = formSubmitOf(ctx);
   for (const t of ctx.traces.transactions) {
     const url = t.url ?? '';
     const at = t.sys_created_on ?? '';
@@ -484,8 +486,9 @@ function buildTrace(ctx: ChangeContext, top: Change['evidence'][number] | undefi
     // Só envios de formulário contam; o recarregamento da página depois de salvar (GET ?sys_id=) não.
     if (!isFormSubmitFor(url, ctx.sysId)) continue;
     const sent = new URLSearchParams(url.split('?')[1] ?? '').get(`${ctx.table}.${ctx.field}`);
+    // Só o envio que gravou esta mudança é causa; outros salvamentos na janela (antes ou depois) são só contexto.
     const formCause = !!top && ['user_action', 'br_before', 'server_change', 'assignment_rule', 'data_lookup', 'client_script', 'ui_policy'].includes(top.type);
-    items.push({ ...base, kind: 'form', label: isMultiUpdate(url) ? 'Update Selected (lista)' : ua?.name ?? url.split('?')[0] ?? url, ...(sent !== null ? { sent } : {}), cause: formCause && sent !== null });
+    items.push({ ...base, kind: 'form', label: isMultiUpdate(url) ? 'Update Selected (lista)' : ua?.name ?? url.split('?')[0] ?? url, ...(sent !== null ? { sent } : {}), cause: formCause && sent !== null && t === submit });
   }
   const sref = (table: string, sysId?: string) => (sysId ? { ref: { table, sysId } } : {});
   // Eventos de infraestrutura (indexação, motor de notificação) não explicam mudança de campo: ficam fora, e repetidos no mesmo segundo viram um só.
@@ -503,13 +506,14 @@ function buildTrace(ctx: ChangeContext, top: Change['evidence'][number] | undefi
   const from = shift(ctx.at, -ctx.opts.windowBefore);
   const to = shift(ctx.at, ctx.opts.windowAfter);
   const auditRef = (cp: number) => ({ table: 'sys_audit', query: `documentkey=${ctx.sysId}^record_checkpoint=${cp}` });
-  const writes = (rows: Row[]) => rows.filter((r) => r.fieldname !== ctx.field).map((r) => ({ field: r.fieldname ?? '', oldValue: r.oldvalue ?? '', newValue: r.newvalue ?? '' }));
+  const writes = (rows: Row[], keepField = false) => rows.filter((r) => keepField || r.fieldname !== ctx.field).map((r) => ({ field: r.fieldname ?? '', oldValue: r.oldvalue ?? '', newValue: r.newvalue ?? '' }));
   for (const [cpKey, rows] of Object.entries(ctx.checkpoints)) {
     const cp = Number(cpKey);
     if (cp === ctx.checkpoint) continue;
     const at = rows[0]?.sys_created_on ?? '';
     if (!between(at, from, to)) continue;
-    const fields = writes(rows);
+    // Nas outras gravações, o próprio campo investigado vem primeiro (ex.: a pessoa salvou de novo trocando o valor).
+    const fields = writes(rows, true).sort((a, b) => Number(b.field === ctx.field) - Number(a.field === ctx.field));
     if (fields.length) items.push({ at, kind: 'write', label: '', user: rows[0]?.user ?? '', source: 'sys_audit', fields, checkpoint: cp, ref: auditRef(cp) });
   }
   const same = writes(ctx.checkpoints[String(ctx.checkpoint)] ?? []);

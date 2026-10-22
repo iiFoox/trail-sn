@@ -1,6 +1,29 @@
 # Próximos passos
 
-## Estado em 21/10/2026, 22h (leia isto primeiro) — Claude (coordenação com subagentes nesta conversa)
+## Estado em 21/10/2026, 23h50 (leia isto primeiro)
+
+**Versão para a loja: 1.4.4.** Entrou desde a 1.4.0 (detalhes no `DIARIO.md`):
+- **Rastro** do mais recente para o mais antigo, com destaque e bolinha verde no topo e a linha refeita para passar pelo centro das bolinhas.
+- **Leituras da API fora do rastro.**
+- **Correção do motor nos salvamentos seguidos do mesmo campo:** cada mudança agora fica com o próprio envio do formulário. Antes dava "certeza baixa / Regra automática".
+- **Caminho do campo no cabeçalho:** "Mudança 2 de 3" com os valores em sequência, clicáveis.
+- **Espaçamento** no Histórico.
+- **Ajustes da revisão contra a 1.0.0:**
+  - anel de destaque da mudança selecionada;
+  - o resumo some quando a seção está aberta;
+  - seta na linha do título;
+  - resumo nos blocos "Tudo que pode gravar" e "Conflitos".
+
+**Documentos novos:**
+- `docs/PEDIDO-SITE.md`: tudo que a IA do site precisa, autocontido.
+- `docs/VIDEO-LINKEDIN.md`: roteiro, trilha e prompt do vídeo para o Fable. Os prints do vídeo saem de `tests/e2e/_video-assets.mjs`.
+
+**Perguntas da revisão 1.0.0 que ficaram com o dono:**
+- manter a contagem como pílula ou voltar ao número cinza simples;
+- manter as setas ▸ à esquerda ou voltar a › e ⌄ à direita;
+- manter a lista do Histórico dentro de uma caixa ou com os cartões soltos.
+
+## Estado em 21/10/2026, 22h — Claude (coordenação com subagentes nesta conversa)
 
 **Versão para a loja: 1.4.0** = painel **igual ao da 1.0.0** (o dono achou que a extensão ficou cheia de informação e decidiu voltar ao simples) + correções invisíveis + **Modo avançado** (chave nas Configurações, **desligado por padrão**) com as ferramentas novas numa aba "Avançado", tudo recolhido.
 - O dono vai enviar a 1.4.0 à **Chrome Web Store** (só o dono envia e aceita termos).

@@ -466,7 +466,7 @@ b.add { color: #3ecf8e; } b.del { color: #ef5b6b; }
 .diff.uni .dl { min-width: 0; } .diff.uni .dl code { white-space: pre-wrap; overflow-wrap: anywhere; }
 .seg-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .seg-tabs button { min-width: 0; white-space: nowrap; }
-.hist-switch { display: grid; grid-template-columns: 1fr 1fr; width: 100%; box-sizing: border-box; border-radius: 12px; }
+.hist-switch { display: grid; grid-template-columns: 1fr 1fr; width: 100%; box-sizing: border-box; border-radius: 12px; margin-bottom: 12px; }
 .hist-switch button { display: flex; justify-content: center; align-items: center; text-align: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 9px; padding: 7px 8px; font-size: 12.5px; }
 .card.connect { display: flex; flex-direction: column; gap: 10px; }
 .card.connect p { margin: 0; line-height: 1.5; }
@@ -1126,7 +1126,7 @@ details.box.fold2 > summary h4 .pill.cnt { white-space: nowrap; }
 .alts .alt-row b { color: var(--fg); }
 /* Mudanças do campo dentro da caixa recolhível. */
 .box .hist-in { padding: 10px 12px; border-top: 1px solid var(--line); }
-.box .hist-in .h { box-shadow: none; }
+.box .hist-in .h:not(.on) { box-shadow: none; }
 /* Linha do tempo do registro: cada gravação é um recolhível; o cabeçalho é o mesmo de antes, com a seta e "3 campos". */
 ol.rtl details.sv > summary.hd { cursor: pointer; }
 ol.rtl details.sv > summary.hd:hover { background: var(--hover, rgba(127,127,127,.06)); }
@@ -1141,3 +1141,24 @@ ol.rtl details.sv > summary.hd .caret { margin-right: -2px; }
 /* Flows: a regra antiga (margem antes da contagem) não vale para os cabeçalhos recolhíveis. */
 .flows .box h4 > .grow, .flows .box h4 .why, .flows .box h4 > .pill { margin-left: 0; }
 .flows .box h4 > .caret { margin-left: 1px; }
+
+/* caminho do campo no cabeçalho: valor a valor, da mudança mais antiga para a mais recente */
+.cpath { display: grid; gap: 5px; margin-top: 10px; padding-top: 9px; border-top: 1px dashed var(--line); }
+.cpath .cp-t { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.cpath .cp-v { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 6px; font-size: 12.5px; }
+.cpath .cp-s, .cpath .cp-x { color: var(--muted); }
+.cpath .cp-a { color: var(--muted); font-size: 11px; }
+.cpath .cp-a.on { color: var(--teal); }
+.cpath button { all: unset; cursor: pointer; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--fg-2); line-height: 1.5; }
+.cpath button:hover { border-color: var(--teal); color: var(--fg); }
+.cpath button:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+.cpath button.on { border-color: var(--teal); background: var(--teal-soft); color: var(--fg); font-weight: 700; }
+
+/* Seções recolhíveis: o resumo do cabeçalho só aparece fechada (aberta, o conteúdo já diz o mesmo); a seta e a contagem
+   ficam na linha do título, não no meio do bloco título + resumo. */
+details.fold2[open] > summary .why { display: none; }
+details.box.fold2 > summary h4 { align-items: flex-start; }
+details.box.fold2 > summary h4 > .caret { margin-top: 5px; }
+details.grp.fold2 > summary { align-items: flex-start; }
+details.grp.fold2 > summary > .caret { margin-top: 5px; }
+details.box.fold2 > summary h4 > .grow { display: block; }

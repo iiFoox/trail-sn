@@ -27,7 +27,7 @@ export function FieldMapBox({ r, origin, field }: { r: Investigation; origin: st
     } catch (e) { setErr((e as Error).message); setSt('err'); }
   };
   return (
-    <Fold cls="fmap" title={fmt(P.fmTitle, { field })} count={res?.items.length} hint={res && !res.items.length ? P.fmNone : undefined}>
+    <Fold cls="fmap" title={fmt(P.fmTitle, { field })} count={res?.items.length} hint={res ? (res.items.length ? undefined : P.fmNone) : P.fmShort}>
       {st === 'idle' && <div class="li"><span class="grow muted small">{P.fmHint}</span><button class="btn sm" onClick={run}>{Glyph.search} {P.fmRun}</button></div>}
       {st === 'run' && <div class="li"><span class="spin" /><span class="grow muted small">{P.fmRunning}</span></div>}
       {st === 'err' && <div class="li"><span class="ck w">!</span><span class="grow"><ErrorMsg msg={err} /></span></div>}

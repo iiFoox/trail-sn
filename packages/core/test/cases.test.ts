@@ -259,6 +259,27 @@ describe('Rastro e rótulos', () => {
     expect(c.trace[0]?.sent).toBe('1');
   });
 
+  it('três salvamentos seguidos do mesmo campo: cada mudança fica com o próprio envio do formulário', async () => {
+    const s = scenario();
+    audit(s, 'category', 'inquiry', 'password', shiftStr(T0, 1), 'admin', 2);
+    formTx(s, shiftStr(T0, 1), 'admin', { category: 'password' });
+    audit(s, 'category', 'password', 'inquiry', shiftStr(T0, 4), 'admin', 3);
+    formTx(s, shiftStr(T0, 4), 'admin', { category: 'inquiry' });
+    audit(s, 'category', 'inquiry', 'security', shiftStr(T0, 9), 'admin', 4);
+    formTx(s, shiftStr(T0, 9), 'admin', { category: 'security' });
+    const r = await run(s, 'category');
+    expect(r.changes).toHaveLength(3);
+    for (const c of r.changes) {
+      const e = c.evidence[0]!;
+      expect([c.newValue, e.type, e.grade]).toEqual([c.newValue, 'user_action', 'confirmed']);
+      const causes = c.trace.filter((t) => t.cause);
+      expect(causes.map((t) => t.sent)).toEqual([c.newValue]);
+    }
+    const mid = r.changes.find((c) => c.newValue === 'inquiry')!;
+    const others = mid.trace.filter((t) => t.kind === 'write');
+    expect(others.map((t) => `${t.fields?.[0]?.field}:${t.fields?.[0]?.newValue}`)).toEqual(['category:password', 'category:security']);
+  });
+
   it('consultas da API que só citam o sys_id (do próprio Trail, por exemplo) não viram "Gravação via API"', async () => {
     const s = scenario();
     audit(s, 'state', '1', '2', shiftStr(T0, 2), 'admin', 2);

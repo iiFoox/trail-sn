@@ -214,10 +214,30 @@ function chainedUpdate(ctx: ChangeContext): Evidence[] {
   return out;
 }
 
-/** Envios de formulário deste registro na janela; os do próprio usuário da auditoria primeiro. */
+/**
+ * Envios de formulário deste registro que podem ser a gravação desta mudança, do mais provável para o menos provável.
+ * O syslog_transaction registra a transação quando ela TERMINA, então o envio que gravou não pode ter terminado antes
+ * da auditoria (2 s de folga para o arredondamento dos horários). Quando a pessoa salva várias vezes seguidas, cada
+ * envio é de uma gravação diferente: vale o do próprio usuário da auditoria mais próximo do instante da mudança.
+ */
 function formSubmits(ctx: ChangeContext): Row[] {
-  const subs = ctx.traces.transactions.filter((t) => t.type === 'form' && isFormSubmitFor(t.url, ctx.sysId));
-  return subs.sort((a, b) => Number(b.sys_created_by === ctx.user) - Number(a.sys_created_by === ctx.user));
+  const at = toMs(ctx.at);
+  const subs = ctx.traces.transactions.filter((t) => t.type === 'form' && isFormSubmitFor(t.url, ctx.sysId) && toMs(t.sys_created_on ?? '') >= at - 2000);
+  const dist = (t: Row) => Math.abs(toMs(t.sys_created_on ?? '') - at);
+  return subs.sort((a, b) => Number(b.sys_created_by === ctx.user) - Number(a.sys_created_by === ctx.user) || dist(a) - dist(b));
+}
+
+/** O envio de formulário que gravou esta mudança (o mesmo que a análise usa), ou nenhum. */
+export function formSubmitOf(ctx: ChangeContext): Row | undefined {
+  for (const t of formSubmits(ctx)) {
+    const sent = new URLSearchParams((t.url ?? '').split('?')[1] ?? '').get(`${ctx.table}.${ctx.field}`);
+    if (sent === null) continue;
+    const nv = ctx.audit.newvalue ?? '', ov = ctx.audit.oldvalue ?? '';
+    const cut = sent.length >= 3 && sent.length < nv.length && nv.startsWith(sent);
+    if (cut && ov.startsWith(sent)) continue;
+    return t;
+  }
+  return undefined;
 }
 
 /** Campos que mudaram na mesma gravação (mesmo checkpoint), além do investigado. */
@@ -263,20 +283,17 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
   let formAt = '';
   let formUser = ctx.user;
   let sentValue: string | undefined;
-  for (const t of formSubmits(ctx)) {
-    const p = new URLSearchParams((t.url ?? '').split('?')[1] ?? '');
-    const sent = p.get(`${ctx.table}.${ctx.field}`);
-    if (sent === null) continue;
+  const t = formSubmitOf(ctx);
+  if (t) {
+    const sent = new URLSearchParams((t.url ?? '').split('?')[1] ?? '').get(`${ctx.table}.${ctx.field}`) ?? '';
     // A URL da transação é cortada (tamanho da coluna ou caractere acentuado): valor enviado incompleto.
-    // Se ele é o começo do valor novo e não do antigo, o formulário mandou o novo; se é o começo dos dois, não dá para saber.
-    const nv = ctx.audit.newvalue ?? '', ov = ctx.audit.oldvalue ?? '';
+    // Se ele é o começo do valor novo e não do antigo, o formulário mandou o novo (formSubmitOf já descarta o ambíguo).
+    const nv = ctx.audit.newvalue ?? '';
     const cut = sent.length >= 3 && sent.length < nv.length && nv.startsWith(sent);
-    if (cut && ov.startsWith(sent)) continue;
     verdict = sameVal(sent, nv) || cut ? 'user' : 'server';
     sentValue = sent;
     formAt = t.sys_created_on ?? '';
     formUser = t.sys_created_by ?? ctx.user;
-    break;
   }
 
   const befores = ctx.meta.brField.filter((b) => b.when === 'before');

@@ -185,6 +185,7 @@ export function Result({ r, origin, access, toast, onField, advanced = false, me
           ) : <span class="muted small">{r.fieldNotInHistory ? s.notInHistory : s.noChanges}</span>}
         </div>
         {c && <div class="when2">{when(c.at)}{(() => { const d = traceDaysLeft(c); return d !== null ? <span class="expire" title={P.expireHint}>{fmt(d === 0 ? P.expireToday : P.expireIn, { n: d })}</span> : null; })()}</div>}
+        {c && r.changes.length > 1 && <ChangePath r={r} sel={sel} onPick={setSel} />}
       </div>
       {/* Sem leitura de sys_audit: as mudanças vêm do histórico do formulário (o que a pessoa já vê na instância). */}
       {r.auditFrom === 'history' && (
@@ -491,7 +492,7 @@ function TableScan({ r, origin }: { r: Investigation; origin: string }) {
   };
   const lines = res ? conflictLines({ ...r, conflicts: res.conflicts }) : [];
   return (
-    <Fold cls="scan" title={fmt(P.scTitle, { table })} count={res?.conflicts.length} hint={res ? (res.conflicts.length ? undefined : P.scNone) : undefined}>
+    <Fold cls="scan" title={fmt(P.scTitle, { table })} count={res?.conflicts.length} hint={res ? (res.conflicts.length ? undefined : P.scNone) : P.scShort}>
       {st === 'idle' && <div class="li"><span class="grow muted small">{P.scHint}</span><button class="btn sm" onClick={run}>{Glyph.search} {P.scRun}</button></div>}
       {st === 'run' && <div class="li"><span class="spin" /><span class="grow muted small">{P.scRunning}</span></div>}
       {st === 'err' && <div class="li"><span class="ck w">!</span><span class="grow"><ErrorMsg msg={err} /></span></div>}
@@ -563,6 +564,38 @@ function Other({ e, origin, field, day }: { e: Evidence; origin: string; field: 
 }
 
 // ---------- Histórico ----------
+/**
+ * Caminho do campo, da mudança mais antiga para a mais recente ("Inquiry → Access & Password → Inquiry → Security"),
+ * com a mudança que está na tela destacada. Cada valor leva à mudança que o gravou. Some com valores longos (scripts).
+ */
+function ChangePath({ r, sel, onPick }: { r: Investigation; sel: number; onPick: (i: number) => void }) {
+  const order = r.changes.map((c, i) => ({ c, i })).sort((a, b) => (a.c.at < b.c.at ? -1 : a.c.at > b.c.at ? 1 : a.c.checkpoint - b.c.checkpoint));
+  if (order.some(({ c }) => looksLong(c.oldValue, c.newValue))) return null;
+  const MAX = 6;
+  const shown = order.length > MAX ? order.slice(-MAX) : order;
+  const short = (v: string) => { const t = valueLabel(r, v); return t.length > 26 ? t.slice(0, 24) + '…' : t; };
+  const first = shown[0]!.c;
+  // Criação do registro: o caminho começa no primeiro valor, sem "antes".
+  const created = order.length <= MAX && !first.oldValue && first.checkpoint <= 1;
+  const pos = order.findIndex((x) => x.i === sel) + 1;
+  const who = (c: Change) => { const e = c.evidence[0]; return e ? (e.type === 'user_action' ? e.artifact.name : P.kind[e.type].split(' · ')[0]) : c.user; };
+  return (
+    <div class="cpath" aria-label={fmt(P.pathTitle, { n: pos, total: order.length })}>
+      <span class="cp-t">{fmt(P.pathTitle, { n: pos, total: order.length })}</span>
+      <span class="cp-v">
+        {order.length > MAX && <span class="cp-x">…</span>}
+        {!created && <span class="cp-s">{short(first.oldValue)}</span>}
+        {shown.map(({ c, i }, k) => (
+          <>
+            {(k > 0 || !created) && <span class={`cp-a ${i === sel ? 'on' : ''}`} aria-hidden="true">→</span>}
+            <button class={i === sel ? 'on' : ''} aria-pressed={i === sel} title={`${when(c.at)} · ${who(c)}`} onClick={() => onPick(i)}>{short(c.newValue)}</button>
+          </>
+        ))}
+      </span>
+    </div>
+  );
+}
+
 function History({ r, origin, sel, onPick, open, onOpen }: { r: Investigation; origin: string; sel: number; onPick: (i: number) => void; /** Lista aberta (fica com o Result: ↑ ↓ trocam a mudança sem recolher). */ open?: boolean; onOpen?: (o: boolean) => void }) {
   const field = fieldName(r);
   type Row = { at: string; i: number };
