@@ -400,3 +400,7 @@ Pedidos do dono depois de testar a 0.12.2 no Edge:
 - Corrigido `tools/atualizar-extensao.sh`: o Compress-Archive gravava caminhos com `\` dentro do zip (todos os zips anteriores vinham assim); agora usa o `tar` do Windows, com `/`.
 - Os 8 commits locais do Codex (o sandbox dele não tinha rede) foram enviados ao GitHub junto com este.
 - Pendências e ordem de trabalho para a próxima IA: topo de `docs/PROXIMOS-PASSOS.md`.
+
+## 21/10/2026, 22h50 — 1.4.2
+- Rastro agora vai do mais recente para o mais antigo; o primeiro da lista sempre tem a bolinha verde (pedido do Gabriel).
+- O motor não conta mais como "Gravação via API" as consultas que só citam o sys_id na query (ex.: wf_context, sysevent lidos pelo próprio Trail). Só conta a chamada no caminho do registro (`/api/now/table/<tabela>/<sys_id>`). Teste novo em cases.test.ts.
