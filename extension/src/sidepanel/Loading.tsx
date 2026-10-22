@@ -1,13 +1,11 @@
 /** Animação de carregamento do Trail: a trilha que se desenha com a lupa. Usada no campo, no registro inteiro e no lote. */
 import { useEffect, useState } from 'preact/hooks';
 
-/** `head`: o que está sendo analisado ("INC0010001 · State"), fixo acima da trilha. */
-export function Loading({ steps, head }: { steps: string[]; head?: string | undefined }) {
+export function Loading({ steps }: { steps: string[] }) {
   const [i, setI] = useState(0);
   useEffect(() => { const id = setInterval(() => setI((x) => (x + 1) % steps.length), 650); return () => clearInterval(id); }, [steps]);
   return (
     <div class="card loader" role="status" aria-live="polite">
-      {head && <div class="lhead">{head}</div>}
       <svg class="trailsvg" viewBox="0 0 320 90" aria-hidden="true">
         <path class="ghost" d="M10 70 C 60 70, 70 20, 120 24 S 190 78, 232 60 S 290 12, 310 18" />
         <path class="draw" d="M10 70 C 60 70, 70 20, 120 24 S 190 78, 232 60 S 290 12, 310 18" />

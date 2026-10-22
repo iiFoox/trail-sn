@@ -9,7 +9,6 @@ import { getPrefs } from '../shared/prefs';
 import { parts, plural, refLink } from './Result';
 import { Val } from './Val';
 import { ErrorMsg } from './ErrorMsg';
-import { Fold } from './Fold';
 import { friendlyError } from '../shared/errors';
 
 const P = t(getPrefs().lang).p;
@@ -88,6 +87,7 @@ export function RecordTimeline({ origin, table, sysId, onField }: { origin: stri
       </ol>
       {filtered.length > shown && <button class="btn sm" onClick={() => setShown(shown + PAGE)}>{fmt(P.tlMore, { n: Math.min(PAGE, filtered.length - shown) })}</button>}
       {data.truncated && <div class="muted small">{P.tlTruncated}</div>}
+      <div class="muted small" style="text-align:center">{fmt(t(getPrefs().lang).timing, { calls: data.timing.calls, ms: data.timing.totalMs })}</div>
     </div>
   );
 }
@@ -134,7 +134,7 @@ function Save({ i, sv, origin, sysId, onField, pick, onPick }: { i: number; sv: 
         </div>
         <a class="see" href={audit} target="_blank" rel="noreferrer" title={P.seeInSn}>{Glyph.open}</a>
       </div>
-      {(() => { const ul = <ul class="fl">
+      <ul class="fl">
         {fields.map((f) => (
           <li><div class="fbtn" role="button" tabIndex={0} onClick={() => onField(f.field)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onField(f.field); } }} title={P.tlInvestigate}>
             <b>{f.label}</b>
@@ -143,10 +143,7 @@ function Save({ i, sv, origin, sysId, onField, pick, onPick }: { i: number; sv: 
           </div></li>
         ))}
         {notes.map((f) => <li class="note"><b>{f.label}</b><q>{f.newDisplay.length > 160 ? f.newDisplay.slice(0, 157) + '…' : f.newDisplay}</q></li>)}
-      </ul>;
-      const n = fields.length + notes.length;
-      // Gravação com mais de um campo: recolhida, com os nomes dos campos no resumo.
-      return n > 1 ? <Fold nested cls="sv-fold" title={sv.fields.map((f) => f.label).join(', ')} count={n}>{ul}</Fold> : ul; })()}
+      </ul>
     </li>
   );
 }

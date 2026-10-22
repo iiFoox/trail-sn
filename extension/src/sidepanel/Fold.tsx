@@ -10,23 +10,25 @@ import type { ComponentChildren } from 'preact';
 /** Começa aberta? Só quando há no máximo um item (sem contagem ainda, enquanto carrega: fechada). */
 export const startsOpen = (count: number | undefined) => count !== undefined && count <= 1;
 
-export function Fold({ title, hint, count, badge, icon, nested = false, open, cls = '', warn = false, pill = '', id, children }: {
+export function Fold({ title, hint, count, badge, icon, nested = false, open, cls = '', warn = false, pill = '', id, onToggle, children }: {
   title: ComponentChildren; hint?: ComponentChildren; count?: number; badge?: ComponentChildren; icon?: ComponentChildren;
-  nested?: boolean; open?: boolean; cls?: string; warn?: boolean; pill?: string; id?: string; children?: ComponentChildren;
+  nested?: boolean; open?: boolean; cls?: string; warn?: boolean; pill?: string; id?: string;
+  /** Avisa quando a pessoa abre ou fecha (para carregar o conteúdo só ao abrir). */ onToggle?: (open: boolean) => void; children?: ComponentChildren;
 }) {
   const isOpen = open ?? startsOpen(count);
+  const toggle = onToggle ? (e: Event) => onToggle((e.currentTarget as HTMLDetailsElement).open) : undefined;
   // Seta à esquerda (▸ fechada, ▾ aberta): não confunde com o › das linhas que navegam.
   const caret = <span class="caret" aria-hidden="true" />;
   if (nested) {
     return (
-      <details class={`grp fold2 ${cls}`} open={isOpen} data-count={count} id={id}>
+      <details class={`grp fold2 ${cls}`} open={isOpen} data-count={count} id={id} onToggle={toggle}>
         <summary>{caret}{icon && <span class="ic sm">{icon}</span>}<b class="grow">{title}{hint && <span class="why">{hint}</span>}</b>{badge}{count !== undefined && <i class="cnt">{count}</i>}</summary>
         {children}
       </details>
     );
   }
   return (
-    <details class={`box fold fold2 ${cls}`} open={isOpen} data-count={count} id={id}>
+    <details class={`box fold fold2 ${cls}`} open={isOpen} data-count={count} id={id} onToggle={toggle}>
       <summary><h4 class={warn ? 'warnh' : ''}>{caret}<span class="grow">{title}{hint && <span class="why">{hint}</span>}</span>{badge}{count !== undefined && <span class={`pill cnt ${pill}`}>{count}</span>}</h4></summary>
       {children}
     </details>

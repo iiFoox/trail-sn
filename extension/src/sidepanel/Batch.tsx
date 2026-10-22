@@ -13,12 +13,11 @@ import { recordLink } from '../shared/instances';
 import { getPrefs } from '../shared/prefs';
 import type { TabState } from '../shared/messages';
 import { RecordRuns } from './RecordRuns';
-import { FormStates } from './FieldLock';
 import { parts, humanField } from './Result';
 import { Loading } from './Loading';
 import { Val } from './Val';
 import { ErrorMsg } from './ErrorMsg';
-import { Fold } from './Fold';
+import { FormStates } from './FieldLock';
 
 const P = t(getPrefs().lang).p;
 type B = NonNullable<TabState['batch']>;
@@ -37,34 +36,6 @@ function groupSaves(rows: BatchItem[]): SaveGroup[] {
   return [...saves.values()];
 }
 
-/** Lote: uma causa por grupo (a pergunta do lote é "por quê?"), das que mais explicam para as que menos. */
-function groupCauses(rows: BatchItem[]): SaveGroup[] {
-  const by = new Map<string, SaveGroup>();
-  for (const it of rows) {
-    const c = it.cause;
-    const key = c ? `${c.type}|${c.sysId ?? ''}|${c.name}` : 'none';
-    let g = by.get(key);
-    if (!g) by.set(key, (g = { key, at: it.at ?? '', cause: c, user: c?.type === 'user_action' ? c.name : it.user ?? '', items: [] }));
-    g.items.push(it);
-  }
-  return [...by.values()].sort((a, b) => b.items.length - a.items.length);
-}
-
-/** "pela regra “X”", "por beth.anglin", "pela importação “Y”": a causa numa expressão curta. */
-function causePhrase(c: BatchItem['cause']): string {
-  const W = P.ux.btCause as Record<string, string>;
-  if (!c) return W.none!;
-  const k = c.type === 'user_action' ? 'user' : c.type === 'import_set' ? 'import' : c.type === 'flow' || c.type === 'workflow' ? 'flow' : c.type === 'scheduled_job' ? 'job' : c.type === 'ui_action' ? 'button' : /^br_|rule|script_action|data_lookup|server_change/.test(c.type) ? 'rule' : 'other';
-  return fmt(W[k]!, { name: c.name });
-}
-
-/** "7 de 11 mudaram pela regra “X”; 3 por beth.anglin; 1 pela importação “Y”." */
-export function causeSummary(groups: SaveGroup[], total: number): string {
-  const [first, ...rest] = groups;
-  if (!first) return '';
-  return [fmt(P.ux.btSumFirst, { n: first.items.length, total, cause: causePhrase(first.cause) }), ...rest.map((g) => `${g.items.length} ${causePhrase(g.cause)}`)].join('; ') + '.';
-}
-
 function saveTitle(group: SaveGroup, rec: boolean): string {
   const cause = group.cause;
   if (!cause) return P.noTrace;
@@ -76,7 +47,7 @@ function saveTitle(group: SaveGroup, rec: boolean): string {
   return fmt(P.btGroupNamed, { kind, name: cause.name });
 }
 
-export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sysId: string, field?: string) => void }) {
+export function Batch({ b, origin, onOpen, advanced = false }: { b: B; origin: string; onOpen: (sysId: string, field?: string) => void; /** Modo avançado: no registro inteiro, os campos bloqueados, obrigatórios ou escondidos (recolhido). */ advanced?: boolean }) {
   const rec = b.kind === 'fields';
   const [filter, setFilter] = useState('');
   const groups = useMemo(() => groupBatch(b.items), [b.items]);
@@ -89,9 +60,7 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
   const key = (i: BatchItem) => (rec ? i.field ?? '' : i.sysId);
   const groupOf = (i: BatchItem) => groups.find((g) => g.items.includes(key(i)))?.key ?? '';
   const rows = changed.filter((i) => !filter || groupOf(i) === filter).sort((a, c) => ((a.at ?? '') < (c.at ?? '') ? 1 : -1));
-  const saves = rec ? groupSaves(rows) : groupCauses(rows);
-  // Padrão do painel: com mais de um grupo, todos começam recolhidos (o cabeçalho já diz quem, quando e quantos).
-  const openAll = saves.length <= 1;
+  const saves = groupSaves(rows);
   const fieldLabel = b.items.find((i) => i.label)?.label ?? humanField(b.field);
   const title = rec ? fmt(P.btRecTitle, { rec: b.display ?? '' }) : fmt(P.btTitle, { field: fieldLabel, n: b.items.length });
   const sub = rec ? b.items.find((i) => i.title)?.title : b.table;
@@ -127,8 +96,7 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
         {rec && !running && !b.items.length && b.error === undefined && <div class="muted small">{P.btRecEmpty}</div>}
       </div>
 
-      {!rec && !running && saves.length > 0 && <div class="bt-sum">{causeSummary(saves, changed.length)}</div>}
-      {rec && groups.length > 1 && (
+      {groups.length > 1 && (
         <div class="chips bt-chips" role="group" aria-label={P.btFilter}>
           <button aria-pressed={!filter} onClick={() => setFilter('')}>{P.btAll}<i>{changed.length}</i></button>
           {groups.map((g) => (
@@ -146,10 +114,10 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
       <div class="hist bt-list">
         {saves.map((group, i) => {
           const when = parts(group.at);
-          return <details class="bt-group fold2" key={group.key} open={openAll} data-count={group.items.length}>
+          return <details class="bt-group" key={group.key}>
             <summary class="bt-group-head">
-              <span class="caret" aria-hidden="true" />
-              <span class="bt-group-title">{rec && <><time dateTime={group.at.replace(' ', 'T') + 'Z'}>{when.date} {when.time}</time> · </>}{saveTitle(group, rec)}
+              <span class="bt-group-arrow" aria-hidden="true" />
+              <span class="bt-group-title"><time dateTime={group.at.replace(' ', 'T') + 'Z'}>{when.date} {when.time}</time> · {saveTitle(group, rec)}
                 {group.cause?.sysId && group.cause.table && group.cause.type !== 'user_action' && <a class="bt-group-link" href={recordLink(origin, group.cause.table, group.cause.sysId)} target="_blank" rel="noreferrer" title={fmt(P.openArtifact, { what: group.cause.name })} aria-label={fmt(P.openArtifact, { what: group.cause.name })} onClick={(e) => e.stopPropagation()}>↗</a>}
               </span>
               <span class="pill">{group.items.length}</span>
@@ -161,18 +129,19 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
       </div>
 
       {quiet.length > 0 && !running && (
-        <Fold cls="bt-quiet" title={rec ? P.btQuietRec : P.btQuiet} count={quiet.length} open={false}>
+        <details class="box fold">
+          <summary><h4><span class="grow">{rec ? P.btQuietRec : P.btQuiet}</span><span class="pill">{quiet.length}</span></h4></summary>
           {quiet.map((it) => <div class="li"><span class="ck x">–</span><a class="grow" href="#" onClick={(e) => { e.preventDefault(); onOpen(it.sysId, it.field); }}>{rec ? it.label ?? it.field : it.display}</a><span class="muted small">{it.status === 'unaudited' ? P.btUnaudited : P.btNoChange}</span></div>)}
-        </Fold>
+        </details>
       )}
       {errors.length > 0 && !running && (
-        <Fold cls="bt-errors" warn title={P.btErrors} count={errors.length} pill="w">
+        <details class="box fold">
+          <summary><h4 class="warnh"><span class="grow">{P.btErrors}</span><span class="pill">{errors.length}</span></h4></summary>
           {errors.map((it) => <div class="li"><span class="ck w">!</span><div class="grow">{rec ? it.label ?? it.field : it.display}<div class="det"><ErrorMsg msg={it.error ?? ''} /></div></div></div>)}
-        </Fold>
+        </details>
       )}
       {/* Registro inteiro: os flows que rodaram neste registro e os configurados para a tabela. */}
-      {/* Campos travados, obrigatórios ou escondidos agora (a porta de entrada dos escondidos, que não têm ícone). */}
-      {rec && b.sysId && !running && b.error === undefined && <FormStates table={b.table} sysId={b.sysId} origin={origin} />}
+      {advanced && rec && b.sysId && !running && b.error === undefined && <FormStates table={b.table} sysId={b.sysId} origin={origin} title={P.adv.form} lazy />}
       {rec && b.sysId && !running && b.error === undefined && <RecordRuns table={b.table} sysId={b.sysId} origin={origin} items={b.items} />}
     </div>
   );
@@ -187,7 +156,7 @@ function Row({ it, i, rec, origin, onOpen }: { it: BatchItem; i: number; rec: bo
       <div class="c">
         <div class="what">{rec ? <b class="fl">{it.label ?? humanField(it.field ?? '')}</b> : <><b class="fl">{it.display}</b>{it.title && <span class="muted"> · {it.title}</span>}</>}</div>
         <div class="vals">
-          <Val raw={it.oldValue ?? ''} text={it.oldDisplay} refTable={it.refTable} origin={origin} cls="o" empty={P.empty} /><span class="arr">→</span>
+          <Val raw={it.oldValue ?? ''} text={it.oldDisplay} refTable={it.refTable} origin={origin} cls="o" empty={P.btEmpty} /><span class="arr">→</span>
           <Val raw={it.newValue ?? ''} text={it.newDisplay} refTable={it.refTable} origin={origin} cls="n" empty={P.empty} />
         </div>
       </div>

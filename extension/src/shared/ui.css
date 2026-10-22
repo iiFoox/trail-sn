@@ -918,6 +918,7 @@ details.grp > .li { padding-left: 52px; }
 .rr-tools .chip { all: unset; cursor: pointer; font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--fg-2); }
 .rr-tools .chip.on { background: var(--teal); border-color: var(--teal); color: #fff; }
 
+/* ===== Modo avançado (aba "Avançado"): estilos das ferramentas, só usados quando a chave está ligada ===== */
 /* "Por que está bloqueado?" (FieldLock.tsx) */
 .lk-card { display: flex; align-items: center; gap: 10px; }
 .lk-card .btn { flex: none; }
@@ -956,60 +957,6 @@ button.li.lk-row:focus-visible { outline: 2px solid var(--teal); outline-offset:
 .lk-detail { padding: 8px 10px 12px; border-top: 1px solid var(--line); background: var(--bg); display: flex; flex-direction: column; gap: 8px; }
 .lk-check { flex: none; }
 @media (max-width: 360px) { .lk-chips { grid-template-columns: 1fr; } }
-/* Sete abas (com "Bloqueio?"): uma linha só; no estreito rolam para o lado (a aba ativa fica à vista). */
-.seg-tabs { display: flex; overflow-x: auto; scrollbar-width: none; }
-.seg-tabs::-webkit-scrollbar { display: none; }
-.seg-tabs button { flex: 1 0 auto; }
-
-/* ===== 4 abas (Resposta · Como aconteceu · Histórico · Regras do campo) ===== */
-/* A barra fica presa no topo pelo invólucro, que também desenha o degradê e a seta quando sobra aba escondida. */
-.tabs-wrap { position: sticky; top: 52px; z-index: 4; }
-.tabs-wrap .seg-tabs.t4 { position: relative; top: auto; display: flex; overflow-x: auto; scrollbar-width: none; gap: 2px; padding: 3px; }
-.tabs-wrap .seg-tabs.t4 button { flex: 1 0 auto; padding: 8px 10px; font-size: 12.5px; gap: 4px; }
-.tabs-wrap.more-r::after, .tabs-wrap.more-l::before { content: ''; position: absolute; top: 1px; bottom: 1px; width: 34px; pointer-events: none; z-index: 2; border-radius: var(--r); }
-.tabs-wrap.more-r::after { right: 1px; background: linear-gradient(90deg, transparent, var(--surface) 70%); }
-.tabs-wrap.more-l::before { left: 1px; background: linear-gradient(270deg, transparent, var(--surface) 70%); }
-.tabs-more { all: unset; cursor: pointer; position: absolute; top: 50%; transform: translateY(-50%); z-index: 3; width: 18px; text-align: center; font: 700 16px/1 var(--font); color: var(--teal-2); }
-.tabs-more.r { right: 4px; }
-.tabs-more.l { left: 4px; }
-:root[data-theme="dark"] .tabs-more { color: #7ad3c4; }
-.sec-h { margin: 8px 2px 0; font-size: 13px; font-weight: 800; color: var(--fg); display: flex; flex-direction: column; gap: 1px; letter-spacing: .1px; }
-.sec-h small { font-size: 12px; font-weight: 400; color: var(--muted); }
-.stack > .sec-h:first-child { margin-top: 0; }
-
-/* Resposta: a frase no topo, a causa e um selo único de certeza. */
-.ans-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow); padding: 14px; display: flex; flex-direction: column; gap: 12px; border-left: 4px solid var(--candidate-line); }
-.ans-card.confirmed { border-left-color: var(--confirmed-line); }
-.ans-card.probable { border-left-color: var(--probable-line); }
-.ans-card.none { border-left-color: var(--line-2); }
-.ans-phrase { margin: 0; font-size: 15px; line-height: 1.5; font-weight: 600; color: var(--fg); overflow-wrap: anywhere; }
-.ans-cause { display: flex; gap: 10px; align-items: flex-start; padding-top: 10px; border-top: 1px solid var(--line); }
-.ans-cause .ic { width: 32px; height: 32px; }
-.ans-cause .k { font-size: 12px; color: var(--muted); }
-.ans-cause .nm { font-weight: 700; font-size: 13.5px; line-height: 1.35; overflow-wrap: anywhere; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
-.ans-open { font-weight: 600; font-size: 12.5px; display: inline-flex; gap: 4px; align-items: center; white-space: nowrap; }
-.ans-open svg { width: 12px; height: 12px; }
-.seal { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: var(--fg-2); }
-.seal b { white-space: nowrap; color: var(--candidate); }
-.seal.confirmed b { color: var(--confirmed); }
-.seal.probable b { color: var(--probable); }
-.seal .dots { padding: 0; }
-.seal .dots i { width: 9px; height: 9px; border-radius: 50%; opacity: 1; animation: none; background: var(--line-2); }
-.seal.confirmed .dots i.on { background: var(--confirmed-line); }
-.seal.probable .dots i.on { background: var(--probable-line); }
-.seal.candidate .dots i.on { background: var(--candidate-line); }
-.seal .why { flex: 1 1 180px; color: var(--muted); }
-.copymenu { position: relative; }
-.copymenu > .btn { justify-content: center; position: relative; }
-.copymenu .btn .cv { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); display: inline-grid; }
-.copymenu .btn .cv svg { width: 14px; height: 14px; transform: rotate(90deg); }
-.copymenu.open .btn .cv svg { transform: rotate(-90deg); }
-.cm-list { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 7; background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r); box-shadow: var(--shadow); padding: 4px; display: flex; flex-direction: column; }
-.cm-list button { all: unset; cursor: pointer; padding: 9px 12px; border-radius: 8px; font-weight: 600; color: var(--fg); font-size: 13px; }
-.cm-list button:hover, .cm-list button:focus-visible { background: var(--surface-2); }
-.ans-sim { align-self: flex-start; display: inline-flex; gap: 6px; align-items: center; }
-.ans-sim svg { width: 14px; height: 14px; }
-
 /* Como aconteceu: o salvamento. */
 .save-card .sbar { display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: var(--surface-2); gap: 2px; }
 .save-card .sbar i, .slegend i { display: block; background: var(--teal); }
@@ -1080,64 +1027,8 @@ details.tech-acc[open] > summary svg { transform: rotate(90deg); }
 .cmp-lines .side { font-size: 10.5px; font-weight: 700; color: var(--muted); white-space: nowrap; }
 .cmp-lines code { white-space: pre-wrap; overflow-wrap: anywhere; }
 
-/* Cabeçalho: chip de acesso no lugar da bolinha. */
-.acc-chip { all: unset; cursor: pointer; flex: none; font: 700 11px/1 var(--font); padding: 5px 9px; border-radius: 999px; background: rgba(240,199,90,.18); color: #f6d58a; border: 1px solid rgba(240,199,90,.45); white-space: nowrap; }
-.acc-chip.none { background: rgba(255,107,107,.16); color: #ffb3b3; border-color: rgba(255,107,107,.45); }
-.acc-chip[aria-expanded="true"] { background: rgba(240,199,90,.32); }
-.topbar .acc-chip + .actions { margin-left: 4px; }
-
-/* Aviso de acesso: uma frase e duas colunas, Vejo / Não vejo. */
-.notice.caps .cap-lead { margin: 4px 0 8px; color: var(--fg); }
-.caps2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
-@media (max-width: 360px) { .caps2 { grid-template-columns: 1fr; } }
-.caps2 b { font-size: 12px; }
-.caps2 ul { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; font-size: 12.5px; }
-.caps2 li { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
-.caps2 li small { flex-basis: 100%; padding-left: 18px; color: var(--muted); font-size: 11.5px; }
-.caps2 .mk { width: 12px; flex: none; font-weight: 800; }
-.caps2 .ok .mk { color: var(--ok); }
-.caps2 .no .mk { color: var(--muted); }
-:root[data-theme="dark"] .caps2 .ok .mk { color: #a7e8bd; }
-
-/* Carregando: o que está sendo analisado, fixo e com contraste total. */
-.loader .lhead { font-weight: 800; font-size: 14px; color: var(--fg); }
-.loader .lsteps b { opacity: 1 !important; color: var(--fg) !important; }
-.err-box .row { margin-top: 8px; }
-
-/* Gaveta "Investigar": número, campo pelo nome e "Avançado". */
-.drawer .md-field select { width: 100%; padding: 7px 10px; border-radius: 9px; border: 1px solid var(--line-2); background: var(--bg); color: var(--fg); }
-.drawer details.md-adv { margin: 2px 0 8px; }
-.drawer details.md-adv > summary { cursor: pointer; color: var(--accent); font-weight: 600; padding: 2px 0; font-size: 12px; }
-.drawer details.md-adv > summary::-webkit-details-marker { display: revert; }
-.drawer details.md-adv .grid2 { margin-top: 6px; }
-
-/* ===== Ajustes da revisão de UX (itens 6, 21, 22, 15/16, 23) ===== */
-.icon-btn { width: 32px; height: 32px; border-radius: 8px; }
-.icon-btn svg { width: 17px; height: 17px; }
-.det { font: 12px/1.4 var(--font); }
-.headcard .old { text-decoration: none; color: var(--fg-2); font-weight: 600; }
-.headcard .old::after { display: none; }
-.nil { font-style: italic; color: var(--muted); }
-.headcard .nil, .h .c .nil, .bt-row .nil { font-weight: 400; }
-.bt-sum { font-size: 13px; line-height: 1.5; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--teal); border-radius: var(--r); padding: 10px 12px; box-shadow: var(--shadow); }
-.st-keyrow .st-keyline { display: flex; gap: 10px; align-items: center; }
-.st-keyrow .st-links { margin: 0; padding: 0; display: flex; gap: 6px; flex-wrap: wrap; }
-.st-keys small { color: var(--muted); }
-/* Valor antigo sem risco (contraste melhor, principalmente no claro): "X → Y" com X em --fg-2. */
-ul.fl .fbtn .v .o, table.cmpt .o, .wi-ft .o, .bt-row .vals .o { text-decoration: none; opacity: 1; color: var(--fg-2); }
-.topbar .host { min-width: 64px; flex: 0 1 auto; }
-/* Painel estreito: o cabeçalho cabe sem rolar (a marca basta; o nome e a instância cedem espaço). */
-@media (max-width: 400px) {
-  .topbar { gap: 6px; padding-left: 10px; padding-right: 8px; }
-  .topbar .fname { display: none; }
-  .topbar .host { min-width: 0; }
-  .topbar .actions { gap: 0; }
-  .acc-chip { padding: 5px 7px; }
-}
-@media (max-width: 400px) { .tabs-wrap .seg-tabs.t4 button { padding: 8px 6px; font-size: 12px; } }
 .cmp-diff .cmp-links { display: flex !important; flex-direction: row; flex-wrap: wrap; gap: 4px 14px; }
 .cmp-diff .cmp-links .cmp-link { display: inline-flex !important; width: auto; }
-
 /* ---------- Seções recolhíveis (Fold.tsx): um padrão só em todo o painel ----------
    Lista com mais de um item começa recolhida: só o cabeçalho, com resumo curto, contagem à direita e seta que gira.
    Abre com animação de altura (::details-content + interpolate-size, Chrome 131+); sem suporte, abre na hora. */
@@ -1203,6 +1094,10 @@ details.box.fold2 > summary h4 { justify-content: flex-start; }
 details.box.vis { overflow: visible; }
 details.box.vis[open]::details-content { overflow: visible; }
 .sec-h:has(> .help) { flex-direction: row; align-items: center; }
-.lk-chips.sm .lk-chip { flex-direction: column; align-items: flex-start; gap: 0; padding: 5px 8px; }
-.lk-chips.sm .lk-chip .lbl { font-size: 10.5px; }
-details.box.fold2 > summary h4 > .grow { display: block; }
+/* Sete abas (as seis de sempre + "Avançado"): uma linha só; no estreito rolam para o lado (a aba ativa fica à vista). */
+.seg-tabs.t7 { display: flex; overflow-x: auto; scrollbar-width: none; }
+.seg-tabs.t7::-webkit-scrollbar { display: none; }
+.seg-tabs.t7 button { flex: 1 0 auto; }
+.adv .adv-intro { margin: 0 2px; }
+/* Dentro de uma seção do Avançado, a caixa do conteúdo não vira outra caixa por cima. */
+.adv details.box .adv-body > .box { border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; margin: 0; }
