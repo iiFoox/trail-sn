@@ -1,6 +1,6 @@
 # Materiais e instruções para as lojas (Edge Add-ons & Chrome Web Store)
 
-Guia completo, textos de listagem (PT e EN), notas da versão 1.0.0, justificativas de permissões para revisores, especificações oficiais de assets e instruções passo a passo para publicação do **Trail 1.0.0**.
+Guia completo, textos de listagem (PT e EN), notas da versão 1.4.4, justificativas de permissões para revisores, especificações de assets e instruções passo a passo para publicação do **Trail 1.4.4**. A ficha pronta para copiar e colar fica em `docs/store/FICHA-PREENCHIMENTO.md`.
 
 > [!IMPORTANT]
 > **Ação exclusiva do proprietário:** a submissão dos pacotes, o aceite dos termos legais e o gerenciamento das contas nas lojas Microsoft Edge Partner Center e Chrome Web Store Developer Dashboard são realizados exclusivamente pelo dono do projeto. Nenhum agente automatizado realiza envios ou aceites de termos.
@@ -84,13 +84,13 @@ When opening any form or list in ServiceNow (classic UI16, Workspace, Service Op
 - **Strictly read-only:** all engine requests are HTTP `GET` only. There is no code path capable of creating, modifying, or deleting records on the instance.
 - **ACL-bound:** Trail operates within the logged-in user's existing browser session and never sees beyond the permissions granted by the ServiceNow server.
 - **No telemetry or third-party servers:** required queries and data go directly from the browser to the ServiceNow instance selected by the user.
-- **Per-instance host permission:** permissions are granted only for the specific instances you connect; Trail never requests unrestricted access to all websites.
+- **Per-instance host permission:** the broad host pattern exists only as an optional permission so custom ServiceNow domains can work. At runtime, Trail requests only the exact origin the user chooses to connect.
 
 ---
 
-## 5. Novidades da versão 1.0.0 (Release Notes)
+## 5. Novidades da versão 1.4.4 (Release Notes)
 
-### Português (Versão 1.0.0 — Lançamento Oficial)
+### Português (Versão 1.4.4)
 - **Perícia completa com ou sem admin:** funciona usando o que o seu login já vê. Quando a auditoria completa não está acessível, o Trail utiliza o histórico do formulário (Activity Stream) e exibe de forma transparente o que os seus papéis permitem ver, sem precisar instalar nada na instância e sem criar papéis adicionais.
 - **Aba Flows com subflows aninhados:** visualize os flows executados no registro com subflows recuados logo abaixo do flow pai, status, horário e links diretos, além dos flows configurados para a tabela com gatilhos em linguagem natural e campos gravados.
 - **Mapa "O que roda neste registro":** visualização completa no histórico do registro com regras de negócio em ordem de execução, script includes, client scripts, UI policies, botões e jobs, incluindo busca por campo gravado e filtro de automações que rodaram no chamado.
@@ -98,7 +98,7 @@ When opening any form or list in ServiceNow (classic UI16, Workspace, Service Op
 - **Compatibilidade universal Chromium:** experiência idêntica no Microsoft Edge e no Google Chrome, com envio ao painel lateral do navegador ou janela própria e acompanhamento automático de navegação entre registros.
 - **Somente leitura:** sem servidores intermediários; as consultas GET respeitam as ACLs do usuário.
 
-### English (Version 1.0.0 — Official Release)
+### English (Version 1.4.4)
 - **Full forensics with or without admin:** works with your existing login. When full audit access is unavailable, Trail seamlessly falls back to form history (Activity Stream) and transparently reports role capabilities without installing server apps or creating new roles.
 - **Flows tab with nested subflows:** view flows executed on the record with nested subflows indented under their parent execution, status, timestamps, and direct links, plus configured table flows with plain-language triggers and written fields.
 - **"What runs on this record" automation map:** whole-record view showing business rules in execution order, script includes, client scripts, UI policies, UI actions, and jobs, with search by modified field and a "Ran here only" filter.
@@ -149,25 +149,24 @@ Single Purpose:
 Enable ServiceNow developers, administrators, and support analysts to inspect what modified any given field or record, when the change occurred, which automation or user caused it, and with what level of certainty.
 
 Permissions Justification:
-- storage: Saves client-side preferences (theme, language, animation toggle, keyboard shortcut, panel display mode, bubble position) and the user's explicitly connected ServiceNow instance domains.
+- storage: Saves preferences (theme, language, shortcut, panel mode, field icon visibility), connected instance domains and temporary per-tab investigation state. Bubble and panel position stay in local storage; investigation results and the ServiceNow session token stay in session storage.
 - contextMenus: Adds a "Trail" entry to the page right-click menu and right-click entries on the toolbar icon (open floating panel, side panel or window, show/hide field icons, options).
 - sidePanel: Provides side panel integration when the user selects browser side panel mode.
-- activeTab & scripting: Detects the active ServiceNow record context (table, sys_id, and session token) and renders the non-intrusive field icons, floating assistant bubble, and forensic panel on connected tabs.
-- optional_host_permissions (https://*/*): Requested at runtime strictly on user demand via chrome.permissions.request when the user clicks "Connect this instance". Never requests wildcards upon installation.
+- activeTab: Reads the active ServiceNow record context (table and sys_id) when the user clicks the extension icon.
+- scripting: Renders the field icons, floating assistant bubble and panel on tabs for connected instances, and restores the content script after a development reload.
+- optional_host_permissions (https://*.service-now.com/* and https://*/*): Nothing is granted at installation. When the user clicks "Connect this instance", chrome.permissions.request asks only for that instance's exact origin. The broad optional pattern is needed for custom ServiceNow domains.
 
 Read-only & ACL Integrity:
 The extension issues exclusively HTTP GET queries using the user's active browser session. It never writes to the instance, requires no server-side application or role, never bypasses server ACLs, and transmits zero data to third-party endpoints.
 
 Reviewer Testing Without a ServiceNow Account:
-Reviewers can verify 100% of the UI, tabs, interactions, and settings without active ServiceNow credentials by opening:
-chrome-extension://<id>/src/sidepanel/index.html?demo=1&float=1
-or inspecting the live interactive demo at:
-https://trail-sn.vercel.app/b3/
+Reviewers can verify the interface without ServiceNow credentials at https://trail-sn.vercel.app/b3/ or by opening chrome-extension://<id>/src/sidepanel/index.html?demo=1 after installation. For a live test, open any incident in a ServiceNow developer instance, click the extension icon, choose "Connect this instance", and click a Trail icon next to a field.
 ```
 
 ### Declaração de privacidade nas lojas
 
-- **Declaração de dados:** não marque que a extensão não trata dados. Ela lê e processa localmente conteúdo do ServiceNow e usa a sessão do usuário para consultar a instância conectada. Declare no painel os tipos de dados aplicáveis e a finalidade conforme a política publicada; o processamento local não elimina a obrigação de declarar. Revise os campos atuais de cada loja antes de enviar. O Chrome exige transparência sobre dados processados localmente, incluindo conteúdo de sites, dados de formulário e atividade de navegação ([FAQ oficial](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq)). A política publicada já descreve esse processamento (revisada em 21/10/2026).
+- **Declaração de dados:** não marque que a extensão não trata dados. Marque informações de identificação pessoal (nomes presentes nos registros), informações de autenticação (token temporário da sessão ServiceNow) e conteúdo do site (registros e histórico). Não marque as demais categorias sem evidência. O processamento local não elimina a obrigação de declarar ([FAQ oficial](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq)).
+- **Certificações do Chrome:** confirmar que os dados não são vendidos ou transferidos fora dos casos aprovados, não são usados para finalidade alheia à função principal e não são usados para crédito ou empréstimos.
 - **Uso único (Single Purpose):** *"Investigação pericial e leitura de auditoria e automações em registros do ServiceNow diretamente pelo navegador."*
 - **URL da Política de Privacidade:**
   `https://trail-sn.vercel.app/privacidade/`
@@ -182,7 +181,7 @@ https://trail-sn.vercel.app/b3/
 
 1. Acesse o [Partner Center do Microsoft Edge](https://partner.microsoft.com/dashboard/microsoftedge/overview) e entre com sua conta Microsoft.
 2. No painel de extensões, clique em **Create new extension** (ou selecione a extensão existente se já iniciada).
-3. Envie o pacote ZIP compilado gerado por `bash tools/atualizar-extensao.sh` (ou compactação do diretório `extension/dist`).
+3. Envie `docs/store/packages/trail-chrome-1.4.4.zip`. O mesmo pacote, com `manifest.json` na raiz, serve para Edge e Chrome. Não envie `trail-extensao-1.4.4.zip`, que contém a pasta para instalação manual.
 4. Na aba **Availability**, defina **Public** (visível a todos na loja).
 5. Na aba **Properties**:
    - Categoria principal: **Developer tools** (Ferramentas para desenvolvedores).
@@ -192,7 +191,7 @@ https://trail-sn.vercel.app/b3/
    - Adicione os idiomas **Portuguese (Brazil)** e **English**.
    - Preencha a descrição curta (seção 2 deste guia).
    - Preencha a descrição longa formatada (seções 3 e 4).
-   - Cole as notas da versão 1.0.0 (seção 5).
+   - Cole as notas da versão 1.4.4 (seção 5).
    - Faça o upload do logotipo `docs/store/logo-300.png` (`300×300 px`).
    - Faça o upload das 5 capturas `1280×800 px` (`docs/store/shot-1-resposta.png` a `shot-5-flows.png`). O tile promocional pequeno de 440×280 px é opcional no Edge.
 7. Na aba **Submit your extension**:
@@ -203,7 +202,7 @@ https://trail-sn.vercel.app/b3/
 
 1. Acesse o [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole/) com a sua conta Google de desenvolvedor.
 2. Clique em **Novo item** (ou selecione o rascunho existente).
-3. Faça o upload do arquivo ZIP contendo os arquivos compilados de `extension/dist` (com o `manifest.json` na raiz do arquivo compactado).
+3. Faça o upload de `docs/store/packages/trail-chrome-1.4.4.zip` (o `manifest.json` está na raiz do arquivo).
 4. Em **Detalhes do item**:
    - Nome: `Trail — Perícia de registros ServiceNow` (ou configurado pelo manifest em `_locales`).
    - Descrição curta e descrição longa: copie os textos das seções 2 e 4.

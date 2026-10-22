@@ -1,6 +1,24 @@
 # Próximos passos
 
-## Estado em 21/10/2026, 23h50 (leia isto primeiro)
+## Estado em 22/10/2026, 10h30 (atual)
+
+**Versão pronta para as lojas: 1.4.4.** Os dois arquivos entregues pelo dono foram conferidos e adicionados em `docs/store/packages/`:
+
+- `trail-chrome-1.4.4.zip` (270.051 bytes): pacote de loja, `manifest.json` na raiz, sem source maps. Serve para Chrome Web Store e Edge Add-ons.
+- `trail-extensao-1.4.4.zip` (845.130 bytes): pasta `trail-extensao/` empacotada para instalação manual, com source maps e `build.txt`; não enviar às lojas.
+- Os 32 arquivos de runtime dos dois pacotes têm hashes idênticos. Ambos declaram versão 1.4.4, Manifest V3, Chrome mínimo 120 e as permissões esperadas. Os SHA-256 estão em `docs/store/packages/README.md`.
+
+**Materiais atualizados:**
+
+- `docs/store/FICHA-PREENCHIMENTO.md` agora aponta para os pacotes 1.4.4, traz textos PT/EN, notas da versão, justificativas de cada permissão, categorias de dados, certificações e instruções de teste.
+- `docs/loja-edge.md` foi atualizado de 1.0.0 para 1.4.4, distingue o ZIP de loja do ZIP de instalação manual e explica corretamente a permissão opcional para domínios próprios.
+- `site/privacidade/index.html` foi revisado em PT/EN: conteúdo de registros não vai a servidor do Trail; o token de sessão é declarado como informação de autenticação temporária; preferências podem sincronizar pela conta do navegador; finalidade, não venda/transferência, retenção e controles de exclusão estão explícitos.
+
+**Próximo passo exclusivo do dono:** enviar `docs/store/packages/trail-chrome-1.4.4.zip` primeiro ao Chrome e depois ao Edge, usando a ficha e os assets de `docs/store/`. Só o dono entra nas contas, aceita termos e clica em enviar para revisão. Não publicar o ZIP `trail-extensao-1.4.4.zip` nas lojas.
+
+---
+
+## Estado em 21/10/2026, 23h50 (histórico)
 
 **Versão para a loja: 1.4.4.** Entrou desde a 1.4.0 (detalhes no `DIARIO.md`):
 - **Rastro** do mais recente para o mais antigo, com destaque e bolinha verde no topo e a linha refeita para passar pelo centro das bolinhas.

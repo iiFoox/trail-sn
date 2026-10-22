@@ -186,6 +186,23 @@ if (langReload !== 'en') errs.push('após reload com ?lang=en / localStorage, id
 if (!roadItemReload.includes('Works without admin')) errs.push('após reload, item do roadmap não permaneceu em inglês: ' + roadItemReload);
 await pageEn.close();
 
+// A política publicada para as lojas declara finalidade, autenticação temporária,
+// sincronização do navegador e ausência de venda em PT e EN.
+const privacyPage = await b.newPage();
+await privacyPage.goto(`${base}/privacidade/`);
+const privacyText = await privacyPage.locator('body').innerText();
+for (const expected of [
+  'Finalidade, compartilhamento e controle',
+  'não vende os dados processados',
+  'informação de autenticação',
+  'conta Google ou Microsoft',
+  'Purpose, sharing, and user control',
+  'does not sell processed data',
+  'authentication information',
+  'Google or Microsoft account',
+]) if (!privacyText.includes(expected)) errs.push('política sem declaração esperada: ' + expected);
+await privacyPage.close();
+
 // Checar overflow em EN no desktop e mobile
 const overflow1280En = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
 if (overflow1280En > 0) errs.push('overflow em 1280px com idioma EN: ' + overflow1280En);

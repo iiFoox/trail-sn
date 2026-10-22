@@ -18,11 +18,11 @@ a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}code{f
 </head>
 <body><main>
 <header><svg viewBox="0 0 128 128" aria-hidden="true"><rect width="128" height="128" rx="64" fill="#032d42"/><circle cx="64" cy="64" r="38" fill="none" stroke="#244f63" stroke-width="12"/><path d="M64 26a38 38 0 1 1-36.4 27" fill="none" stroke="#62d84e" stroke-width="12" stroke-linecap="round"/><path d="M18 40l10 15 15-9" fill="none" stroke="#62d84e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M64 44v22l14 9" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>
-<div><h1>Política de Privacidade do Trail</h1><small>Atualizada em 21 de outubro de 2026 · Versão 1.4.4</small></div></header>
+<div><h1>Política de Privacidade do Trail</h1><small>Atualizada em 22 de outubro de 2026 · Versão 1.4.4</small></div></header>
 
 <section lang="pt-BR">
 <h2>Resumo</h2>
-<p>O Trail é uma extensão de navegador para entender alterações e automações em registros do ServiceNow. Nada vai para fora da sua instância: o conteúdo consultado é processado no navegador, sem servidor do Trail ou telemetria. A extensão só faz leituras (GET). As preferências podem ser sincronizadas pela conta do navegador, conforme explicado abaixo. Requer Chrome ou Edge 120 ou mais recente.</p>
+<p>O Trail é uma extensão de navegador para entender alterações e automações em registros do ServiceNow. O conteúdo consultado não é enviado a servidor do Trail, plataforma de telemetria ou anunciante: ele é processado no navegador e consultado diretamente na instância escolhida. A extensão só faz leituras (GET). Preferências e domínios conectados podem ser sincronizados pela conta do navegador, sem conteúdo dos registros, conforme explicado abaixo. Requer Chrome ou Edge 120 ou mais recente.</p>
 
 <h2>Dados tratados e conteúdo do ServiceNow</h2>
 <p>Ao navegar em formulários ou listas e ao iniciar uma investigação, o Trail consulta a instância ServiceNow da aba ativa com a sessão autenticada do usuário, por chamadas HTTP <code>GET</code> à API de tabelas e ao histórico do formulário:</p>
@@ -36,11 +36,18 @@ a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}code{f
 <p>Os dados processados pelo Trail são gerenciados localmente nos seguintes mecanismos do navegador:</p>
 <ul>
   <li><strong>Sessão da extensão (<code>chrome.storage.session</code>):</strong> guarda por aba o resultado da investigação, análises em lote, relatório de acesso às fontes e metadados temporários. Também guarda os textos da diferença lado a lado e do relatório PDF. Esses dados podem continuar disponíveis após recarregar a página, enquanto a aba estiver aberta. O resultado é substituído em novas investigações ou ao mudar de registro; o estado da aba é removido ao fechá-la (<code>chrome.tabs.onRemoved</code>). A sessão termina quando o navegador fecha ou a extensão é recarregada.</li>
-  <li><strong>Token da sessão:</strong> para consultar a instância em nome do usuário, o token de sessão do ServiceNow da página (<code>g_ck</code>) fica guardado em <code>chrome.storage.session</code>, por instância, somente em memória e só enquanto o navegador estiver aberto. Ele nunca é enviado a outro lugar além dessa mesma instância.</li>
+  <li><strong>Token da sessão:</strong> para consultar a instância em nome do usuário, o token de sessão do ServiceNow da página (<code>g_ck</code>) fica guardado em <code>chrome.storage.session</code>, por instância, somente em memória e só enquanto o navegador estiver aberto. Ele é processado como informação de autenticação, mas não é coletado pelo mantenedor do Trail nem enviado a outro lugar além da mesma instância ServiceNow.</li>
   <li><strong>Armazenamento local da extensão (<code>chrome.storage.local</code>):</strong> guarda o estado do painel flutuante e a posição da bolinha. Para mostrar as boas-vindas no máximo uma vez por registro, guarda apenas um resumo SHA-256 do identificador de cada um dos últimos 200 registros, sem manter uma lista legível dos registros visitados.</li>
   <li><strong>Sincronização de preferências (<code>chrome.storage.sync</code>):</strong> guarda tema, idioma, atalhos, modo do painel, exibição de ícones e a lista de domínios conectados. O navegador pode sincronizar esses dados pela conta Google ou Microsoft, conforme suas configurações. O Trail não coloca conteúdo de registros nessa área.</li>
 </ul>
 <p>O conteúdo dos registros e das análises não é enviado a servidores fora da instância ServiceNow conectada. O Trail não pede nem guarda senhas.</p>
+
+<h2>Finalidade, compartilhamento e controle</h2>
+<ul>
+  <li><strong>Finalidade única:</strong> investigar alterações em registros do ServiceNow e mostrar o que mudou, quando e por quê. Os dados não são usados para publicidade, perfil comportamental, determinação de crédito ou qualquer finalidade sem relação com essa função.</li>
+  <li><strong>Sem venda ou transferência:</strong> o mantenedor do Trail não vende os dados processados e não os transfere a terceiros. As preferências que o próprio navegador sincroniza seguem as configurações e a política da conta Google ou Microsoft do usuário.</li>
+  <li><strong>Controle do usuário:</strong> é possível desconectar uma instância e revogar sua permissão nas Opções. Fechar a aba remove o estado temporário daquela aba; fechar o navegador ou recarregar a extensão encerra o armazenamento de sessão. Remover a extensão apaga seus armazenamentos local e de sessão; preferências sincronizadas também podem ser removidas pelas configurações da conta do navegador.</li>
+</ul>
 
 <h2>Permissões e controle de acesso (ACLs)</h2>
 <ul>
@@ -55,7 +62,7 @@ a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}code{f
 
 <section lang="en">
 <h2>Privacy Policy (English)</h2>
-<p><strong>Summary:</strong> Trail helps explain changes and automation in ServiceNow records. Nothing leaves your instance: consulted record content is processed in your browser, without a Trail server or telemetry. The extension makes read-only GET requests. Browser account sync may handle preferences as described below. Chrome or Edge 120 or later is required.</p>
+<p><strong>Summary:</strong> Trail helps explain changes and automation in ServiceNow records. Consulted record content is not sent to a Trail server, telemetry platform, or advertiser: it is processed in your browser and queried directly from the selected instance. The extension makes read-only GET requests. Preferences and connected domains may sync through the browser account, without record content, as described below. Chrome or Edge 120 or later is required.</p>
 
 <h2>Data handling and ServiceNow content</h2>
 <p>When you view records or start an investigation, Trail queries the active tab's ServiceNow instance through your authenticated browser session, using HTTP <code>GET</code> requests to the Table API and form history:</p>
@@ -69,11 +76,18 @@ a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}code{f
 <p>Data handled by Trail is retained strictly locally within browser storage mechanisms:</p>
 <ul>
   <li><strong>Extension session storage (<code>chrome.storage.session</code>):</strong> stores per-tab investigation results, batch runs, source access reports, and temporary metadata. It also stores side-by-side difference text and PDF report data. Data may remain after a page reload while the tab is open. Results are replaced by a new investigation or a different record; tab state is removed when the tab closes (<code>chrome.tabs.onRemoved</code>). Session storage ends when the browser closes or the extension reloads.</li>
-  <li><strong>Session token:</strong> to query the instance on the user's behalf, the ServiceNow session token of the page (<code>g_ck</code>) is kept in <code>chrome.storage.session</code>, per instance, only in memory and only while the browser is open. It is never sent anywhere other than that same instance.</li>
+  <li><strong>Session token:</strong> to query the instance on the user's behalf, the ServiceNow session token of the page (<code>g_ck</code>) is kept in <code>chrome.storage.session</code>, per instance, only in memory and only while the browser is open. It is processed as authentication information, but is not collected by the Trail maintainer or sent anywhere other than that same ServiceNow instance.</li>
   <li><strong>Extension local storage (<code>chrome.storage.local</code>):</strong> stores floating panel state and bubble position. To show the welcome tip at most once per record, it stores only a SHA-256 digest of each of the last 200 record identifiers, without a readable history of visited records.</li>
   <li><strong>Preferences storage (<code>chrome.storage.sync</code>):</strong> stores theme, language, shortcuts, panel mode, field icon visibility, and connected instance domains. Depending on browser settings, these may sync through your Google or Microsoft account. Trail does not put record content there.</li>
 </ul>
 <p>Record and investigation content is not sent to servers outside the connected ServiceNow instance. Trail does not ask for or store passwords.</p>
+
+<h2>Purpose, sharing, and user control</h2>
+<ul>
+  <li><strong>Single purpose:</strong> investigate changes in ServiceNow records and show what changed, when, and why. Data is not used for advertising, behavioral profiling, credit decisions, or any purpose unrelated to this function.</li>
+  <li><strong>No sale or transfer:</strong> the Trail maintainer does not sell processed data or transfer it to third parties. Preferences synchronized by the browser itself remain subject to the user's Google or Microsoft account settings and policy.</li>
+  <li><strong>User control:</strong> users can disconnect an instance and revoke its permission in Options. Closing a tab removes that tab's temporary state; closing the browser or reloading the extension ends session storage. Removing the extension deletes its local and session storage; synchronized preferences can also be removed through browser account settings.</li>
+</ul>
 
 <h2>Permissions and access control (ACLs)</h2>
 <ul>

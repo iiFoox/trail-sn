@@ -10,6 +10,18 @@ Convenções:
 
 ---
 
+## 2026-10-22 — pacotes 1.4.4 e ficha final das lojas (Codex #2)
+
+- **Pacotes recebidos:** conferi `trail-chrome-1.4.4.zip` e `trail-extensao-1.4.4 (1).zip`, renomeando o segundo no repositório sem o sufixo de download. O pacote Chrome tem o manifest na raiz e 32 arquivos sem mapas; o pacote de instalação manual tem a pasta `trail-extensao/`, mapas e `build.txt`. Removidos mapas e `build.txt`, os 32 arquivos de runtime são idênticos. Ambos usam Manifest V3, versão 1.4.4 e Chrome mínimo 120.
+- **Entrega no repositório:** os ZIPs ficam em `docs/store/packages/`, acompanhados de finalidade, tamanho e SHA-256 em `README.md`. O arquivo `trail-chrome-1.4.4.zip` é o único pacote a enviar ao Chrome e ao Edge; `trail-extensao-1.4.4.zip` serve apenas para instalação manual.
+- **Lojas:** `docs/store/FICHA-PREENCHIMENTO.md` e `docs/loja-edge.md` foram atualizados para 1.4.4, com notas PT/EN, permissões, dados declarados, certificações e instruções de teste. O texto explica que `https://*/*` é opcional e que o pedido em tempo de execução é limitado à origem escolhida.
+- **Privacidade:** a política PT/EN deixou de usar a frase absoluta e contraditória “nada sai da instância”. Agora separa os dados dos registros, o token temporário e as preferências sincronizadas; declara finalidade única, ausência de venda/transferência e formas de revogar permissões e apagar armazenamento.
+- **Próximos passos:** o topo de `docs/PROXIMOS-PASSOS.md` agora registra a situação atual. O envio às lojas continua exclusivo do dono.
+- **Validação local:** hashes e manifests dos dois ZIPs conferidos; os sete PNGs da loja têm as dimensões declaradas. `npm run typecheck` passou; Vitest programático passou em 28 arquivos/292 testes; `npm run e2e` passou nas 12 suítes; `_site-demo.mjs` passou incluindo as novas declarações de privacidade em PT/EN. `npm test` e `npm run build` padrão continuam bloqueados pelo esbuild ao tentar ler acima do workspace.
+- **Em aberto:** enviar os commits, confirmar os ZIPs no GitHub e validar a política publicada no Vercel.
+
+---
+
 ## 2026-10-22 — linha do tempo do roadmap corrigida no celular (Codex #2)
 
 - **Causa:** abaixo de 960 px o layout trocava as três fases para uma coluna e escondia a linha horizontal do desktop, mas não criava uma linha vertical. Os marcadores ficavam soltos e o texto começava perto demais do eixo. Em navegador de desktop com viewport estreito, o cursor decorativo também aparecia como um círculo verde sobre o roadmap.

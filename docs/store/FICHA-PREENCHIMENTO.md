@@ -1,16 +1,22 @@
-# Ficha de preenchimento das lojas (Trail 1.0.0)
+# Ficha de preenchimento das lojas (Trail 1.4.4)
 
 Tudo pronto para copiar e colar, campo por campo. Os textos estão em texto puro, porque as lojas não aceitam markdown.
-Arquivos: pacote `../trail-chrome-1.0.0.zip` / `../trail-edge-1.0.0.zip` (ao lado do repositório); imagens nesta pasta (`docs/store/`).
+Arquivos: pacote de loja `packages/trail-chrome-1.4.4.zip` (serve para Chrome e Edge); pacote da pasta carregada manualmente `packages/trail-extensao-1.4.4.zip`; imagens nesta pasta (`docs/store/`).
 
 | Campo | Arquivo | Tamanho | Chrome | Edge |
 |---|---|---|---|---|
-| Pacote | `trail-chrome-1.0.0.zip` / `trail-edge-1.0.0.zip` | | obrigatório | obrigatório |
+| Pacote da loja | `packages/trail-chrome-1.4.4.zip` | 270.051 bytes | obrigatório | obrigatório |
+| Pasta empacotada para instalação manual | `packages/trail-extensao-1.4.4.zip` | 845.130 bytes | não enviar | não enviar |
 | Logo da loja | `logo-300.png` | 300×300 | — (usa o ícone do pacote) | obrigatório |
 | Capturas de tela | `shot-1-resposta.png` … `shot-5-flows.png` | 1280×800 | 1 a 5 | 1 a 6 |
 | Bloco promocional pequeno | `tile-440x280.png` | 440×280 | obrigatório | opcional |
 
-O nome ("Trail") e a descrição curta vêm do próprio pacote (manifest), e não se editam no painel do Chrome.
+O nome localizado (`Trail — Perícia de registros ServiceNow` / `Trail — ServiceNow Record Forensics`) e a descrição curta vêm do próprio pacote no Chrome. No Edge, use os campos abaixo.
+
+## Notas da versão 1.4.4
+PT: Painel mais simples, com ferramentas extras no Modo avançado opcional. Rastro do mais recente para o mais antigo, caminho clicável das mudanças, subflows abaixo do flow pai, histórico para usuários sem admin e correções de estabilidade.
+
+EN: Simpler default panel, with extra tools in the optional Advanced mode. Newest-first trace, clickable change path, subflows under their parent flow, form history for non-admin users, and stability fixes.
 
 ## Descrição curta (Edge pede; até 132 caracteres)
 PT: Descubra o que mudou qualquer campo do ServiceNow e por quê. Funciona sem admin, sem instalar nada nem criar papel. Só leitura.
