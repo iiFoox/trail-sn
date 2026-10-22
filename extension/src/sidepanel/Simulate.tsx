@@ -85,15 +85,14 @@ function SimOutcome({ res, r, origin, known }: { res: ValueSimulation; r: Invest
   const changed = Object.entries(pv.result);
   return (
     <>
-      <div class="box wi-result">
-        <h4>{P.wiResult}</h4>
+      <Fold cls="wi-result" title={P.wiResult} count={changed.length} hint={changed.map(([f]) => fname(f)).slice(0, 4).join(', ')}>
         {changed.map(([f, x]) => (
           <div class="li"><div class="grow"><b>{fname(f)}</b><div class="wi-ft"><V f={f} v={x.from} cls="o" /> <span class="arr">→</span> <V f={f} v={x.to} cls="n" /> <span class="muted small">{fmt(P.wiBy, { who: x.by === 'você' ? P.wiYou : x.by })}</span></div></div></div>
         ))}
         {changed.length <= 1 && <div class="li"><span class="ck">{Glyph.check}</span><span class="grow small">{P.wiNothing}</span></div>}
-      </div>
-      <Fold cls="sim-runs" title={U.simRuns} count={res.runs.length} open={res.runs.length <= 1}
-        hint={res.runs.length > 1 ? res.runs.slice(0, 3).map((x) => x.name).join(', ') + (res.runs.length > 3 ? '…' : '') : undefined}>
+      </Fold>
+      <Fold cls="sim-runs" title={U.simRuns} count={res.runs.length}
+        hint={res.runs.length > 0 ? res.runs.slice(0, 3).map((x) => x.name).join(', ') + (res.runs.length > 3 ? '…' : '') : undefined}>
         {!res.runs.length && <div class="li"><span class="grow muted small">{U.simNoRuns}</span></div>}
         {res.runs.map((x) => <Row x={x} />)}
       </Fold>

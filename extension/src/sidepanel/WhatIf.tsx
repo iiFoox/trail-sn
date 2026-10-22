@@ -10,6 +10,7 @@ import { getPrefs } from '../shared/prefs';
 import { fieldName } from './Result';
 import { Val } from './Val';
 import { ErrorMsg } from './ErrorMsg';
+import { Fold } from './Fold';
 
 const P = t(getPrefs().lang).p;
 const isDemo = new URLSearchParams(location.search).has('demo');
@@ -117,29 +118,26 @@ function Outcome({ res, r, origin }: { res: ChangePreview; r: Investigation; ori
     <>
       {!res.steps.length && <div class="box"><div class="li"><span class="ck">{Glyph.check}</span><span class="grow">{P.wiNothing}</span></div></div>}
       {effects.length > 0 && (
-        <div class="box wi-result">
-          <h4>{P.wiResult}</h4>
+        <Fold cls="wi-result" title={P.wiResult} count={Object.keys(res.result).length} hint={Object.keys(res.result).map(fname).slice(0, 4).join(', ')}>
           {Object.entries(res.result).map(([f, x]) => (
             <div class="li"><div class="grow"><b>{fname(f)}</b><div class="wi-ft"><V f={f} v={x.from} cls="o" /> <span class="arr">→</span> <V f={f} v={x.to} cls="n" /> <span class="muted small">{fmt(P.wiBy, { who: x.by === 'você' ? P.wiYou : x.by })}</span></div></div></div>
           ))}
-        </div>
+        </Fold>
       )}
       {PHASES.map((ph) => {
         const list = res.steps.filter((s) => s.phase === ph);
         if (!list.length) return null;
-        return <div class="box"><h4>{P.wiPhase[ph]}<span>{list.length}</span></h4>{list.map(row)}</div>;
+        return <Fold cls={`wi-phase wi-${ph}`} title={P.wiPhase[ph]} count={list.length} hint={list.map((x) => x.name).slice(0, 3).join(', ') + (list.length > 3 ? '…' : '')}>{list.map(row)}</Fold>;
       })}
       {res.uncertain.length > 0 && (
-        <details class="box fold">
-          <summary><h4><span class="grow">{P.wiUncertain}<span class="why">{P.wiUncertainHint}</span></span><span class="pill w">{res.uncertain.length}</span></h4></summary>
+        <Fold cls="wi-uncertain" title={P.wiUncertain} hint={P.wiUncertainHint} count={res.uncertain.length} pill="w">
           {res.uncertain.map(row)}
-        </details>
+        </Fold>
       )}
       {res.skipped.length > 0 && (
-        <details class="box fold">
-          <summary><h4><span class="grow">{P.wiSkipped}</span><span class="pill">{res.skipped.length}</span></h4></summary>
+        <Fold cls="wi-skipped" title={P.wiSkipped} count={res.skipped.length}>
           {res.skipped.slice(0, 40).map((s) => <div class="li"><span class="ck x">–</span><div class="grow">{s.name}<div class="det">{human(s.why)}</div></div></div>)}
-        </details>
+        </Fold>
       )}
       <div class="muted small">{fmt(P.wiSummary, { n: res.steps.length, ms: res.timing.totalMs })}</div>
     </>

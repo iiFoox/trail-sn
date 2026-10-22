@@ -16,7 +16,8 @@ try {
   for (const w of [420, 340]) {
     await page.setViewportSize({ width: w, height: 800 });
     await page.goto(`chrome-extension://${id}/src/sidepanel/index.html?demo=1&float=1&tab=flows`);
-    await page.waitForSelector('.fl-run');
+    // As listas começam recolhidas: os itens já estão na página, só não à vista.
+    await page.waitForSelector('.fl-run', { state: 'attached' });
     out[w] = await page.evaluate(() => {
       const t = document.querySelector('.seg-tabs'), a = t.querySelector('button[aria-selected="true"]');
       const tr = t.getBoundingClientRect(), ar = a.getBoundingClientRect();
@@ -29,9 +30,12 @@ try {
   }
   await page.setViewportSize({ width: 420, height: 1300 });
   await page.goto(`chrome-extension://${id}/src/sidepanel/index.html?demo=1&float=1&batch=rec`);
-  await page.waitForSelector('.rruns .grp', { timeout: 8000 }).catch(() => errors.push('registro inteiro sem "O que roda neste registro"'));
+  await page.waitForSelector('.rruns .grp', { state: 'attached', timeout: 8000 }).catch(() => errors.push('registro inteiro sem "O que roda neste registro"'));
   out.rec = await page.evaluate(() => [...document.querySelectorAll('.rruns .grp > summary b')].map((b) => b.textContent));
   for (const g of ['Regras de negócio', 'Flows', 'Client scripts', 'Botões (UI actions)']) if (!out.rec.includes(g)) errors.push('faltou o grupo ' + g + ': ' + JSON.stringify(out.rec));
+  // Começa recolhido (com a contagem no cabeçalho): abre para buscar.
+  if (await page.locator('.rruns').evaluate((d) => d.open)) errors.push('"O que roda neste registro" deveria vir recolhido');
+  await page.click('.rruns > summary');
   // Busca: "priority" deixa só o que grava a prioridade (a regra que calcula e o data lookup).
   await page.fill('.rr-search input', 'priority');
   await page.waitForTimeout(300);

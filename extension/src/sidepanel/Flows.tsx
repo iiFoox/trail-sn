@@ -6,6 +6,7 @@ import { Glyph } from '../shared/icons';
 import { send } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
 import { ErrorMsg } from './ErrorMsg';
+import { Fold, FoldStatic } from './Fold';
 
 const lang = getPrefs().lang;
 const P = t(lang).p;
@@ -40,16 +41,15 @@ export function FlowsTab({ target, origin, field = '' }: { target: { table: stri
 }
 
 /** Desenho das duas listas (rodaram / configurados); usado na aba e dentro de "O que roda neste registro". */
-/** `filtered`: a lista já veio de uma busca; parte vazia some em vez de dizer "nenhum flow". */
+/** `filtered`: a lista já veio de uma busca; parte vazia some em vez de dizer "nenhum flow" e o que achou já vem aberto. */
 export function FlowsView({ res, origin, field = '', filtered = false }: { res: RecordFlows; origin: string; field?: string; filtered?: boolean }) {
   const states = P.flState as Record<string, string>;
   const triggers = P.flTrigger as Record<string, string>;
   return (
     <div class="flows">
-      {!(filtered && !res.runs.length) && <div class="box">
-        <h4>{P.flRan}{res.runs.length > 0 && <span>{res.runs.length}</span>}</h4>
-        {res.access.runs === 'denied' && <div class="li"><span class="ck w">!</span><span class="grow small">{P.flRunsDenied}</span></div>}
-        {res.access.runs !== 'denied' && !res.runs.length && <div class="li"><span class="ck">{Glyph.check}</span><span class="grow small muted">{P.flNoRuns}</span></div>}
+      {/* Lista vazia (ou sem acesso): o próprio cabeçalho diz, sem nada para abrir. */}
+      {!filtered && !res.runs.length && <FoldStatic cls="fl-ran" warn={res.access.runs === 'denied'} title={P.flRan} hint={res.access.runs === 'denied' ? P.flRunsDenied : P.flNoRuns} />}
+      {res.runs.length > 0 && <Fold cls="fl-ran" title={P.flRan} count={res.runs.length} hint={runsHint(res, states)} open={filtered || undefined}>
         {res.runs.map((x, i) => (
           <div class={`li fl-run ${x.parentSysId ? 'sub' : ''}`} style={`--i:${Math.min(i, 10)}`}>
             <span class={`fl-st ${x.state.replace(/\s+/g, '-')}`}>{states[x.state] ?? x.state}</span>
@@ -57,11 +57,9 @@ export function FlowsView({ res, origin, field = '', filtered = false }: { res: 
             {!isDemo && <a class="see" href={`${origin}/$flow-designer.do#/operations/context/${x.sysId}`} target="_blank" rel="noreferrer" title={P.flOpenRun} aria-label={P.flOpenRun}>{Glyph.open}</a>}
           </div>
         ))}
-      </div>}
-      {!(filtered && !res.definitions.length) && <div class="box">
-        <h4>{fmt(P.flDefs, { table: res.table })}{res.definitions.length > 0 && <span>{res.definitions.length}</span>}</h4>
-        {res.access.definitions === 'denied' && <div class="li"><span class="ck w">!</span><span class="grow small">{P.flDefsDenied}</span></div>}
-        {res.access.definitions !== 'denied' && !res.definitions.length && <div class="li"><span class="ck">{Glyph.check}</span><span class="grow small muted">{P.flNoDefs}</span></div>}
+      </Fold>}
+      {!filtered && !res.definitions.length && <FoldStatic cls="fl-defs" warn={res.access.definitions === 'denied'} title={fmt(P.flDefs, { table: res.table })} hint={res.access.definitions === 'denied' ? P.flDefsDenied : P.flNoDefs} />}
+      {res.definitions.length > 0 && <Fold cls="fl-defs" title={fmt(P.flDefs, { table: res.table })} count={res.definitions.length} hint={defsHint(res, field)} open={filtered || undefined}>
         {res.definitions.map((d, i) => (
           <div class={`li fl-def ${d.writes.includes(field) ? 'hit' : ''}`} style={`--i:${Math.min(i, 10)}`}>
             <span class="grow">
@@ -73,9 +71,22 @@ export function FlowsView({ res, origin, field = '', filtered = false }: { res: 
             {!isDemo && d.sysId && <a class="see" href={`${origin}/$flow-designer.do#/flow-designer/${d.sysId}`} target="_blank" rel="noreferrer" title={P.flOpenDef} aria-label={P.flOpenDef}>{Glyph.open}</a>}
           </div>
         ))}
-      </div>}
+      </Fold>}
     </div>
   );
+}
+
+/** Resumo de "Rodaram": quantos de cada estado ("2 concluídos · 1 erro" vira "concluído 2 · erro 1"). */
+function runsHint(res: RecordFlows, states: Record<string, string>): string {
+  const n = new Map<string, number>();
+  for (const x of res.runs) n.set(x.state, (n.get(x.state) ?? 0) + 1);
+  return [...n].map(([k, v]) => `${states[k] ?? k} ${v}`).join(' · ');
+}
+/** Resumo de "Configurados": os que gravam o campo investigado, senão os primeiros nomes. */
+function defsHint(res: RecordFlows, field: string): string {
+  const hit = field ? res.definitions.filter((d) => d.writes.includes(field)) : [];
+  const list = (hit.length ? hit : res.definitions).map((d) => d.name);
+  return (hit.length ? `${P.flWrites} ${field}: ` : '') + list.slice(0, 2).join(', ') + (list.length > 2 ? '…' : '');
 }
 
 export function demoFlows(table: string): RecordFlows {

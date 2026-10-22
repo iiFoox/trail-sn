@@ -13,6 +13,7 @@ import { send } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
 import { demoFlows, FlowsView } from './Flows';
 import { ErrorMsg } from './ErrorMsg';
+import { Fold } from './Fold';
 
 const P = t(getPrefs().lang).p;
 const isDemo = new URLSearchParams(location.search).has('demo');
@@ -77,8 +78,7 @@ export function RecordRuns({ table, sysId, origin, items }: { table: string; sys
   ].filter((g) => g.count > 0 || (g.denied && !filtering));
   const total = groups.reduce((n, g) => n + g.count, 0);
   return (
-    <details class="box fold rruns" open>
-      <summary><h4>{P.rrTitle}<span>{res ? total : ''} {Glyph.chevron}</span></h4></summary>
+    <Fold cls="rruns" title={P.rrTitle} count={res ? total : undefined} hint={res ? groups.filter((g) => !g.denied).map((g) => `${g.title} ${g.count}`).slice(0, 4).join(' · ') : undefined}>
       <div class="muted small pad">{fmt(P.rrHint, { table })}</div>
       {res && (
         <div class="rr-tools">
@@ -87,14 +87,14 @@ export function RecordRuns({ table, sysId, origin, items }: { table: string; sys
         </div>
       )}
       {!res && <div class="li"><span class="spin" /><span class="grow muted small">{P.rrLoading}</span></div>}
-      {groups.map((g, gi) => (
-        <details class="grp" open={filtering} key={`${g.key}-${filtering}`}>
-          <summary><span class="ic sm">{g.icon}</span><b class="grow">{g.title}</b><i>{g.denied ? '–' : g.count}</i><span class="chev">{Glyph.chevron}</span></summary>
+      {/* Cada tipo começa recolhido; numa busca, o que achou já vem aberto. */}
+      {groups.map((g) => (
+        <Fold nested key={`${g.key}-${filtering}`} icon={g.icon} title={g.title} count={g.denied ? 0 : g.count} countText={g.denied ? '–' : undefined} open={filtering || undefined}>
           {g.denied ? <div class="li muted small">{P.rrDenied}</div> : g.body}
-        </details>
+        </Fold>
       ))}
       {res && !groups.length && <div class="li muted">{filtering ? P.rrNoMatch : P.rrNone}</div>}
-    </details>
+    </Fold>
   );
 }
 

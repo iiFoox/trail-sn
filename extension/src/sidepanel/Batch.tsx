@@ -18,6 +18,7 @@ import { Loading } from './Loading';
 import { Val } from './Val';
 import { ErrorMsg } from './ErrorMsg';
 import { FormStates } from './FieldLock';
+import { Fold } from './Fold';
 
 const P = t(getPrefs().lang).p;
 type B = NonNullable<TabState['batch']>;
@@ -116,7 +117,7 @@ export function Batch({ b, origin, onOpen, advanced = false }: { b: B; origin: s
           const when = parts(group.at);
           return <details class="bt-group" key={group.key}>
             <summary class="bt-group-head">
-              <span class="bt-group-arrow" aria-hidden="true" />
+              <span class="caret" aria-hidden="true" />
               <span class="bt-group-title"><time dateTime={group.at.replace(' ', 'T') + 'Z'}>{when.date} {when.time}</time> · {saveTitle(group, rec)}
                 {group.cause?.sysId && group.cause.table && group.cause.type !== 'user_action' && <a class="bt-group-link" href={recordLink(origin, group.cause.table, group.cause.sysId)} target="_blank" rel="noreferrer" title={fmt(P.openArtifact, { what: group.cause.name })} aria-label={fmt(P.openArtifact, { what: group.cause.name })} onClick={(e) => e.stopPropagation()}>↗</a>}
               </span>
@@ -129,16 +130,14 @@ export function Batch({ b, origin, onOpen, advanced = false }: { b: B; origin: s
       </div>
 
       {quiet.length > 0 && !running && (
-        <details class="box fold">
-          <summary><h4><span class="grow">{rec ? P.btQuietRec : P.btQuiet}</span><span class="pill">{quiet.length}</span></h4></summary>
+        <Fold cls="bt-quiet" title={rec ? P.btQuietRec : P.btQuiet} count={quiet.length}>
           {quiet.map((it) => <div class="li"><span class="ck x">–</span><a class="grow" href="#" onClick={(e) => { e.preventDefault(); onOpen(it.sysId, it.field); }}>{rec ? it.label ?? it.field : it.display}</a><span class="muted small">{it.status === 'unaudited' ? P.btUnaudited : P.btNoChange}</span></div>)}
-        </details>
+        </Fold>
       )}
       {errors.length > 0 && !running && (
-        <details class="box fold">
-          <summary><h4 class="warnh"><span class="grow">{P.btErrors}</span><span class="pill">{errors.length}</span></h4></summary>
+        <Fold cls="bt-errors" warn title={P.btErrors} count={errors.length} pill="w">
           {errors.map((it) => <div class="li"><span class="ck w">!</span><div class="grow">{rec ? it.label ?? it.field : it.display}<div class="det"><ErrorMsg msg={it.error ?? ''} /></div></div></div>)}
-        </details>
+        </Fold>
       )}
       {/* Registro inteiro: os flows que rodaram neste registro e os configurados para a tabela. */}
       {advanced && rec && b.sysId && !running && b.error === undefined && <FormStates table={b.table} sysId={b.sysId} origin={origin} title={P.adv.form} lazy />}

@@ -1101,3 +1101,34 @@ details.box.vis[open]::details-content { overflow: visible; }
 .adv .adv-intro { margin: 0 2px; }
 /* Dentro de uma seção do Avançado, a caixa do conteúdo não vira outra caixa por cima. */
 .adv details.box .adv-body > .box { border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; margin: 0; }
+/* 1.4.1: tudo que é lista começa recolhido (menos o Rastro), no desenho das caixas da 1.0.0. */
+/* Cabeçalho sem nada para abrir (lista vazia): mesmo alinhamento do recolhível, com o resumo embaixo do título. */
+.box.fold-static h4 { justify-content: flex-start; gap: 8px; }
+.box.fold-static h4 > .grow { flex: 1; min-width: 0; font-weight: 700; font-size: 13px; }
+.box.fold-static h4 .why { display: block; font-weight: 400; font-size: 12px; color: var(--fg-2); margin-top: 2px; }
+.box.fold-static .caret-sp { flex: none; width: 9px; }
+/* Resumo de uma linha no cabeçalho recolhido: não quebra a caixa em painel estreito. */
+details.box.fold2:not([open]) > summary h4 .why, details.grp.fold2:not([open]) > summary .why { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+details.box.fold2 > summary h4 .pill.cnt { white-space: nowrap; }
+/* Outras possibilidades (mais de uma) na Resposta. */
+.alts .alt-row { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: flex; gap: 10px; align-items: center; padding: 10px 14px; font-size: 12.5px; color: var(--fg-2); border-top: 1px solid var(--line); }
+.alts .alt-row:hover { background: var(--surface-2); }
+.alts .alt-row:focus-visible { outline: 2px solid var(--teal); outline-offset: -2px; }
+.alts .alt-row b { color: var(--fg); }
+/* Mudanças do campo dentro da caixa recolhível. */
+.box .hist-in { padding: 10px 12px; border-top: 1px solid var(--line); }
+.box .hist-in .h { box-shadow: none; }
+/* Linha do tempo do registro: cada gravação é um recolhível; o cabeçalho é o mesmo de antes, com a seta e "3 campos". */
+ol.rtl details.sv > summary.hd { cursor: pointer; }
+ol.rtl details.sv > summary.hd:hover { background: var(--hover, rgba(127,127,127,.06)); }
+ol.rtl details.sv > summary.hd:focus-visible { outline: 2px solid var(--teal); outline-offset: -2px; border-radius: 14px; }
+ol.rtl details.sv > summary.hd .pill.cnt { flex: none; white-space: nowrap; }
+ol.rtl details.sv > summary.hd .caret { margin-right: -2px; }
+/* Grupos do registro inteiro: a mesma seta das outras seções. */
+.bt-group[open] > summary .caret { transform: rotate(90deg); }
+.bt-group > summary:hover .caret { border-left-color: var(--fg); }
+@media (prefers-reduced-motion: reduce) { .bt-group > summary .caret { transition: none !important; } }
+:root[data-motion="off"] .bt-group > summary .caret { transition: none !important; }
+/* Flows: a regra antiga (margem antes da contagem) não vale para os cabeçalhos recolhíveis. */
+.flows .box h4 > .grow, .flows .box h4 .why, .flows .box h4 > .pill { margin-left: 0; }
+.flows .box h4 > .caret { margin-left: 1px; }
