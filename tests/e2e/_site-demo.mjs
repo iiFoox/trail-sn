@@ -12,7 +12,9 @@ const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.
 const srv = createServer((req, res) => {
   const urlPath = decodeURIComponent(req.url.split('?')[0]);
   let p = join(root, urlPath); if (existsSync(p) && statSync(p).isDirectory()) p = join(p, 'index.html'); if (!existsSync(p)) { res.writeHead(404); return res.end(); } res.writeHead(200, { 'content-type': mime[extname(p)] || 'application/octet-stream' }); res.end(readFileSync(p));
-}).listen(4481);
+});
+await new Promise((resolve) => srv.listen(0, '127.0.0.1', resolve));
+const base = `http://127.0.0.1:${srv.address().port}`;
 const S = process.argv[2] ? resolve(process.argv[2]) + '/' : '';
 const b = await chromium.launch({ channel: 'chromium' });
 const page = await b.newPage({ viewport: { width: 1280, height: 860 } });
@@ -20,9 +22,9 @@ const errs = [];
 page.on('pageerror', (e) => errs.push('top: ' + e.message));
 page.on('console', (m) => { if (m.type() === 'error' && !/fonts|TUNNEL/.test(m.text()) && !/fonts\.googleapis\.com/.test(m.location().url || '')) errs.push('console: ' + m.text() + ' ' + JSON.stringify(m.location())); });
 const navs = [];
-page.on('framenavigated', (f) => { if (f !== page.mainFrame() && !/localhost:4481/.test(f.url())) navs.push(f.url()); });
+page.on('framenavigated', (f) => { if (f !== page.mainFrame() && !f.url().startsWith(base)) navs.push(f.url()); });
 page.on('popup', (p) => navs.push('popup ' + p.url()));
-await page.goto('http://localhost:4481/b3/');
+await page.goto(`${base}/b3/`);
 await page.addStyleTag({ content: 'html{scroll-behavior:auto!important}' });
 await page.mouse.move(100, 100);
 await page.mouse.move(800, 500);
@@ -167,7 +169,7 @@ if (!traceEn.includes('newest to oldest')) errs.push('ordem do Rastro não tradu
 
 // Checar acesso direto via URL ?lang=en e persistência após reload em nova aba
 const pageEn = await b.newPage();
-await pageEn.goto('http://localhost:4481/b3/?lang=en');
+await pageEn.goto(`${base}/b3/?lang=en`);
 await pageEn.waitForTimeout(300);
 const langUrlEn = await pageEn.evaluate(() => document.documentElement.lang);
 const navTryUrlEn = await pageEn.$eval('nav .btn.sm', (el) => el.textContent.trim());
@@ -233,6 +235,23 @@ const mobileNumbers = await page.evaluate(() => {
 if (mobileNumbers.firstRight > mobileNumbers.secondLeft) errs.push('números se sobrepõem em 390px: ' + JSON.stringify(mobileNumbers));
 if (mobileNumbers.tableOverflow > 0) errs.push('tabela ainda exige rolagem horizontal em 390px: ' + JSON.stringify(mobileNumbers));
 if (mobileNumbers.visibleTableCells !== 6) errs.push('tabela perdeu informações no celular: ' + JSON.stringify(mobileNumbers));
+const mobileRoad = await page.evaluate(() => {
+  const road = document.querySelector('.road');
+  const stage = road.querySelector(':scope > div');
+  const line = getComputedStyle(road, '::before');
+  const marker = getComputedStyle(stage, '::before');
+  const roadBox = road.getBoundingClientRect();
+  const stageBox = stage.getBoundingClientRect();
+  const markerCenter = stageBox.left + parseFloat(marker.left) + (parseFloat(marker.width) + parseFloat(marker.borderLeftWidth) * 2) / 2;
+  const lineCenter = roadBox.left + parseFloat(line.left) + parseFloat(line.width) / 2;
+  return {
+    lineDisplay: line.display,
+    lineMarkerDelta: Math.round(Math.abs(lineCenter - markerCenter)),
+    contentGap: Math.round(stage.querySelector('.n').getBoundingClientRect().left - markerCenter),
+    cursorDisplay: getComputedStyle(document.querySelector('.cursor')).display,
+  };
+});
+if (mobileRoad.lineDisplay === 'none' || mobileRoad.lineMarkerDelta > 1 || mobileRoad.contentGap < 32 || mobileRoad.cursorDisplay !== 'none') errs.push('linha do tempo desalinhada em 390px: ' + JSON.stringify(mobileRoad));
 await page.locator('#painel').scrollIntoViewIfNeeded();
 await page.waitForTimeout(300);
 const stack390 = await page.evaluate(() => {
@@ -257,7 +276,7 @@ if (mobile360.overflow > 0 || mobile360.numbersOverlap || mobile360.mosaicColumn
 
 console.log(JSON.stringify({
   results,
-  checks: { shotPosition, seenCount, progVal, tblInit, faqOpen, roadVis0, roadVis1, background, mobileBackgroundScale, mobileNumbers, mobile360, stack390 },
+  checks: { shotPosition, seenCount, progVal, tblInit, faqOpen, roadVis0, roadVis1, background, mobileBackgroundScale, mobileNumbers, mobileRoad, mobile360, stack390 },
   brokenImgs,
   overflow1280,
   overflow390,

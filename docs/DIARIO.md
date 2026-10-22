@@ -10,6 +10,16 @@ Convenções:
 
 ---
 
+## 2026-10-22 — linha do tempo do roadmap corrigida no celular (Codex #2)
+
+- **Causa:** abaixo de 960 px o layout trocava as três fases para uma coluna e escondia a linha horizontal do desktop, mas não criava uma linha vertical. Os marcadores ficavam soltos e o texto começava perto demais do eixo. Em navegador de desktop com viewport estreito, o cursor decorativo também aparecia como um círculo verde sobre o roadmap.
+- **Correção (`site/b3/style.css`):** em até 600 px, o roadmap agora tem um eixo vertical contínuo, todos os marcadores compartilham exatamente o mesmo centro e o conteúdo das fases fica 37 px afastado da linha. O cursor decorativo é ocultado em telas estreitas, inclusive na emulação móvel do navegador.
+- **Teste (`tests/e2e/_site-demo.mjs`):** mede em 390 px se a linha está visível, se linha e marcador têm o mesmo centro, se existe pelo menos 32 px de respiro e se o cursor está oculto. O servidor do teste passou a escolher uma porta livre para não colidir com uma execução interrompida.
+- **Validação:** captura local em `.pedido-site/roadmap-fix-spaced/mobile-roadmap.png` (fora do Git) revisada visualmente. `_site-demo.mjs` passou com `lineMarkerDelta: 0`, `contentGap: 37`, `cursorDisplay: none`, nenhuma imagem quebrada e `errs: []`. `npm run typecheck` passou; Vitest programático passou em 28 arquivos/292 testes; `npm run e2e` passou nas 12 suítes. `npm test` e `npm run build` padrão continuam bloqueados pelo esbuild ao ler acima do workspace.
+- **Em aberto:** validar o mesmo trecho na URL publicada após o deploy.
+
+---
+
 ## 2026-10-22 — revisão completa do site no celular (Codex #2)
 
 - **Revisão visual:** percorri a página inteira em 390 px e 360 px e gerei capturas locais de cada seção em `.pedido-site/mobile-review-final/` (fora do Git). Os problemas concretos eram a sobreposição das duas primeiras métricas, a tabela larga cortada, os cartões de causas apertados em duas colunas e o sublinhado animado atravessando títulos do método.
