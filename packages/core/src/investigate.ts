@@ -99,8 +99,13 @@ export async function investigate(
   let audit = auditRows;
   let auditFrom: 'audit' | 'history' = 'audit';
   let historyFields: string[] | undefined;
+  let historyUnavailable = false;
   if (access.sys_audit === 'denied' && client.history) {
-    const h = await client.history(target.table, sysId).catch(() => null);
+    // No PDI (21/10/2026) o histórico às vezes não volta (1 em ~300 investigações por perfil): uma segunda tentativa, e
+    // se ainda falhar, a lacuna aparece em vez de "nenhuma mudança".
+    const ask = () => client.history!(target.table, sysId).catch(() => null);
+    const h = (await ask()) ?? (await ask());
+    if (!h) historyUnavailable = true;
     if (h) {
       audit = await historyToAudit(h, meta.tables, quiet, rec.sys_created_on);
       auditFrom = 'history';
@@ -359,6 +364,7 @@ export async function investigate(
   const gaps = Object.entries(access)
     .filter(([k, s]) => (s === 'denied' || s === 'timeout' || s === 'no_filter') && !(k === 'sys_audit' && auditFrom === 'history'))
     .map(([k, s]) => `${k}: ${s}`);
+  if (historyUnavailable) gaps.push('list_history: unavailable');
 
   return {
     target: { ...target, sysId, display: rec.number || rec.name || sysId, ...(rec.short_description ? { title: rec.short_description } : rec.number && rec.name ? { title: rec.name } : {}) },

@@ -335,19 +335,39 @@ async function readSide(client: RestClient, target: { table: string; field: stri
  * Lado sem sessão (401) ou sem rede: depois de `limit` respostas assim, sem nenhuma resposta de verdade antes, as
  * próximas consultas desse lado voltam na hora com o mesmo resultado, sem ir à instância. No PDI, o lado B sem login
  * fazia 39 chamadas inúteis. 403 não conta: é uma sessão de verdade com papéis restritos, que ainda lê outras fontes.
+ *
+ * Até a primeira resposta que não seja "sem sessão", as consultas passam uma por vez: a leitura de cada lado dispara
+ * dezenas de consultas em paralelo, e sem isso todas já estavam a caminho antes da primeira 401 voltar (no PDI, com o
+ * portão só na entrada, o lado sem login ainda fazia 35 chamadas). O lado que responde paga uma ida e volta a mais.
  */
 export class DeadSideGate implements RestClient {
   private dead = 0;
   private alive = false;
+  /** Já veio uma resposta que não é "sem sessão": as consultas seguem em paralelo. */
+  private open = false;
+  private chain: Promise<void> = Promise.resolve();
   private last?: QueryResult;
   constructor(readonly inner: RestClient, private readonly limit = 2) {}
   get calls(): number { return this.inner.calls; }
   get stopped(): boolean { return !this.alive && this.dead >= this.limit; }
   async query(req: QueryRequest): Promise<QueryResult> {
+    if (!this.open) {
+      const prev = this.chain;
+      let done!: () => void;
+      this.chain = new Promise<void>((r) => { done = r; });
+      await prev;
+      if (!this.open) {
+        try { return await this.pass(req); } finally { done(); }
+      }
+      done();
+    }
+    return this.pass(req);
+  }
+  private async pass(req: QueryRequest): Promise<QueryResult> {
     if (this.stopped && this.last) return { ...this.last, rows: [] };
     const r = await this.inner.query(req);
     const isDead = r.status === 401 || (r.status === 0 && r.access === 'unknown');
-    if (isDead) { this.dead++; this.last = r; } else if (r.status !== 0) this.alive = true;
+    if (isDead) { this.dead++; this.last = r; } else { this.open = true; if (r.status !== 0) this.alive = true; }
     return r;
   }
   history(table: string, sysId: string) { return this.inner.history ? this.inner.history(table, sysId) : Promise.resolve(null); }

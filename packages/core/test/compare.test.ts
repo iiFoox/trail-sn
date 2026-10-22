@@ -213,6 +213,23 @@ describe('P7: lado sem sessão para cedo', () => {
     expect(c.timing.calls.b).toBe(b.calls);
   });
 
+  it('B responde 401 com atraso de rede: as consultas em paralelo não passam todas antes da primeira 401 (PDI: 35)', async () => {
+    const a = inst({ tables: { sys_script: [br({ sys_id: 'b1', name: 'Set priority' })] } });
+    const b = { calls: 0, async query() { this.calls++; await new Promise((r) => setTimeout(r, 5)); return { rows: [], status: 401, access: 'denied' as const }; } };
+    const c = await run(a, b as unknown as FakeRestClient);
+    expect(c.unreachable).toEqual(['b']);
+    expect(c.differences).toEqual([]);
+    expect(b.calls).toBe(2);
+  });
+
+  it('lado que responde, com atraso: depois da primeira resposta as consultas seguem e a comparação sai igual', async () => {
+    const slow = (x: FakeRestClient) => ({ get calls() { return x.calls; }, async query(req: Parameters<FakeRestClient['query']>[0]) { await new Promise((r) => setTimeout(r, 2)); return x.query(req); } });
+    const rows = { tables: { sys_script: [br({ sys_id: 'b1', name: 'Set priority' })] } };
+    const c = await run(slow(inst(rows)) as unknown as FakeRestClient, slow(inst()) as unknown as FakeRestClient);
+    expect(c.unreachable ?? []).toEqual([]);
+    expect(c.rules[0]).toMatchObject({ name: 'Set priority', status: 'only_a' });
+  });
+
   it('B com 403 (sessão com papéis restritos) continua lendo o que puder', async () => {
     const a = inst();
     const b = new FakeRestClient();

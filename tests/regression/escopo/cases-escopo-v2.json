@@ -1,0 +1,3481 @@
+{
+ "descricao": "Bateria v2 de escopos (não admin). Registros [PT] v2 nos apps A/B/C; o registro é achado por sd (short_description), number ou u_nome. expectNoChange: a automação falhou e o Trail não pode mostrar causa.",
+ "tipos": {
+  "BRB": "BR before do escopo",
+  "BRA": "BR after do escopo (current.update)",
+  "BRS": "BR async do escopo",
+  "SI": "BR chama script include do próprio escopo",
+  "XC": "BR criada em outro escopo na tabela, chama include do escopo dono",
+  "XS": "BR chama include de outro escopo que grava current (falha: nada muda)",
+  "XSR": "BR before grava valor devolvido por include de outro escopo",
+  "EV": "BR after dispara evento; script action do escopo grava",
+  "GBS": "BR global na tabela escopada",
+  "JOB": "job de execução única do escopo (desativado depois)",
+  "UIA": "UI action de servidor",
+  "CS": "client script onChange (urgency=1 -> impact=1), salvo pelo formulário",
+  "UIP": "UI policy com script (urgency=2 -> priority=3), salva pelo formulário",
+  "FRM": "pessoa pelo formulário (usuário do app personificado)",
+  "API": "Table API como o usuário do app personificado",
+  "LST": "edição na lista",
+  "BRO": "BR after grava outro registro (item/pedido alvo)",
+  "SG": "BR do escopo grava incidente global; prioridade pelo data lookup"
+ },
+ "casos": [
+  {
+   "id": "A-API-001-assigned_to",
+   "scope": "A",
+   "tipo": "API",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A API 001",
+   "field": "assigned_to",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "A-API-001-state",
+   "scope": "A",
+   "tipo": "API",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A API 001",
+   "field": "state",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "A-API-002-assigned_to",
+   "scope": "A",
+   "tipo": "API",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A API 002",
+   "field": "assigned_to",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "A-API-002-state",
+   "scope": "A",
+   "tipo": "API",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A API 002",
+   "field": "state",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "A-API-003-assigned_to",
+   "scope": "A",
+   "tipo": "API",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A API 003",
+   "field": "assigned_to",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "A-API-003-state",
+   "scope": "A",
+   "tipo": "API",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A API 003",
+   "field": "state",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "A-BRA-001-state",
+   "scope": "A",
+   "tipo": "BRA",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A BRA 001",
+   "field": "state",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRA A"
+   ]
+  },
+  {
+   "id": "A-BRA-001-u_valor",
+   "scope": "A",
+   "tipo": "BRA",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A BRA 001",
+   "field": "u_valor",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRA A"
+   ]
+  },
+  {
+   "id": "A-BRA-002-state",
+   "scope": "A",
+   "tipo": "BRA",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A BRA 002",
+   "field": "state",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRA A"
+   ]
+  },
+  {
+   "id": "A-BRA-002-u_valor",
+   "scope": "A",
+   "tipo": "BRA",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A BRA 002",
+   "field": "u_valor",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRA A"
+   ]
+  },
+  {
+   "id": "A-BRA-003-state",
+   "scope": "A",
+   "tipo": "BRA",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A BRA 003",
+   "field": "state",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRA A"
+   ]
+  },
+  {
+   "id": "A-BRA-003-u_valor",
+   "scope": "A",
+   "tipo": "BRA",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A BRA 003",
+   "field": "u_valor",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRA A"
+   ]
+  },
+  {
+   "id": "A-BRB-001-priority",
+   "scope": "A",
+   "tipo": "BRB",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A BRB 001",
+   "field": "priority",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 BRB A"
+   ]
+  },
+  {
+   "id": "A-BRB-001-urgency",
+   "scope": "A",
+   "tipo": "BRB",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A BRB 001",
+   "field": "urgency",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 BRB A"
+   ]
+  },
+  {
+   "id": "A-BRB-002-priority",
+   "scope": "A",
+   "tipo": "BRB",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A BRB 002",
+   "field": "priority",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 BRB A"
+   ]
+  },
+  {
+   "id": "A-BRB-002-urgency",
+   "scope": "A",
+   "tipo": "BRB",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A BRB 002",
+   "field": "urgency",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 BRB A"
+   ]
+  },
+  {
+   "id": "A-BRB-003-priority",
+   "scope": "A",
+   "tipo": "BRB",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A BRB 003",
+   "field": "priority",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 BRB A"
+   ]
+  },
+  {
+   "id": "A-BRB-003-urgency",
+   "scope": "A",
+   "tipo": "BRB",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A BRB 003",
+   "field": "urgency",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 BRB A"
+   ]
+  },
+  {
+   "id": "A-BRO-TASK0020770-impact",
+   "scope": "A",
+   "tipo": "BRO",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "number": "TASK0020770",
+   "field": "impact",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRO A"
+   ],
+   "nota": "pedido \"[PT] v2 A alvo <BRO nnn>\" gravado pela BRO A"
+  },
+  {
+   "id": "A-BRO-TASK0020770-u_valor",
+   "scope": "A",
+   "tipo": "BRO",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "number": "TASK0020770",
+   "field": "u_valor",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRO A"
+   ],
+   "nota": "pedido \"[PT] v2 A alvo <BRO nnn>\" gravado pela BRO A"
+  },
+  {
+   "id": "A-BRO-TASK0020772-impact",
+   "scope": "A",
+   "tipo": "BRO",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "number": "TASK0020772",
+   "field": "impact",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRO A"
+   ],
+   "nota": "pedido \"[PT] v2 A alvo <BRO nnn>\" gravado pela BRO A"
+  },
+  {
+   "id": "A-BRO-TASK0020772-u_valor",
+   "scope": "A",
+   "tipo": "BRO",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "number": "TASK0020772",
+   "field": "u_valor",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRO A"
+   ],
+   "nota": "pedido \"[PT] v2 A alvo <BRO nnn>\" gravado pela BRO A"
+  },
+  {
+   "id": "A-BRO-TASK0020774-impact",
+   "scope": "A",
+   "tipo": "BRO",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "number": "TASK0020774",
+   "field": "impact",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRO A"
+   ],
+   "nota": "pedido \"[PT] v2 A alvo <BRO nnn>\" gravado pela BRO A"
+  },
+  {
+   "id": "A-BRO-TASK0020774-u_valor",
+   "scope": "A",
+   "tipo": "BRO",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "number": "TASK0020774",
+   "field": "u_valor",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRO A"
+   ],
+   "nota": "pedido \"[PT] v2 A alvo <BRO nnn>\" gravado pela BRO A"
+  },
+  {
+   "id": "A-BRS-001-assigned_to",
+   "scope": "A",
+   "tipo": "BRS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A BRS 001",
+   "field": "assigned_to",
+   "expectedType": "br_async",
+   "expectedNames": [
+    "[PT] v2 BRS A"
+   ]
+  },
+  {
+   "id": "A-BRS-001-impact",
+   "scope": "A",
+   "tipo": "BRS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A BRS 001",
+   "field": "impact",
+   "expectedType": "br_async",
+   "expectedNames": [
+    "[PT] v2 BRS A"
+   ]
+  },
+  {
+   "id": "A-BRS-002-assigned_to",
+   "scope": "A",
+   "tipo": "BRS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A BRS 002",
+   "field": "assigned_to",
+   "expectedType": "br_async",
+   "expectedNames": [
+    "[PT] v2 BRS A"
+   ]
+  },
+  {
+   "id": "A-BRS-002-impact",
+   "scope": "A",
+   "tipo": "BRS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A BRS 002",
+   "field": "impact",
+   "expectedType": "br_async",
+   "expectedNames": [
+    "[PT] v2 BRS A"
+   ]
+  },
+  {
+   "id": "A-BRS-003-assigned_to",
+   "scope": "A",
+   "tipo": "BRS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A BRS 003",
+   "field": "assigned_to",
+   "expectedType": "br_async",
+   "expectedNames": [
+    "[PT] v2 BRS A"
+   ]
+  },
+  {
+   "id": "A-BRS-003-impact",
+   "scope": "A",
+   "tipo": "BRS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A BRS 003",
+   "field": "impact",
+   "expectedType": "br_async",
+   "expectedNames": [
+    "[PT] v2 BRS A"
+   ]
+  },
+  {
+   "id": "A-CS-001-impact",
+   "scope": "A",
+   "tipo": "CS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A CS 001",
+   "field": "impact",
+   "expectedType": "client_script",
+   "expectedNames": [
+    "[PT] v2 Client Script A"
+   ]
+  },
+  {
+   "id": "A-CS-002-impact",
+   "scope": "A",
+   "tipo": "CS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A CS 002",
+   "field": "impact",
+   "expectedType": "client_script",
+   "expectedNames": [
+    "[PT] v2 Client Script A"
+   ]
+  },
+  {
+   "id": "A-CS-003-impact",
+   "scope": "A",
+   "tipo": "CS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A CS 003",
+   "field": "impact",
+   "expectedType": "client_script",
+   "expectedNames": [
+    "[PT] v2 Client Script A"
+   ]
+  },
+  {
+   "id": "A-EV-001-opened_by",
+   "scope": "A",
+   "tipo": "EV",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A EV 001",
+   "field": "opened_by",
+   "expectedType": "script_action",
+   "expectedNames": [
+    "[PT] v2 Script Action A"
+   ]
+  },
+  {
+   "id": "A-EV-001-u_valor",
+   "scope": "A",
+   "tipo": "EV",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A EV 001",
+   "field": "u_valor",
+   "expectedType": "script_action",
+   "expectedNames": [
+    "[PT] v2 Script Action A"
+   ]
+  },
+  {
+   "id": "A-EV-002-opened_by",
+   "scope": "A",
+   "tipo": "EV",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A EV 002",
+   "field": "opened_by",
+   "expectedType": "script_action",
+   "expectedNames": [
+    "[PT] v2 Script Action A"
+   ]
+  },
+  {
+   "id": "A-EV-002-u_valor",
+   "scope": "A",
+   "tipo": "EV",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A EV 002",
+   "field": "u_valor",
+   "expectedType": "script_action",
+   "expectedNames": [
+    "[PT] v2 Script Action A"
+   ]
+  },
+  {
+   "id": "A-EV-003-opened_by",
+   "scope": "A",
+   "tipo": "EV",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A EV 003",
+   "field": "opened_by",
+   "expectedType": "script_action",
+   "expectedNames": [
+    "[PT] v2 Script Action A"
+   ]
+  },
+  {
+   "id": "A-EV-003-u_valor",
+   "scope": "A",
+   "tipo": "EV",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A EV 003",
+   "field": "u_valor",
+   "expectedType": "script_action",
+   "expectedNames": [
+    "[PT] v2 Script Action A"
+   ]
+  },
+  {
+   "id": "A-FRM-001-state",
+   "scope": "A",
+   "tipo": "FRM",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A FRM 001",
+   "field": "state",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "A-FRM-001-urgency",
+   "scope": "A",
+   "tipo": "FRM",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A FRM 001",
+   "field": "urgency",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "A-FRM-002-state",
+   "scope": "A",
+   "tipo": "FRM",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A FRM 002",
+   "field": "state",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "A-FRM-002-urgency",
+   "scope": "A",
+   "tipo": "FRM",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A FRM 002",
+   "field": "urgency",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "A-FRM-003-state",
+   "scope": "A",
+   "tipo": "FRM",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A FRM 003",
+   "field": "state",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "A-FRM-003-urgency",
+   "scope": "A",
+   "tipo": "FRM",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A FRM 003",
+   "field": "urgency",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "A-GBS-001-opened_by",
+   "scope": "A",
+   "tipo": "GBS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A GBS 001",
+   "field": "opened_by",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 GBS A"
+   ]
+  },
+  {
+   "id": "A-GBS-001-u_valor",
+   "scope": "A",
+   "tipo": "GBS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A GBS 001",
+   "field": "u_valor",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 GBS A"
+   ]
+  },
+  {
+   "id": "A-GBS-002-opened_by",
+   "scope": "A",
+   "tipo": "GBS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A GBS 002",
+   "field": "opened_by",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 GBS A"
+   ]
+  },
+  {
+   "id": "A-GBS-002-u_valor",
+   "scope": "A",
+   "tipo": "GBS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A GBS 002",
+   "field": "u_valor",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 GBS A"
+   ]
+  },
+  {
+   "id": "A-GBS-003-opened_by",
+   "scope": "A",
+   "tipo": "GBS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A GBS 003",
+   "field": "opened_by",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 GBS A"
+   ]
+  },
+  {
+   "id": "A-GBS-003-u_valor",
+   "scope": "A",
+   "tipo": "GBS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A GBS 003",
+   "field": "u_valor",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 GBS A"
+   ]
+  },
+  {
+   "id": "A-JOB-001-priority",
+   "scope": "A",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A JOB 001",
+   "field": "priority",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job A"
+   ]
+  },
+  {
+   "id": "A-JOB-001-u_valor",
+   "scope": "A",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A JOB 001",
+   "field": "u_valor",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job A"
+   ]
+  },
+  {
+   "id": "A-JOB-002-priority",
+   "scope": "A",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A JOB 002",
+   "field": "priority",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job A"
+   ]
+  },
+  {
+   "id": "A-JOB-002-u_valor",
+   "scope": "A",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A JOB 002",
+   "field": "u_valor",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job A"
+   ]
+  },
+  {
+   "id": "A-JOB-003-priority",
+   "scope": "A",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A JOB 003",
+   "field": "priority",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job A"
+   ]
+  },
+  {
+   "id": "A-JOB-003-u_valor",
+   "scope": "A",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A JOB 003",
+   "field": "u_valor",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job A"
+   ]
+  },
+  {
+   "id": "A-LST-001-priority",
+   "scope": "A",
+   "tipo": "LST",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A LST 001",
+   "field": "priority",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "A-LST-002-priority",
+   "scope": "A",
+   "tipo": "LST",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A LST 002",
+   "field": "priority",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "A-SG-001-impact",
+   "scope": "A",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 A SG 001",
+   "field": "impact",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 SG A"
+   ]
+  },
+  {
+   "id": "A-SG-001-priority",
+   "scope": "A",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 A SG 001",
+   "field": "priority",
+   "expectedType": "data_lookup",
+   "expectedNames": [
+    "Priority"
+   ]
+  },
+  {
+   "id": "A-SG-001-urgency",
+   "scope": "A",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 A SG 001",
+   "field": "urgency",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 SG A"
+   ]
+  },
+  {
+   "id": "A-SG-002-impact",
+   "scope": "A",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 A SG 002",
+   "field": "impact",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 SG A"
+   ]
+  },
+  {
+   "id": "A-SG-002-priority",
+   "scope": "A",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 A SG 002",
+   "field": "priority",
+   "expectedType": "data_lookup",
+   "expectedNames": [
+    "Priority"
+   ]
+  },
+  {
+   "id": "A-SG-002-urgency",
+   "scope": "A",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 A SG 002",
+   "field": "urgency",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 SG A"
+   ]
+  },
+  {
+   "id": "A-SG-003-impact",
+   "scope": "A",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 A SG 003",
+   "field": "impact",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 SG A"
+   ]
+  },
+  {
+   "id": "A-SG-003-priority",
+   "scope": "A",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 A SG 003",
+   "field": "priority",
+   "expectedType": "data_lookup",
+   "expectedNames": [
+    "Priority"
+   ]
+  },
+  {
+   "id": "A-SG-003-urgency",
+   "scope": "A",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 A SG 003",
+   "field": "urgency",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 SG A"
+   ]
+  },
+  {
+   "id": "A-SI-001-close_notes",
+   "scope": "A",
+   "tipo": "SI",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A SI 001",
+   "field": "close_notes",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperA",
+    "[PT] v2 SI A"
+   ]
+  },
+  {
+   "id": "A-SI-001-impact",
+   "scope": "A",
+   "tipo": "SI",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A SI 001",
+   "field": "impact",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperA",
+    "[PT] v2 SI A"
+   ]
+  },
+  {
+   "id": "A-SI-002-close_notes",
+   "scope": "A",
+   "tipo": "SI",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A SI 002",
+   "field": "close_notes",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperA",
+    "[PT] v2 SI A"
+   ]
+  },
+  {
+   "id": "A-SI-002-impact",
+   "scope": "A",
+   "tipo": "SI",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A SI 002",
+   "field": "impact",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperA",
+    "[PT] v2 SI A"
+   ]
+  },
+  {
+   "id": "A-SI-003-close_notes",
+   "scope": "A",
+   "tipo": "SI",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A SI 003",
+   "field": "close_notes",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperA",
+    "[PT] v2 SI A"
+   ]
+  },
+  {
+   "id": "A-SI-003-impact",
+   "scope": "A",
+   "tipo": "SI",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A SI 003",
+   "field": "impact",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperA",
+    "[PT] v2 SI A"
+   ]
+  },
+  {
+   "id": "A-UIA-001-close_notes",
+   "scope": "A",
+   "tipo": "UIA",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A UIA 001",
+   "field": "close_notes",
+   "expectedType": "ui_action",
+   "expectedNames": [
+    "[PT] v2 UI Action A"
+   ]
+  },
+  {
+   "id": "A-UIA-001-impact",
+   "scope": "A",
+   "tipo": "UIA",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A UIA 001",
+   "field": "impact",
+   "expectedType": "ui_action",
+   "expectedNames": [
+    "[PT] v2 UI Action A"
+   ]
+  },
+  {
+   "id": "A-UIA-002-close_notes",
+   "scope": "A",
+   "tipo": "UIA",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A UIA 002",
+   "field": "close_notes",
+   "expectedType": "ui_action",
+   "expectedNames": [
+    "[PT] v2 UI Action A"
+   ]
+  },
+  {
+   "id": "A-UIA-002-impact",
+   "scope": "A",
+   "tipo": "UIA",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A UIA 002",
+   "field": "impact",
+   "expectedType": "ui_action",
+   "expectedNames": [
+    "[PT] v2 UI Action A"
+   ]
+  },
+  {
+   "id": "A-UIA-003-close_notes",
+   "scope": "A",
+   "tipo": "UIA",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A UIA 003",
+   "field": "close_notes",
+   "expectedType": "ui_action",
+   "expectedNames": [
+    "[PT] v2 UI Action A"
+   ]
+  },
+  {
+   "id": "A-UIA-003-impact",
+   "scope": "A",
+   "tipo": "UIA",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A UIA 003",
+   "field": "impact",
+   "expectedType": "ui_action",
+   "expectedNames": [
+    "[PT] v2 UI Action A"
+   ]
+  },
+  {
+   "id": "A-UIP-001-priority",
+   "scope": "A",
+   "tipo": "UIP",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A UIP 001",
+   "field": "priority",
+   "expectedType": "ui_policy",
+   "expectedNames": [
+    "[PT] v2 UI Policy A"
+   ]
+  },
+  {
+   "id": "A-UIP-002-priority",
+   "scope": "A",
+   "tipo": "UIP",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A UIP 002",
+   "field": "priority",
+   "expectedType": "ui_policy",
+   "expectedNames": [
+    "[PT] v2 UI Policy A"
+   ]
+  },
+  {
+   "id": "A-UIP-003-priority",
+   "scope": "A",
+   "tipo": "UIP",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A UIP 003",
+   "field": "priority",
+   "expectedType": "ui_policy",
+   "expectedNames": [
+    "[PT] v2 UI Policy A"
+   ]
+  },
+  {
+   "id": "A-XC-001-close_notes",
+   "scope": "A",
+   "tipo": "XC",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A XC 001",
+   "field": "close_notes",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperA",
+    "[PT] v2 XC A"
+   ]
+  },
+  {
+   "id": "A-XC-002-close_notes",
+   "scope": "A",
+   "tipo": "XC",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A XC 002",
+   "field": "close_notes",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperA",
+    "[PT] v2 XC A"
+   ]
+  },
+  {
+   "id": "A-XC-003-close_notes",
+   "scope": "A",
+   "tipo": "XC",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A XC 003",
+   "field": "close_notes",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperA",
+    "[PT] v2 XC A"
+   ]
+  },
+  {
+   "id": "A-XS-001-priority",
+   "scope": "A",
+   "tipo": "XS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A XS 001",
+   "field": "priority",
+   "expectedType": "none",
+   "expectedNames": [],
+   "expectNoChange": true
+  },
+  {
+   "id": "A-XS-001-urgency",
+   "scope": "A",
+   "tipo": "XS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A XS 001",
+   "field": "urgency",
+   "expectedType": "none",
+   "expectedNames": [],
+   "expectNoChange": true
+  },
+  {
+   "id": "A-XS-002-priority",
+   "scope": "A",
+   "tipo": "XS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A XS 002",
+   "field": "priority",
+   "expectedType": "none",
+   "expectedNames": [],
+   "expectNoChange": true
+  },
+  {
+   "id": "A-XS-002-urgency",
+   "scope": "A",
+   "tipo": "XS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A XS 002",
+   "field": "urgency",
+   "expectedType": "none",
+   "expectedNames": [],
+   "expectNoChange": true
+  },
+  {
+   "id": "A-XS-003-priority",
+   "scope": "A",
+   "tipo": "XS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A XS 003",
+   "field": "priority",
+   "expectedType": "none",
+   "expectedNames": [],
+   "expectNoChange": true
+  },
+  {
+   "id": "A-XS-003-urgency",
+   "scope": "A",
+   "tipo": "XS",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A XS 003",
+   "field": "urgency",
+   "expectedType": "none",
+   "expectedNames": [],
+   "expectNoChange": true
+  },
+  {
+   "id": "A-XSR-001-impact",
+   "scope": "A",
+   "tipo": "XSR",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A XSR 001",
+   "field": "impact",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 XSR A",
+    "PTv2CrossB"
+   ]
+  },
+  {
+   "id": "A-XSR-002-impact",
+   "scope": "A",
+   "tipo": "XSR",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A XSR 002",
+   "field": "impact",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 XSR A",
+    "PTv2CrossB"
+   ]
+  },
+  {
+   "id": "A-XSR-003-impact",
+   "scope": "A",
+   "tipo": "XSR",
+   "table": "x_2270630_pttrail__pedido_audit",
+   "sd": "[PT] v2 A XSR 003",
+   "field": "impact",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 XSR A",
+    "PTv2CrossB"
+   ]
+  },
+  {
+   "id": "B-API-001-assigned_to",
+   "scope": "B",
+   "tipo": "API",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B API 001",
+   "field": "assigned_to",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "B-API-001-state",
+   "scope": "B",
+   "tipo": "API",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B API 001",
+   "field": "state",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "B-API-002-assigned_to",
+   "scope": "B",
+   "tipo": "API",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B API 002",
+   "field": "assigned_to",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "B-API-002-state",
+   "scope": "B",
+   "tipo": "API",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B API 002",
+   "field": "state",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "B-API-003-assigned_to",
+   "scope": "B",
+   "tipo": "API",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B API 003",
+   "field": "assigned_to",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "B-API-003-state",
+   "scope": "B",
+   "tipo": "API",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B API 003",
+   "field": "state",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "B-BRA-001-state",
+   "scope": "B",
+   "tipo": "BRA",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B BRA 001",
+   "field": "state",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRA B"
+   ]
+  },
+  {
+   "id": "B-BRA-001-u_valor",
+   "scope": "B",
+   "tipo": "BRA",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B BRA 001",
+   "field": "u_valor",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRA B"
+   ]
+  },
+  {
+   "id": "B-BRA-002-state",
+   "scope": "B",
+   "tipo": "BRA",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B BRA 002",
+   "field": "state",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRA B"
+   ]
+  },
+  {
+   "id": "B-BRA-002-u_valor",
+   "scope": "B",
+   "tipo": "BRA",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B BRA 002",
+   "field": "u_valor",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRA B"
+   ]
+  },
+  {
+   "id": "B-BRA-003-state",
+   "scope": "B",
+   "tipo": "BRA",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B BRA 003",
+   "field": "state",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRA B"
+   ]
+  },
+  {
+   "id": "B-BRA-003-u_valor",
+   "scope": "B",
+   "tipo": "BRA",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B BRA 003",
+   "field": "u_valor",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRA B"
+   ]
+  },
+  {
+   "id": "B-BRB-001-priority",
+   "scope": "B",
+   "tipo": "BRB",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B BRB 001",
+   "field": "priority",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 BRB B"
+   ]
+  },
+  {
+   "id": "B-BRB-001-urgency",
+   "scope": "B",
+   "tipo": "BRB",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B BRB 001",
+   "field": "urgency",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 BRB B"
+   ]
+  },
+  {
+   "id": "B-BRB-002-priority",
+   "scope": "B",
+   "tipo": "BRB",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B BRB 002",
+   "field": "priority",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 BRB B"
+   ]
+  },
+  {
+   "id": "B-BRB-002-urgency",
+   "scope": "B",
+   "tipo": "BRB",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B BRB 002",
+   "field": "urgency",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 BRB B"
+   ]
+  },
+  {
+   "id": "B-BRB-003-priority",
+   "scope": "B",
+   "tipo": "BRB",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B BRB 003",
+   "field": "priority",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 BRB B"
+   ]
+  },
+  {
+   "id": "B-BRB-003-urgency",
+   "scope": "B",
+   "tipo": "BRB",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B BRB 003",
+   "field": "urgency",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 BRB B"
+   ]
+  },
+  {
+   "id": "B-BRO-TASK0020819-u_estoque",
+   "scope": "B",
+   "tipo": "BRO",
+   "table": "x_2270630_pttrailb_item",
+   "u_nome": "[PT] v2 alvo TASK0020819",
+   "field": "u_estoque",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRO B"
+   ]
+  },
+  {
+   "id": "B-BRO-TASK0020819-u_status",
+   "scope": "B",
+   "tipo": "BRO",
+   "table": "x_2270630_pttrailb_item",
+   "u_nome": "[PT] v2 alvo TASK0020819",
+   "field": "u_status",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRO B"
+   ]
+  },
+  {
+   "id": "B-BRO-TASK0020820-u_estoque",
+   "scope": "B",
+   "tipo": "BRO",
+   "table": "x_2270630_pttrailb_item",
+   "u_nome": "[PT] v2 alvo TASK0020820",
+   "field": "u_estoque",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRO B"
+   ]
+  },
+  {
+   "id": "B-BRO-TASK0020820-u_status",
+   "scope": "B",
+   "tipo": "BRO",
+   "table": "x_2270630_pttrailb_item",
+   "u_nome": "[PT] v2 alvo TASK0020820",
+   "field": "u_status",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRO B"
+   ]
+  },
+  {
+   "id": "B-BRO-TASK0020821-u_estoque",
+   "scope": "B",
+   "tipo": "BRO",
+   "table": "x_2270630_pttrailb_item",
+   "u_nome": "[PT] v2 alvo TASK0020821",
+   "field": "u_estoque",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRO B"
+   ]
+  },
+  {
+   "id": "B-BRO-TASK0020821-u_status",
+   "scope": "B",
+   "tipo": "BRO",
+   "table": "x_2270630_pttrailb_item",
+   "u_nome": "[PT] v2 alvo TASK0020821",
+   "field": "u_status",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRO B"
+   ]
+  },
+  {
+   "id": "B-BRS-001-assigned_to",
+   "scope": "B",
+   "tipo": "BRS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B BRS 001",
+   "field": "assigned_to",
+   "expectedType": "br_async",
+   "expectedNames": [
+    "[PT] v2 BRS B"
+   ]
+  },
+  {
+   "id": "B-BRS-001-impact",
+   "scope": "B",
+   "tipo": "BRS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B BRS 001",
+   "field": "impact",
+   "expectedType": "br_async",
+   "expectedNames": [
+    "[PT] v2 BRS B"
+   ]
+  },
+  {
+   "id": "B-BRS-002-assigned_to",
+   "scope": "B",
+   "tipo": "BRS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B BRS 002",
+   "field": "assigned_to",
+   "expectedType": "br_async",
+   "expectedNames": [
+    "[PT] v2 BRS B"
+   ]
+  },
+  {
+   "id": "B-BRS-002-impact",
+   "scope": "B",
+   "tipo": "BRS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B BRS 002",
+   "field": "impact",
+   "expectedType": "br_async",
+   "expectedNames": [
+    "[PT] v2 BRS B"
+   ]
+  },
+  {
+   "id": "B-BRS-003-assigned_to",
+   "scope": "B",
+   "tipo": "BRS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B BRS 003",
+   "field": "assigned_to",
+   "expectedType": "br_async",
+   "expectedNames": [
+    "[PT] v2 BRS B"
+   ]
+  },
+  {
+   "id": "B-BRS-003-impact",
+   "scope": "B",
+   "tipo": "BRS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B BRS 003",
+   "field": "impact",
+   "expectedType": "br_async",
+   "expectedNames": [
+    "[PT] v2 BRS B"
+   ]
+  },
+  {
+   "id": "B-CS-001-impact",
+   "scope": "B",
+   "tipo": "CS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B CS 001",
+   "field": "impact",
+   "expectedType": "client_script",
+   "expectedNames": [
+    "[PT] v2 Client Script B"
+   ]
+  },
+  {
+   "id": "B-CS-002-impact",
+   "scope": "B",
+   "tipo": "CS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B CS 002",
+   "field": "impact",
+   "expectedType": "client_script",
+   "expectedNames": [
+    "[PT] v2 Client Script B"
+   ]
+  },
+  {
+   "id": "B-CS-003-impact",
+   "scope": "B",
+   "tipo": "CS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B CS 003",
+   "field": "impact",
+   "expectedType": "client_script",
+   "expectedNames": [
+    "[PT] v2 Client Script B"
+   ]
+  },
+  {
+   "id": "B-EV-001-opened_by",
+   "scope": "B",
+   "tipo": "EV",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B EV 001",
+   "field": "opened_by",
+   "expectedType": "script_action",
+   "expectedNames": [
+    "[PT] v2 Script Action B"
+   ]
+  },
+  {
+   "id": "B-EV-001-u_valor",
+   "scope": "B",
+   "tipo": "EV",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B EV 001",
+   "field": "u_valor",
+   "expectedType": "script_action",
+   "expectedNames": [
+    "[PT] v2 Script Action B"
+   ]
+  },
+  {
+   "id": "B-EV-002-opened_by",
+   "scope": "B",
+   "tipo": "EV",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B EV 002",
+   "field": "opened_by",
+   "expectedType": "script_action",
+   "expectedNames": [
+    "[PT] v2 Script Action B"
+   ]
+  },
+  {
+   "id": "B-EV-002-u_valor",
+   "scope": "B",
+   "tipo": "EV",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B EV 002",
+   "field": "u_valor",
+   "expectedType": "script_action",
+   "expectedNames": [
+    "[PT] v2 Script Action B"
+   ]
+  },
+  {
+   "id": "B-EV-003-opened_by",
+   "scope": "B",
+   "tipo": "EV",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B EV 003",
+   "field": "opened_by",
+   "expectedType": "script_action",
+   "expectedNames": [
+    "[PT] v2 Script Action B"
+   ]
+  },
+  {
+   "id": "B-EV-003-u_valor",
+   "scope": "B",
+   "tipo": "EV",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B EV 003",
+   "field": "u_valor",
+   "expectedType": "script_action",
+   "expectedNames": [
+    "[PT] v2 Script Action B"
+   ]
+  },
+  {
+   "id": "B-FRM-001-state",
+   "scope": "B",
+   "tipo": "FRM",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B FRM 001",
+   "field": "state",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "B-FRM-001-urgency",
+   "scope": "B",
+   "tipo": "FRM",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B FRM 001",
+   "field": "urgency",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "B-FRM-002-state",
+   "scope": "B",
+   "tipo": "FRM",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B FRM 002",
+   "field": "state",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "B-FRM-002-urgency",
+   "scope": "B",
+   "tipo": "FRM",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B FRM 002",
+   "field": "urgency",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "B-FRM-003-state",
+   "scope": "B",
+   "tipo": "FRM",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B FRM 003",
+   "field": "state",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "B-FRM-003-urgency",
+   "scope": "B",
+   "tipo": "FRM",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B FRM 003",
+   "field": "urgency",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "B-GBS-001-opened_by",
+   "scope": "B",
+   "tipo": "GBS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B GBS 001",
+   "field": "opened_by",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 GBS B"
+   ]
+  },
+  {
+   "id": "B-GBS-001-u_valor",
+   "scope": "B",
+   "tipo": "GBS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B GBS 001",
+   "field": "u_valor",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 GBS B"
+   ]
+  },
+  {
+   "id": "B-GBS-002-opened_by",
+   "scope": "B",
+   "tipo": "GBS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B GBS 002",
+   "field": "opened_by",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 GBS B"
+   ]
+  },
+  {
+   "id": "B-GBS-002-u_valor",
+   "scope": "B",
+   "tipo": "GBS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B GBS 002",
+   "field": "u_valor",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 GBS B"
+   ]
+  },
+  {
+   "id": "B-GBS-003-opened_by",
+   "scope": "B",
+   "tipo": "GBS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B GBS 003",
+   "field": "opened_by",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 GBS B"
+   ]
+  },
+  {
+   "id": "B-GBS-003-u_valor",
+   "scope": "B",
+   "tipo": "GBS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B GBS 003",
+   "field": "u_valor",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 GBS B"
+   ]
+  },
+  {
+   "id": "B-JOB-001-priority",
+   "scope": "B",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B JOB 001",
+   "field": "priority",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job B"
+   ]
+  },
+  {
+   "id": "B-JOB-001-u_valor",
+   "scope": "B",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B JOB 001",
+   "field": "u_valor",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job B"
+   ]
+  },
+  {
+   "id": "B-JOB-002-priority",
+   "scope": "B",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B JOB 002",
+   "field": "priority",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job B"
+   ]
+  },
+  {
+   "id": "B-JOB-002-u_valor",
+   "scope": "B",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B JOB 002",
+   "field": "u_valor",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job B"
+   ]
+  },
+  {
+   "id": "B-JOB-003-priority",
+   "scope": "B",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B JOB 003",
+   "field": "priority",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job B"
+   ]
+  },
+  {
+   "id": "B-JOB-003-u_valor",
+   "scope": "B",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B JOB 003",
+   "field": "u_valor",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job B"
+   ]
+  },
+  {
+   "id": "B-JOBI-001-u_estoque",
+   "scope": "B",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrailb_item",
+   "u_nome": "[PT] v2 B JOB item 001 (job)",
+   "field": "u_estoque",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job B"
+   ]
+  },
+  {
+   "id": "B-JOBI-001-u_nome",
+   "scope": "B",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrailb_item",
+   "u_nome": "[PT] v2 B JOB item 001 (job)",
+   "field": "u_nome",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job B"
+   ]
+  },
+  {
+   "id": "B-JOBI-002-u_estoque",
+   "scope": "B",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrailb_item",
+   "u_nome": "[PT] v2 B JOB item 002 (job)",
+   "field": "u_estoque",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job B"
+   ]
+  },
+  {
+   "id": "B-JOBI-002-u_nome",
+   "scope": "B",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrailb_item",
+   "u_nome": "[PT] v2 B JOB item 002 (job)",
+   "field": "u_nome",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job B"
+   ]
+  },
+  {
+   "id": "B-LST-001-priority",
+   "scope": "B",
+   "tipo": "LST",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B LST 001",
+   "field": "priority",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "B-LST-002-priority",
+   "scope": "B",
+   "tipo": "LST",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B LST 002",
+   "field": "priority",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "B-SG-001-impact",
+   "scope": "B",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 B SG 001",
+   "field": "impact",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 SG B"
+   ]
+  },
+  {
+   "id": "B-SG-001-priority",
+   "scope": "B",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 B SG 001",
+   "field": "priority",
+   "expectedType": "data_lookup",
+   "expectedNames": [
+    "Priority"
+   ]
+  },
+  {
+   "id": "B-SG-001-urgency",
+   "scope": "B",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 B SG 001",
+   "field": "urgency",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 SG B"
+   ]
+  },
+  {
+   "id": "B-SG-002-impact",
+   "scope": "B",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 B SG 002",
+   "field": "impact",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 SG B"
+   ]
+  },
+  {
+   "id": "B-SG-002-priority",
+   "scope": "B",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 B SG 002",
+   "field": "priority",
+   "expectedType": "data_lookup",
+   "expectedNames": [
+    "Priority"
+   ]
+  },
+  {
+   "id": "B-SG-002-urgency",
+   "scope": "B",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 B SG 002",
+   "field": "urgency",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 SG B"
+   ]
+  },
+  {
+   "id": "B-SG-003-impact",
+   "scope": "B",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 B SG 003",
+   "field": "impact",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 SG B"
+   ]
+  },
+  {
+   "id": "B-SG-003-priority",
+   "scope": "B",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 B SG 003",
+   "field": "priority",
+   "expectedType": "data_lookup",
+   "expectedNames": [
+    "Priority"
+   ]
+  },
+  {
+   "id": "B-SG-003-urgency",
+   "scope": "B",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 B SG 003",
+   "field": "urgency",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 SG B"
+   ]
+  },
+  {
+   "id": "B-SI-001-close_notes",
+   "scope": "B",
+   "tipo": "SI",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B SI 001",
+   "field": "close_notes",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperB",
+    "[PT] v2 SI B"
+   ]
+  },
+  {
+   "id": "B-SI-001-impact",
+   "scope": "B",
+   "tipo": "SI",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B SI 001",
+   "field": "impact",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperB",
+    "[PT] v2 SI B"
+   ]
+  },
+  {
+   "id": "B-SI-002-close_notes",
+   "scope": "B",
+   "tipo": "SI",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B SI 002",
+   "field": "close_notes",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperB",
+    "[PT] v2 SI B"
+   ]
+  },
+  {
+   "id": "B-SI-002-impact",
+   "scope": "B",
+   "tipo": "SI",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B SI 002",
+   "field": "impact",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperB",
+    "[PT] v2 SI B"
+   ]
+  },
+  {
+   "id": "B-SI-003-close_notes",
+   "scope": "B",
+   "tipo": "SI",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B SI 003",
+   "field": "close_notes",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperB",
+    "[PT] v2 SI B"
+   ]
+  },
+  {
+   "id": "B-SI-003-impact",
+   "scope": "B",
+   "tipo": "SI",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B SI 003",
+   "field": "impact",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperB",
+    "[PT] v2 SI B"
+   ]
+  },
+  {
+   "id": "B-UIA-001-close_notes",
+   "scope": "B",
+   "tipo": "UIA",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B UIA 001",
+   "field": "close_notes",
+   "expectedType": "ui_action",
+   "expectedNames": [
+    "[PT] v2 UI Action B"
+   ]
+  },
+  {
+   "id": "B-UIA-001-impact",
+   "scope": "B",
+   "tipo": "UIA",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B UIA 001",
+   "field": "impact",
+   "expectedType": "ui_action",
+   "expectedNames": [
+    "[PT] v2 UI Action B"
+   ]
+  },
+  {
+   "id": "B-UIA-002-close_notes",
+   "scope": "B",
+   "tipo": "UIA",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B UIA 002",
+   "field": "close_notes",
+   "expectedType": "ui_action",
+   "expectedNames": [
+    "[PT] v2 UI Action B"
+   ]
+  },
+  {
+   "id": "B-UIA-002-impact",
+   "scope": "B",
+   "tipo": "UIA",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B UIA 002",
+   "field": "impact",
+   "expectedType": "ui_action",
+   "expectedNames": [
+    "[PT] v2 UI Action B"
+   ]
+  },
+  {
+   "id": "B-UIA-003-close_notes",
+   "scope": "B",
+   "tipo": "UIA",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B UIA 003",
+   "field": "close_notes",
+   "expectedType": "ui_action",
+   "expectedNames": [
+    "[PT] v2 UI Action B"
+   ]
+  },
+  {
+   "id": "B-UIA-003-impact",
+   "scope": "B",
+   "tipo": "UIA",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B UIA 003",
+   "field": "impact",
+   "expectedType": "ui_action",
+   "expectedNames": [
+    "[PT] v2 UI Action B"
+   ]
+  },
+  {
+   "id": "B-UIP-001-priority",
+   "scope": "B",
+   "tipo": "UIP",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B UIP 001",
+   "field": "priority",
+   "expectedType": "ui_policy",
+   "expectedNames": [
+    "[PT] v2 UI Policy B"
+   ]
+  },
+  {
+   "id": "B-UIP-002-priority",
+   "scope": "B",
+   "tipo": "UIP",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B UIP 002",
+   "field": "priority",
+   "expectedType": "ui_policy",
+   "expectedNames": [
+    "[PT] v2 UI Policy B"
+   ]
+  },
+  {
+   "id": "B-UIP-003-priority",
+   "scope": "B",
+   "tipo": "UIP",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B UIP 003",
+   "field": "priority",
+   "expectedType": "ui_policy",
+   "expectedNames": [
+    "[PT] v2 UI Policy B"
+   ]
+  },
+  {
+   "id": "B-XC-001-close_notes",
+   "scope": "B",
+   "tipo": "XC",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B XC 001",
+   "field": "close_notes",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperB",
+    "[PT] v2 XC B"
+   ]
+  },
+  {
+   "id": "B-XC-002-close_notes",
+   "scope": "B",
+   "tipo": "XC",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B XC 002",
+   "field": "close_notes",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperB",
+    "[PT] v2 XC B"
+   ]
+  },
+  {
+   "id": "B-XC-003-close_notes",
+   "scope": "B",
+   "tipo": "XC",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B XC 003",
+   "field": "close_notes",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperB",
+    "[PT] v2 XC B"
+   ]
+  },
+  {
+   "id": "B-XS-001-priority",
+   "scope": "B",
+   "tipo": "XS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B XS 001",
+   "field": "priority",
+   "expectedType": "none",
+   "expectedNames": [],
+   "expectNoChange": true
+  },
+  {
+   "id": "B-XS-001-urgency",
+   "scope": "B",
+   "tipo": "XS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B XS 001",
+   "field": "urgency",
+   "expectedType": "none",
+   "expectedNames": [],
+   "expectNoChange": true
+  },
+  {
+   "id": "B-XS-002-priority",
+   "scope": "B",
+   "tipo": "XS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B XS 002",
+   "field": "priority",
+   "expectedType": "none",
+   "expectedNames": [],
+   "expectNoChange": true
+  },
+  {
+   "id": "B-XS-002-urgency",
+   "scope": "B",
+   "tipo": "XS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B XS 002",
+   "field": "urgency",
+   "expectedType": "none",
+   "expectedNames": [],
+   "expectNoChange": true
+  },
+  {
+   "id": "B-XS-003-priority",
+   "scope": "B",
+   "tipo": "XS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B XS 003",
+   "field": "priority",
+   "expectedType": "none",
+   "expectedNames": [],
+   "expectNoChange": true
+  },
+  {
+   "id": "B-XS-003-urgency",
+   "scope": "B",
+   "tipo": "XS",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B XS 003",
+   "field": "urgency",
+   "expectedType": "none",
+   "expectedNames": [],
+   "expectNoChange": true
+  },
+  {
+   "id": "B-XSR-001-impact",
+   "scope": "B",
+   "tipo": "XSR",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B XSR 001",
+   "field": "impact",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 XSR B",
+    "PTv2CrossC"
+   ]
+  },
+  {
+   "id": "B-XSR-002-impact",
+   "scope": "B",
+   "tipo": "XSR",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B XSR 002",
+   "field": "impact",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 XSR B",
+    "PTv2CrossC"
+   ]
+  },
+  {
+   "id": "B-XSR-003-impact",
+   "scope": "B",
+   "tipo": "XSR",
+   "table": "x_2270630_pttrailb_pedido",
+   "sd": "[PT] v2 B XSR 003",
+   "field": "impact",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 XSR B",
+    "PTv2CrossC"
+   ]
+  },
+  {
+   "id": "C-API-001-assigned_to",
+   "scope": "C",
+   "tipo": "API",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C API 001",
+   "field": "assigned_to",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "C-API-001-state",
+   "scope": "C",
+   "tipo": "API",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C API 001",
+   "field": "state",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "C-API-002-assigned_to",
+   "scope": "C",
+   "tipo": "API",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C API 002",
+   "field": "assigned_to",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "C-API-002-state",
+   "scope": "C",
+   "tipo": "API",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C API 002",
+   "field": "state",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "C-API-003-assigned_to",
+   "scope": "C",
+   "tipo": "API",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C API 003",
+   "field": "assigned_to",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "C-API-003-state",
+   "scope": "C",
+   "tipo": "API",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C API 003",
+   "field": "state",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "C-BRA-001-state",
+   "scope": "C",
+   "tipo": "BRA",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C BRA 001",
+   "field": "state",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRA C"
+   ]
+  },
+  {
+   "id": "C-BRA-001-u_valor",
+   "scope": "C",
+   "tipo": "BRA",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C BRA 001",
+   "field": "u_valor",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRA C"
+   ]
+  },
+  {
+   "id": "C-BRA-002-state",
+   "scope": "C",
+   "tipo": "BRA",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C BRA 002",
+   "field": "state",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRA C"
+   ]
+  },
+  {
+   "id": "C-BRA-002-u_valor",
+   "scope": "C",
+   "tipo": "BRA",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C BRA 002",
+   "field": "u_valor",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRA C"
+   ]
+  },
+  {
+   "id": "C-BRA-003-state",
+   "scope": "C",
+   "tipo": "BRA",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C BRA 003",
+   "field": "state",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRA C"
+   ]
+  },
+  {
+   "id": "C-BRA-003-u_valor",
+   "scope": "C",
+   "tipo": "BRA",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C BRA 003",
+   "field": "u_valor",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRA C"
+   ]
+  },
+  {
+   "id": "C-BRB-001-priority",
+   "scope": "C",
+   "tipo": "BRB",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C BRB 001",
+   "field": "priority",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 BRB C"
+   ]
+  },
+  {
+   "id": "C-BRB-001-urgency",
+   "scope": "C",
+   "tipo": "BRB",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C BRB 001",
+   "field": "urgency",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 BRB C"
+   ]
+  },
+  {
+   "id": "C-BRB-002-priority",
+   "scope": "C",
+   "tipo": "BRB",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C BRB 002",
+   "field": "priority",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 BRB C"
+   ]
+  },
+  {
+   "id": "C-BRB-002-urgency",
+   "scope": "C",
+   "tipo": "BRB",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C BRB 002",
+   "field": "urgency",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 BRB C"
+   ]
+  },
+  {
+   "id": "C-BRB-003-priority",
+   "scope": "C",
+   "tipo": "BRB",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C BRB 003",
+   "field": "priority",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 BRB C"
+   ]
+  },
+  {
+   "id": "C-BRB-003-urgency",
+   "scope": "C",
+   "tipo": "BRB",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C BRB 003",
+   "field": "urgency",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 BRB C"
+   ]
+  },
+  {
+   "id": "C-BRO-TASK0020866-u_estoque",
+   "scope": "C",
+   "tipo": "BRO",
+   "table": "x_2270630_pttrailc_item",
+   "u_nome": "[PT] v2 alvo TASK0020866",
+   "field": "u_estoque",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRO C"
+   ]
+  },
+  {
+   "id": "C-BRO-TASK0020866-u_status",
+   "scope": "C",
+   "tipo": "BRO",
+   "table": "x_2270630_pttrailc_item",
+   "u_nome": "[PT] v2 alvo TASK0020866",
+   "field": "u_status",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRO C"
+   ]
+  },
+  {
+   "id": "C-BRO-TASK0020867-u_estoque",
+   "scope": "C",
+   "tipo": "BRO",
+   "table": "x_2270630_pttrailc_item",
+   "u_nome": "[PT] v2 alvo TASK0020867",
+   "field": "u_estoque",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRO C"
+   ]
+  },
+  {
+   "id": "C-BRO-TASK0020867-u_status",
+   "scope": "C",
+   "tipo": "BRO",
+   "table": "x_2270630_pttrailc_item",
+   "u_nome": "[PT] v2 alvo TASK0020867",
+   "field": "u_status",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRO C"
+   ]
+  },
+  {
+   "id": "C-BRO-TASK0020868-u_estoque",
+   "scope": "C",
+   "tipo": "BRO",
+   "table": "x_2270630_pttrailc_item",
+   "u_nome": "[PT] v2 alvo TASK0020868",
+   "field": "u_estoque",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRO C"
+   ]
+  },
+  {
+   "id": "C-BRO-TASK0020868-u_status",
+   "scope": "C",
+   "tipo": "BRO",
+   "table": "x_2270630_pttrailc_item",
+   "u_nome": "[PT] v2 alvo TASK0020868",
+   "field": "u_status",
+   "expectedType": "br_after",
+   "expectedNames": [
+    "[PT] v2 BRO C"
+   ]
+  },
+  {
+   "id": "C-BRS-001-assigned_to",
+   "scope": "C",
+   "tipo": "BRS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C BRS 001",
+   "field": "assigned_to",
+   "expectedType": "br_async",
+   "expectedNames": [
+    "[PT] v2 BRS C"
+   ]
+  },
+  {
+   "id": "C-BRS-001-impact",
+   "scope": "C",
+   "tipo": "BRS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C BRS 001",
+   "field": "impact",
+   "expectedType": "br_async",
+   "expectedNames": [
+    "[PT] v2 BRS C"
+   ]
+  },
+  {
+   "id": "C-BRS-002-assigned_to",
+   "scope": "C",
+   "tipo": "BRS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C BRS 002",
+   "field": "assigned_to",
+   "expectedType": "br_async",
+   "expectedNames": [
+    "[PT] v2 BRS C"
+   ]
+  },
+  {
+   "id": "C-BRS-002-impact",
+   "scope": "C",
+   "tipo": "BRS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C BRS 002",
+   "field": "impact",
+   "expectedType": "br_async",
+   "expectedNames": [
+    "[PT] v2 BRS C"
+   ]
+  },
+  {
+   "id": "C-BRS-003-assigned_to",
+   "scope": "C",
+   "tipo": "BRS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C BRS 003",
+   "field": "assigned_to",
+   "expectedType": "br_async",
+   "expectedNames": [
+    "[PT] v2 BRS C"
+   ]
+  },
+  {
+   "id": "C-BRS-003-impact",
+   "scope": "C",
+   "tipo": "BRS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C BRS 003",
+   "field": "impact",
+   "expectedType": "br_async",
+   "expectedNames": [
+    "[PT] v2 BRS C"
+   ]
+  },
+  {
+   "id": "C-CS-001-impact",
+   "scope": "C",
+   "tipo": "CS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C CS 001",
+   "field": "impact",
+   "expectedType": "client_script",
+   "expectedNames": [
+    "[PT] v2 Client Script C"
+   ]
+  },
+  {
+   "id": "C-CS-002-impact",
+   "scope": "C",
+   "tipo": "CS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C CS 002",
+   "field": "impact",
+   "expectedType": "client_script",
+   "expectedNames": [
+    "[PT] v2 Client Script C"
+   ]
+  },
+  {
+   "id": "C-CS-003-impact",
+   "scope": "C",
+   "tipo": "CS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C CS 003",
+   "field": "impact",
+   "expectedType": "client_script",
+   "expectedNames": [
+    "[PT] v2 Client Script C"
+   ]
+  },
+  {
+   "id": "C-EV-001-opened_by",
+   "scope": "C",
+   "tipo": "EV",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C EV 001",
+   "field": "opened_by",
+   "expectedType": "script_action",
+   "expectedNames": [
+    "[PT] v2 Script Action C"
+   ]
+  },
+  {
+   "id": "C-EV-001-u_valor",
+   "scope": "C",
+   "tipo": "EV",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C EV 001",
+   "field": "u_valor",
+   "expectedType": "script_action",
+   "expectedNames": [
+    "[PT] v2 Script Action C"
+   ]
+  },
+  {
+   "id": "C-EV-002-opened_by",
+   "scope": "C",
+   "tipo": "EV",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C EV 002",
+   "field": "opened_by",
+   "expectedType": "script_action",
+   "expectedNames": [
+    "[PT] v2 Script Action C"
+   ]
+  },
+  {
+   "id": "C-EV-002-u_valor",
+   "scope": "C",
+   "tipo": "EV",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C EV 002",
+   "field": "u_valor",
+   "expectedType": "script_action",
+   "expectedNames": [
+    "[PT] v2 Script Action C"
+   ]
+  },
+  {
+   "id": "C-EV-003-opened_by",
+   "scope": "C",
+   "tipo": "EV",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C EV 003",
+   "field": "opened_by",
+   "expectedType": "script_action",
+   "expectedNames": [
+    "[PT] v2 Script Action C"
+   ]
+  },
+  {
+   "id": "C-EV-003-u_valor",
+   "scope": "C",
+   "tipo": "EV",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C EV 003",
+   "field": "u_valor",
+   "expectedType": "script_action",
+   "expectedNames": [
+    "[PT] v2 Script Action C"
+   ]
+  },
+  {
+   "id": "C-FRM-001-state",
+   "scope": "C",
+   "tipo": "FRM",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C FRM 001",
+   "field": "state",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "C-FRM-001-urgency",
+   "scope": "C",
+   "tipo": "FRM",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C FRM 001",
+   "field": "urgency",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "C-FRM-002-state",
+   "scope": "C",
+   "tipo": "FRM",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C FRM 002",
+   "field": "state",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "C-FRM-002-urgency",
+   "scope": "C",
+   "tipo": "FRM",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C FRM 002",
+   "field": "urgency",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "C-FRM-003-state",
+   "scope": "C",
+   "tipo": "FRM",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C FRM 003",
+   "field": "state",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "C-FRM-003-urgency",
+   "scope": "C",
+   "tipo": "FRM",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C FRM 003",
+   "field": "urgency",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "C-GBS-001-opened_by",
+   "scope": "C",
+   "tipo": "GBS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C GBS 001",
+   "field": "opened_by",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 GBS C"
+   ]
+  },
+  {
+   "id": "C-GBS-001-u_valor",
+   "scope": "C",
+   "tipo": "GBS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C GBS 001",
+   "field": "u_valor",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 GBS C"
+   ]
+  },
+  {
+   "id": "C-GBS-002-opened_by",
+   "scope": "C",
+   "tipo": "GBS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C GBS 002",
+   "field": "opened_by",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 GBS C"
+   ]
+  },
+  {
+   "id": "C-GBS-002-u_valor",
+   "scope": "C",
+   "tipo": "GBS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C GBS 002",
+   "field": "u_valor",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 GBS C"
+   ]
+  },
+  {
+   "id": "C-GBS-003-opened_by",
+   "scope": "C",
+   "tipo": "GBS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C GBS 003",
+   "field": "opened_by",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 GBS C"
+   ]
+  },
+  {
+   "id": "C-GBS-003-u_valor",
+   "scope": "C",
+   "tipo": "GBS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C GBS 003",
+   "field": "u_valor",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 GBS C"
+   ]
+  },
+  {
+   "id": "C-JOB-001-priority",
+   "scope": "C",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C JOB 001",
+   "field": "priority",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job C"
+   ]
+  },
+  {
+   "id": "C-JOB-001-u_valor",
+   "scope": "C",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C JOB 001",
+   "field": "u_valor",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job C"
+   ]
+  },
+  {
+   "id": "C-JOB-002-priority",
+   "scope": "C",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C JOB 002",
+   "field": "priority",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job C"
+   ]
+  },
+  {
+   "id": "C-JOB-002-u_valor",
+   "scope": "C",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C JOB 002",
+   "field": "u_valor",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job C"
+   ]
+  },
+  {
+   "id": "C-JOB-003-priority",
+   "scope": "C",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C JOB 003",
+   "field": "priority",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job C"
+   ]
+  },
+  {
+   "id": "C-JOB-003-u_valor",
+   "scope": "C",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C JOB 003",
+   "field": "u_valor",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job C"
+   ]
+  },
+  {
+   "id": "C-JOBI-001-u_estoque",
+   "scope": "C",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrailc_item",
+   "u_nome": "[PT] v2 C JOB item 001 (job)",
+   "field": "u_estoque",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job C"
+   ]
+  },
+  {
+   "id": "C-JOBI-001-u_nome",
+   "scope": "C",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrailc_item",
+   "u_nome": "[PT] v2 C JOB item 001 (job)",
+   "field": "u_nome",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job C"
+   ]
+  },
+  {
+   "id": "C-JOBI-002-u_estoque",
+   "scope": "C",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrailc_item",
+   "u_nome": "[PT] v2 C JOB item 002 (job)",
+   "field": "u_estoque",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job C"
+   ]
+  },
+  {
+   "id": "C-JOBI-002-u_nome",
+   "scope": "C",
+   "tipo": "JOB",
+   "table": "x_2270630_pttrailc_item",
+   "u_nome": "[PT] v2 C JOB item 002 (job)",
+   "field": "u_nome",
+   "expectedType": "scheduled_job",
+   "expectedNames": [
+    "[PT] v2 Job C"
+   ]
+  },
+  {
+   "id": "C-LST-001-priority",
+   "scope": "C",
+   "tipo": "LST",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C LST 001",
+   "field": "priority",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "C-LST-002-priority",
+   "scope": "C",
+   "tipo": "LST",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C LST 002",
+   "field": "priority",
+   "expectedType": "user_action",
+   "expectedNames": []
+  },
+  {
+   "id": "C-SG-001-impact",
+   "scope": "C",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 C SG 001",
+   "field": "impact",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 SG C"
+   ]
+  },
+  {
+   "id": "C-SG-001-priority",
+   "scope": "C",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 C SG 001",
+   "field": "priority",
+   "expectedType": "data_lookup",
+   "expectedNames": [
+    "Priority"
+   ]
+  },
+  {
+   "id": "C-SG-001-urgency",
+   "scope": "C",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 C SG 001",
+   "field": "urgency",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 SG C"
+   ]
+  },
+  {
+   "id": "C-SG-002-impact",
+   "scope": "C",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 C SG 002",
+   "field": "impact",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 SG C"
+   ]
+  },
+  {
+   "id": "C-SG-002-priority",
+   "scope": "C",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 C SG 002",
+   "field": "priority",
+   "expectedType": "data_lookup",
+   "expectedNames": [
+    "Priority"
+   ]
+  },
+  {
+   "id": "C-SG-002-urgency",
+   "scope": "C",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 C SG 002",
+   "field": "urgency",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 SG C"
+   ]
+  },
+  {
+   "id": "C-SG-003-impact",
+   "scope": "C",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 C SG 003",
+   "field": "impact",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 SG C"
+   ]
+  },
+  {
+   "id": "C-SG-003-priority",
+   "scope": "C",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 C SG 003",
+   "field": "priority",
+   "expectedType": "data_lookup",
+   "expectedNames": [
+    "Priority"
+   ]
+  },
+  {
+   "id": "C-SG-003-urgency",
+   "scope": "C",
+   "tipo": "SG",
+   "table": "incident",
+   "sd": "[PT] v2 C SG 003",
+   "field": "urgency",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 SG C"
+   ]
+  },
+  {
+   "id": "C-SI-001-close_notes",
+   "scope": "C",
+   "tipo": "SI",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C SI 001",
+   "field": "close_notes",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperC",
+    "[PT] v2 SI C"
+   ]
+  },
+  {
+   "id": "C-SI-001-impact",
+   "scope": "C",
+   "tipo": "SI",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C SI 001",
+   "field": "impact",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperC",
+    "[PT] v2 SI C"
+   ]
+  },
+  {
+   "id": "C-SI-002-close_notes",
+   "scope": "C",
+   "tipo": "SI",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C SI 002",
+   "field": "close_notes",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperC",
+    "[PT] v2 SI C"
+   ]
+  },
+  {
+   "id": "C-SI-002-impact",
+   "scope": "C",
+   "tipo": "SI",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C SI 002",
+   "field": "impact",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperC",
+    "[PT] v2 SI C"
+   ]
+  },
+  {
+   "id": "C-SI-003-close_notes",
+   "scope": "C",
+   "tipo": "SI",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C SI 003",
+   "field": "close_notes",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperC",
+    "[PT] v2 SI C"
+   ]
+  },
+  {
+   "id": "C-SI-003-impact",
+   "scope": "C",
+   "tipo": "SI",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C SI 003",
+   "field": "impact",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperC",
+    "[PT] v2 SI C"
+   ]
+  },
+  {
+   "id": "C-UIA-001-close_notes",
+   "scope": "C",
+   "tipo": "UIA",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C UIA 001",
+   "field": "close_notes",
+   "expectedType": "ui_action",
+   "expectedNames": [
+    "[PT] v2 UI Action C"
+   ]
+  },
+  {
+   "id": "C-UIA-001-impact",
+   "scope": "C",
+   "tipo": "UIA",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C UIA 001",
+   "field": "impact",
+   "expectedType": "ui_action",
+   "expectedNames": [
+    "[PT] v2 UI Action C"
+   ]
+  },
+  {
+   "id": "C-UIA-002-close_notes",
+   "scope": "C",
+   "tipo": "UIA",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C UIA 002",
+   "field": "close_notes",
+   "expectedType": "ui_action",
+   "expectedNames": [
+    "[PT] v2 UI Action C"
+   ]
+  },
+  {
+   "id": "C-UIA-002-impact",
+   "scope": "C",
+   "tipo": "UIA",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C UIA 002",
+   "field": "impact",
+   "expectedType": "ui_action",
+   "expectedNames": [
+    "[PT] v2 UI Action C"
+   ]
+  },
+  {
+   "id": "C-UIA-003-close_notes",
+   "scope": "C",
+   "tipo": "UIA",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C UIA 003",
+   "field": "close_notes",
+   "expectedType": "ui_action",
+   "expectedNames": [
+    "[PT] v2 UI Action C"
+   ]
+  },
+  {
+   "id": "C-UIA-003-impact",
+   "scope": "C",
+   "tipo": "UIA",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C UIA 003",
+   "field": "impact",
+   "expectedType": "ui_action",
+   "expectedNames": [
+    "[PT] v2 UI Action C"
+   ]
+  },
+  {
+   "id": "C-UIP-001-priority",
+   "scope": "C",
+   "tipo": "UIP",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C UIP 001",
+   "field": "priority",
+   "expectedType": "ui_policy",
+   "expectedNames": [
+    "[PT] v2 UI Policy C"
+   ]
+  },
+  {
+   "id": "C-UIP-002-priority",
+   "scope": "C",
+   "tipo": "UIP",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C UIP 002",
+   "field": "priority",
+   "expectedType": "ui_policy",
+   "expectedNames": [
+    "[PT] v2 UI Policy C"
+   ]
+  },
+  {
+   "id": "C-UIP-003-priority",
+   "scope": "C",
+   "tipo": "UIP",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C UIP 003",
+   "field": "priority",
+   "expectedType": "ui_policy",
+   "expectedNames": [
+    "[PT] v2 UI Policy C"
+   ]
+  },
+  {
+   "id": "C-XC-001-close_notes",
+   "scope": "C",
+   "tipo": "XC",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C XC 001",
+   "field": "close_notes",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperC",
+    "[PT] v2 XC C"
+   ]
+  },
+  {
+   "id": "C-XC-002-close_notes",
+   "scope": "C",
+   "tipo": "XC",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C XC 002",
+   "field": "close_notes",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperC",
+    "[PT] v2 XC C"
+   ]
+  },
+  {
+   "id": "C-XC-003-close_notes",
+   "scope": "C",
+   "tipo": "XC",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C XC 003",
+   "field": "close_notes",
+   "expectedType": "br_via_script_include",
+   "expectedNames": [
+    "PTv2HelperC",
+    "[PT] v2 XC C"
+   ]
+  },
+  {
+   "id": "C-XS-001-priority",
+   "scope": "C",
+   "tipo": "XS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C XS 001",
+   "field": "priority",
+   "expectedType": "none",
+   "expectedNames": [],
+   "expectNoChange": true
+  },
+  {
+   "id": "C-XS-001-urgency",
+   "scope": "C",
+   "tipo": "XS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C XS 001",
+   "field": "urgency",
+   "expectedType": "none",
+   "expectedNames": [],
+   "expectNoChange": true
+  },
+  {
+   "id": "C-XS-002-priority",
+   "scope": "C",
+   "tipo": "XS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C XS 002",
+   "field": "priority",
+   "expectedType": "none",
+   "expectedNames": [],
+   "expectNoChange": true
+  },
+  {
+   "id": "C-XS-002-urgency",
+   "scope": "C",
+   "tipo": "XS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C XS 002",
+   "field": "urgency",
+   "expectedType": "none",
+   "expectedNames": [],
+   "expectNoChange": true
+  },
+  {
+   "id": "C-XS-003-priority",
+   "scope": "C",
+   "tipo": "XS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C XS 003",
+   "field": "priority",
+   "expectedType": "none",
+   "expectedNames": [],
+   "expectNoChange": true
+  },
+  {
+   "id": "C-XS-003-urgency",
+   "scope": "C",
+   "tipo": "XS",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C XS 003",
+   "field": "urgency",
+   "expectedType": "none",
+   "expectedNames": [],
+   "expectNoChange": true
+  },
+  {
+   "id": "C-XSR-001-impact",
+   "scope": "C",
+   "tipo": "XSR",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C XSR 001",
+   "field": "impact",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 XSR C",
+    "PTv2CrossA"
+   ]
+  },
+  {
+   "id": "C-XSR-002-impact",
+   "scope": "C",
+   "tipo": "XSR",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C XSR 002",
+   "field": "impact",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 XSR C",
+    "PTv2CrossA"
+   ]
+  },
+  {
+   "id": "C-XSR-003-impact",
+   "scope": "C",
+   "tipo": "XSR",
+   "table": "x_2270630_pttrailc_pedido",
+   "sd": "[PT] v2 C XSR 003",
+   "field": "impact",
+   "expectedType": "br_before",
+   "expectedNames": [
+    "[PT] v2 XSR C",
+    "PTv2CrossA"
+   ]
+  }
+ ]
+}
