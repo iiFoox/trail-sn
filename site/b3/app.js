@@ -341,7 +341,7 @@
         const phase = i * 1.17, base = H * (i + .5) / count;
         const slope = Math.sin(i * 2.4) * .11;
         const amplitude = 16 + (i % 4) * 7;
-        ctx.strokeStyle = i % 5 === 1 ? 'rgba(98,216,78,.16)' : 'rgba(43,179,159,.12)';
+        ctx.strokeStyle = i % 5 === 1 ? 'rgba(98,216,78,.12)' : 'rgba(43,179,159,.09)';
         ctx.lineWidth = i % 5 === 1 ? 1.25 : .9;
         ctx.beginPath();
         for (let x = -20; x <= W + 20; x += 18) {

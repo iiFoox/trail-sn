@@ -10,6 +10,17 @@ Convenções:
 
 ---
 
+## 2026-10-22 — revisão completa do site no celular (Codex #2)
+
+- **Revisão visual:** percorri a página inteira em 390 px e 360 px e gerei capturas locais de cada seção em `.pedido-site/mobile-review-final/` (fora do Git). Os problemas concretos eram a sobreposição das duas primeiras métricas, a tabela larga cortada, os cartões de causas apertados em duas colunas e o sublinhado animado atravessando títulos do método.
+- **Correções (`site/b3/style.css`):** ajustei espaçamento, altura de linha, quebra de títulos, margens seguras e deslocamento das âncoras sob a navegação fixa. As métricas mantêm espaço entre si; os cartões passam a uma coluna; a tabela vira cartões móveis preservando as seis informações de cada caso; o sublinhado decorativo some nos títulos estreitos. O layout de PC permanece com a tabela completa.
+- **Fundo:** reduzi a intensidade das curvas verdes e azuis para que elas não pareçam sublinhados sob o texto. A animação continua nítida, com resolução proporcional à tela, limite de custo, 20 quadros/s, luzes fixas e nenhuma reação ao cursor.
+- **Cobertura (`tests/e2e/_site-demo.mjs`):** agora verifica em 390 px que as métricas não colidem, a tabela não tem rolagem horizontal e nenhuma das seis células do caso foi escondida; em 360 px confirma largura da página, separação das métricas e mosaico em uma coluna. Resultado: `errs: []`, nenhuma imagem quebrada, zero overflow em 1280/390/360 px e escala do canvas igual a 1.
+- **Validação:** `npm run typecheck` passou; Vitest programático passou em 28 arquivos/292 testes; as 12 suítes de `npm run e2e` passaram e `recolhido.mjs` foi repetido isoladamente com `errors: []`; `git diff --check` passou. `npm test` e `npm run build` padrão continuam bloqueados pelo esbuild ao tentar ler acima do workspace (`Acesso negado`); nenhuma dependência foi alterada.
+- **Em aberto:** depois do envio, confirmar o deploy Ready no Vercel e repetir as medidas principais na URL publicada em viewport de celular.
+
+---
+
 ## 2026-10-22 — fundo do site mais nítido e sem reação ao cursor (Codex #2)
 
 - **Motivo:** o dono achou o fundo animado feio e pediu mais definição, sem seguir o cursor. O canvas anterior era renderizado em até 140 mil pixels no celular e 520 mil no PC e esticado para a tela; 48/140 partículas acumulavam traços embaralhados. Duas luzes também mudavam de posição em cada `pointermove`.

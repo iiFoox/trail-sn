@@ -220,6 +220,19 @@ await page.waitForTimeout(400);
 const overflow390 = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
 const mobileBackgroundScale = await page.evaluate(() => document.getElementById('trails').width / innerWidth);
 if (mobileBackgroundScale < .95) errs.push('canvas do fundo está sendo esticado no celular: ' + mobileBackgroundScale);
+const mobileNumbers = await page.evaluate(() => {
+  const boxes = [...document.querySelectorAll('.num b')].map((el) => el.getBoundingClientRect());
+  const table = document.querySelector('.tbl');
+  return {
+    firstRight: Math.round(boxes[0].right),
+    secondLeft: Math.round(boxes[1].left),
+    tableOverflow: table.scrollWidth - table.clientWidth,
+    visibleTableCells: [...table.querySelectorAll('tbody tr:first-child td')].filter((el) => getComputedStyle(el).display !== 'none').length,
+  };
+});
+if (mobileNumbers.firstRight > mobileNumbers.secondLeft) errs.push('números se sobrepõem em 390px: ' + JSON.stringify(mobileNumbers));
+if (mobileNumbers.tableOverflow > 0) errs.push('tabela ainda exige rolagem horizontal em 390px: ' + JSON.stringify(mobileNumbers));
+if (mobileNumbers.visibleTableCells !== 6) errs.push('tabela perdeu informações no celular: ' + JSON.stringify(mobileNumbers));
 await page.locator('#painel').scrollIntoViewIfNeeded();
 await page.waitForTimeout(300);
 const stack390 = await page.evaluate(() => {
@@ -230,9 +243,21 @@ const stack390 = await page.evaluate(() => {
 if (!(stack390.calloutsTop >= stack390.shotBottom - 4)) errs.push('em 390px a linha do tempo não ficou abaixo do painel: ' + JSON.stringify(stack390));
 if (S) await page.locator('#painel').screenshot({ path: S + 'painel-timeline-390.png' });
 
+await page.setViewportSize({ width: 360, height: 780 });
+await page.waitForTimeout(250);
+const mobile360 = await page.evaluate(() => {
+  const nums = [...document.querySelectorAll('.num b')].map((el) => el.getBoundingClientRect());
+  return {
+    overflow: document.documentElement.scrollWidth - innerWidth,
+    numbersOverlap: nums[0].right > nums[1].left,
+    mosaicColumns: getComputedStyle(document.querySelector('.mosaic')).gridTemplateColumns.split(' ').length,
+  };
+});
+if (mobile360.overflow > 0 || mobile360.numbersOverlap || mobile360.mosaicColumns !== 1) errs.push('layout ruim em 360px: ' + JSON.stringify(mobile360));
+
 console.log(JSON.stringify({
   results,
-  checks: { shotPosition, seenCount, progVal, tblInit, faqOpen, roadVis0, roadVis1, background, mobileBackgroundScale, stack390 },
+  checks: { shotPosition, seenCount, progVal, tblInit, faqOpen, roadVis0, roadVis1, background, mobileBackgroundScale, mobileNumbers, mobile360, stack390 },
   brokenImgs,
   overflow1280,
   overflow390,
