@@ -8,7 +8,7 @@ import { dirname, join, resolve, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../../site');
-const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png' };
+const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.webp': 'image/webp' };
 const srv = createServer((req, res) => {
   const urlPath = decodeURIComponent(req.url.split('?')[0]);
   let p = join(root, urlPath); if (existsSync(p) && statSync(p).isDirectory()) p = join(p, 'index.html'); if (!existsSync(p)) { res.writeHead(404); return res.end(); } res.writeHead(200, { 'content-type': mime[extname(p)] || 'application/octet-stream' }); res.end(readFileSync(p));
@@ -18,7 +18,7 @@ const b = await chromium.launch({ channel: 'chromium' });
 const page = await b.newPage({ viewport: { width: 1280, height: 860 } });
 const errs = [];
 page.on('pageerror', (e) => errs.push('top: ' + e.message));
-page.on('console', (m) => { if (m.type() === 'error' && !/fonts|TUNNEL/.test(m.text())) errs.push('console: ' + m.text() + ' ' + JSON.stringify(m.location())); });
+page.on('console', (m) => { if (m.type() === 'error' && !/fonts|TUNNEL/.test(m.text()) && !/fonts\.googleapis\.com/.test(m.location().url || '')) errs.push('console: ' + m.text() + ' ' + JSON.stringify(m.location())); });
 const navs = [];
 page.on('framenavigated', (f) => { if (f !== page.mainFrame() && !/localhost:4481/.test(f.url())) navs.push(f.url()); });
 page.on('popup', (p) => navs.push('popup ' + p.url()));
@@ -143,6 +143,8 @@ const roadItemEn = await page.$eval('#roadmap .now ul li[data-i18n="road_p1_l1"]
 const beforeItemEn = await page.$eval('#antes ol li[data-i18n="antes_without_li1"]', (el) => el.textContent.trim());
 const numbersIntroEn = await page.$eval('#numeros p[data-i18n="numeros_sub"]', (el) => el.textContent.trim());
 const screensIntroEn = await page.$eval('#telas p[data-i18n="telas_sub"]', (el) => el.textContent.trim());
+const advancedEn = await page.$eval('#telas p[data-i18n="telas_advanced"]', (el) => el.textContent.trim());
+const traceEn = await page.$eval('#callouts [data-i18n="co4_b"]', (el) => el.textContent.trim());
 if (langEn !== 'en') errs.push('ao clicar em EN, documentElement.lang não ficou "en": ' + langEn);
 if (!titleEn.includes('Record Forensics')) errs.push('ao clicar em EN, título não mudou para inglês: ' + titleEn);
 if (navTryEn !== 'Try it') errs.push('ao clicar em EN, botão do nav não mudou para "Try it": ' + navTryEn);
@@ -150,8 +152,10 @@ if (!tblRowEn.includes('resolves the incident')) errs.push('ao clicar em EN, exe
 if (!roadBtnEn.startsWith('View more')) errs.push('ao clicar em EN, botão do roadmap não mudou para "View more...": ' + roadBtnEn);
 if (!roadItemEn.includes('Works without admin')) errs.push('ao clicar em EN, item da Fase 1 do roadmap não mudou para inglês: ' + roadItemEn);
 if (!beforeItemEn.startsWith('Open record history')) errs.push('ao clicar em EN, passos de comparação não mudaram para inglês: ' + beforeItemEn);
-if (!numbersIntroEn.startsWith('Regression suite')) errs.push('ao clicar em EN, introdução dos resultados não mudou para inglês: ' + numbersIntroEn);
-if (!screensIntroEn.startsWith('Assistant bubble')) errs.push('ao clicar em EN, introdução da galeria não mudou para inglês: ' + screensIntroEn);
+if (!numbersIntroEn.startsWith('We tested changes')) errs.push('ao clicar em EN, introdução dos resultados não mudou para inglês: ' + numbersIntroEn);
+if (!screensIntroEn.startsWith('The bubble')) errs.push('ao clicar em EN, introdução da galeria não mudou para inglês: ' + screensIntroEn);
+if (!advancedEn.includes('off by default')) errs.push('modo avançado não traduziu: ' + advancedEn);
+if (!traceEn.includes('newest to oldest')) errs.push('ordem do Rastro não traduziu: ' + traceEn);
 
 // Checar acesso direto via URL ?lang=en e persistência após reload em nova aba
 const pageEn = await b.newPage();
