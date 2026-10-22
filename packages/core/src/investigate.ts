@@ -472,7 +472,15 @@ function buildTrace(ctx: ChangeContext, top: Change['evidence'][number] | undefi
       items.push({ ...base, kind: 'form', label: 'Workspace', cause: wsCause });
       continue;
     }
-    if (url.includes('/api/')) { items.push({ ...base, kind: 'api', label: url.split('?')[0]?.slice(0, 80) ?? url }); continue; }
+    if (url.includes('/api/')) {
+      // Só conta como gravação a chamada ao próprio registro (/api/now/table/<tabela>/<sys_id>). Leituras que só citam o
+      // sys_id na consulta (ex.: /api/now/table/wf_context?sysparm_query=id=<sys_id>) são consultas, inclusive as do próprio
+      // Trail ou de outras extensões, e não entram no rastro como "Gravação via API".
+      const path = url.split('?')[0] ?? url;
+      if (!path.includes(ctx.sysId)) continue;
+      items.push({ ...base, kind: 'api', label: path.slice(0, 80) });
+      continue;
+    }
     // Só envios de formulário contam; o recarregamento da página depois de salvar (GET ?sys_id=) não.
     if (!isFormSubmitFor(url, ctx.sysId)) continue;
     const sent = new URLSearchParams(url.split('?')[1] ?? '').get(`${ctx.table}.${ctx.field}`);

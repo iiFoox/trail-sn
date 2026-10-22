@@ -361,8 +361,8 @@ function Trace({ r, c, origin, field, denied, expired }: { r: Investigation; c: 
       {txIds.length > 1 && (
         <a class="btn sm openall" href={refLink(origin, { table: 'syslog_transaction', query: `sys_idIN${txIds.join(',')}` })} target="_blank" rel="noreferrer">{Glyph.open} {fmt(P.openAllTx, { n: txIds.length })}</a>
       )}
-      <ol class="tl">
-        {items.map((it, idx) => {
+      <ol class="tl rev">
+        {[...items].reverse().map((it, idx) => {
           const p = parts(it.at);
           const isChange = it.kind === 'change';
           const isWrite = it.kind === 'write';

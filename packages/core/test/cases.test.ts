@@ -259,6 +259,18 @@ describe('Rastro e rótulos', () => {
     expect(c.trace[0]?.sent).toBe('1');
   });
 
+  it('consultas da API que só citam o sys_id (do próprio Trail, por exemplo) não viram "Gravação via API"', async () => {
+    const s = scenario();
+    audit(s, 'state', '1', '2', shiftStr(T0, 2), 'admin', 2);
+    formTx(s, shiftStr(T0, 2), 'admin', { state: '2' });
+    tx(s, shiftStr(T0, 3), 'rest', `/api/now/table/wf_context?sysparm_query=id=${INC.sysId}`, 'admin');
+    tx(s, shiftStr(T0, 3), 'rest', `/api/now/table/sysevent?sysparm_query=instance=${INC.sysId}`, 'admin');
+    tx(s, shiftStr(T0, 4), 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
+    const c = (await run(s, 'state')).changes[0]!;
+    const apis = c.trace.filter((t) => t.kind === 'api');
+    expect(apis.map((t) => t.label)).toEqual([`/api/now/table/incident/${INC.sysId}`]);
+  });
+
   it('usa o rótulo da filha no idioma pedido', async () => {
     const s = scenario();
     audit(s, 'state', '1', '2', T0, 'admin', 1);
