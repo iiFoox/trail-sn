@@ -30,6 +30,8 @@
       timeZone: w.g_user_timezone || w.g_tz || undefined,
       table: safe(() => w.g_form?.getTableName?.()),
       sysId: safe(() => w.g_form?.getUniqueValue?.()),
+      // Número do registro (INC0010001) para o painel mostrar qual registro está aberto.
+      display: safe(() => (w.g_form as unknown as { getValue?: (f: string) => string } | undefined)?.getValue?.('number')) || safe(() => (w.g_form as unknown as { getDisplayValue?: () => string } | undefined)?.getDisplayValue?.()) || undefined,
     };
     document.dispatchEvent(new CustomEvent('trail:context', { detail }));
   }

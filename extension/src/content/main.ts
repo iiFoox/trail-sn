@@ -213,7 +213,7 @@ const decorated = new WeakSet<Element>();
 
 function onPageContext(e: Event): void {
   if (!checkContext()) return;
-  const d = (e as CustomEvent<{ token?: string; userName?: string; language?: string; timeZone?: string; table?: string; sysId?: string }>).detail ?? {};
+  const d = (e as CustomEvent<{ token?: string; userName?: string; language?: string; timeZone?: string; table?: string; sysId?: string; display?: string }>).detail ?? {};
   ctx = {
     ...ctx,
     token: d.token ?? ctx.token,
@@ -223,6 +223,8 @@ function onPageContext(e: Event): void {
     // O g_form da página é a fonte mais certa do registro aberto; a URL do shell pode estar atrasada.
     table: d.table ?? ctx.table,
     sysId: d.sysId ?? ctx.sysId,
+    // O número só vale para o registro em que foi lido: trocou de registro sem número novo, some.
+    display: d.display ?? (d.sysId && d.sysId !== ctx.sysId ? undefined : ctx.display),
     surface: ctx.surface === 'unknown' && d.table ? 'ui16' : ctx.surface,
   };
   pushContext();

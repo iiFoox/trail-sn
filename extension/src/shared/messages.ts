@@ -5,6 +5,8 @@ export interface PageContext {
   origin: string;
   table?: string;
   sysId?: string;
+  /** Número ou nome do registro aberto (ex.: INC0010001), lido do formulário. */
+  display?: string;
   /** X-UserToken da sessão, quando a página expõe window.g_ck. */
   token?: string;
   userName?: string;
