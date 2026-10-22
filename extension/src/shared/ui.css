@@ -267,12 +267,19 @@ button.link svg { width: 13px; height: 13px; }
 .warnbar .muted { white-space: nowrap; }
 /* rastro */
 ol.tl { list-style: none; margin: 0; padding: 0 0 0 24px; position: relative; display: flex; flex-direction: column; gap: 10px; }
-ol.tl::before { content: ''; position: absolute; left: 7px; top: 10px; bottom: 10px; width: 2px; background: var(--line); }
 ol.tl li { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 9px 12px; box-shadow: var(--shadow); }
-ol.tl li::before { content: ''; position: absolute; left: -22px; top: 12px; width: 10px; height: 10px; border-radius: 50%; background: var(--bg); border: 2px solid var(--line-2); }
+/* Bolinhas e linha com uma só medida: centro das bolinhas a 17 px à esquerda do cartão e 17 px abaixo do topo dele.
+   A linha é desenhada em trechos, de cada bolinha até a seguinte (10 px de vão + 17 px), e acaba na última bolinha. */
+ol.tl li::before { content: ''; box-sizing: border-box; position: absolute; z-index: 1; left: -23px; top: 11px; width: 12px; height: 12px; border-radius: 50%; background: var(--bg); border: 2px solid var(--line-2); }
+ol.tl > li::after { content: ''; position: absolute; z-index: 0; left: -18px; width: 2px; top: 17px; bottom: -27px; background: var(--line-2); }
+ol.tl > li:last-child::after { display: none; }
 ol.tl li.key { border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-soft); }
 ol.tl li.key::before { background: var(--teal); border-color: var(--teal); }
 ol.tl li.res::before { background: var(--mint); border-color: var(--mint); }
+/* Rastro do mais recente para o mais antigo: o destaque (borda e brilho) e a bolinha verde ficam sempre no item do topo.
+   A causa continua marcada pela etiqueta "Causa" e pela bolinha azul-esverdeada, sem o brilho. */
+ol.tl.rev > li.key { border-color: var(--line); box-shadow: var(--shadow); }
+ol.tl.rev > li:first-child:not(.gapi) { border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-soft); }
 ol.tl.rev > li:first-child::before { background: var(--mint); border-color: var(--mint); }
 ol.tl li.gapi { border-style: dashed; background: transparent; box-shadow: none; }
 ol.tl li.gapi::before { border-style: dashed; border-color: #f0c75a; }
@@ -334,7 +341,7 @@ details.fold summary h4 .pill + * { display: none; }
 .headcard .longv { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; font-weight: 400; flex-basis: 100%; }
 /* 0.5: rastro do registro inteiro e links para a instância */
 ol.tl li.other { background: transparent; box-shadow: none; }
-ol.tl li.other::before { width: 8px; height: 8px; left: -21px; top: 13px; }
+ol.tl li.other::before { width: 10px; height: 10px; left: -22px; top: 12px; }
 ol.tl li.other .x { font-weight: 600; color: var(--fg-2); }
 .tl ul.fw { list-style: none; margin: 4px 0 0 21px; padding: 0; font-size: 12px; color: var(--fg-2); display: flex; flex-direction: column; gap: 2px; overflow-wrap: anywhere; }
 .tl ul.fw b { color: var(--fg); font-weight: 600; }
@@ -524,6 +531,7 @@ ul.fl .fbtn .v .o.nil { text-decoration: none; font-style: italic; }
 @keyframes inkring { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--confirmed-line, #3ecf8e) 55%, transparent); } 100% { box-shadow: 0 0 0 14px transparent; } }
 @keyframes fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes sweep { from { background-position: -120% 0; } to { background-position: 220% 0; } }
+@keyframes drop { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 @keyframes strike { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes slidein-r { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
 @keyframes lens { from { offset-distance: 0%; } to { offset-distance: 100%; } }
@@ -576,9 +584,9 @@ ul.fl .fbtn .v .o.nil { text-decoration: none; font-style: italic; }
 
 /* listas que entram uma a uma */
 .li.fact, ol.tl > li, ol.rtl > li, .hist .h, details.grp { animation: rise .32s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i, 0) * 45ms + 60ms); }
-ol.tl::before { transform-origin: top; animation: strike .7s .1s cubic-bezier(.6,0,.3,1) both; }
+ol.tl > li::after { transform-origin: top; animation: drop .3s cubic-bezier(.6,0,.3,1) both; animation-delay: calc(var(--i, 0) * 45ms + 200ms); }
 ol.tl > li::before { animation: pop .4s cubic-bezier(.3,1.6,.5,1) both; animation-delay: calc(var(--i, 0) * 45ms + 160ms); }
-ol.tl > li.key { animation: rise .32s cubic-bezier(.2,.8,.2,1) both, inkring 1s ease-out; animation-delay: calc(var(--i, 0) * 45ms + 60ms), calc(var(--i, 0) * 45ms + 420ms); }
+ol.tl:not(.rev) > li.key, ol.tl.rev > li:first-child:not(.gapi) { animation: rise .32s cubic-bezier(.2,.8,.2,1) both, inkring 1s ease-out; animation-delay: calc(var(--i, 0) * 45ms + 60ms), calc(var(--i, 0) * 45ms + 420ms); }
 .dsum { animation: rise .35s .4s both; }
 .dsum code.add, .dsum code.del { background-size: 240% 100%; }
 .dsum:hover .go svg { transform: translate(2px, -2px); transition: transform .2s; }

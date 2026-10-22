@@ -76,6 +76,16 @@ try {
   out.traceSteps = await page.locator('ol.tl > li').evaluateAll((ls) => ls.filter((l) => l.getBoundingClientRect().height > 0).length);
   if (out.traceSteps < 2) errors.push('Rastro deixou de vir aberto: ' + out.traceSteps);
   if (await page.locator('.tabpane details').count()) errors.push('Rastro ganhou recolhível');
+  // Rastro do mais recente para o mais antigo: horários em ordem decrescente, e o destaque (brilho + bolinha verde) só no topo.
+  const tl = await page.locator('ol.tl > li:not(.gapi)').evaluateAll((ls) => ls.map((l) => {
+    const cs = getComputedStyle(l); const dot = getComputedStyle(l, '::before');
+    return { t: l.querySelector('.t b')?.textContent ?? '', glow: cs.boxShadow.includes('0px 0px 0px 3px'), dot: dot.backgroundColor };
+  }));
+  out.trace = tl;
+  for (let i = 1; i < tl.length; i++) if (tl[i].t > tl[i - 1].t) errors.push(`Rastro fora de ordem: ${tl[i - 1].t} antes de ${tl[i].t}`);
+  if (!tl[0]?.glow) errors.push('Rastro: o item do topo não está destacado');
+  if (tl.slice(1).some((x) => x.glow)) errors.push('Rastro: destaque fora do topo');
+  if (tl.slice(1).some((x) => x.dot === tl[0].dot)) errors.push('Rastro: bolinha verde fora do topo');
 
   // Provas: tudo recolhido, com resumo no cabeçalho.
   await page.goto(`${base}&field=state&tab=proof`);

@@ -404,3 +404,10 @@ Pedidos do dono depois de testar a 0.12.2 no Edge:
 ## 21/10/2026, 22h50 — 1.4.2
 - Rastro agora vai do mais recente para o mais antigo; o primeiro da lista sempre tem a bolinha verde (pedido do Gabriel).
 - O motor não conta mais como "Gravação via API" as consultas que só citam o sys_id na query (ex.: wf_context, sysevent lidos pelo próprio Trail). Só conta a chamada no caminho do registro (`/api/now/table/<tabela>/<sys_id>`). Teste novo em cases.test.ts.
+
+## 21/10/2026, 23h — 1.4.3
+- Rastro: o destaque (borda e brilho) e a bolinha verde ficam sempre no item do topo. A causa mantém a etiqueta "Causa" e a bolinha azul-esverdeada, sem brilho.
+- Linha do Rastro refeita: em vez de uma linha só na lista inteira (que passava 1 px fora do centro das bolinhas e descia além da última), cada item desenha o trecho da sua bolinha até a seguinte. Bolinhas com 12 px e `box-sizing: border-box`; centro medido igual (x e y) em todas. A linha usa `--line-2` para aparecer no tema claro.
+- O e2e `recolhido.mjs` agora confere a ordem decrescente e que o destaque e a bolinha verde só aparecem no topo.
+- Ordem lógica, não só pelo relógio: a transação que causou a mudança é gravada no log no fim da requisição (até 3 s depois), então pode aparecer com horário 1 s maior logo abaixo da mudança. É de propósito (o motor já ordenava assim).
+- Lição: mudar ordem/destaque de lista visual pede print e medida antes de entregar, nos dois temas.
