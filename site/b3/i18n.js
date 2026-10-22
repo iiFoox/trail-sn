@@ -228,6 +228,7 @@
       footer_faq: 'Perguntas',
       footer_access: 'Sem admin',
       footer_road: 'Caminho',
+      footer_privacy: 'Privacidade',
       footer_other: '← outras direções',
     },
     en: {
@@ -458,6 +459,7 @@
       footer_faq: 'FAQ',
       footer_access: 'No admin',
       footer_road: 'Roadmap',
+      footer_privacy: 'Privacy',
       footer_other: '← other directions',
     }
   };

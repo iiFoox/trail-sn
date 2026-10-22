@@ -154,6 +154,9 @@ const beforeItemEn = await page.$eval('#antes ol li[data-i18n="antes_without_li1
 const numbersIntroEn = await page.$eval('#numeros p[data-i18n="numeros_sub"]', (el) => el.textContent.trim());
 const screensIntroEn = await page.$eval('#telas p[data-i18n="telas_sub"]', (el) => el.textContent.trim());
 const advancedEn = await page.$eval('#telas p[data-i18n="telas_advanced"]', (el) => el.textContent.trim());
+const privacyLinkEn = await page.$eval('footer a[href="/privacidade/"]', (el) => ({
+  text: el.textContent.trim(), target: el.getAttribute('target'), rel: el.getAttribute('rel'),
+}));
 const traceEn = await page.$eval('#callouts [data-i18n="co4_b"]', (el) => el.textContent.trim());
 if (langEn !== 'en') errs.push('ao clicar em EN, documentElement.lang não ficou "en": ' + langEn);
 if (!titleEn.includes('Record Forensics')) errs.push('ao clicar em EN, título não mudou para inglês: ' + titleEn);
@@ -166,6 +169,9 @@ if (!numbersIntroEn.startsWith('We tested changes')) errs.push('ao clicar em EN,
 if (!screensIntroEn.startsWith('The bubble')) errs.push('ao clicar em EN, introdução da galeria não mudou para inglês: ' + screensIntroEn);
 if (!advancedEn.includes('off by default')) errs.push('modo avançado não traduziu: ' + advancedEn);
 if (!traceEn.includes('newest to oldest')) errs.push('ordem do Rastro não traduziu: ' + traceEn);
+if (privacyLinkEn.text !== 'Privacy') errs.push('link da política não traduziu: ' + privacyLinkEn.text);
+if (privacyLinkEn.target !== '_blank' || !privacyLinkEn.rel?.split(/\s+/).includes('noopener')) errs.push('política não abre em aba separada com isolamento');
+if ((await page.locator('main').innerText()).includes('Purpose, sharing, and user control')) errs.push('política foi incorporada à página principal');
 
 // Checar acesso direto via URL ?lang=en e persistência após reload em nova aba
 const pageEn = await b.newPage();

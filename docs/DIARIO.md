@@ -10,6 +10,15 @@ Convenções:
 
 ---
 
+## 2026-10-22 — política acessível em página separada (Codex #2)
+
+- **Comportamento:** a política continua somente em `/privacidade/`; nenhum texto longo foi incorporado à página principal. O rodapé de `site/b3` ganhou o link “Privacidade”/“Privacy”, que abre a rota em uma nova aba com `target="_blank"` e `rel="noopener"`.
+- **Cobertura:** `_site-demo.mjs` agora confirma a tradução PT/EN do link, a abertura em outra aba com isolamento e a ausência do conteúdo da política dentro do `main` da página principal.
+- **Validação:** `npm run typecheck`, `node --check site/b3/i18n.js`, `_site-demo.mjs` e as 12 suítes de `npm run e2e` passaram. O teste visual manteve zero overflow em 1280, 390 e 360 px. `npm test` e `npm run build` padrão continuam bloqueados pelo esbuild ao tentar ler acima do workspace; o build do core passou antes do bloqueio da extensão.
+- **Em aberto:** publicar o commit e confirmar o link no site em produção. O envio às lojas continua exclusivo do dono.
+
+---
+
 ## 2026-10-22 — pacotes 1.4.4 e ficha final das lojas (Codex #2)
 
 - **Pacotes recebidos:** conferi `trail-chrome-1.4.4.zip` e `trail-extensao-1.4.4 (1).zip`, renomeando o segundo no repositório sem o sufixo de download. O pacote Chrome tem o manifest na raiz e 32 arquivos sem mapas; o pacote de instalação manual tem a pasta `trail-extensao/`, mapas e `build.txt`. Removidos mapas e `build.txt`, os 32 arquivos de runtime são idênticos. Ambos usam Manifest V3, versão 1.4.4 e Chrome mínimo 120.
