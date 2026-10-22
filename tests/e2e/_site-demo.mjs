@@ -24,6 +24,14 @@ page.on('framenavigated', (f) => { if (f !== page.mainFrame() && !/localhost:448
 page.on('popup', (p) => navs.push('popup ' + p.url()));
 await page.goto('http://localhost:4481/b3/');
 await page.addStyleTag({ content: 'html{scroll-behavior:auto!important}' });
+await page.mouse.move(100, 100);
+await page.mouse.move(800, 500);
+const background = await page.evaluate(() => ({
+  scale: document.getElementById('trails').width / innerWidth,
+  cursorGlow: document.querySelector('.glow').style.cssText,
+}));
+if (background.scale < .95) errs.push('canvas do fundo está sendo esticado no desktop: ' + background.scale);
+if (background.cursorGlow) errs.push('luzes do fundo ainda seguem o cursor: ' + background.cursorGlow);
 await page.locator('.compo').scrollIntoViewIfNeeded();
 await page.waitForSelector('#cform[src]', { timeout: 10000 });
 await page.waitForSelector('#cpanel[src]', { timeout: 10000 });
@@ -210,6 +218,8 @@ const overflow1280 = await page.evaluate(() => document.documentElement.scrollWi
 await page.setViewportSize({ width: 390, height: 844 });
 await page.waitForTimeout(400);
 const overflow390 = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+const mobileBackgroundScale = await page.evaluate(() => document.getElementById('trails').width / innerWidth);
+if (mobileBackgroundScale < .95) errs.push('canvas do fundo está sendo esticado no celular: ' + mobileBackgroundScale);
 await page.locator('#painel').scrollIntoViewIfNeeded();
 await page.waitForTimeout(300);
 const stack390 = await page.evaluate(() => {
@@ -222,7 +232,7 @@ if (S) await page.locator('#painel').screenshot({ path: S + 'painel-timeline-390
 
 console.log(JSON.stringify({
   results,
-  checks: { shotPosition, seenCount, progVal, tblInit, faqOpen, roadVis0, roadVis1, stack390 },
+  checks: { shotPosition, seenCount, progVal, tblInit, faqOpen, roadVis0, roadVis1, background, mobileBackgroundScale, stack390 },
   brokenImgs,
   overflow1280,
   overflow390,

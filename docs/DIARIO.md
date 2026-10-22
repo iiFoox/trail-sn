@@ -10,6 +10,17 @@ Convenções:
 
 ---
 
+## 2026-10-22 — fundo do site mais nítido e sem reação ao cursor (Codex #2)
+
+- **Motivo:** o dono achou o fundo animado feio e pediu mais definição, sem seguir o cursor. O canvas anterior era renderizado em até 140 mil pixels no celular e 520 mil no PC e esticado para a tela; 48/140 partículas acumulavam traços embaralhados. Duas luzes também mudavam de posição em cada `pointermove`.
+- **Mudança (`site/b3/app.js`, `style.css`):** substituí as partículas por curvas contínuas que avançam lentamente, com sete linhas no celular e doze no PC. O canvas usa resolução interna proporcional à tela e ao DPR, com orçamento de até 600 mil/1,8 milhão de pixels, e desenha a 20 quadros/s; a captura de 390 e 1280 px usa escala 1, sem ampliação borrada. Retirei a leitura da posição do cursor do fundo e fixei as duas luzes. O cursor próprio da interface, os efeitos nos cartões e os controles continuam independentes. `prefers-reduced-motion` continua ocultando o canvas.
+- **Conferência visual:** prints locais antes em `.pedido-site/review/after/` e depois em `.pedido-site/review/new/`, para PC e celular. A primeira versão desta mudança ficou tênue demais; troquei os traços soltos por linhas longas e ajustei o custo por quadro após medir a prévia.
+- **Medição local (`_site-perf.mjs --font=slow`):** em celular CPU 6×/Fast 3G, rolagem 50,3→57,4 fps e primeira pintura 2728→2676 ms; em celular CPU 4×/Slow 4G, 101,1→111,1 fps e 1488→1352 ms. No PC CPU 2×, rolagem 129,9→125,8 fps (variação pequena) e primeira pintura 676→680 ms. Esses números são de Chromium local sob emulação; aparência e fluidez no Edge real ainda pedem observação do dono. JSON local em `.pedido-site/review/perf-background-final.json`.
+- **Testes:** `_site-demo.mjs` passou com zero erros, imagens quebradas e overflow em 1280/390 px. O teste novo mede resolução do canvas e confirma que mover o ponteiro não muda as luzes. `npm run typecheck` passou; Vitest programático passou em 28 arquivos/292 testes; `npm run e2e` passou nas 12 suítes. `npm test` e `npm run build` padrão falharam no carregador esbuild por acesso negado acima do workspace; nenhuma dependência foi instalada.
+- **Em aberto:** conferir o movimento e a nitidez no Edge real depois da publicação. Ajustar somente se a observação visual mostrar problema.
+
+---
+
 ## 2026-10-22 — pedido-site.zip: clareza, desempenho e demonstração da 1.4.4 (Codex #2)
 
 - **Fonte e integração:** li `PEDIDO-SITE.md` inteiro do ZIP do dono. Trouxe o `master` do bundle até `6409ca5` e apliquei o commit de desempenho `bb915d4` como `3bd4f21`. O site agora usa a extensão 1.4.4 nas demonstrações (`site/assets` e `site/demo`), com capturas atualizadas em `site/b3/img` e versões WebP sem perdas. Não alterei dados da instância.

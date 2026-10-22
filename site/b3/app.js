@@ -3,13 +3,6 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-  // luz que segue o cursor
-  const glow = $('.glow');
-  if (!reduce) addEventListener('pointermove', (e) => {
-    glow.style.setProperty('--gx', ((e.clientX / innerWidth) - .5) * 160 + 'px');
-    glow.style.setProperty('--gy', ((e.clientY / innerHeight) - .5) * 160 + 'px');
-  }, { passive: true });
-
   // nav
   const nav = $('#nav');
   addEventListener('scroll', () => nav.classList.toggle('scrolled', scrollY > 40), { passive: true });
@@ -323,44 +316,40 @@
     document.addEventListener('pointerover', (e) => cur.classList.toggle('on', !!e.target.closest('a,button,.tile,.q,.seg')));
   } else cur.remove();
 
-  // ---------- fundo: partículas em trilhas (campo de fluxo), atraídas pelo cursor ----------
+  // ---------- fundo: correntes contínuas, independentes do cursor ----------
   const cv = $('#trails');
   if (!reduce && cv) {
-    const ctx = cv.getContext('2d'); let W, H, S = 1, pts = [], mx = -1e9, my = -1e9, running = !document.hidden;
-    // O rastro é difuso: o canvas trabalha com no máximo ~0,5 milhão de pixels (0,14 no celular) e o CSS estica
-    // para a janela. Numa tela de 2040×986 isso é 1/4 dos pixels a pintar e compor por quadro, sem diferença visível.
-    const BUDGET = innerWidth < 700 ? 140000 : 520000;
+    const ctx = cv.getContext('2d'); let W, H, running = !document.hidden;
     const size = () => {
-      S = Math.min(1, Math.sqrt(BUDGET / (innerWidth * innerHeight)));
-      W = cv.width = Math.round(innerWidth * S); H = cv.height = Math.round(innerHeight * S);
-      cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px';
-      ctx.lineWidth = Math.max(1, 1.2 * S);
+      W = innerWidth; H = innerHeight;
+      const budget = W < 700 ? 600000 : 1800000;
+      const scale = Math.max(.8, Math.min(devicePixelRatio || 1, Math.sqrt(budget / (W * H))));
+      cv.width = Math.round(W * scale); cv.height = Math.round(H * scale);
+      cv.style.width = W + 'px'; cv.style.height = H + 'px';
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      ctx.lineCap = 'round';
     };
     size(); addEventListener('resize', size);
-    addEventListener('pointermove', (e) => { mx = e.clientX * S; my = e.clientY * S; }, { passive: true });
-    const small = innerWidth < 700;
-    const N = small ? 48 : 140;
-    for (let i = 0; i < N; i++) pts.push({ x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, life: Math.random() * 200, hue: Math.random() < .25 ? 'g' : 't' });
-    const field = (x, y, t) => { const s = 0.0016 / S; return Math.sin(x * s + t) * Math.cos(y * s * 1.3 - t * .7) * Math.PI * 2; };
     let t = 0, last = 0, looping = false;
-    // 30 desenhos por segundo, medidos pelo relógio (em tela de 120 Hz também), e o fundo continua se mexendo ao rolar.
-    const STEP = 1000 / 30;
+    // Curvas lentas permitem menos desenhos por segundo sem perder fluidez.
+    const STEP = 1000 / 20;
     const draw = () => {
-      t += 0.008;
-      ctx.fillStyle = 'rgba(7,26,36,0.18)'; ctx.fillRect(0, 0, W, H);
-      const R2 = (260 * S) ** 2, F = .36 * S, A = 1.8 * S;
-      // Um traço por cor (em vez de um por partícula): duas trocas de estilo por quadro.
-      for (const hue of ['t', 'g']) {
-        ctx.strokeStyle = hue === 'g' ? 'rgba(98,216,78,.55)' : 'rgba(43,179,159,.45)';
+      t += .0144;
+      ctx.clearRect(0, 0, W, H);
+      const count = W < 700 ? 7 : 12;
+      for (let i = 0; i < count; i++) {
+        const phase = i * 1.17, base = H * (i + .5) / count;
+        const slope = Math.sin(i * 2.4) * .11;
+        const amplitude = 16 + (i % 4) * 7;
+        ctx.strokeStyle = i % 5 === 1 ? 'rgba(98,216,78,.16)' : 'rgba(43,179,159,.12)';
+        ctx.lineWidth = i % 5 === 1 ? 1.25 : .9;
         ctx.beginPath();
-        for (const p of pts) {
-          if (p.hue !== hue) continue;
-          const a = field(p.x, p.y, t); let ax = Math.cos(a) * F, ay = Math.sin(a) * F;
-          const dx = mx - p.x, dy = my - p.y, d2 = dx * dx + dy * dy;
-          if (d2 < R2) { const d = Math.sqrt(d2) + 1; ax += (dx / d) * A; ay += (dy / d) * A; }
-          p.vx = (p.vx + ax) * .9; p.vy = (p.vy + ay) * .9;
-          ctx.moveTo(p.x, p.y); p.x += p.vx; p.y += p.vy; ctx.lineTo(p.x, p.y);
-          if ((p.life += 2) > 420 || p.x < 0 || p.y < 0 || p.x > W || p.y > H) { p.x = Math.random() * W; p.y = Math.random() * H; p.vx = p.vy = 0; p.life = 0; }
+        for (let x = -20; x <= W + 20; x += 18) {
+          const u = x / W;
+          const y = base + (x - W / 2) * slope
+            + Math.sin(u * 9 + phase + t) * amplitude
+            + Math.sin(u * 16 - phase + t * .55) * amplitude * .25;
+          if (x === -20) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
         ctx.stroke();
       }
