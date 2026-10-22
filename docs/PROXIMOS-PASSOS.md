@@ -92,6 +92,9 @@ Quem for mexer no site (`site/`, deploy Vercel do dono) deve fazer, nesta ordem:
    - janela separada que abre mesmo quando o navegador recusa a posição (só nota de versão);
    - mensagens de erro em linguagem simples ("a instância não respondeu", "sem permissão").
 3. Atualizar números da página (`site/b3`) depois da bateria escopada v2 (`tests/regression/escopo/RELATORIO-v2.md`).
+4. **Pedido do dono (21/10, 22h30): menos informação no site também.** A tabela de casos de teste em `site/b3` (seção com "441/441 · 2,2 s · 20 · 131" e a lista C1, C2, C2-FORM…) deve mostrar **no máximo 10 linhas**, escolhendo casos variados e fáceis de entender (ex.: regra assíncrona, regra before pelo formulário, pessoa pelo formulário, script include, script action, job agendado, flow, UI action, gravação sem auditoria, regra de atribuição). Sem "ver todos". Os números do topo continuam (atualizar depois da bateria nova).
+5. **Lentidão do site (queixa do dono: lento no celular e na primeira visita no PC):** diagnóstico e correções propostas pelo agente de desempenho, no branch `site-perf` (medições antes × depois). Aplicar só com aprovação do dono; ver a entrada do `DIARIO.md` sobre isso.
+6. **Regra do dono para o site:** pedidos sobre o site são anotados aqui para outra IA fazer; o Claude desta conversa não publica o site.
 
 ## Passagem anterior (21/10/2026, manhã: Claude → Codex)
 
