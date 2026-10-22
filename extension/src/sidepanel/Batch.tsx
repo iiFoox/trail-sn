@@ -148,7 +148,7 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
           const when = parts(group.at);
           return <details class="bt-group fold2" key={group.key} open={openAll} data-count={group.items.length}>
             <summary class="bt-group-head">
-              <span class="chev" aria-hidden="true">{Glyph.chevron}</span>
+              <span class="caret" aria-hidden="true" />
               <span class="bt-group-title">{rec && <><time dateTime={group.at.replace(' ', 'T') + 'Z'}>{when.date} {when.time}</time> · </>}{saveTitle(group, rec)}
                 {group.cause?.sysId && group.cause.table && group.cause.type !== 'user_action' && <a class="bt-group-link" href={recordLink(origin, group.cause.table, group.cause.sysId)} target="_blank" rel="noreferrer" title={fmt(P.openArtifact, { what: group.cause.name })} aria-label={fmt(P.openArtifact, { what: group.cause.name })} onClick={(e) => e.stopPropagation()}>↗</a>}
               </span>

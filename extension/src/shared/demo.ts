@@ -2,7 +2,7 @@ import type { AccessReport, Change, Evidence, Investigation, StaticSuspects, Tim
 
 type DemoChange = Omit<Change, 'trace'>;
 import type { ObservedField, TabState } from './messages';
-import { FakeRestClient, compareInstances, fieldRules, fieldStates, saveTiming, simulateValue, visibility, type FieldRules, type FieldStateResult, type InstanceComparison, type Row, type SaveTiming, type ValueSimulation, type Visibility } from '@trail/core';
+import { FakeRestClient, findUsers, type UserSearch, compareInstances, fieldRules, fieldStates, saveTiming, simulateValue, visibility, type FieldRules, type FieldStateResult, type InstanceComparison, type Row, type SaveTiming, type ValueSimulation, type Visibility } from '@trail/core';
 
 /**
  * Dados de demonstração do painel (sidepanel/index.html?demo=1&field=<campo>).
@@ -545,10 +545,11 @@ function demoInstance(prod = false, slow: string | null = null): FakeRestClient 
   ]);
   c.rows('sys_security_acl_role', [{ sys_security_acl: 'acl0', sys_user_role: 'itilid', 'sys_user_role.name': 'itil' }]);
   c.rows('sys_user', [
-    { sys_id: DEMO_USERS.admin, user_name: 'admin', name: 'System Administrator', active: 'true', sys_domain: 'global' },
-    { sys_id: DEMO_USERS.beth, user_name: 'beth.anglin', name: 'Beth Anglin', active: 'true', sys_domain: 'global' },
-    { sys_id: DEMO_USERS.abel, user_name: 'abel.tuter', name: 'Abel Tuter', active: 'true', sys_domain: 'global' },
-    { sys_id: DEMO_USERS.howard, user_name: 'howard.johnson', name: 'Howard Johnson', active: 'true', sys_domain: 'global' },
+    { sys_id: DEMO_USERS.admin, user_name: 'admin', name: 'System Administrator', first_name: 'System', last_name: 'Administrator', active: 'true', sys_domain: 'global' },
+    { sys_id: DEMO_USERS.beth, user_name: 'beth.anglin', name: 'Beth Anglin', first_name: 'Beth', last_name: 'Anglin', active: 'true', sys_domain: 'global' },
+    { sys_id: DEMO_USERS.abel, user_name: 'abel.tuter', name: 'Abel Tuter', first_name: 'Abel', last_name: 'Tuter', active: 'true', sys_domain: 'global' },
+    { sys_id: DEMO_USERS.howard, user_name: 'howard.johnson', name: 'Howard Johnson', first_name: 'Howard', last_name: 'Johnson', active: 'true', sys_domain: 'global' },
+    { sys_id: 'b'.repeat(32), user_name: 'beth.souza', name: 'Beth Souza', first_name: 'Beth', last_name: 'Souza', active: 'true', sys_domain: 'global' },
   ]);
   c.rows('sys_user_has_role', [
     { user: DEMO_USERS.admin, role: 'adminid', 'role.name': 'admin', inherited: 'false', state: 'active' },
@@ -585,6 +586,12 @@ export async function demoSaveTiming(at: string, checkpoint: number): Promise<Sa
 export async function demoVisibility(user: string): Promise<Visibility> {
   const r = await visibility(demoInstance(), { table: 'incident', sysId: SYS_ID, ...(user ? { user } : {}) }, { language: 'en' });
   await pause(450);
+  return r;
+}
+/** Busca de pessoa pelo nome no demo (o mesmo motor da extensão). */
+export async function demoFindUsers(text: string): Promise<UserSearch> {
+  const r = await findUsers(demoInstance(), text);
+  await pause(150);
   return r;
 }
 /** Pessoas para sugerir no "Quem enxerga" do demo. */

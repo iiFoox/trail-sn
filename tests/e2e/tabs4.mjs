@@ -143,6 +143,9 @@ try {
   // `opened`: classe da seção que o próprio teste abriu (só as de dentro dela contam).
   const folds = async (what, opened = '') => {
     await page.waitForTimeout(1500);
+    // Toda seção recolhível usa o mesmo componente: seta à esquerda (▸/▾) no cabeçalho.
+    const odd = await page.evaluate(() => [...document.querySelectorAll('.tabpane details:not(.captech):not(.cmp-script)')].filter((d) => !d.classList.contains('fold2') || !d.querySelector(':scope > summary .caret')).map((d) => d.className));
+    if (odd.length) errors.push(`${what}: seção sem o padrão (seta): ` + JSON.stringify(odd));
     const st = await page.evaluate(() => [...document.querySelectorAll('.tabpane details.fold2')].map((d) => ({ cls: d.className, n: d.dataset.count === undefined ? null : Number(d.dataset.count), open: d.open, visible: !!d.offsetParent || d.getClientRects().length > 0 })));
     const bad = st.filter((x) => x.open && x.n !== null && x.n > 1 && !(opened && x.cls.split(' ').includes(opened)));
     if (bad.length) errors.push(`${what}: lista com mais de 1 item aberta: ` + JSON.stringify(bad));
@@ -186,6 +189,30 @@ try {
   if (!(await page.locator('.vis-verdict').isVisible())) errors.push('Histórico: veredito do Quem enxerga escondido');
   await toggle('details.hist-fold', 'Histórico');
   await toggle('details.vis-reasons', 'Histórico');
+  // Quem enxerga: começa recolhido; acha a pessoa pelo nome (uma, várias ou nenhuma) e sugere enquanto digita.
+  await open('tab=history');
+  await page.waitForSelector('details.vis', { state: 'attached' });
+  if (await page.locator('details.vis').evaluate((d) => d.open)) errors.push('"Quem enxerga" deveria vir recolhido');
+  if (await page.locator('details.vis .vis-in input').isVisible()) errors.push('"Quem enxerga" fechado mostra o campo da pessoa');
+  await page.click('details.vis > summary');
+  await page.fill('.vis-in input', 'Beth');
+  await page.waitForSelector('.vis-sug li[role="option"]', { timeout: 5000 }).catch(() => errors.push('sem sugestões ao digitar "Beth"'));
+  out.sug = await page.$$eval('.vis-sug li[role="option"]', (xs) => xs.map((x) => x.textContent));
+  if (out.sug.length !== 2 || !out.sug.some((x) => /Beth Anglin/.test(x))) errors.push('sugestões para "Beth": ' + JSON.stringify(out.sug));
+  await page.keyboard.press('Escape');
+  await page.click('.vis-in .btn.primary');
+  await page.waitForSelector('.vis-pick .vis-cands .btn', { timeout: 8000 }).catch(() => errors.push('"Beth" (duas pessoas) não pediu para escolher'));
+  await page.locator('.vis-cands .btn', { hasText: 'Beth Anglin' }).click();
+  await page.waitForFunction(() => /Beth Anglin vê/.test(document.querySelector('.vis-verdict b')?.textContent ?? ''), null, { timeout: 8000 }).catch(() => errors.push('escolher Beth Anglin não analisou'));
+  await page.fill('.vis-in input', 'Abel');
+  await page.keyboard.press('Escape');
+  await page.click('.vis-in .btn.primary');
+  await page.waitForFunction(() => /Abel Tuter/.test(document.querySelector('.vis-verdict b')?.textContent ?? ''), null, { timeout: 8000 }).catch(() => errors.push('"Abel" (uma pessoa) não analisou Abel Tuter'));
+  await page.fill('.vis-in input', 'Fulano');
+  await page.keyboard.press('Escape');
+  await page.click('.vis-in .btn.primary');
+  await page.waitForFunction(() => /Não achei ninguém com esse nome/.test(document.querySelector('.vis-verdict b')?.textContent ?? ''), null, { timeout: 8000 }).catch(() => errors.push('"Fulano": faltou "Não achei ninguém com esse nome"'));
+  await folds('historico-vis');
   // Aninhado: "O que rodou neste registro" › grupos também vêm fechados.
   await page.click('details.rruns > summary');
   await page.waitForTimeout(400);
@@ -198,9 +225,22 @@ try {
   await page.waitForSelector('.deps', { timeout: 10000 });
   await page.waitForFunction(() => document.querySelector('.lk-list')?.dataset.count !== undefined, null, { timeout: 10000 }).catch(() => errors.push('lista de campos bloqueados sem contagem'));
   await folds('regras');
-  if ((await page.locator('.lk-state .lk-chip').count()) !== 3 || !(await page.locator('.lk-state').isVisible())) errors.push('Regras: os três quadros do Estado agora deveriam estar à vista');
+  if ((await page.locator('.st-now .lk-chip').count()) !== 3 || !(await page.locator('.st-now .lk-chips').isVisible())) errors.push('Regras: os três quadros do Estado agora deveriam estar à vista');
+  // Estado agora: uma linha, sem o cartão "Por que … está assim?"; o porquê recolhido quando nada trava o campo.
+  out.stLine = await text('.st-now .st-line b');
+  if (out.stLine !== 'Editável, opcional e visível agora') errors.push('linha do Estado agora: ' + out.stLine);
+  if (await page.locator('.rules .lk-box').count()) errors.push('Regras: o cartão "Por que … está assim?" ainda aparece');
+  if (await page.locator('details.st-why').evaluate((d) => d.open)) errors.push('Regras: "Ver por quê" deveria vir fechado com o campo livre');
+  out.writersHead = await text('details.writers > summary');
+  if (!/^2 regras podem gravar State/.test(out.writersHead.trim())) errors.push('resumo de "Quem grava": ' + out.writersHead);
   out.depsHead = await text('details.deps > summary');
-  if (!/No navegador 3/.test(out.depsHead) || !/11/.test(out.depsHead)) errors.push('resumo de "Quem depende": ' + out.depsHead);
+  if (!/^11 regras dependem de State/.test(out.depsHead.trim())) errors.push('resumo de "Quem depende": ' + out.depsHead);
+  // Ordem: o que manda no campo vem antes das ferramentas.
+  out.order = await page.evaluate(() => [...document.querySelectorAll('.rules > *')].map((e) => e.id || e.className.split(' ').find((c) => ['st-now', 'writers', 'deps', 'rules-tools', 'lk-list', 'scan'].includes(c)) || '').filter(Boolean));
+  if (out.order.indexOf('deps') > out.order.indexOf('rules-tools')) errors.push('ordem da aba Regras: ' + JSON.stringify(out.order));
+  // Itens de "Quem depende" numa linha só, com o "como depende" no tooltip.
+  out.depLine = await page.locator('.deps .dep').first().evaluate((d) => ({ title: d.getAttribute('title'), lines: d.querySelectorAll('.dep-how').length }));
+  if (!out.depLine.title || out.depLine.lines) errors.push('item de "Quem depende" não está em uma linha: ' + JSON.stringify(out.depLine));
   await toggle('details.deps', 'Regras');
   await page.click('details.deps > summary');
   await page.waitForTimeout(400);

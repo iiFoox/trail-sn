@@ -6,7 +6,7 @@
  * Duas ferramentas no topo: "Simular um valor" e "Comparar com outra instância". Tudo só leitura.
  */
 import { DEP_PHASES, describeDependent, type DepKind, type FieldRules, type Investigation, type TableConflictScan } from '@trail/core';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { demoFieldRules } from '../shared/demo';
 import { fmt, t } from '../shared/i18n';
 import { Glyph, typeGlyph } from '../shared/icons';
@@ -15,12 +15,12 @@ import { send, type ObservedField } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
 import { trackedTab } from '../shared/tabRef';
 import { ErrorMsg } from './ErrorMsg';
-import { FieldLock, FormStates } from './FieldLock';
+import { FormStates, StateNow } from './FieldLock';
 import { conflictLines, humanField, isDemo, lang } from './format';
 import { Simulate } from './Simulate';
 import { CompareTool } from './Compare';
 import { kindIcon } from './kinds';
-import { Fold } from './Fold';
+import { Fold, Help } from './Fold';
 
 const s = t(getPrefs().lang);
 const P = s.p;
@@ -47,32 +47,36 @@ export function RulesTab({ r, origin, field, observed, tool, setTool }: { r: Inv
   const labels: Record<string, string> = { ...(res?.fieldLabels ?? {}), ...(r.display?.fields ?? {}), [r.target.field]: field };
   const lockTarget = { table: r.target.table, sysId: r.target.sysId, field: r.target.field, label: field };
   const toggle = (x: RulesTool) => setTool(tool === x ? undefined : x);
+  // Ferramenta aberta de fora (ex.: "Simular outro valor" na Resposta): rola até ela.
+  const toolsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (tool) toolsRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, [tool]);
+  const loading = !err && !res && <div class="box"><div class="li"><span class="spin" /><span class="grow muted small">{U.rulesLoading}</span></div></div>;
+  // Ordem: primeiro o que manda neste campo (estado, quem grava, quem depende); depois as ferramentas e o resto do registro.
   return (
     <div class="stack rules">
-      <div class="rules-tools" role="group">
+      <h3 class="sec-h" id="rules-now">{U.secNow}<Help text={U.secNowHint} /></h3>
+      <StateNow target={lockTarget} origin={origin} observed={observed} />
+
+      <h3 class="sec-h" id="rules-writers">{U.secWriters}<Help text={fmt(U.secWritersHint, { field })} /></h3>
+      {(r.conflicts?.length ?? 0) > 0 && <Conflicts r={r} origin={origin} />}
+      {err && <div class="box"><div class="li"><span class="ck w">!</span><span class="grow"><ErrorMsg msg={err} /> <button class="link" onClick={() => setTick(tick + 1)}>{U.retry}</button></span></div></div>}
+      {loading}
+      {res && <Writers r={r} res={res} origin={origin} labels={labels} field={field} />}
+
+      <h3 class="sec-h" id="rules-deps">{U.secDeps}<Help text={fmt(U.secDepsHint, { field })} /></h3>
+      {loading}
+      {res && <Dependents res={res} origin={origin} labels={labels} field={field} />}
+      {res && <NotSeen res={res} />}
+
+      <div class="rules-tools" role="group" ref={toolsRef}>
         <button class={`btn ${tool === 'sim' ? 'on' : ''}`} aria-pressed={tool === 'sim'} onClick={() => toggle('sim')}>{Glyph.compare} {U.simBtn}</button>
         <button class={`btn ${tool === 'cmp' ? 'on' : ''}`} aria-pressed={tool === 'cmp'} onClick={() => toggle('cmp')}>{Glyph.server} {U.cmpBtn}</button>
       </div>
       {tool === 'sim' && <Simulate r={r} origin={origin} field={field} labels={labels} onClose={() => setTool(undefined)} />}
       {tool === 'cmp' && <CompareTool r={r} origin={origin} field={field} onClose={() => setTool(undefined)} />}
 
-      <h3 class="sec-h" id="rules-now">{U.secNow}<small>{U.secNowHint}</small></h3>
-      <FieldLock target={lockTarget} origin={origin} observed={observed} />
       <FormStates table={r.target.table} sysId={r.target.sysId} origin={origin} />
-
-      <h3 class="sec-h" id="rules-writers">{U.secWriters}<small>{fmt(U.secWritersHint, { field })}</small></h3>
-      {(r.conflicts?.length ?? 0) > 0 && <Conflicts r={r} origin={origin} />}
-      {err && <div class="box"><div class="li"><span class="ck w">!</span><span class="grow"><ErrorMsg msg={err} /> <button class="link" onClick={() => setTick(tick + 1)}>{U.retry}</button></span></div></div>}
-      {!err && !res && <div class="box"><div class="li"><span class="spin" /><span class="grow muted small">{U.rulesLoading}</span></div></div>}
-      {res && <Writers r={r} res={res} origin={origin} labels={labels} />}
-
-      <h3 class="sec-h" id="rules-deps">{U.secDeps}<small>{fmt(U.secDepsHint, { field })}</small></h3>
-      {!err && !res && <div class="box"><div class="li"><span class="spin" /><span class="grow muted small">{U.rulesLoading}</span></div></div>}
-      {res && <Dependents res={res} origin={origin} labels={labels} />}
-      {res && <NotSeen res={res} />}
-
       <TableScan r={r} origin={origin} />
-      {res && <div class="muted small lk-foot">{fmt(U.rulesSummary, { w: res.writers.length, d: res.dependents.length, ms: res.timing.totalMs })}</div>}
     </div>
   );
 }
@@ -80,7 +84,7 @@ export function RulesTab({ r, origin, field, observed, tool, setTool }: { r: Inv
 const LANES = ['client', 'before', 'after', 'async', 'other'] as const;
 
 /** Quem grava: o mapa de automações (já na ordem) e, sem repetir, o que a investigação achou que cita o campo. */
-function Writers({ r, res, origin, labels }: { r: Investigation; res: FieldRules; origin: string; labels: Record<string, string> }) {
+function Writers({ r, res, origin, labels, field }: { r: Investigation; res: FieldRules; origin: string; labels: Record<string, string>; field: string }) {
   const ids = new Set(res.writers.map((w) => w.sysId).filter(Boolean));
   const names = new Set(res.writers.map((w) => w.name));
   const S = r.suspects;
@@ -96,25 +100,21 @@ function Writers({ r, res, origin, labels }: { r: Investigation; res: FieldRules
   const lane = str(P.fmLane);
   if (!res.writers.length && !extra.length) return <div class="box"><div class="li"><span class="ck">{Glyph.check}</span><span class="grow">{P.fmNone}</span></div></div>;
   const lanes = LANES.map((l) => [l, res.writers.filter((i) => i.lane === l)] as const).filter(([, list]) => list.length > 0);
-  // Resumo do cabeçalho: quantos em cada momento ("Em segundo plano 1 · Por botão, job ou importação 1 · Também citam o campo 4").
-  const brief = [...lanes.map(([l, list]) => `${lane[l]} ${list.length}`), ...(extra.length ? [`${U.writersAlso} ${extra.length}`] : [])].join(' · ');
   return (
-    <Fold cls="writers" title={<span class="brief">{brief}</span>} count={res.writers.length + extra.length}>
-      {lanes.map(([l, list]) => {
-        return (
-          <Fold nested cls="lane" title={lane[l]} count={list.length}>
-            {list.map((i) => (
-              <div class="li">
+    <Fold cls="writers" title={fmt(U.writersCount[res.writers.length === 1 ? 0 : 1]!, { n: res.writers.length, field })} count={res.writers.length} open={false}>
+      {lanes.map(([l, list]) => (
+        <Fold nested cls="lane" title={lane[l]} count={list.length} open={lanes.length === 1}>
+          {list.map((i) => {
+            const writes = i.values.slice(0, 3).map((v) => r.labels?.[v] ?? v).join(', ');
+            return (
+              <div class="li one" title={`${P.fmWhen}: ${i.when}${i.on && i.on !== r.target.table ? ` · ${i.on}` : ''}`}>
                 <span class="ck" title={s.type[i.kind as keyof typeof s.type] ?? i.kind}>{typeGlyph[i.kind] ?? Glyph.check}</span>
-                <div class="grow">
-                  <div>{i.sysId ? <a href={recordLink(origin, i.table, i.sysId)} target="_blank" rel="noreferrer">{i.name}</a> : i.name}{i.on && i.on !== r.target.table ? <span class="muted small"> · {i.on}</span> : null}</div>
-                  <div class="det">{P.fmWhen}: {i.when}{i.values.length ? ` · ${P.fmWrites}: ${i.values.slice(0, 4).map((v) => r.labels?.[v] ?? v).join(', ')}` : ''}</div>
-                </div>
+                <div class="grow">{i.sysId ? <a href={recordLink(origin, i.table, i.sysId)} target="_blank" rel="noreferrer">{i.name}</a> : i.name}{writes && <span class="muted small"> · {P.fmWrites} {writes}</span>}</div>
               </div>
-            ))}
-          </Fold>
-        );
-      })}
+            );
+          })}
+        </Fold>
+      ))}
       {extra.length > 0 && (
         <Fold nested cls="writers-also" icon={Glyph.search} title={U.writersAlso} count={extra.length} open={false}>
           <div class="li muted small">{U.writersAlsoHint}</div>
@@ -126,31 +126,29 @@ function Writers({ r, res, origin, labels }: { r: Investigation; res: FieldRules
 }
 
 /** Quem depende: o que lê o campo ou reage a ele, por fase, com "como depende" e "o que faz" em frases. */
-function Dependents({ res, origin, labels }: { res: FieldRules; origin: string; labels: Record<string, string> }) {
+function Dependents({ res, origin, labels, field }: { res: FieldRules; origin: string; labels: Record<string, string>; field: string }) {
   if (!res.dependents.length) return <div class="box"><div class="li"><span class="ck">{Glyph.check}</span><span class="grow">{U.depsNone}</span></div></div>;
   const phase = str(U.depPhase);
   const phases = DEP_PHASES.map((ph) => [ph, res.dependents.filter((d) => d.phase === ph)] as const).filter(([, list]) => list.length > 0);
   return (
-    <Fold cls="deps" title={<span class="brief">{phases.map(([ph, list]) => `${phase[ph]} ${list.length}`).join(' · ')}</span>} count={res.dependents.length}>
-      {phases.map(([ph, list]) => {
-        return (
-          <Fold nested cls="lane" title={phase[ph]} count={list.length}>
-            {list.map((d) => {
-              const x = describeDependent(d, lang, labels);
-              return (
-                <div class="li dep">
-                  <span class="ck" title={str(U.depKind)[d.kind] ?? d.kind}>{kindIcon(d.kind)}</span>
-                  <div class="grow">
-                    <div>{d.sysId ? <a href={recordLink(origin, d.table, d.sysId)} target="_blank" rel="noreferrer">{d.name}</a> : d.name} <span class="muted small">· {str(U.depKind)[d.kind] ?? d.kind}</span></div>
-                    {x.how.map((h) => <div class="small dep-how">{h}</div>)}
-                    {x.does.length > 0 && <div class="small dep-does"><b>→</b> {x.does.join('; ')}</div>}
-                  </div>
+    <Fold cls="deps" title={fmt(U.depsCount[res.dependents.length === 1 ? 0 : 1]!, { n: res.dependents.length, field })} count={res.dependents.length} open={false}>
+      {phases.map(([ph, list]) => (
+        <Fold nested cls="lane" title={phase[ph]} count={list.length} open={phases.length === 1 && list.length === 1}>
+          {list.map((d) => {
+            const x = describeDependent(d, lang, labels);
+            const kind = str(U.depKind)[d.kind] ?? d.kind;
+            // Uma linha: nome, tipo e o efeito mais importante; o "como depende" fica no tooltip.
+            return (
+              <div class="li dep one" title={[...x.how, ...x.does.map((e) => `→ ${e}`)].join('\n')}>
+                <span class="ck" title={kind}>{kindIcon(d.kind)}</span>
+                <div class="grow">{d.sysId ? <a href={recordLink(origin, d.table, d.sysId)} target="_blank" rel="noreferrer">{d.name}</a> : d.name} <span class="muted small">· {kind}</span>
+                  {x.does.length > 0 && <span class="small dep-does"> <b>→</b> {x.does[0]}{x.does.length > 1 ? ` ${fmt(U.more, { n: x.does.length - 1 })}` : ''}</span>}
                 </div>
-              );
-            })}
-          </Fold>
-        );
-      })}
+              </div>
+            );
+          })}
+        </Fold>
+      ))}
     </Fold>
   );
 }

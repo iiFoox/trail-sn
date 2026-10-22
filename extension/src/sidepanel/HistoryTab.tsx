@@ -59,7 +59,7 @@ function FieldHistory({ r, origin, sel, onPick }: { r: Investigation; origin: st
           const top = c.evidence[0];
           const expired = c.notes.some((n) => n.startsWith('traces_expired'));
           return (
-            <div class={`h ${i === sel ? 'on' : ''}`} role="button" tabIndex={0} aria-pressed={i === sel} style={`--i:${i}`} onClick={() => onPick(i)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(i); } }}>
+            <div class={`h ${i === sel ? 'on' : ''}`} role="button" tabIndex={0} aria-pressed={i === sel} title={P.historyIntro} style={`--i:${i}`} onClick={() => onPick(i)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(i); } }}>
               <div class="dt">{p.date}<small>{p.time}</small></div>
               <div class="c">{c.oldValue || c.checkpoint > 1 ? <><Val cls="o" raw={c.oldValue} text={valueLabel(r, c.oldValue)} refTable={r.refTable} origin={origin} empty={P.empty} /> → <b><Val raw={c.newValue} text={valueLabel(r, c.newValue)} refTable={r.refTable} origin={origin} empty={P.empty} /></b></> : <>{P.createdAs} <b><Val raw={c.newValue} text={valueLabel(r, c.newValue)} refTable={r.refTable} origin={origin} empty={P.empty} /></b></>}
                 <small>{top ? `${top.type === 'user_action' ? top.artifact.name : P.kind[top.type].split(' · ')[0]}` : expired ? P.warnExpired : c.user}</small></div>
@@ -72,7 +72,7 @@ function FieldHistory({ r, origin, sel, onPick }: { r: Investigation; origin: st
   if (!r.changes.length) return <><div class="muted small">{r.fieldNotInHistory ? t(getPrefs().lang).notInHistory : t(getPrefs().lang).noChanges}</div>{list}</>;
   return (
     <Fold cls="hist-fold" title={U.foldHist} hint={rows.length > 1 && curText ? fmt(U.foldHistHint, { x: curText }) : undefined} count={rows.length}>
-      <div class="pad"><div class="muted small hist-intro">{P.historyIntro}</div>{list}</div>
+      <div class="pad">{list}</div>
     </Fold>
   );
 }

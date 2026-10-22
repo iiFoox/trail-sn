@@ -60,7 +60,9 @@ export function SaveTimingCard({ r, c, origin }: { r: Investigation; c: Change; 
           <div class="slegend small">{seg.map(([k, v]) => <span><i class={`p-${k}`} />{str(U.savePart)[k]} {secs(v)}</span>)}</div>
         </div>
       )}
-      <div class="pad small save-text">{describeSaveTiming(res, lang)}</div>
+      {/* A explicação longa fica recolhida: o cabeçalho (tempo + veredito) e a barra já respondem. */}
+      {total === undefined ? <div class="pad small save-text">{describeSaveTiming(res, lang)}</div>
+        : <Fold nested cls="save-detail" open={false} icon={Glyph.clock} title={U.saveDetail}><div class="pad small save-text">{describeSaveTiming(res, lang)}</div></Fold>}
       {ran.length > 0 && (
         <Fold nested cls="save-ran" icon={Glyph.rule} title={U.saveRan} count={ran.length}>
           {ran.map((x) => (

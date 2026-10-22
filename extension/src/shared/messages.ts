@@ -49,6 +49,7 @@ export type Message =
   | { type: 'simulate-value'; origin: string; target: { table: string; sysId: string; field: string; value: string }; language?: string; tabId?: number }
   | { type: 'save-timing'; origin: string; target: { table: string; sysId: string; at?: string; checkpoint?: number }; tabId?: number }
   | { type: 'visibility'; origin: string; target: { table: string; sysId: string; user?: string; field?: string }; language?: string; tabId?: number }
+  | { type: 'find-users'; origin: string; text: string }
   | { type: 'compare-instances'; origin: string; other: string; target: { table: string; field: string }; language?: string; tabId?: number };
 
 export type ProbeStep = 'cookie' | 'pageToken' | 'htmlToken' | 'htmlTokenMissing';

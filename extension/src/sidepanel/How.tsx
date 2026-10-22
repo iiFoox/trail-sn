@@ -10,7 +10,7 @@ import { send } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
 import { cap, factText, humanField, localizeTimes, lossReason, parts, plural, refLink, traceTitle, valueLabel, when } from './format';
 import { SaveTimingCard } from './SaveTiming';
-import { Fold } from './Fold';
+import { Fold, Help } from './Fold';
 import { Val } from './Val';
 
 const s = t(getPrefs().lang);
@@ -25,7 +25,7 @@ export function How({ r, c, origin, field, denied, expired, access, copy }: { r:
     <div class="stack">
       <Trace r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} />
       <SaveTimingCard r={r} c={c} origin={origin} />
-      <h3 class="sec-h">{U.proofTitle}<small>{U.proofHint}</small></h3>
+      <h3 class="sec-h">{U.proofTitle}<Help text={U.proofHint} /></h3>
       <Proof r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} access={access} copy={copy} />
     </div>
   );
@@ -57,7 +57,7 @@ function Trace({ r, c, origin, field, denied, expired }: { r: Investigation; c: 
   const long = items.length > LONG_TRACE;
   return (
     <section class="how-moment">
-      <h3 class="sec-h">{U.momentTitle}<small>{fmt(P.traceIntro, WINDOW)}</small></h3>
+      <h3 class="sec-h">{U.momentTitle}<Help text={fmt(P.traceIntro, WINDOW)} /></h3>
       {txIds.length > 1 && <a class="btn sm openall" href={refLink(origin, { table: 'syslog_transaction', query: `sys_idIN${txIds.join(',')}` })} target="_blank" rel="noreferrer">{Glyph.open} {fmt(P.openAllTx, { n: txIds.length })}</a>}
       <TraceWrap long={long} count={items.length} hint={key ? fmt(U.foldCause, { x: `${parts(key.at).full} · ${key.kind === 'write' ? P.otherWrite : traceTitle(r, c, key, field)}` }) : undefined}>
         <ol class="tl">
@@ -134,15 +134,14 @@ function Proof({ r, c, origin, field, denied, expired, access, copy }: { r: Inve
           </div></div>
         )}
         {expired && <div class="li"><span class="ck w">!</span><div class="grow"><b>{P.expiredItem}</b> {P.expiredText}</div></div>}
-        <details class="tech-acc">
-          <summary class="pad small muted">{P.techAccess} {Glyph.chevron}</summary>
+        <Fold nested cls="tech-acc" open={false} title={<span class="small muted">{P.techAccess}</span>}>
           <div class="acc-list">
             {[...entries, ...(access ? Object.entries(access.states).filter(([k]) => !(k in r.access)).sort() : [])].map(([k, v]) => (
               <div><code>{k}</code><span class={`state ${v}`}>{s.state[v] ?? v}</span></div>
             ))}
           </div>
           <div class="pad"><button class="btn sm" onClick={() => send({ type: 'check-access', origin })}>{Glyph.shield} {P.recheck}</button></div>
-        </details>
+        </Fold>
       </Fold>
     </>
   );
