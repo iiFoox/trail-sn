@@ -410,3 +410,5 @@ section{padding-block:84px}
 .src.cap{font:13px var(--sans);align-items:center}
 .src.cap b{display:block;font-weight:600}
 .src.cap small{display:block;font:11px var(--mono);color:var(--fg2,#8ea3ad);opacity:.8;margin-top:2px}
+/* desempenho: animações contínuas param quando a seção sai da tela (app.js marca .offscreen) */
+.offscreen *,.offscreen *:before,.offscreen *:after{animation-play-state:paused!important}

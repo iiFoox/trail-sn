@@ -298,6 +298,11 @@
     idle(() => { lazyFrames.unobserve(f); f.addEventListener('load', () => setTimeout(next, 250), { once: true }); f.setAttribute('src', f.dataset.src); });
   }, 1200), { once: true });
 
+  // ---------- animações CSS contínuas só rodam na seção visível ----------
+  // (pulsos, brilho do título, letreiro, trilha da lupa): fora da tela ficam paradas e não pedem quadro.
+  const offIo = new IntersectionObserver((es) => es.forEach((e) => e.target.classList.toggle('offscreen', !e.isIntersecting)), { rootMargin: '200px 0px' });
+  $$('main > header, main > section').forEach((el) => offIo.observe(el));
+
   // ---------- B3: barra de progresso + nav que se esconde ao descer ----------
   const prog = $('#progress'); let lastY = 0;
   addEventListener('scroll', () => {
@@ -329,35 +334,38 @@
   // ---------- fundo: partículas em trilhas (campo de fluxo), atraídas pelo cursor ----------
   const cv = $('#trails');
   if (!reduce && cv) {
-    const ctx = cv.getContext('2d'); let W, H, pts = [], mx = -1e9, my = -1e9, running = true;
-    // Densidade 1: o rastro é difuso, e repintar a tela inteira em 2x a cada quadro era o que pesava.
-    const DPR = 1;
-    const size = () => { W = cv.width = innerWidth * DPR; H = cv.height = innerHeight * DPR; cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px'; };
+    const ctx = cv.getContext('2d'); let W, H, S = 1, pts = [], mx = -1e9, my = -1e9, running = !document.hidden;
+    // O rastro é difuso: o canvas trabalha com no máximo ~0,5 milhão de pixels (0,14 no celular) e o CSS estica
+    // para a janela. Numa tela de 2040×986 isso é 1/4 dos pixels a pintar e compor por quadro, sem diferença visível.
+    const BUDGET = innerWidth < 700 ? 140000 : 520000;
+    const size = () => {
+      S = Math.min(1, Math.sqrt(BUDGET / (innerWidth * innerHeight)));
+      W = cv.width = Math.round(innerWidth * S); H = cv.height = Math.round(innerHeight * S);
+      cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px';
+      ctx.lineWidth = Math.max(1, 1.2 * S);
+    };
     size(); addEventListener('resize', size);
-    addEventListener('pointermove', (e) => { mx = e.clientX * DPR; my = e.clientY * DPR; }, { passive: true });
-    const N = innerWidth < 700 ? 60 : 140;
-    for (let i = 0; i < N; i++) pts.push({ x: Math.random() * innerWidth * DPR, y: Math.random() * innerHeight * DPR, vx: 0, vy: 0, life: Math.random() * 200, hue: Math.random() < .25 ? 'g' : 't' });
-    const field = (x, y, t) => { const s = 0.0016 / DPR; return Math.sin(x * s + t) * Math.cos(y * s * 1.3 - t * .7) * Math.PI * 2; };
-    let t = 0, frame = 0, scrolling = 0, looping = false;
-    // Pausa enquanto a página rola (é quando o navegador mais precisa do quadro) e volta logo depois.
-    addEventListener('scroll', () => { clearTimeout(scrolling); scrolling = setTimeout(() => { scrolling = 0; start(); }, 140); }, { passive: true });
-    const tick = () => {
-      if (!running || scrolling) { looping = false; return; }
-      requestAnimationFrame(tick);
-      // 30 quadros por segundo bastam para o rastro; metade do trabalho.
-      if (++frame % 2) return;
+    addEventListener('pointermove', (e) => { mx = e.clientX * S; my = e.clientY * S; }, { passive: true });
+    const small = innerWidth < 700;
+    const N = small ? 48 : 140;
+    for (let i = 0; i < N; i++) pts.push({ x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, life: Math.random() * 200, hue: Math.random() < .25 ? 'g' : 't' });
+    const field = (x, y, t) => { const s = 0.0016 / S; return Math.sin(x * s + t) * Math.cos(y * s * 1.3 - t * .7) * Math.PI * 2; };
+    let t = 0, last = 0, looping = false;
+    // 30 desenhos por segundo, medidos pelo relógio (em tela de 120 Hz também), e o fundo continua se mexendo ao rolar.
+    const STEP = 1000 / 30;
+    const draw = () => {
       t += 0.008;
       ctx.fillStyle = 'rgba(7,26,36,0.18)'; ctx.fillRect(0, 0, W, H);
-      ctx.lineWidth = 1.2;
-      // Um traço por cor (em vez de um por partícula): duas trocas de estilo por quadro em vez de 140.
+      const R2 = (260 * S) ** 2, F = .36 * S, A = 1.8 * S;
+      // Um traço por cor (em vez de um por partícula): duas trocas de estilo por quadro.
       for (const hue of ['t', 'g']) {
         ctx.strokeStyle = hue === 'g' ? 'rgba(98,216,78,.55)' : 'rgba(43,179,159,.45)';
         ctx.beginPath();
         for (const p of pts) {
           if (p.hue !== hue) continue;
-          const a = field(p.x, p.y, t); let ax = Math.cos(a) * .36, ay = Math.sin(a) * .36;
+          const a = field(p.x, p.y, t); let ax = Math.cos(a) * F, ay = Math.sin(a) * F;
           const dx = mx - p.x, dy = my - p.y, d2 = dx * dx + dy * dy;
-          if (d2 < 260 ** 2) { const d = Math.sqrt(d2) + 1; ax += (dx / d) * 1.8; ay += (dy / d) * 1.8; }
+          if (d2 < R2) { const d = Math.sqrt(d2) + 1; ax += (dx / d) * A; ay += (dy / d) * A; }
           p.vx = (p.vx + ax) * .9; p.vy = (p.vy + ay) * .9;
           ctx.moveTo(p.x, p.y); p.x += p.vx; p.y += p.vy; ctx.lineTo(p.x, p.y);
           if ((p.life += 2) > 420 || p.x < 0 || p.y < 0 || p.x > W || p.y > H) { p.x = Math.random() * W; p.y = Math.random() * H; p.vx = p.vy = 0; p.life = 0; }
@@ -365,8 +373,15 @@
         ctx.stroke();
       }
     };
-    const start = () => { if (!looping && running && !scrolling) { looping = true; requestAnimationFrame(tick); } };
+    const tick = (now) => {
+      if (!running) { looping = false; return; }
+      requestAnimationFrame(tick);
+      if (now - last < STEP - 2) return;
+      last = now; draw();
+    };
+    const start = () => { if (!looping && running) { looping = true; requestAnimationFrame(tick); } };
     start();
+    // Só para quando a aba fica escondida.
     document.addEventListener('visibilitychange', () => { running = !document.hidden; start(); });
   }
 
@@ -517,22 +532,24 @@
       insideBox.addEventListener('pointerleave', () => { paused = false; lastTs = performance.now(); });
     }
     if (!reduce) {
-      const pio = new IntersectionObserver((es) => es.forEach((e) => {
-        inView = e.isIntersecting;
-        if (inView) lastTs = performance.now();
-      }), { threshold: .15 });
-      pio.observe($('#painel') || insideImg);
+      // O laço do autoplay só roda com a seção na tela (antes pedia um quadro a cada 16 ms a página inteira).
+      let looping = false;
       const stepLoop = (now) => {
+        if (!inView) { looping = false; return; }
         const dt = now - lastTs;
         lastTs = now;
-        if (inView && !paused && !document.hidden) {
+        if (!paused && !document.hidden) {
           elapsed += dt;
           cos[cur].style.setProperty('--p', Math.min(1, elapsed / STEP_MS).toFixed(3));
           if (elapsed >= STEP_MS) go(cur + 1, true);
         }
         requestAnimationFrame(stepLoop);
       };
-      requestAnimationFrame(stepLoop);
+      const pio = new IntersectionObserver((es) => es.forEach((e) => {
+        inView = e.isIntersecting;
+        if (inView) { lastTs = performance.now(); if (!looping) { looping = true; requestAnimationFrame(stepLoop); } }
+      }), { threshold: .15 });
+      pio.observe($('#painel') || insideImg);
     }
   }
 
