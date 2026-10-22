@@ -206,40 +206,19 @@
 
   <div class="tbl rv" id="tbl"><table>
     <thead><tr><th data-i18n="tbl_th_case">Caso</th><th data-i18n="tbl_th_scen">Cenário criado na PDI</th><th data-i18n="tbl_th_field">Campo</th><th data-i18n="tbl_th_type">Tipo detectado</th><th data-i18n="tbl_th_grade">Grau</th><th data-i18n="tbl_th_ms" style="text-align:right">ms</th></tr></thead>
-    <tbody>
-      <tr><td class="m">C1</td><td>BR async que resolve incidente por palavra-chave</td><td class="m">state</td><td>BR assíncrona</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">1750</td></tr>
-      <tr><td class="m">C2</td><td>BR before define impacto, salva via REST (sem formulário)</td><td class="m">impact</td><td>BR before</td><td><span class="g d">CANDIDATO 30</span></td><td class="ms">1692</td></tr>
-      <tr><td class="m">C2-FORM</td><td>Mesma BR, salva pelo formulário: enviado 3, gravado 1</td><td class="m">impact</td><td>BR before</td><td><span class="g">CONFIRMADO 95</span></td><td class="ms">1856</td></tr>
-      <tr><td class="m">C2-FORM-urg</td><td>Usuário muda a urgência pelo formulário, sem automação</td><td class="m">urgency</td><td>Ação do usuário</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">1589</td></tr>
-      <tr><td class="m">C3</td><td>BR after que chama um script include</td><td class="m">category</td><td>BR → script include</td><td><span class="g p">PROVÁVEL 50</span></td><td class="ms">1678</td></tr>
-      <tr><td class="m">C4</td><td>Evento disparado + script action que altera o campo</td><td class="m">contact_type</td><td>Script action</td><td><span class="g">CONFIRMADO 70</span></td><td class="ms">1558</td></tr>
-      <tr><td class="m">C5</td><td>Scripts - Background altera o campo</td><td class="m">severity</td><td>Script de fundo</td><td><span class="g p">PROVÁVEL 50</span></td><td class="ms">1654</td></tr>
-      <tr><td class="m">C5b</td><td>Job agendado ajusta severidade</td><td class="m">severity</td><td>Job agendado</td><td><span class="g">CONFIRMADO 70</span></td><td class="ms">1669</td></tr>
-      <tr><td class="m">C6</td><td>Flow Designer altera notificação</td><td class="m">notify</td><td>Flow · passo 1 (Update Record)</td><td><span class="g">CONFIRMADO 85</span></td><td class="ms">1579</td></tr>
-      <tr><td class="m">C8</td><td>UI action "Marcar perícia" escreve na descrição</td><td class="m">description</td><td>UI action</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">1725</td></tr>
-      <tr><td class="m">C9</td><td>Gravação com setWorkflow(false), sem auditoria</td><td class="m">impact</td><td>Atualização sem auditoria</td><td><span class="g d">DETECTADO</span></td><td class="ms">1615</td></tr>
-      <tr><td class="m">C2-ITIL</td><td>Caso C2 lido com perfil itil (sem acesso a transações)</td><td class="m">impact</td><td>BR before</td><td><span class="g d">CANDIDATO 30</span></td><td class="ms">1550</td></tr>
-      <tr><td class="m">F1-ASSIGN</td><td>Regra de atribuição grava o grupo como "system" no salvamento de outra pessoa</td><td class="m">assignment_group</td><td>Regra de atribuição</td><td><span class="g">CONFIRMADO 95</span></td><td class="ms">1894</td></tr>
-      <tr><td class="m">F1-SEQ</td><td>BR before e BR async mexem no mesmo campo, uma depois da outra</td><td class="m">impact</td><td>BR before, depois BR async</td><td><span class="g">CONFIRMADO 110 · 80</span></td><td class="ms">1722</td></tr>
-      <tr><td class="m">F1-MANY</td><td>60 gravações REST seguidas no mesmo registro</td><td class="m">state</td><td>Ação do usuário (API)</td><td><span class="g d">CANDIDATO 30</span></td><td class="ms">1919</td></tr>
-      <tr><td class="m">F2-REST</td><td>Um PATCH muda 3 campos, sem nenhuma automação concorrente</td><td class="m">3 campos</td><td>Ação do usuário (API)</td><td><span class="g">CONFIRMADO 75</span></td><td class="ms">1823</td></tr>
-      <tr><td class="m">F1-LOOKUP</td><td>Data lookup recalcula a prioridade no navegador</td><td class="m">priority</td><td>Data lookup</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">1887</td></tr>
-      <tr><td class="m">F1-OTHER</td><td>BR before numa tabela que não é incident (problem)</td><td class="m">impact</td><td>BR before</td><td><span class="g">CONFIRMADO 110</span></td><td class="ms">1573</td></tr>
-      <tr><td class="m">F2-CLIENT</td><td>Pessoa troca o canal; client script preenche descrição e impacto</td><td class="m">3 campos</td><td>Client script ×2 · usuário</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">1744</td></tr>
-      <tr><td class="m">F2-AFTER</td><td>BR after grava dois campos com update() logo depois do salvamento</td><td class="m">3 campos</td><td>BR after ×2 · usuário</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">1713</td></tr>
-      <tr><td class="m">F2-ASYNC</td><td>BR async_always grava dois campos 1 s depois</td><td class="m">3 campos</td><td>BR assíncrona ×2 · usuário</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">1703</td></tr>
-      <tr><td class="m">F2-MIXED</td><td>Um único salvamento, três causas: pessoa, client script e BR before</td><td class="m">3 campos</td><td>Usuário · client script · BR before</td><td><span class="g">CONFIRMADO</span></td><td class="ms">1711</td></tr>
-      <tr><td class="m">F3-SAVE</td><td>Pessoa edita a descrição curta e clica em Salvar</td><td class="m">short_description</td><td>Ação do usuário</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">1674</td></tr>
-      <tr><td class="m">F3-SCRIPT</td><td>Pessoa edita o script de uma UI action</td><td class="m">script</td><td>Ação do usuário · com diferença linha a linha</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">2651</td></tr>
-      <tr><td class="m">F4-IMPORT</td><td>Import Set API com transform map, coalesce no identificador</td><td class="m">severity</td><td>Importação · transform map</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">1660</td></tr>
-      <tr><td class="m">F5-ORDER</td><td>Duas BRs before gravam o mesmo campo; vence a de order maior</td><td class="m">impact</td><td>BR before · a outra aparece como sobrescrita</td><td><span class="g">CONFIRMADO</span></td><td class="ms">1720</td></tr>
-      <tr><td class="m">F5-CASCADE</td><td>BR after com update() dispara outra BR before na gravação aninhada</td><td class="m">2 campos</td><td>BR after · BR before</td><td><span class="g">CONFIRMADO</span></td><td class="ms">1720</td></tr>
-      <tr><td class="m">F5-EVENT</td><td>Evento, depois script action, depois BR before, em cadeia</td><td class="m">3 campos</td><td>Script action · BR before · usuário</td><td><span class="g">CONFIRMADO</span></td><td class="ms">1890</td></tr>
-      <tr><td class="m">F7-FLOWMULTI</td><td>Flow do Flow Designer muda 3 campos num único passo Update Record</td><td class="m">3 campos</td><td>Flow, passo 1 · usuário no gatilho</td><td><span class="g">CONFIRMADO 85</span></td><td class="ms">1900</td></tr>
-      <tr><td class="m">F7-CHG</td><td>change_request: BR before, after, async, client script, botão e API</td><td class="m">6 campos</td><td>6 de 6 com o tipo certo</td><td><span class="g">CONFIRMADO</span></td><td class="ms">1750</td></tr>
+    <tbody data-i18n="tbl_examples">
+      <tr><td class="m">C1</td><td>Uma regra resolve o incidente após o salvamento</td><td class="m">state</td><td>Regra automática</td><td><span class="g">CONFIRMADO 80</span></td><td class="ms">1750</td></tr>
+      <tr><td class="m">C2-FORM</td><td>Regra corrige o impacto enviado pelo formulário</td><td class="m">impact</td><td>Regra antes de salvar</td><td><span class="g">CONFIRMADO 95</span></td><td class="ms">1856</td></tr>
+      <tr><td class="m">C3</td><td>Regra chama outro código para definir a categoria</td><td class="m">category</td><td>Regra + código</td><td><span class="g p">PROVÁVEL 50</span></td><td class="ms">1678</td></tr>
+      <tr><td class="m">C4</td><td>Evento aciona código que muda o canal</td><td class="m">contact_type</td><td>Evento + ação</td><td><span class="g">CONFIRMADO 70</span></td><td class="ms">1558</td></tr>
+      <tr><td class="m">C5b</td><td>Job agendado ajusta a severidade</td><td class="m">severity</td><td>Job agendado</td><td><span class="g">CONFIRMADO 70</span></td><td class="ms">1669</td></tr>
+      <tr><td class="m">C6</td><td>Flow muda a notificação</td><td class="m">notify</td><td>Flow</td><td><span class="g">CONFIRMADO 85</span></td><td class="ms">1579</td></tr>
+      <tr><td class="m">F1-SEQ</td><td>Duas regras mudam o mesmo campo em sequência</td><td class="m">impact</td><td>Regras em sequência</td><td><span class="g">CONFIRMADO 110 · 80</span></td><td class="ms">1722</td></tr>
+      <tr><td class="m">F2-REST</td><td>API muda três campos de uma vez</td><td class="m">3 campos</td><td>Ação via API</td><td><span class="g">CONFIRMADO 75</span></td><td class="ms">1823</td></tr>
+      <tr><td class="m">F7-RITM</td><td>Pedido de serviço com seis tipos de mudança</td><td class="m">6 campos</td><td>Pedido de serviço</td><td><span class="g">CONFIRMADO</span></td><td class="ms">1600</td></tr>
+      <tr><td class="m">F7-CUSTOM</td><td>Tabela criada para o teste, com auditoria</td><td class="m">6 campos</td><td>Tabela própria</td><td><span class="g">CONFIRMADO</span></td><td class="ms">1200</td></tr>
     </tbody></table></div>
-  <div class="tbl-foot rv"><span class="tbl-count" id="tbl-count">Mostrando 30 de 441</span><div class="tbl-btns"><button type="button" class="btn ghost sm" id="tbl-more" data-i18n="tbl_btn_more">Ver mais (+30)</button><button type="button" class="btn ghost sm" id="tbl-less" data-i18n="tbl_btn_less" hidden>Ver menos</button></div></div>
-  <p class="sub rv" data-i18n="tbl_footnote" style="margin-top:14px;font-size:14px;color:var(--mu)">Os testes às cegas foram montados por outros agentes sem dizer a resposta: o placar de primeira foi 15 de 16, 19 de 30, 25 de 30, 30 de 30, 33 de 35 e 23 de 27; cada erro virou correção no motor e caso permanente da bateria.</p>
+  <p class="sub rv" data-i18n="tbl_footnote" style="margin-top:14px;font-size:14px;color:var(--mu)">Nos testes às cegas, quem montou os casos não revelou as respostas. Cada erro virou um teste permanente.</p>
 </div></section>
 
 <section id="telas"><div class="wrap">

@@ -1,5 +1,5 @@
 // Verifica a demonstração do site: clique em cada campo troca a análise; links não navegam;
-// confere também #painel (sem sticky, linha do tempo vertical + autoplay), #tbl (30 de 441 + Ver mais),
+// confere também #painel (sem sticky, linha do tempo vertical + autoplay), #tbl (10 exemplos),
 // #faq (todos fechados) e #roadmap (5 visíveis + Ver mais).
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
@@ -100,21 +100,13 @@ const progVal = await page.$eval('.co.on', (el) => parseFloat(el.style.getProper
 if (!(progVal > 0)) errs.push('barra de progresso do autoplay não avançou: ' + progVal);
 if (S) await page.locator('#painel').screenshot({ path: S + 'painel-timeline-1280.png' });
 
-// tabela de casos (#tbl): 30 iniciais, Ver mais (+30), Ver menos
+// tabela de casos (#tbl): dez exemplos, sem controles de expansão
 await page.locator('#numeros').scrollIntoViewIfNeeded();
 const tblInit = await page.$$eval('#tbl tbody tr', (rs) => rs.length);
-const tblTxt0 = await page.$eval('#tbl-count', (el) => el.textContent.trim());
-if (tblInit !== 30 || tblTxt0 !== 'Mostrando 30 de 441') errs.push(`tabela inicial inesperada: ${tblInit} (${tblTxt0})`);
-if (S) await page.locator('#numeros').screenshot({ path: S + 'tbl-30.png' });
-await page.click('#tbl-more');
-await page.waitForTimeout(200);
-const tblAfter1 = await page.$$eval('#tbl tbody tr', (rs) => rs.length);
-const tblTxt1 = await page.$eval('#tbl-count', (el) => el.textContent.trim());
-if (tblAfter1 !== 60 || tblTxt1 !== 'Mostrando 60 de 441') errs.push(`tabela após 1 clique: ${tblAfter1} (${tblTxt1})`);
-await page.click('#tbl-less');
-await page.waitForTimeout(200);
-const tblReset = await page.$$eval('#tbl tbody tr', (rs) => rs.length);
-if (tblReset !== 30) errs.push('Ver menos não voltou para 30 linhas: ' + tblReset);
+const tblCases = await page.$$eval('#tbl tbody tr td:first-child', (cells) => cells.map((el) => el.textContent.trim()));
+if (tblInit !== 10 || !tblCases.includes('F7-CUSTOM') || !tblCases.includes('C6')) errs.push('tabela de exemplos inesperada: ' + tblCases.join(', '));
+if (await page.locator('#tbl-more, #tbl-less, #tbl-count').count()) errs.push('controles da tabela longa ainda aparecem');
+if (S) await page.locator('#numeros').screenshot({ path: S + 'tbl-10.png' });
 
 // FAQ (#faq): todos fechados no início
 await page.locator('#faq').scrollIntoViewIfNeeded();
@@ -145,7 +137,7 @@ await page.waitForTimeout(300);
 const langEn = await page.evaluate(() => document.documentElement.lang);
 const titleEn = await page.title();
 const navTryEn = await page.$eval('nav .btn.sm', (el) => el.textContent.trim());
-const tblCountEn = await page.$eval('#tbl-count', (el) => el.textContent.trim());
+const tblRowEn = await page.$eval('#tbl tbody tr:first-child td:nth-child(2)', (el) => el.textContent.trim());
 const roadBtnEn = await page.$eval('#roadmap .road-more', (el) => el.textContent.trim());
 const roadItemEn = await page.$eval('#roadmap .now ul li[data-i18n="road_p1_l1"]', (el) => el.textContent.trim());
 const beforeItemEn = await page.$eval('#antes ol li[data-i18n="antes_without_li1"]', (el) => el.textContent.trim());
@@ -154,7 +146,7 @@ const screensIntroEn = await page.$eval('#telas p[data-i18n="telas_sub"]', (el) 
 if (langEn !== 'en') errs.push('ao clicar em EN, documentElement.lang não ficou "en": ' + langEn);
 if (!titleEn.includes('Record Forensics')) errs.push('ao clicar em EN, título não mudou para inglês: ' + titleEn);
 if (navTryEn !== 'Try it') errs.push('ao clicar em EN, botão do nav não mudou para "Try it": ' + navTryEn);
-if (!tblCountEn.startsWith('Showing 30')) errs.push('ao clicar em EN, contador da tabela não mudou para "Showing 30...": ' + tblCountEn);
+if (!tblRowEn.includes('resolves the incident')) errs.push('ao clicar em EN, exemplo da tabela não traduziu: ' + tblRowEn);
 if (!roadBtnEn.startsWith('View more')) errs.push('ao clicar em EN, botão do roadmap não mudou para "View more...": ' + roadBtnEn);
 if (!roadItemEn.includes('Works without admin')) errs.push('ao clicar em EN, item da Fase 1 do roadmap não mudou para inglês: ' + roadItemEn);
 if (!beforeItemEn.startsWith('Open record history')) errs.push('ao clicar em EN, passos de comparação não mudaram para inglês: ' + beforeItemEn);
@@ -197,11 +189,11 @@ await page.click('.lang-btn[data-lang="pt"]');
 await page.waitForTimeout(300);
 const langPt = await page.evaluate(() => document.documentElement.lang);
 const navTryPt = await page.$eval('nav .btn.sm', (el) => el.textContent.trim());
-const tblCountPt = await page.$eval('#tbl-count', (el) => el.textContent.trim());
+const tblRowPt = await page.$eval('#tbl tbody tr:first-child td:nth-child(2)', (el) => el.textContent.trim());
 const roadItemPt = await page.$eval('#roadmap .now ul li[data-i18n="road_p1_l1"]', (el) => el.textContent.trim());
 if (langPt !== 'pt-BR') errs.push('ao clicar em PT, documentElement.lang não voltou para "pt-BR": ' + langPt);
 if (navTryPt !== 'Experimentar') errs.push('ao clicar em PT, botão do nav não voltou para "Experimentar": ' + navTryPt);
-if (!tblCountPt.startsWith('Mostrando 30')) errs.push('ao clicar em PT, contador da tabela não voltou para "Mostrando 30...": ' + tblCountPt);
+if (!tblRowPt.includes('resolve o incidente')) errs.push('ao voltar para PT, exemplo da tabela não voltou para português: ' + tblRowPt);
 if (!roadItemPt.includes('Funciona sem admin')) errs.push('ao voltar para PT, item do roadmap não voltou para português: ' + roadItemPt);
 
 await page.setViewportSize({ width: 1280, height: 860 });
@@ -226,7 +218,7 @@ if (S) await page.locator('#painel').screenshot({ path: S + 'painel-timeline-390
 
 console.log(JSON.stringify({
   results,
-  checks: { shotPosition, seenCount, progVal, tblInit, tblAfter1, tblReset, faqOpen, roadVis0, roadVis1, stack390 },
+  checks: { shotPosition, seenCount, progVal, tblInit, faqOpen, roadVis0, roadVis1, stack390 },
   brokenImgs,
   overflow1280,
   overflow390,
