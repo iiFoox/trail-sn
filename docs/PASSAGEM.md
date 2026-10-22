@@ -1,6 +1,6 @@
 # Trail: passagem do projeto
 
-Estado em 20/10/2026, versão **0.13.0**. Documento para quem continua o projeto, seja outra sessão do Claude, outro agente ou outra pessoa. Leia este arquivo inteiro junto com `docs/DIARIO.md` (o registro contínuo de trabalho) antes de mexer em qualquer coisa.
+Estado em 21/10/2026 (22h), versão **1.4.0** — o resumo mais atual está no topo de `docs/PROXIMOS-PASSOS.md` (painel da 1.0.0 como padrão + Modo avançado desligado por padrão; módulos novos do motor `fieldState`, `fieldDeps`, `saveTiming`, `visibility`, `compare`). As seções abaixo descrevem a base até a 0.13.0. Documento para quem continua o projeto, seja outra sessão do Claude, outro agente ou outra pessoa. Leia este arquivo inteiro junto com `docs/DIARIO.md` (o registro contínuo de trabalho) antes de mexer em qualquer coisa.
 
 ---
 
