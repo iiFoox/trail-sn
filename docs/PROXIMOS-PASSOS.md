@@ -1,6 +1,38 @@
 # Próximos passos
 
-## Estado em 21/10/2026, 17h (leia isto primeiro)
+## Estado em 21/10/2026, 22h (leia isto primeiro) — Claude (coordenação com subagentes nesta conversa)
+
+**Versão para a loja: 1.4.0** = painel **igual ao da 1.0.0** (o dono achou que a extensão ficou cheia de informação e decidiu voltar ao simples) + correções invisíveis + **Modo avançado** (chave nas Configurações, **desligado por padrão**) com as ferramentas novas numa aba "Avançado", tudo recolhido.
+- O dono vai enviar a 1.4.0 à **Chrome Web Store** (só o dono envia e aceita termos).
+- Este ambiente **não tem push** para `iiFoox/trail-sn`: os commits desta rodada vão num **git bundle** entregue ao dono (ver "Como subir os commits" abaixo).
+
+### O que entrou desde a 1.0.0 (detalhes em `docs/DIARIO.md`)
+- **Correções de comportamento (visíveis só como "funciona"):** idioma padrão pelo navegador; nome localizado na loja (`__MSG_name__`); erros em texto simples com "Detalhes técnicos"; "registro indisponível" separado de "sem permissão"; janela separada abre mesmo quando o navegador recusa a posição e o "Investigar" nela grava na aba certa; ícone do Trail em campos de referência/caixas/listas do UI16 (prefixos `sys_display.`, `sys_readonly.`, `ni.`, `select_0`); registro aberto já preenchido na gaveta "Investigar"; menu "Trail" só nas instâncias conectadas; detecção só `*.service-now.com`/`*.servicenowservices.com` (domínio próprio pelas Opções); `minimum_chrome_version` 120; WAR só `https://*/*`, sem `page.js`; boas-vindas sem histórico de navegação (SHA-256, últimos 200).
+- **Motor (`packages/core`):** `evalCondition` com `^OR`/`^NQ`; gêmeos `state`/`incident_state`; `fd-scripted` dos flows; papel `public`; e os módulos novos `fieldState`, `fieldDeps` (quem grava/quem depende/simular), `saveTiming`, `visibility`, `compare` — validados no PDI (`tests/regression/VALIDACAO-MOTORES-2026-10-21.md`).
+- **Modo avançado (desligado por padrão):** aba "Avançado" com Por que está bloqueado, Quem grava, Quem depende, Simular um valor, Comparar com outra instância, Tempo do salvamento, Quem enxerga este registro.
+- Testes: ~289 unitários; suíte e2e completa passando no Linux (a falha antiga do `prefs-window` era tela simulada 800×600 do headless + bug real da janela fora da tela, ambos corrigidos).
+
+### Pendências, em ordem (para a próxima IA)
+1. **Dono:** enviar a 1.4.0 à Chrome Web Store (depois Edge). Antes, conferir a ficha: o **nome mudou** para `Trail — Perícia de registros ServiceNow` / `Trail — ServiceNow Record Forensics` (vem do manifest); requisito mínimo Chrome 120; textos "Conectar/Desconectar"; justificativa de `https://*/*` = "pedida só para o domínio que o usuário digitar nas Opções (instância com domínio próprio)"; o menu de contexto só aparece em instâncias conectadas. As capturas de `docs/store/` são da 1.0.0 e continuam valendo (o painel padrão voltou a ser o da 1.0.0); se o revisor pedir o Modo avançado, gerar capturas novas.
+2. **Site / política de privacidade (outra IA, outra conta Vercel)** — obrigatório antes ou logo depois do envio, porque a loja confere: ver a seção "Ajustes pendentes no SITE" abaixo (itens 1 a 3). Atenção: o item 2 de lá ("funcionalidades novas no site") passa a ser **só para o Modo avançado**, apresentado como opcional para administradores.
+3. **PDI (QA):** a rodada de 21/10 à noite foi **interrompida pelo dono** antes de terminar:
+   - **bateria de 441 casos com o motor novo (`^OR`) NÃO foi rodada** — rodar e comparar com 441/441;
+   - reconferir P1–P7 (lista no relatório do agente de correções no `DIARIO.md`): `saveTiming` < 4 s, SLAs anexadas, `^OR` na policy "Make fields read-only on close", quem enxerga pela sessão, compare A×sem sessão ~7 chamadas;
+   - **bateria escopada v2:** corpus de 302 casos pronto (`tests/regression/escopo/cases-escopo-v2.json`, scripts `rodar-v2.js`/`casos-v2.js`); rodaram só os perfis admin do app A e usuário do app A (`results-v2/`). Faltam: admin geral, B, C, itil, sem papel; depois o `RELATORIO-v2.md` com melhorias para não admin em escopo.
+   - Artefatos `[PT] v2 …` no PDI: 33 BRs ativas restritas a registros "[PT] v2 …" (desativar quando a bateria terminar).
+4. **Testes manuais do dono** (lista no fim deste arquivo) com a 1.4.0.
+5. Backlog de ideias (abaixo) — só com o dono escolhendo; lembrar que ele pediu **simplicidade**: nada novo no modo padrão sem aprovação explícita.
+
+### Como subir os commits (bundle)
+```bash
+git clone trail.bundle trail-sn-local    # ou, num clone existente: git fetch /caminho/trail.bundle master:trail-claude
+cd trail-sn-local
+git remote set-url origin https://github.com/iiFoox/trail-sn.git
+git push origin master                    # com o login do iiFoox
+```
+Os commits desta rodada saem como `Claude <noreply@anthropic.com>` (como os 36 anteriores do Claude no histórico); nenhum e-mail pessoal.
+
+## Estado anterior: 21/10/2026, 17h
 O Codex #2 e o Antigravity #2 pararam por limite de uso; o Claude fechou a rodada. **A próxima IA assume a coordenação.** Leia também `docs/DIARIO.md` (registro contínuo) e as regras logo abaixo.
 
 **Versão atual: 1.0.0**, pronta para as lojas.
@@ -56,7 +88,7 @@ Quem for mexer no site (`site/`, deploy Vercel do dono) deve fazer, nesta ordem:
    - "Contato" com link (`https://github.com/iiFoox/trail-sn/issues`);
    - mudanças da 1.1.0 que afetam a política/ficha: boas-vindas guardam só um resumo SHA-256 dos últimos 200 registros (não o histórico); "Nada vai para fora da sua instância"; Conectar/Desconectar (não Ativar/Desativar) em textos e capturas; detecção automática só em `*.service-now.com`/`*.servicenowservices.com`, domínio próprio pelas Opções (justificativa de `https://*/*`: pedida só para o domínio digitado); menu "Trail" só nas instâncias conectadas; mínimo Chrome/Edge 120; recursos acessíveis só em páginas https e `page.js` não exposto; teste de autenticação traduzido (só GET).
 2. **Funcionalidades novas da extensão que precisam entrar no site** (regra do projeto: toda funcionalidade nova vai para `site/b3`):
-   - "Por que este campo está bloqueado, obrigatório ou escondido?" (em desenvolvimento, branch `dev-bloqueado`);
+   - (só no **Modo avançado**, opcional para administradores) "Por que este campo está bloqueado, obrigatório ou escondido?", Quem grava/Quem depende, Simular, Comparar instâncias, Tempo do salvamento, Quem enxerga;
    - janela separada que abre mesmo quando o navegador recusa a posição (só nota de versão);
    - mensagens de erro em linguagem simples ("a instância não respondeu", "sem permissão").
 3. Atualizar números da página (`site/b3`) depois da bateria escopada v2 (`tests/regression/escopo/RELATORIO-v2.md`).

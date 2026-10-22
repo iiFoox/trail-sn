@@ -10,6 +10,16 @@ Convenções:
 
 ---
 
+## 2026-10-21 (22h) — Claude (coordenação): de 1.2.0 a 1.3.1 e a volta ao simples (1.4.0)
+
+- **1.2.0–1.3.1 (entregues ao dono para teste):** painel reorganizado em 4 abas (Resposta, Como foi, Histórico, Regras) com frase-resposta no topo; telas dos motores novos (Simular, Comparar, Quem enxerga, Tempo do salvamento, Quem grava/Quem depende); correções dos motores achadas no PDI (P1–P7: `^OR`/`^NQ` em `evalCondition`, obrigatório vazio não trava, campos de diário não "escondidos", SLAs anexadas via `task_sla`, `recordSaveTimes` por janelas `^NQ` e mediana com prazo próprio, quem enxerga pela própria sessão, `compare` para cedo o lado sem sessão, sem retentativa em 500); registro aberto preenchido na gaveta "Investigar" (número lido do `g_form`, 1.2.2); seções com mais de um item recolhidas com seta única e clique no título (1.3.0); "Quem enxerga" com busca por nome (`find-users`); contagem só à direita e "Simular e comparar" como seção (1.3.1).
+- **Decisão do dono (21h49):** "enchemos de informação demais; o simples que era funcional deixou de ser". Decidido: o painel volta a ser **igual ao da 1.0.0** como padrão; as correções invisíveis ficam; as ferramentas novas vão para um **Modo avançado** desligado por padrão (aba "Avançado", tudo recolhido). Versão **1.4.0**, que o dono vai enviar à Chrome Web Store.
+- **PDI:** validação dos motores feita (relatório `tests/regression/VALIDACAO-MOTORES-2026-10-21.md`, 6 bugs corrigidos). A rodada seguinte (bateria 441 com o motor novo, reconferência P1–P7, escopada v2) foi interrompida pelo dono às 21h28: só a v2 de admin e usuário do app A rodou (`tests/regression/escopo/results-v2/`). Sessão do PDI conferida às 22h: admin, sem `security_admin`, sem personificação; abas extras fechadas.
+- **Lições para a próxima rodada:** (1) mostrar ao dono cada funcionalidade nova numa tela antes de empilhar a próxima; (2) o modo padrão tem de continuar respondendo em uma tela "o que mudou, quem, quando, por quê"; o resto é opcional.
+- **Em aberto:** ver `docs/PROXIMOS-PASSOS.md` (topo, 22h).
+
+---
+
 ## 2026-10-21 (noite, 2) — Claude (coordenação): 1.1.0 com "Por que está bloqueado?", correções de loja e quatro motores novos
 
 - **"Por que este campo está bloqueado, obrigatório ou escondido?"** (`packages/core/src/fieldState.ts`, `extension/src/sidepanel/FieldLock.tsx`, `page/main.ts`): aba "Bloqueio?", cartão no topo quando o formulário mostra o campo travado, gaveta "Investigar › Um campo" com sugestões, e lista "Campos bloqueados, obrigatórios ou escondidos agora" no registro inteiro (a única entrada para campos escondidos). Graus Confirmado/Pode ser; ACL nunca avaliada e sempre avisada; sem acesso, só o estado observado + "Seus papéis não deixam ver as regras do formulário". e2e `fieldlock.mjs`.
