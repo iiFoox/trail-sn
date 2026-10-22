@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FakeRestClient } from '../src/client/FakeRestClient';
-import { describeVisibility, parseEncoded, readQueryScript, visibility, DYNAMIC_ME } from '../src/visibility';
+import { describeVisibility, findUsers, parseEncoded, readQueryScript, userSearchQuery, visibility, DYNAMIC_ME } from '../src/visibility';
 import type { Row } from '../src/types';
 
 const ID = 'a'.repeat(32);
@@ -248,7 +248,7 @@ describe('Quem enxerga este registro: sem acesso e pessoa inexistente', () => {
     expect(v.notes).toContain('user_not_found');
     expect(v.combined.verdict).toBe('nao_da_para_afirmar');
     expect(v.combined.why[0]).toBe('user_not_found');
-    expect(describeVisibility(v)).toContain('Não achei o usuário "ninguem.aqui"');
+    expect(describeVisibility(v)).toContain('Não achei ninguém com esse nome ("ninguem.aqui")');
   });
 
   it('sys_security_acl negada (403): não inventa regras; mostra o filtro e os papéis da pessoa', async () => {
@@ -383,5 +383,50 @@ describe('P6: a pessoa pedida é a própria sessão', () => {
     const c2 = itil();
     c2.respond('sys_user', (req) => (req.query.includes('javascript:') ? [{ sys_id: ABEL }, { sys_id: BETH }] : [{ sys_id: ABEL, user_name: 'abel.tuter', active: 'true' }]));
     expect((await run(c2, ABEL)).session).toBeUndefined();
+  });
+});
+
+describe('Quem enxerga: achar a pessoa pelo nome', () => {
+  const V1 = '4'.repeat(32), V2 = '5'.repeat(32), V3 = '6'.repeat(32);
+  const people = (c: FakeRestClient) => {
+    c.rows('sys_user', [
+      { sys_id: BETH, user_name: 'beth.anglin', name: 'Beth Anglin', first_name: 'Beth', last_name: 'Anglin', active: 'true' },
+      { sys_id: ABEL, user_name: 'abel.tuter', name: 'Abel Tuter', first_name: 'Abel', last_name: 'Tuter', active: 'true' },
+      { sys_id: V1, user_name: 'vinicius.silva', name: 'Vinicius Silva', first_name: 'Vinicius', last_name: 'Silva', active: 'true' },
+      { sys_id: V2, user_name: 'vsouza', name: 'Vinicius Souza', first_name: 'Vinicius', last_name: 'Souza', active: 'true' },
+      { sys_id: V3, user_name: 'vinicius.old', name: 'Vinicius Antigo', first_name: 'Vinicius', last_name: 'Antigo', active: 'false' },
+    ]);
+    return c;
+  };
+
+  it('monta a consulta: sys_id direto; senão user_name exato OU nome/primeiro/último nome começando com o texto, só ativos', () => {
+    expect(userSearchQuery(BETH)).toBe(`sys_id=${BETH}`);
+    expect(userSearchQuery(' Vinicius ')).toBe('active=true^user_name=Vinicius^ORnameSTARTSWITHVinicius^ORfirst_nameSTARTSWITHVinicius^ORlast_nameSTARTSWITHVinicius');
+    expect(userSearchQuery('a^ORactive=false')).not.toContain('^ORactive');
+    expect(userSearchQuery('x')).not.toContain('email');
+  });
+
+  it('findUsers: acha pelo primeiro nome, pelo sobrenome e pelo user_name; ignora inativos; texto curto não consulta', async () => {
+    const c = people(base());
+    const v = await findUsers(c, 'Vinicius');
+    expect(v.users.map((u) => u.userName).sort()).toEqual(['vinicius.silva', 'vsouza']);
+    expect((await findUsers(c, 'Souza')).users.map((u) => u.sysId)).toEqual([V2]);
+    expect((await findUsers(c, 'abel.tuter')).users[0]).toEqual({ sysId: ABEL, userName: 'abel.tuter', name: 'Abel Tuter' });
+    expect((await findUsers(c, 'Zé Ninguém')).users).toEqual([]);
+    expect((await findUsers(c, 'V')).users).toEqual([]);
+  });
+
+  it('visibility: um nome que bate com uma pessoa só analisa ela; com várias, devolve as candidatas; com nenhuma, "não achei"', async () => {
+    const c = people(base(OPEN_ACLS));
+    const one = await run(c, 'Abel');
+    expect(one.user?.sysId).toBe(ABEL);
+    expect(one.notes).not.toContain('user_not_found');
+    const many = await run(c, 'Vinicius');
+    expect(many.notes).toContain('user_ambiguous');
+    expect(many.candidates?.map((u) => u.sysId).sort()).toEqual([V1, V2]);
+    expect(many.user).toBeUndefined();
+    const none = await run(c, 'Fulano');
+    expect(none.notes).toContain('user_not_found');
+    expect(describeVisibility(none, 'pt')).toContain('Não achei ninguém com esse nome');
   });
 });

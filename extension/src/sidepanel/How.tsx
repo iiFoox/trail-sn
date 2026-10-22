@@ -10,19 +10,22 @@ import { send } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
 import { cap, factText, humanField, localizeTimes, lossReason, parts, plural, refLink, traceTitle, valueLabel, when } from './format';
 import { SaveTimingCard } from './SaveTiming';
+import { Fold, Help } from './Fold';
 import { Val } from './Val';
 
 const s = t(getPrefs().lang);
 const P = s.p;
 const U = P.ux;
 const WINDOW = { before: 3, after: 15 };
+/** Rastro "longo": acima disto, a linha do tempo começa recolhida (o resumo mostra a causa). */
+const LONG_TRACE = 3;
 
 export function How({ r, c, origin, field, denied, expired, access, copy }: { r: Investigation; c: Change; origin: string; field: string; denied: string[]; expired: boolean; access?: AccessReport; copy: (t: string) => void }) {
   return (
     <div class="stack">
       <Trace r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} />
       <SaveTimingCard r={r} c={c} origin={origin} />
-      <h3 class="sec-h">{U.proofTitle}<small>{U.proofHint}</small></h3>
+      <h3 class="sec-h">{U.proofTitle}<Help text={U.proofHint} /></h3>
       <Proof r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} access={access} copy={copy} />
     </div>
   );
@@ -50,11 +53,13 @@ function Trace({ r, c, origin, field, denied, expired }: { r: Investigation; c: 
   const items: TraceItem[] = c.trace ?? [];
   const blind = denied.filter((d) => ['sys_flow_context', 'wf_context', 'sysevent', 'syslog_transaction'].includes(d));
   const txIds = items.filter((it) => it.ref?.table === 'syslog_transaction' && it.ref.sysId).map((it) => it.ref!.sysId!);
+  const key = items.find((it) => it.cause);
+  const long = items.length > LONG_TRACE;
   return (
     <section class="how-moment">
-      <h3 class="sec-h">{U.momentTitle}<small>{fmt(P.traceIntro, WINDOW)}</small></h3>
+      <h3 class="sec-h">{U.momentTitle}<Help text={fmt(P.traceIntro, WINDOW)} /></h3>
       {txIds.length > 1 && <a class="btn sm openall" href={refLink(origin, { table: 'syslog_transaction', query: `sys_idIN${txIds.join(',')}` })} target="_blank" rel="noreferrer">{Glyph.open} {fmt(P.openAllTx, { n: txIds.length })}</a>}
-      <div>
+      <TraceWrap long={long} count={items.length} hint={key ? fmt(U.foldCause, { x: `${parts(key.at).full} · ${key.kind === 'write' ? P.otherWrite : traceTitle(r, c, key, field)}` }) : undefined}>
         <ol class="tl">
           {items.map((it, idx) => {
             const p = parts(it.at);
@@ -83,9 +88,15 @@ function Trace({ r, c, origin, field, denied, expired }: { r: Investigation; c: 
         </ol>
         {c.traceOmitted ? <div class="muted small">{fmt(P.omitted, { n: c.traceOmitted })}</div> : null}
         {items.length <= 1 && !expired && <div class="muted small">{P.traceEmpty}</div>}
-      </div>
+      </TraceWrap>
     </section>
   );
+}
+
+/** Rastro curto fica aberto como sempre; longo vira uma seção recolhida com a causa no resumo. */
+function TraceWrap({ long, count, hint, children }: { long: boolean; count: number; hint?: string; children: preact.ComponentChildren }) {
+  if (!long) return <div>{children}</div>;
+  return <Fold cls="trace-fold" title={U.foldTrace} hint={hint} count={count}><div class="pad">{children}</div></Fold>;
 }
 
 // ---------- as provas ----------
@@ -95,18 +106,19 @@ function Proof({ r, c, origin, field, denied, expired, access, copy }: { r: Inve
   const missingCount = (denied.length ? 1 : 0) + (r.unaudited ? 1 : 0) + (expired ? 1 : 0);
   const entries = Object.entries(r.access).sort();
   const day = c.at.slice(0, 10);
+  const best = top ? [...top.facts].sort((a, b) => b.points - a.points)[0] : undefined;
+  const missingWhat = [denied.length ? cap(fmt(P.deniedItem, { what: denied.map((d) => P.srcName[d] ?? d).join(', ') })) : '', r.unaudited ? plural(P.unauditedItem, r.unaudited.count) : '', expired ? P.expiredItem : ''].filter(Boolean);
   return (
     <>
       {top && (
-        <div class="box">
-          <h4>{P.whyThis}<span>{fmt(P.nProofs, { n: top.facts.length })}</span></h4>
+        <Fold cls="why-this" title={P.whyThis} count={top.facts.length + top.gaps.length}
+          hint={best ? fmt(U.foldBest, { x: factText(best.kind, field) }) : undefined}>
           {top.facts.map((f, i) => <FactRow i={i} kind={f.kind} detail={localizeTimes(f.detail, day)} source={f.source} field={field} ok={f.points >= 0} />)}
           {top.gaps.map((g) => <div class="li"><span class="ck w">!</span><span class="grow">{localizeTimes(g, day)}</span></div>)}
-        </div>
+        </Fold>
       )}
       {others.map((e) => <Other e={e} origin={origin} field={field} day={day} />)}
-      <div class="box">
-        <h4 class={missingCount ? 'warnh' : ''}>{P.missing}</h4>
+      <Fold cls="missing" warn={missingCount > 0} title={P.missing} count={missingCount || undefined} pill={missingCount ? 'w' : ''} open={missingCount <= 1} hint={missingCount > 1 ? missingWhat.join(' · ') : undefined}>
         {!missingCount && <div class="li"><span class="ck">{Glyph.check}</span><span class="grow">{P.nothingMissing}</span></div>}
         {denied.length > 0 && (
           <div class="li"><span class="ck w">!</span><div class="grow">
@@ -122,16 +134,15 @@ function Proof({ r, c, origin, field, denied, expired, access, copy }: { r: Inve
           </div></div>
         )}
         {expired && <div class="li"><span class="ck w">!</span><div class="grow"><b>{P.expiredItem}</b> {P.expiredText}</div></div>}
-        <details class="tech-acc">
-          <summary class="pad small muted">{P.techAccess} {Glyph.chevron}</summary>
+        <Fold nested cls="tech-acc" open={false} title={<span class="small muted">{P.techAccess}</span>}>
           <div class="acc-list">
             {[...entries, ...(access ? Object.entries(access.states).filter(([k]) => !(k in r.access)).sort() : [])].map(([k, v]) => (
               <div><code>{k}</code><span class={`state ${v}`}>{s.state[v] ?? v}</span></div>
             ))}
           </div>
           <div class="pad"><button class="btn sm" onClick={() => send({ type: 'check-access', origin })}>{Glyph.shield} {P.recheck}</button></div>
-        </details>
-      </div>
+        </Fold>
+      </Fold>
     </>
   );
 }
@@ -149,11 +160,11 @@ function FactRow({ kind, detail, source, field, ok, i = 0 }: { kind: string; det
 function Other({ e, origin, field, day }: { e: Evidence; origin: string; field: string; day: string }) {
   const link = e.artifact.sysId && e.artifact.table ? recordLink(origin, e.artifact.table, e.artifact.sysId) : null;
   return (
-    <details class="box fold">
-      <summary><h4><span class="grow">{fmt(P.whyNotOther, { name: e.artifact.name })}<span class="why">{lossReason(e, field, day)}</span></span><span class="pill">{P.likelihood[e.grade]}</span></h4></summary>
+    <Fold cls="why-not" open={false} title={fmt(P.whyNotOther, { name: e.artifact.name })} hint={lossReason(e, field, day)} count={e.gaps.length + e.facts.length}
+      badge={<span class="pill">{P.likelihood[e.grade]}</span>}>
       {e.gaps.map((g) => <div class="li"><span class="ck x">–</span><span class="grow">{localizeTimes(g, day)}</span></div>)}
       {e.facts.map((f) => <FactRow kind={f.kind} detail={localizeTimes(f.detail, day)} source={f.source} field={field} ok={f.points >= 0} />)}
       {link && <div class="pad"><a href={link} target="_blank" rel="noreferrer">{Glyph.open} {fmt(P.openArtifact, { what: P.what[e.artifact.table ?? ''] ?? s.openInStudio })}</a></div>}
-    </details>
+    </Fold>
   );
 }

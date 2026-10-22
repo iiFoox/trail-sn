@@ -20,6 +20,10 @@ try {
     await page.waitForSelector('.rruns .grp', { state: 'attached' });
     await page.click('.rruns > summary');
     await page.locator('.rruns .grp > summary', { hasText: 'Flows' }).click();
+    // Dentro de Flows, "Rodaram neste registro" e "Configurados" (2 cada) também começam recolhidos.
+    if (await page.locator('.rruns details.fl-runs[open], .rruns details.fl-defs[open]').count()) errors.push('listas de flows com 2 itens vieram abertas');
+    await page.click('.rruns details.fl-runs > summary');
+    await page.click('.rruns details.fl-defs > summary');
     await page.waitForSelector('.fl-run');
     out[w] = await page.evaluate(() => {
       const t = document.querySelector('.seg-tabs'), a = t.querySelector('button[aria-selected="true"]');
@@ -33,7 +37,9 @@ try {
   }
   await page.setViewportSize({ width: 420, height: 1300 });
   await page.goto(`chrome-extension://${id}/src/sidepanel/index.html?demo=1&float=1&batch=rec`);
-  await page.waitForSelector('.rruns .grp', { timeout: 8000 }).catch(() => errors.push('registro inteiro sem "O que roda neste registro"'));
+  await page.waitForSelector('.rruns .grp', { state: 'attached', timeout: 8000 }).catch(() => errors.push('registro inteiro sem "O que roda neste registro"'));
+  if (await page.locator('details.rruns').evaluate((d) => d.open)) errors.push('"O que roda neste registro" deveria vir recolhido');
+  await page.click('details.rruns > summary');
   out.rec = await page.evaluate(() => [...document.querySelectorAll('.rruns .grp > summary b')].map((b) => b.textContent));
   for (const g of ['Regras de negócio', 'Flows', 'Client scripts', 'Botões (UI actions)']) if (!out.rec.includes(g)) errors.push('faltou o grupo ' + g + ': ' + JSON.stringify(out.rec));
   // Busca: "priority" deixa só o que grava a prioridade (a regra que calcula e o data lookup).

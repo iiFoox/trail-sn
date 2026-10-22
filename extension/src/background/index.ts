@@ -3,7 +3,7 @@
  * guarda estado em chrome.storage.session e abre o painel. Não toca no DOM.
  * Nenhum estado em memória que importe: o worker pode ser encerrado a qualquer momento.
  */
-import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, batchItemFrom, fieldMap, previewChange, recordTimeline, scanTableConflicts, type AccessReport, type BatchItem, type MetaCache, type TableMeta, recordFlows, tableAutomations, fieldState, fieldStates, fieldRules, simulateValue, saveTiming, visibility, compareInstances } from '@trail/core';
+import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, batchItemFrom, fieldMap, previewChange, recordTimeline, scanTableConflicts, type AccessReport, type BatchItem, type MetaCache, type TableMeta, recordFlows, tableAutomations, fieldState, fieldStates, fieldRules, simulateValue, saveTiming, visibility, findUsers, compareInstances } from '@trail/core';
 import { addInstance, INSTANCES_KEY, isEnabled, listInstances, looksLikeServiceNow, removeInstance } from '../shared/instances';
 import { loadPrefs, PREFS_KEY, savePrefs, type PanelMode } from '../shared/prefs';
 import { normalizeInstanceLanguage, storageKey, type Message, type PageContext, type ProbeResult, type TabState } from '../shared/messages';
@@ -746,6 +746,9 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
       }
       case 'save-timing':
         return saveTiming(makeClient(msg.origin), msg.target).catch((e: Error) => ({ error: e.message }));
+      case 'find-users':
+        // Sugestões do "Quem enxerga": pessoas ativas pelo nome, sobrenome ou user_name (até 8; só leitura).
+        return findUsers(makeClient(msg.origin), msg.text).catch((e: Error) => ({ error: e.message }));
       case 'visibility':
         return visibility(makeClient(msg.origin), { table: msg.target.table, sysId: msg.target.sysId, ...(msg.target.user ? { user: msg.target.user } : {}) },
           { ...(msg.target.field ? { fields: [msg.target.field] } : {}), language: await languageFor(msg.origin, await requestTab(msg, sender), msg.language) })

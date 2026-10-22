@@ -12,6 +12,7 @@ import { send } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
 import { trackedTab } from '../shared/tabRef';
 import { ErrorMsg } from './ErrorMsg';
+import { Fold } from './Fold';
 import { isDemo, lang, secs } from './format';
 
 const P = t(getPrefs().lang).p;
@@ -59,10 +60,11 @@ export function SaveTimingCard({ r, c, origin }: { r: Investigation; c: Change; 
           <div class="slegend small">{seg.map(([k, v]) => <span><i class={`p-${k}`} />{str(U.savePart)[k]} {secs(v)}</span>)}</div>
         </div>
       )}
-      <div class="pad small save-text">{describeSaveTiming(res, lang)}</div>
+      {/* A explicação longa fica recolhida: o cabeçalho (tempo + veredito) e a barra já respondem. */}
+      {total === undefined ? <div class="pad small save-text">{describeSaveTiming(res, lang)}</div>
+        : <Fold nested cls="save-detail" open={false} icon={Glyph.clock} title={U.saveDetail}><div class="pad small save-text">{describeSaveTiming(res, lang)}</div></Fold>}
       {ran.length > 0 && (
-        <details class="grp">
-          <summary><span class="ic sm">{Glyph.rule}</span><b class="grow">{U.saveRan}</b><i>{ran.length}</i><span class="chev">{Glyph.chevron}</span></summary>
+        <Fold nested cls="save-ran" icon={Glyph.rule} title={U.saveRan} count={ran.length}>
           {ran.map((x) => (
             <div class="li">
               <span class="ck">{RAN_ICON[x.kind]}</span>
@@ -72,7 +74,7 @@ export function SaveTimingCard({ r, c, origin }: { r: Investigation; c: Change; 
               </div>
             </div>
           ))}
-        </details>
+        </Fold>
       )}
       {res.txSysId && <div class="pad small"><a href={recordLink(origin, 'syslog_transaction', res.txSysId)} target="_blank" rel="noreferrer">{Glyph.open} {U.saveOpenTx}</a></div>}
     </div>

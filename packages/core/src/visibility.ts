@@ -173,6 +173,8 @@ export interface Visibility {
   /** Quem foi pedido (como veio) e quem foi achado. */
   asked?: string;
   user?: VisibilityUser;
+  /** O texto pedido bateu com mais de uma pessoa pelo nome: o painel pede para escolher (nota `user_ambiguous`). */
+  candidates?: UserMatch[];
   userRoles?: UserRoles;
   filters: QueryRule[];
   acls: AclCheck[];
@@ -193,7 +195,7 @@ export interface Visibility {
   denied: string[];
   slow: string[];
   /**
-   * Códigos: acl_denied, acl_empty, acl_roles_denied, rules_denied, record_unreadable, user_not_found, user_unreadable,
+   * Códigos: acl_denied, acl_empty, acl_roles_denied, rules_denied, record_unreadable, user_not_found, user_ambiguous (várias pessoas com esse nome: veja `candidates`), user_unreadable,
    * user_inactive, roles_denied, groups_denied, no_table_acl, interactive_assumed, domain_differs, deny_unless,
    * generic (sem pessoa), acl_op_unknown (ACL sem o nome da operação: fica de fora), session_get (a pessoa é a sessão:
    * vale o GET do registro), session_rules_disagree (as regras lidas diziam outra coisa).
@@ -675,6 +677,34 @@ function ucMatches(c: Row, ctx: Ctx): Tri {
 
 // ---------------------------------------------------------------- principal
 
+/** Uma pessoa achada pelo texto digitado (nome, sobrenome ou user_name). */
+export interface UserMatch { sysId: string; userName?: string; name?: string }
+export interface UserSearch { users: UserMatch[]; access: AccessState }
+
+const USER_FIELDS = ['sys_id', 'user_name', 'name', 'active', 'sys_domain', 'company', 'department', 'location'];
+
+/** Consulta de `sys_user` para o texto digitado: sys_id; ou user_name exato OU nome/primeiro/último nome começando com o texto (ativos). */
+export function userSearchQuery(text: string): string {
+  const x = text.trim().replace(/[\^\n\r]/g, ' ').replace(/\s+/g, ' ');
+  if (isSysId(x)) return `sys_id=${x}`;
+  return `active=true^user_name=${x}^ORnameSTARTSWITH${x}^ORfirst_nameSTARTSWITH${x}^ORlast_nameSTARTSWITH${x}`;
+}
+
+/**
+ * Procura pessoas pelo que foi digitado ("Vinicius", "vinicius.s", "Silva"): até 8, só ativas, só leitura.
+ * Não usa e-mail. O user_name exato, se existir, vem primeiro.
+ */
+export async function findUsers(client: RestClient, text: string, opts: { timeoutMs?: number; limit?: number } = {}): Promise<UserSearch> {
+  const t = text.trim();
+  if (t.length < 2 && !isSysId(t)) return { users: [], access: 'empty' };
+  const sc = shared(client, opts.timeoutMs);
+  const r = await sc.query({ table: 'sys_user', query: `${userSearchQuery(t)}^ORDERBYname`, fields: USER_FIELDS, limit: opts.limit ?? 8 });
+  const users = r.rows.filter((u) => u.sys_id).map((u) => ({ sysId: u.sys_id!, ...(u.user_name ? { userName: u.user_name } : {}), ...(u.name ? { name: u.name } : {}) }));
+  const exact = users.findIndex((u) => u.userName?.toLowerCase() === t.toLowerCase());
+  if (exact > 0) users.unshift(...users.splice(exact, 1));
+  return { users, access: r.access };
+}
+
 const KB_FIELDS = ['kb_knowledge_base', 'can_read_user_criteria', 'cannot_read_user_criteria', 'workflow_state', 'valid_to', 'author'];
 
 export async function visibility(
@@ -704,7 +734,7 @@ export async function visibility(
   const [brRes, aclRes, userRes, sessionWho] = await Promise.all([
     sc.query({ table: 'sys_script', query: `collectionIN${[...tables, 'global'].join(',')}^when=before^action_query=true^active=true^ORDERBYorder`, fields: ['sys_id', 'name', 'collection', 'order', 'condition', 'script'], limit: 100 }),
     sc.query({ table: 'sys_security_acl', query: `nameIN${keys.join(',')}^active=true`, fields: ['sys_id', 'name', 'operation', 'operation.name', 'type', 'type.name', 'condition', 'script', 'advanced', 'admin_overrides', 'decision_type', 'active'], limit: 500 }),
-    userQ ? sc.query({ table: 'sys_user', query: userQ, fields: ['sys_id', 'user_name', 'name', 'active', 'sys_domain', 'company', 'department', 'location'], limit: 1 }) : Promise.resolve(undefined),
+    userQ ? sc.query({ table: 'sys_user', query: userQ, fields: USER_FIELDS, limit: 1 }) : Promise.resolve(undefined),
     sessionP as Promise<{ sysId?: string; userName?: string } | undefined>,
   ]);
 
@@ -754,11 +784,20 @@ export async function visibility(
   let ctx: Ctx | undefined;
   let user: VisibilityUser | undefined;
   let userRoles: UserRoles | undefined;
+  // Não era sys_id nem user_name exato: procura pelo nome (uma pessoa só = é ela; várias = o painel pede para escolher).
+  let found: Row | undefined = userRes?.rows[0];
+  let candidates: UserMatch[] | undefined;
+  if (input.user && !found && userRes && userRes.access !== 'denied' && userRes.access !== 'no_filter' && !isSysId(input.user)) {
+    const byName = await sc.query({ table: 'sys_user', query: `${userSearchQuery(input.user)}^ORDERBYname`, fields: USER_FIELDS, limit: 8 });
+    if (byName.rows.length === 1) found = byName.rows[0];
+    else if (byName.rows.length > 1) candidates = byName.rows.filter((u) => u.sys_id).map((u) => ({ sysId: u.sys_id!, ...(u.user_name ? { userName: u.user_name } : {}), ...(u.name ? { name: u.name } : {}) }));
+  }
   if (!input.user) notes.push('generic');
   else if (userRes && (userRes.access === 'denied' || userRes.access === 'no_filter')) notes.push('user_unreadable');
-  else if (!userRes?.rows[0]) notes.push('user_not_found');
+  else if (candidates) notes.push('user_ambiguous');
+  else if (!found) notes.push('user_not_found');
   else {
-    const u = userRes.rows[0];
+    const u = found;
     user = { sysId: u.sys_id ?? '', ...(u.user_name ? { userName: u.user_name } : {}), ...(u.name ? { name: u.name } : {}), ...(u.active ? { active: u.active === 'true' } : {}), ...(u.sys_domain ? { domain: u.sys_domain } : {}) };
     if (u.active === 'false') notes.push('user_inactive');
     const [rolesRes, grpRes] = await Promise.all([
@@ -843,7 +882,7 @@ export async function visibility(
     else if (unknown.some((f) => f.lean === false) && unknown.every((f) => f.lean !== undefined)) verdict = 'provavel_nao_ve';
     else verdict = 'nao_da_para_afirmar';
   }
-  if (!ctx && input.user) why.unshift(notes.includes('user_not_found') ? 'user_not_found' : 'user_unreadable');
+  if (!ctx && input.user) why.unshift(notes.includes('user_ambiguous') ? 'user_ambiguous' : notes.includes('user_not_found') ? 'user_not_found' : 'user_unreadable');
 
   // A pessoa é a sessão: o GET do registro (feito acima, com o login dela) é a verdade; as regras ficam como explicação.
   let session: Visibility['session'];
@@ -870,7 +909,7 @@ export async function visibility(
 
   const main = ['sys_script', 'sys_security_acl', 'sys_security_acl_role', 'sys_user', 'sys_user_has_role', 'sys_user_grmember', table];
   return {
-    table, sysId, tables, ...(input.user ? { asked: input.user } : {}), ...(user ? { user } : {}), ...(userRoles ? { userRoles } : {}),
+    table, sysId, tables, ...(input.user ? { asked: input.user } : {}), ...(user ? { user } : {}), ...(candidates ? { candidates } : {}), ...(userRoles ? { userRoles } : {}),
     filters, acls, levels: { table: tableLevel, field: fieldLevel, fields: fieldsLevels }, ...(domain ? { domain } : {}), ...(kb ? { kb } : {}),
     combined: { verdict, why }, labels, ...(rec ? { record: rec } : {}), ...(session ? { session } : {}),
     access: { ...sc.access }, denied: sc.denied(main), slow: sc.slow(main), notes: [...new Set(notes)],
@@ -1008,7 +1047,8 @@ export function describeVisibility(v: Visibility, lang: Lang = 'pt'): string {
   const name = who(v, lang);
 
   // Veredito.
-  if (v.notes.includes('user_not_found')) out.push(pt ? `Não achei o usuário "${v.asked}" (nem por sys_id nem por user_name).` : `User "${v.asked}" was not found (by sys_id or user_name).`);
+  if (v.notes.includes('user_ambiguous')) out.push(pt ? `Mais de uma pessoa começa com "${v.asked}": escolha uma.` : `More than one person starts with "${v.asked}": pick one.`);
+  else if (v.notes.includes('user_not_found')) out.push(pt ? `Não achei ninguém com esse nome ("${v.asked}").` : `No one found with that name ("${v.asked}").`);
   else if (v.notes.includes('user_unreadable')) out.push(pt ? 'Seus papéis não deixam ler os usuários (sys_user): a análise fica genérica.' : "Your roles can't read users (sys_user): the analysis is generic.");
   if (v.user) {
     const verdicts: Record<VisibilityVerdict, [string, string]> = {

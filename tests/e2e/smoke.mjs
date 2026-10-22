@@ -73,15 +73,17 @@ await record.waitForSelector('.batch .bt-group');
 const allGroups = await record.locator('.bt-group').count();
 if (allGroups < 4) errors.push('registro inteiro esperava grupos separados, achou ' + allGroups);
 const openGroups = await record.locator('.bt-group').evaluateAll((els) => els.filter((el) => el.open).length);
-// Lista curta (até 10 linhas): todos os grupos começam abertos, com o "de → para" à vista (revisão de UX, item 15).
-if (openGroups !== allGroups) errors.push('esperava todos os grupos abertos (7 linhas), achou abertos: ' + openGroups);
+// Padrão do painel: com mais de um grupo, todos começam recolhidos (o cabeçalho diz quem, quando e quantos).
+if (openGroups !== 0) errors.push('esperava todos os grupos recolhidos, achou abertos: ' + openGroups);
 const firstGroup = record.locator('.bt-group').first();
 const firstHeader = (await firstGroup.locator('summary').textContent())?.trim() ?? '';
 if (!firstHeader.includes('salvou') || !firstHeader.includes('campo')) errors.push('cabeçalho do grupo inesperado: ' + firstHeader);
 await firstGroup.locator('summary').click();
-if (await firstGroup.evaluate((el) => el.open) || await firstGroup.locator('.bt-row').first().isVisible()) errors.push('grupo não recolheu');
-await firstGroup.locator('summary').click();
+await record.waitForTimeout(400);
 if (!(await firstGroup.evaluate((el) => el.open)) || !(await firstGroup.locator('.bt-row').first().isVisible())) errors.push('grupo não expandiu');
+await firstGroup.locator('summary').click();
+await record.waitForTimeout(400);
+if (await firstGroup.evaluate((el) => el.open) || await firstGroup.locator('.bt-row').first().isVisible()) errors.push('grupo não recolheu');
 await record.locator('.bt-chips button').filter({ hasText: 'Pessoas' }).click();
 const peopleGroups = await record.locator('.bt-group').count();
 const peopleHeaders = await record.locator('.bt-group summary').allTextContents();

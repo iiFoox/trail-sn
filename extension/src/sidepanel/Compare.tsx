@@ -13,6 +13,7 @@ import { send } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
 import { trackedTab } from '../shared/tabRef';
 import { ErrorMsg } from './ErrorMsg';
+import { Fold } from './Fold';
 import { demoParam, instanceLabel, isDemo, lang } from './format';
 
 const P = t(getPrefs().lang).p;
@@ -99,20 +100,18 @@ function CompareResult({ c, originA, originB, onRetry }: { c: InstanceComparison
         </div>
       )}
       {c.differences.length > 0 && (
-        <div class="box cmp-diffs">
-          <h4>{U.cmpDiffs}<span>{c.differences.length}</span></h4>
+        <Fold cls="cmp-diffs" title={U.cmpDiffs} count={c.differences.length}>
           {c.differences.map((d) => <DiffRow c={c} d={d} O={O} L={L} />)}
-        </div>
+        </Fold>
       )}
-      {nc.length > 0 && (
-        <div class="box">
-          <h4 class="warnh">{U.cmpNotCompared}</h4>
-          {(['a', 'b'] as const).map((side) => {
-            const xs = [...new Set(nc.filter((x) => x.side === side).map((x) => cats[x.what] ?? x.what))];
-            return xs.length ? <div class="li"><span class="ck w">!</span><span class="grow small"><b>{L[side]}:</b> {xs.join(', ')} <span class="muted">· {U.cmpNoAccess}</span></span></div> : null;
-          })}
-        </div>
-      )}
+      {nc.length > 0 && (() => {
+        const rows = (['a', 'b'] as const).map((side) => [side, [...new Set(nc.filter((x) => x.side === side).map((x) => cats[x.what] ?? x.what))]] as const).filter(([, xs]) => xs.length > 0);
+        return (
+          <Fold cls="cmp-nc" warn title={U.cmpNotCompared} count={rows.length} pill="w">
+            {rows.map(([side, xs]) => <div class="li"><span class="ck w">!</span><span class="grow small"><b>{L[side]}:</b> {xs.join(', ')} <span class="muted">· {U.cmpNoAccess}</span></span></div>)}
+          </Fold>
+        );
+      })()}
       <div class="muted small">{fmt(U.cmpTiming, { ms: c.timing.totalMs, a: c.timing.calls.a, b: c.timing.calls.b })}</div>
     </>
   );

@@ -13,6 +13,7 @@ import { recordLink } from '../shared/instances';
 import { askForm, send, type ObservedField } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
 import { trackedTab } from '../shared/tabRef';
+import { Fold, Help } from './Fold';
 import { Val } from './Val';
 
 const lang = getPrefs().lang;
@@ -60,8 +61,10 @@ export function LockCard({ observed, onOpen }: { observed: ObservedField | null 
   );
 }
 
-/** Busca e mostra o estado de um campo. `observed` undefined = ainda lendo o formulário. */
-export function FieldLock({ target, origin, observed }: { target: { table: string; sysId: string; field: string; label?: string }; origin: string; observed: ObservedField | null | undefined }) {
+type LockTarget = { table: string; sysId: string; field: string; label?: string };
+
+/** Lê o estado de um campo pelo motor. `observed` undefined = ainda lendo o formulário (espera). */
+function useFieldState(target: LockTarget, origin: string, observed: ObservedField | null | undefined): { res?: FieldStateResult; err: string } {
   const [res, setRes] = useState<FieldStateResult>();
   const [err, setErr] = useState('');
   useEffect(() => {
@@ -79,6 +82,12 @@ export function FieldLock({ target, origin, observed }: { target: { table: strin
     })();
     return () => { alive = false; };
   }, [target.table, target.sysId, target.field, observed]);
+  return { res, err };
+}
+
+/** Busca e mostra o estado de um campo (gaveta "Investigar" › "Um campo"). */
+export function FieldLock({ target, origin, observed }: { target: LockTarget; origin: string; observed: ObservedField | null | undefined }) {
+  const { res, err } = useFieldState(target, origin, observed);
   const name = res?.fieldLabel || target.label || target.field;
   return (
     <div class="stack lock">
@@ -93,8 +102,39 @@ export function FieldLock({ target, origin, observed }: { target: { table: strin
   );
 }
 
-/** O resultado do motor em linguagem simples: estado, a regra que decide, conflitos, "pode ser" e o que não vale. */
-export function LockView({ res, origin, compact = false }: { res: FieldStateResult; origin: string; compact?: boolean }) {
+/** Aspecto ligado agora (no formulário ou pelas regras)? */
+const isOn = (res: FieldStateResult, a: StateAspect) => !!(res.aspects[a].observed ?? res.aspects[a].rules);
+
+/**
+ * Aba Regras › "Estado agora": uma linha ("Editável, opcional e visível agora"), três quadros pequenos e o porquê
+ * recolhido em "Ver por quê" — que só abre sozinho quando o campo ESTÁ travado, obrigatório ou escondido.
+ */
+export function StateNow({ target, origin, observed }: { target: LockTarget; origin: string; observed: ObservedField | null | undefined }) {
+  const { res, err } = useFieldState(target, origin, observed);
+  if (err) return <div class="box"><div class="li"><span class="ck w">!</span><span class="grow">{err}</span></div></div>;
+  if (!res) return <div class="box"><div class="li"><span class="spin" /><span class="grow muted small">{P.lkLoading}</span></div></div>;
+  const any = ASPECTS.some((a) => isOn(res, a));
+  const W = P.ux.stLine;
+  const word = (a: StateAspect) => W[a]![isOn(res, a) ? 1 : 0]!;
+  return (
+    <div class={`box st-now ${any ? 'locked' : ''}`}>
+      <div class="li st-line"><span class={`ck ${any ? 'w' : ''}`}>{any ? LOCK : Glyph.check}</span><b class="grow">{fmt(P.ux.stNow, { a: word('read_only'), b: word('mandatory'), c: word('hidden') })}</b><Help text={P.lkAcl} /></div>
+      <div class="lk-chips sm">
+        {ASPECTS.map((a) => <span class={`lk-chip ${isOn(res, a) ? 'on' : ''}`} title={res.aspects[a].observed !== undefined ? P.lkOnForm : P.lkByRules}><span class="lbl">{str(P.lkAspect)[a]}</span><b>{isOn(res, a) ? P.lkYes : P.lkNo}</b></span>)}
+      </div>
+      <Fold nested cls="st-why" title={P.ux.stWhy} open={any}>
+        <div class="st-detail"><LockView res={res} origin={origin} compact quiet /></div>
+      </Fold>
+    </div>
+  );
+}
+
+/**
+ * O resultado do motor em linguagem simples: estado, a regra que decide, conflitos, "pode ser" e o que não vale.
+ * `quiet` (aba Regras): sem os quadros (já estão acima) e sem rodapé; o que não trava agora ("libera a edição",
+ * "pode ser" de outra view) vai para "Regras que não valem agora", recolhido.
+ */
+export function LockView({ res, origin, compact = false, quiet = false }: { res: FieldStateResult; origin: string; compact?: boolean; quiet?: boolean }) {
   const labels = Object.entries(res.fieldLabels ?? {}).sort((a, b) => b[0].length - a[0].length);
   const human = (q: string) => labels.reduce((acc, [k, l]) => acc.replace(new RegExp(`\\b${k}\\b`, 'g'), l), humanQuery(q, lang));
   const fname = (f: string) => res.fieldLabels?.[f] || f;
@@ -122,35 +162,19 @@ export function LockView({ res, origin, compact = false }: { res: FieldStateResu
   };
   const obs = res.observed;
   const relevant = ASPECTS.filter((a) => { const x = res.aspects[a]; return (x.observed ?? x.rules) || x.winner !== undefined || x.maybe.length > 0; });
-  return (
-    <>
-      <div class="box lk-state">
-        <div class="lk-chips">
-          {ASPECTS.map((a) => {
-            const x = res.aspects[a];
-            const on = x.observed ?? x.rules;
-            return <span class={`lk-chip ${on ? 'on' : ''}`}><span class="lbl">{str(P.lkAspect)[a]}</span><b>{on ? P.lkYes : P.lkNo}</b><small>{x.observed !== undefined ? P.lkOnForm : P.lkByRules}</small></span>;
-          })}
-        </div>
-        {!obs && !compact && <div class="li"><span class="grow muted small">{P.lkNoObserved}</span></div>}
-        {obs?.onForm === false && <div class="li"><span class="grow muted small">{P.lkNotOnForm}</span></div>}
-      </div>
-      {res.limited && (
-        <div class="notice small lk-limited">
-          <div class="title">{P.lkLimitedTitle}</div>
-          <div>{P.lkLimited}</div>
-          {res.denied.length > 0 && <details class="captech"><summary>{P.lkLimitedTech}</summary><code>{[...res.denied, ...(res.dictionaryHidden ? ['sys_dictionary (vazio)'] : [])].join(', ')}</code></details>}
-        </div>
-      )}
-      {relevant.map((a) => {
+  const shown = quiet ? relevant.filter((a) => isOn(res, a)) : relevant;
+  const hidden = quiet ? relevant.filter((a) => !isOn(res, a)) : [];
+  const aspectBox = (a: StateAspect) => {
         const x = res.aspects[a];
         const on = x.observed ?? x.rules;
         const confirmed = res.rules.map((r, i) => ({ r, i })).filter(({ r }) => r.aspect === a && r.grade === 'confirmed' && r.sets !== undefined);
         const losers = new Set(x.conflicts.map((c) => c.loser));
+        // Linhas da caixa: regras, conflitos, avisos e "pode ser". Mais de uma: começa recolhida, com a regra que decide no resumo.
+        const rows = confirmed.length + x.conflicts.length + (x.unexplained ? 1 : 0) + (x.mismatch && !x.unexplained ? 1 : 0) + x.maybe.length;
         return (
-          <div class="box lk-aspect">
-            <h4><span>{str(P.lkAspect)[a]}</span><span class={`pill ${on ? 'w' : ''}`}>{on ? P.lkYes : P.lkNo}</span></h4>
-            {x.winner !== undefined && <div class="li lk-head"><span class="grow small"><b>{str(x.rules ? P.lkBecause : P.lkFreed)[a]}:</b> {ruleName(res.rules[x.winner]!)}</span></div>}
+          <Fold cls="lk-aspect" title={str(P.lkAspect)[a]} count={rows || undefined} open={rows <= 1}
+            badge={<span class={`pill ${on ? 'w' : ''}`}>{on ? P.lkYes : P.lkNo}</span>}
+            hint={x.winner !== undefined ? <span class="lk-head"><b>{str(x.rules ? P.lkBecause : P.lkFreed)[a]}:</b> {ruleName(res.rules[x.winner]!)}</span> : undefined}>
             {confirmed.map(({ i }) => <Rule i={i} mark={i === x.winner ? 'win' : losers.has(i) ? 'lost' : undefined} />)}
             {x.conflicts.map((c) => {
               const l = res.rules[c.loser]!, w = res.rules[c.winner]!;
@@ -163,19 +187,41 @@ export function LockView({ res, origin, compact = false }: { res: FieldStateResu
               <div class="li lk-sub"><span class="grow small"><b>{P.lkMaybe}</b> <span class="muted">· {P.lkMaybeHint}</span></span></div>
               {x.maybe.map((i) => <Rule i={i} />)}
             </>}
-          </div>
+          </Fold>
         );
-      })}
-      {!relevant.length && <div class="box"><div class="li"><span class="ck">{Glyph.check}</span><span class="grow">{P.lkNothing}</span></div></div>}
+  };
+  return (
+    <>
+      {!quiet && <div class="box lk-state">
+        <div class="lk-chips">
+          {ASPECTS.map((a) => {
+            const x = res.aspects[a];
+            const on = x.observed ?? x.rules;
+            return <span class={`lk-chip ${on ? 'on' : ''}`}><span class="lbl">{str(P.lkAspect)[a]}</span><b>{on ? P.lkYes : P.lkNo}</b><small>{x.observed !== undefined ? P.lkOnForm : P.lkByRules}</small></span>;
+          })}
+        </div>
+        {!obs && !compact && <div class="li"><span class="grow muted small">{P.lkNoObserved}</span></div>}
+        {obs?.onForm === false && <div class="li"><span class="grow muted small">{P.lkNotOnForm}</span></div>}
+      </div>}
+      {quiet && obs?.onForm === false && <div class="muted small">{P.lkNotOnForm}</div>}
+      {res.limited && (
+        <div class="notice small lk-limited">
+          <div class="title">{P.lkLimitedTitle}</div>
+          <div>{P.lkLimited}</div>
+          {res.denied.length > 0 && <details class="captech"><summary>{P.lkLimitedTech}</summary><code>{[...res.denied, ...(res.dictionaryHidden ? ['sys_dictionary (vazio)'] : [])].join(', ')}</code></details>}
+        </div>
+      )}
+      {shown.map(aspectBox)}
+      {hidden.length > 0 && <Fold nested cls="lk-other" title={P.ux.stOther} count={hidden.length} open={false}>{hidden.map(aspectBox)}</Fold>}
+      {!shown.length && <div class="box"><div class="li"><span class="ck">{Glyph.check}</span><span class="grow">{P.lkNothing}</span></div></div>}
       {res.skipped.length > 0 && (
-        <details class="box fold">
-          <summary><h4><span class="grow">{P.lkSkipped}</span><span class="pill">{res.skipped.length}</span></h4></summary>
+        <Fold cls="lk-skipped" title={P.lkSkipped} count={res.skipped.length} open={false}>
           {res.skipped.map((k) => (
             <div class="li"><span class="ck x">–</span><div class="grow">{link(k)}<div class="det">{str(P.lkSkipWhy)[k.why]}</div>{k.condition && <div class="small lk-cond"><span class="muted">{P.lkWhen}</span> {human(k.condition)}</div>}<Now now={k.now} /></div></div>
           ))}
-        </details>
+        </Fold>
       )}
-      <div class="muted small lk-foot">{P.lkAcl}{!compact && <> · {fmt(P.lkSummary, { n: res.rules.length + res.skipped.length, ms: res.timing.totalMs })}</>}</div>
+      {!quiet && <div class="muted small lk-foot">{P.lkAcl}{!compact && <> · {fmt(P.lkSummary, { n: res.rules.length + res.skipped.length, ms: res.timing.totalMs })}</>}</div>}
     </>
   );
 }
@@ -213,10 +259,10 @@ export function FormStates({ table, sysId, origin }: { table: string; sysId: str
     if (!r) return '';
     return activeStates(r).map((s) => `${str(P.lkAspect)[s.aspect]}: ${s.rule ? fmt(P.lkListBy, { name: ruleName(s.rule) }) : s.maybe ? fmt(P.lkListMaybe, { name: ruleName(s.maybe) }) : s.aspect === 'read_only' ? P.lkListAcl : P.lkListNoRule}`).join(' · ');
   };
-  // Lista longa começa recolhida.
+  // Mais de um campo: começa recolhida (o padrão do painel); um só: aberta.
   return (
-    <details class="box fold lk-list" open={active.length > 0 && active.length <= 6}>
-      <summary><h4><span class="grow">{P.lkListTitle}<span class="why">{P.lkListHint}</span></span>{fields && <span class="pill w">{active.length}</span>}</h4></summary>
+    <Fold cls="lk-list" title={P.lkListTitle} count={fields ? active.length : undefined} pill="w" open={fields === undefined ? false : active.length <= 1}>
+      {fields && active.length > 0 && <div class="li"><span class="grow muted small">{P.lkListHint}</span></div>}
       {fields === undefined && <div class="li"><span class="spin" /><span class="grow muted small">{P.lkListLoading}</span></div>}
       {fields === null && <div class="li lk-noform"><span class="ck x">–</span><span class="grow small">{P.lkListNoForm}</span></div>}
       {fields && !active.length && <div class="li"><span class="ck">{Glyph.check}</span><span class="grow small">{P.lkListNone}</span></div>}
@@ -239,6 +285,6 @@ export function FormStates({ table, sysId, origin }: { table: string; sysId: str
           </>
         );
       })}
-    </details>
+    </Fold>
   );
 }

@@ -38,8 +38,8 @@ for (const scheme of shots ? ['light', 'dark'] : ['light']) {
       out.group = await page.evaluate(() => ({
         head: document.querySelector('.lk-aspect .lk-head')?.textContent,
         maybe: [...document.querySelectorAll('.lk-aspect .lk-rule')].map((x) => x.querySelector('.lk-name')?.textContent),
-        skipped: document.querySelector('details.box.fold .pill')?.textContent,
-        foot: document.querySelector('.lk-foot')?.textContent,
+        skipped: document.querySelector('details.lk-skipped .pill.cnt')?.textContent,
+        foot: document.querySelector('.st-line .help')?.getAttribute('title'),
       }));
       if (!/Resolvido trava o grupo/.test(out.group.head ?? '')) errors.push('regra vencedora errada: ' + JSON.stringify(out.group));
       if (!out.group.maybe.some((x) => /Só coordenador muda o grupo.*Pode ser/.test(x ?? ''))) errors.push('faltou o "pode ser" do client script: ' + JSON.stringify(out.group));
@@ -49,7 +49,7 @@ for (const scheme of shots ? ['light', 'dark'] : ['light']) {
 
       // 2. Conflito por ordem (categoria).
       await page.goto(`${base}&field=category&tab=rules`);
-      await page.waitForSelector('.lk-conflict', { timeout: 8000 }).catch(() => errors.push('sem conflito na categoria'));
+      await page.waitForSelector('.lk-conflict', { state: 'attached', timeout: 8000 }).catch(() => errors.push('sem conflito na categoria'));
       out.conflict = await page.locator('.lk-conflict').first().textContent().catch(() => '');
       if (!/vale "Resolvido exige categoria".*ordem maior/.test(out.conflict ?? '')) errors.push('texto do conflito: ' + out.conflict);
 
