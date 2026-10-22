@@ -140,10 +140,11 @@ try {
 
   // 5b. Seções recolhidas: em cada aba (e nas ferramentas), nenhuma lista com mais de 1 item vem aberta;
   //     abrir e fechar funciona (clique e teclado). Também confere que a resposta em si continua à vista.
-  const folds = async (what) => {
+  // `opened`: classe da seção que o próprio teste abriu (só as de dentro dela contam).
+  const folds = async (what, opened = '') => {
     await page.waitForTimeout(1500);
     const st = await page.evaluate(() => [...document.querySelectorAll('.tabpane details.fold2')].map((d) => ({ cls: d.className, n: d.dataset.count === undefined ? null : Number(d.dataset.count), open: d.open, visible: !!d.offsetParent || d.getClientRects().length > 0 })));
-    const bad = st.filter((x) => x.open && x.n !== null && x.n > 1);
+    const bad = st.filter((x) => x.open && x.n !== null && x.n > 1 && !(opened && x.cls.split(' ').includes(opened)));
     if (bad.length) errors.push(`${what}: lista com mais de 1 item aberta: ` + JSON.stringify(bad));
     out[`folds-${what}`] = st.map((x) => `${x.cls.replace(/\b(box|fold|fold2|grp)\b/g, '').trim()}:${x.n ?? '-'}${x.open ? ':aberta' : ''}`);
     return st;
@@ -188,8 +189,8 @@ try {
   // Aninhado: "O que rodou neste registro" › grupos também vêm fechados.
   await page.click('details.rruns > summary');
   await page.waitForTimeout(400);
-  await folds('historico-rruns');
-  await toggle('details.rruns details.grp.fold2:not([open])', 'Histórico › O que rodou');
+  await folds('historico-rruns', 'rruns');
+  await toggle('details.rruns > details.grp.fold2', 'Histórico › O que rodou');
   await open('tab=history&hist=record');
   await page.waitForSelector('ol.rtl > li', { timeout: 10000 });
   await folds('historico-registro');
@@ -203,7 +204,7 @@ try {
   await toggle('details.deps', 'Regras');
   await page.click('details.deps > summary');
   await page.waitForTimeout(400);
-  await folds('regras-deps-aberta');
+  await folds('regras-deps-aberta', 'deps');
   await toggle('details.deps details.lane', 'Regras › Quem depende');
   await toggle('details.lk-list', 'Regras');
   await toggle('details.writers', 'Regras');
