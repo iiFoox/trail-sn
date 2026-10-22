@@ -18,7 +18,8 @@ Convenções:
 - **Privacidade:** a política PT/EN deixou de usar a frase absoluta e contraditória “nada sai da instância”. Agora separa os dados dos registros, o token temporário e as preferências sincronizadas; declara finalidade única, ausência de venda/transferência e formas de revogar permissões e apagar armazenamento.
 - **Próximos passos:** o topo de `docs/PROXIMOS-PASSOS.md` agora registra a situação atual. O envio às lojas continua exclusivo do dono.
 - **Validação local:** hashes e manifests dos dois ZIPs conferidos; os sete PNGs da loja têm as dimensões declaradas. `npm run typecheck` passou; Vitest programático passou em 28 arquivos/292 testes; `npm run e2e` passou nas 12 suítes; `_site-demo.mjs` passou incluindo as novas declarações de privacidade em PT/EN. `npm test` e `npm run build` padrão continuam bloqueados pelo esbuild ao tentar ler acima do workspace.
-- **Em aberto:** enviar os commits, confirmar os ZIPs no GitHub e validar a política publicada no Vercel.
+- **Entrega e produção:** commit `7be750c` enviado ao `origin/master` por fast-forward, sem `--force`, com os dois ZIPs preservados no GitHub (270.051 e 845.130 bytes). Em `trail-sn.vercel.app/privacidade/?v=7be750c`, confirmei a data de 22 de outubro de 2026, versão 1.4.4, as novas seções PT/EN sobre finalidade, compartilhamento e controle, o tratamento temporário do `g_ck`, a sincronização Google/Microsoft sem conteúdo dos registros e zero overflow horizontal em viewport de 390 px.
+- **Em aberto:** somente o dono deve enviar `docs/store/packages/trail-chrome-1.4.4.zip` aos painéis do Chrome Web Store e Edge Add-ons e aceitar os termos das lojas.
 
 ---
 
