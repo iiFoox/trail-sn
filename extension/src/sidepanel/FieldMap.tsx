@@ -7,6 +7,7 @@ import { recordLink } from '../shared/instances';
 import { send } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
 import { ErrorMsg } from './ErrorMsg';
+import { Fold } from './Fold';
 
 const P = t(getPrefs().lang).p;
 const isDemo = new URLSearchParams(location.search).has('demo');
@@ -26,8 +27,7 @@ export function FieldMapBox({ r, origin, field }: { r: Investigation; origin: st
     } catch (e) { setErr((e as Error).message); setSt('err'); }
   };
   return (
-    <div class="box fmap">
-      <h4>{fmt(P.fmTitle, { field })}{res && <span>{res.items.length}</span>}</h4>
+    <Fold cls="fmap" title={fmt(P.fmTitle, { field })} count={res?.items.length} hint={res && !res.items.length ? P.fmNone : undefined}>
       {st === 'idle' && <div class="li"><span class="grow muted small">{P.fmHint}</span><button class="btn sm" onClick={run}>{Glyph.search} {P.fmRun}</button></div>}
       {st === 'run' && <div class="li"><span class="spin" /><span class="grow muted small">{P.fmRunning}</span></div>}
       {st === 'err' && <div class="li"><span class="ck w">!</span><span class="grow"><ErrorMsg msg={err} /></span></div>}
@@ -53,7 +53,7 @@ export function FieldMapBox({ r, origin, field }: { r: Investigation; origin: st
         })}
         <div class="li"><span class="grow muted small">{fmt(P.fmSummary, { n: res.items.length, ms: res.timing.totalMs })}</span></div>
       </>}
-    </div>
+    </Fold>
   );
 }
 

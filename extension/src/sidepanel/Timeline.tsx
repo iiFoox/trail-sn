@@ -81,7 +81,7 @@ export function RecordTimeline({ origin, table, sysId, onField }: { origin: stri
       {cmp?.length === 2 && <Compare data={data} a={cmp[0]!} b={cmp[1]!} onClose={() => setCmp([])} />}
       {!filtered.length && <div class="muted small">{P.tlNone}</div>}
       <ol class={`rtl ${cmp ? 'picking' : ''}`}>
-        {saves.map((sv, i) => <Save i={i % PAGE} sv={sv} origin={origin} sysId={data.target.sysId} onField={onField}
+        {saves.map((sv, i) => <Save i={i % PAGE} sv={sv} origin={origin} sysId={data.target.sysId} onField={onField} found={!!needle}
           pick={cmp ? (cmp.indexOf(sv.checkpoint) === 0 ? 'A' : cmp.indexOf(sv.checkpoint) === 1 ? 'B' : '') : undefined}
           onPick={() => setCmp((c) => { const cur = c ?? []; if (cur.includes(sv.checkpoint)) return cur.filter((x) => x !== sv.checkpoint); return [...cur, sv.checkpoint].slice(-2); })} />)}
       </ol>
@@ -118,22 +118,27 @@ function Compare({ data, a, b, onClose }: { data: TL; a: number; b: number; onCl
   );
 }
 
-function Save({ i, sv, origin, sysId, onField, pick, onPick }: { i: number; sv: TimelineSave; origin: string; sysId: string; onField: (field: string) => void; pick?: string; onPick?: () => void }) {
+/** Uma gravação: começa recolhida (data, quem, via e quantos campos); numa busca, o que achou já vem aberto. */
+function Save({ i, sv, origin, sysId, onField, pick, onPick, found = false }: { i: number; sv: TimelineSave; origin: string; sysId: string; onField: (field: string) => void; pick?: string; onPick?: () => void; found?: boolean }) {
   const p = parts(sv.at);
   const audit = refLink(origin, { table: 'sys_audit', query: `documentkey=${sysId}^record_checkpoint=${sv.checkpoint}` });
   const fields = sv.fields.filter((f) => !f.journal);
   const notes = sv.fields.filter((f) => f.journal);
   return (
     <li class={`via-${sv.via} ${pick ? 'picked' : ''}`} style={`--i:${i}`}>
-      <div class="hd" onClick={pick !== undefined ? (e) => { if (!(e.target as HTMLElement).closest('a,button')) onPick?.(); } : undefined}>
-        {pick !== undefined && <button class={`pk ${pick ? 'on' : ''}`} aria-pressed={!!pick} aria-label={P.cmpBtn} onClick={onPick}>{pick || ''}</button>}
+      <details class="sv fold2" key={String(found)} open={found || undefined}>
+      {/* Escolhendo dois momentos, clicar no cabeçalho escolhe em vez de abrir. */}
+      <summary class="hd" onClick={pick !== undefined ? (e) => { e.preventDefault(); if (!(e.target as HTMLElement).closest('a,button')) onPick?.(); } : undefined}>
+        <span class="caret" aria-hidden="true" />
+        {pick !== undefined && <button class={`pk ${pick ? 'on' : ''}`} aria-pressed={!!pick} aria-label={P.cmpBtn} onClick={(e) => { e.preventDefault(); e.stopPropagation(); onPick?.(); }}>{pick || ''}</button>}
         <span class="ti" title={P.viaHint[sv.via]}>{viaIcon[sv.via]}</span>
         <div class="grow">
           <div class="tm"><b>{p.date} {p.full}</b>{p.rel && <span class="muted"> · {p.rel}</span>}</div>
           <div class="by">{sv.user}<span class="via">{P.via[sv.via]}{sv.detail ? ` · ${sv.detail}` : ''}</span></div>
         </div>
-        <a class="see" href={audit} target="_blank" rel="noreferrer" title={P.seeInSn}>{Glyph.open}</a>
-      </div>
+        <a class="see" href={audit} target="_blank" rel="noreferrer" title={P.seeInSn} onClick={(e) => e.stopPropagation()}>{Glyph.open}</a>
+        <span class="pill cnt">{plural(P.tlFields, sv.fields.length)}</span>
+      </summary>
       <ul class="fl">
         {fields.map((f) => (
           <li><div class="fbtn" role="button" tabIndex={0} onClick={() => onField(f.field)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onField(f.field); } }} title={P.tlInvestigate}>
@@ -144,6 +149,7 @@ function Save({ i, sv, origin, sysId, onField, pick, onPick }: { i: number; sv: 
         ))}
         {notes.map((f) => <li class="note"><b>{f.label}</b><q>{f.newDisplay.length > 160 ? f.newDisplay.slice(0, 157) + '…' : f.newDisplay}</q></li>)}
       </ul>
+      </details>
     </li>
   );
 }

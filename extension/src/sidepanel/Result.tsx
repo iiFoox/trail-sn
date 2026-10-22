@@ -21,6 +21,7 @@ import { DiffView, type DiffLabels } from '../shared/DiffView';
 import { Val } from './Val';
 import { ErrorMsg } from './ErrorMsg';
 import { AdvancedTab } from './AdvancedTab';
+import { Fold, FoldStatic } from './Fold';
 
 const lang = getPrefs().lang;
 const s = t(lang);
@@ -127,7 +128,9 @@ export function Result({ r, origin, access, toast, onField, advanced = false, me
   const [histMode, setHistMode] = useState<'field' | 'record'>(forcedHist);
   const [diffOpen, setDiffOpen] = useState<false | { x: number; y: number }>(false);
   const [sel, setSel] = useState(0);
-  useEffect(() => { setSel(0); setTab(tabFor(r.changes[0])); }, [r.target.field, r.target.sysId]);
+  // A lista de mudanças do campo começa recolhida; aberta, continua aberta enquanto ↑ ↓ trocam a mudança.
+  const [histOpen, setHistOpen] = useState(false);
+  useEffect(() => { setSel(0); setTab(tabFor(r.changes[0])); setHistOpen(false); }, [r.target.field, r.target.sysId]);
   // No site, os textos ao lado do painel trocam a aba (só em demonstração).
   useEffect(() => {
     if (!isDemo) return;
@@ -218,7 +221,7 @@ export function Result({ r, origin, access, toast, onField, advanced = false, me
             <button aria-pressed={histMode === 'record'} onClick={() => setHistMode('record')}>{P.histRecord}</button>
           </div>
           {histMode === 'field'
-            ? <History r={r} origin={origin} sel={sel} onPick={(i) => { setSel(i); setTab(tabFor(r.changes[i]) === 'trace' ? 'trace' : 'answer'); }} />
+            ? <History r={r} origin={origin} sel={sel} open={histOpen} onOpen={setHistOpen} onPick={(i) => { setSel(i); setTab(tabFor(r.changes[i]) === 'trace' ? 'trace' : 'answer'); }} />
             : <RecordTimeline origin={origin} table={r.target.table} sysId={r.target.sysId} onField={(f) => { setHistMode('field'); onField(f); }} />}
         </>
       )}
@@ -235,7 +238,8 @@ export function Result({ r, origin, access, toast, onField, advanced = false, me
 // ---------- Resposta ----------
 function Answer({ r, c, origin, field, denied, expired, goProof, copy, toastFn }: { r: Investigation; c: Change; origin: string; field: string; denied: string[]; expired: boolean; goProof: () => void; copy: (t: string) => void; toastFn: (m: string) => void }) {
   const top = c.evidence[0];
-  const alt = c.evidence[1];
+  const alts = c.evidence.slice(1);
+  const alt = alts.length === 1 ? alts[0] : undefined;
   const warns = [
     denied.length ? plural(P.warnDenied, denied.length) : '',
     r.unaudited ? plural(P.warnUnaudited, r.unaudited.count) : '',
@@ -303,6 +307,18 @@ function Answer({ r, c, origin, field, denied, expired, goProof, copy, toastFn }
           <span class="grow">{P.otherPossibility} <b>{alt.artifact.name}</b></span>
           <span class="pill">{P.likelihood[alt.grade]}</span>
         </button>
+      )}
+      {/* Mais de uma outra possibilidade: lista secundária, recolhida, com os nomes no resumo. */}
+      {alts.length > 1 && (
+        <Fold cls="alts" title={P.otherPossibilities} count={alts.length} hint={alts.map((e) => e.artifact.name).slice(0, 3).join(', ') + (alts.length > 3 ? '…' : '')}>
+          {alts.map((e) => (
+            <button class="li alt-row" onClick={goProof}>
+              <span class="ic sm">{typeGlyph[e.type]}</span>
+              <span class="grow"><b>{e.artifact.name}</b><div class="det">{lossReason(e, field)}</div></span>
+              <span class="pill">{P.likelihood[e.grade]}</span>
+            </button>
+          ))}
+        </Fold>
       )}
       {warns.length > 0 && (
         <button class="warnbar" onClick={goProof}>{Glyph.warn}<span class="grow">{warns.join(' · ')}</span><span class="muted">{P.seeInProof}</span></button>
@@ -383,22 +399,29 @@ function Proof({ r, c, origin, field, denied, expired, access, copy }: { r: Inve
   const host = origin.replace(/^https?:\/\//, '');
   const missingCount = (denied.length ? 1 : 0) + (r.unaudited ? 1 : 0) + (expired ? 1 : 0);
   const entries = Object.entries(r.access).sort();
+  const accRows = [...entries, ...(access ? Object.entries(access.states).filter(([k]) => !(k in r.access)).sort() : [])];
+  const best = top ? [...top.facts].sort((a, b) => b.points - a.points)[0] : undefined;
+  const missingHint = [
+    denied.length ? plural(P.warnDenied, denied.length) : '',
+    r.unaudited ? plural(P.warnUnaudited, r.unaudited.count) : '',
+    expired ? P.warnExpired : '',
+  ].filter(Boolean).join(' · ');
   return (
     <div class="stack">
       {top && (
-        <div class="box">
-          <h4>{P.whyThis}<span>{fmt(P.nProofs, { n: top.facts.length })}</span></h4>
+        <Fold cls="why-this" title={P.whyThis} count={top.facts.length} countText={fmt(P.nProofs, { n: top.facts.length })}
+          hint={best ? `${P.certainty[top.grade]} · ${factText(best.kind, field)}` : P.certainty[top.grade]}>
           {top.facts.map((f, i) => <FactRow i={i} kind={f.kind} detail={localizeTimes(f.detail, c.at.slice(0, 10))} source={f.source} field={field} ok={f.points >= 0} />)}
           {top.gaps.map((g) => <div class="li"><span class="ck w">!</span><span class="grow">{localizeTimes(g, c.at.slice(0, 10))}</span></div>)}
-        </div>
+        </Fold>
       )}
       {others.map((e) => <Other e={e} origin={origin} field={field} day={c.at.slice(0, 10)} />)}
       {(r.conflicts?.length ?? 0) > 0 && <Conflicts r={r} origin={origin} />}
       <FieldMapBox r={r} origin={origin} field={field} />
       <TableScan r={r} origin={origin} />
-      <div class="box">
-        <h4 class={missingCount ? 'warnh' : ''}>{P.missing}</h4>
-        {!missingCount && <div class="li"><span class="ck">{Glyph.check}</span><span class="grow">{P.nothingMissing}</span></div>}
+      {/* Nada faltando: o próprio cabeçalho diz, sem nada para abrir. */}
+      {!missingCount && <FoldStatic cls="missing" title={P.missing} hint={P.nothingMissing} />}
+      {missingCount > 0 && <Fold cls="missing" warn title={P.missing} count={missingCount} pill="w" hint={missingHint}>
         {denied.length > 0 && (
           <div class="li"><span class="ck w">!</span><div class="grow">
             <b>{cap(fmt(P.deniedItem, { what: denied.map((d) => P.srcName[d] ?? d).join(', ') }))}</b> {P.deniedHint}
@@ -413,16 +436,15 @@ function Proof({ r, c, origin, field, denied, expired, access, copy }: { r: Inve
           </div></div>
         )}
         {expired && <div class="li"><span class="ck w">!</span><div class="grow"><b>{P.expiredItem}</b> {P.expiredText}</div></div>}
-      </div>
-      <details class="box fold">
-        <summary><h4>{P.techAccess}<span>{Glyph.chevron}</span></h4></summary>
+      </Fold>}
+      <Fold cls="tech-access" title={P.techAccess} count={accRows.length}>
         <div class="acc-list">
-          {[...entries, ...(access ? Object.entries(access.states).filter(([k]) => !(k in r.access)).sort() : [])].map(([k, v]) => (
+          {accRows.map(([k, v]) => (
             <div><code>{k}</code><span class={`state ${v}`}>{s.state[v] ?? v}</span></div>
           ))}
         </div>
         <div class="pad"><button class="btn sm" onClick={() => send({ type: 'check-access', origin })}>{Glyph.shield} {P.recheck}</button></div>
-      </details>
+      </Fold>
     </div>
   );
 }
@@ -439,8 +461,7 @@ export function conflictLines(r: Investigation): { a: string; b: string; win: st
 function Conflicts({ r, origin }: { r: Investigation; origin: string }) {
   const lines = conflictLines(r);
   return (
-    <div class="box conflict">
-      <h4 class="warnh">{P.cfTitle}<span>{lines.length}</span></h4>
+    <Fold cls="conflict" warn title={P.cfTitle} count={lines.length} pill="w" hint={lines.length === 1 ? lines[0]!.win : undefined}>
       <div class="li"><span class="grow muted small">{P.cfHint}</span></div>
       {(r.conflicts ?? []).map((k, i) => (
         <div class="li"><span class="ck w">!</span><div class="grow">
@@ -449,7 +470,7 @@ function Conflicts({ r, origin }: { r: Investigation; origin: string }) {
           <div class="det">{lines[i]!.overlap} · {lines[i]!.win}</div>
         </div></div>
       ))}
-    </div>
+    </Fold>
   );
 }
 
@@ -470,8 +491,7 @@ function TableScan({ r, origin }: { r: Investigation; origin: string }) {
   };
   const lines = res ? conflictLines({ ...r, conflicts: res.conflicts }) : [];
   return (
-    <div class="box scan">
-      <h4>{fmt(P.scTitle, { table })}{res && <span>{res.conflicts.length}</span>}</h4>
+    <Fold cls="scan" title={fmt(P.scTitle, { table })} count={res?.conflicts.length} hint={res ? (res.conflicts.length ? undefined : P.scNone) : undefined}>
       {st === 'idle' && <div class="li"><span class="grow muted small">{P.scHint}</span><button class="btn sm" onClick={run}>{Glyph.search} {P.scRun}</button></div>}
       {st === 'run' && <div class="li"><span class="spin" /><span class="grow muted small">{P.scRunning}</span></div>}
       {st === 'err' && <div class="li"><span class="ck w">!</span><span class="grow"><ErrorMsg msg={err} /></span></div>}
@@ -487,7 +507,7 @@ function TableScan({ r, origin }: { r: Investigation; origin: string }) {
           </div></div>
         ))}
       </>}
-    </div>
+    </Fold>
   );
 }
 
@@ -534,17 +554,16 @@ export function lossReason(e: Evidence, field: string): string {
 function Other({ e, origin, field, day }: { e: Evidence; origin: string; field: string; day: string }) {
   const link = e.artifact.sysId && e.artifact.table ? recordLink(origin, e.artifact.table, e.artifact.sysId) : null;
   return (
-    <details class="box fold">
-      <summary><h4><span class="grow">{fmt(P.whyNotOther, { name: e.artifact.name })}<span class="why">{lossReason(e, field)}</span></span><span class="pill">{P.likelihood[e.grade]}</span></h4></summary>
+    <Fold cls="why-not" title={fmt(P.whyNotOther, { name: e.artifact.name })} hint={lossReason(e, field)} badge={<span class="pill">{P.likelihood[e.grade]}</span>}>
       {e.gaps.map((g) => <div class="li"><span class="ck x">–</span><span class="grow">{localizeTimes(g, day)}</span></div>)}
       {e.facts.map((f) => <FactRow kind={f.kind} detail={localizeTimes(f.detail, day)} source={f.source} field={field} ok={f.points >= 0} />)}
       {link && <div class="pad"><a href={link} target="_blank" rel="noreferrer">{Glyph.open} {fmt(P.openArtifact, { what: P.what[e.artifact.table ?? ''] ?? s.openInStudio })}</a></div>}
-    </details>
+    </Fold>
   );
 }
 
 // ---------- Histórico ----------
-function History({ r, origin, sel, onPick }: { r: Investigation; origin: string; sel: number; onPick: (i: number) => void }) {
+function History({ r, origin, sel, onPick, open, onOpen }: { r: Investigation; origin: string; sel: number; onPick: (i: number) => void; /** Lista aberta (fica com o Result: ↑ ↓ trocam a mudança sem recolher). */ open?: boolean; onOpen?: (o: boolean) => void }) {
   const field = fieldName(r);
   type Row = { at: string; i: number };
   const rows: Row[] = r.changes.map((c, i) => ({ at: c.at, i }));
@@ -569,10 +588,14 @@ function History({ r, origin, sel, onPick }: { r: Investigation; origin: string;
       <div class="li"><div class="grow">{link('sys_ui_action', u.sysId, u.name)}<div class="det">{u.table}</div></div></div>)) },
   ].filter((g) => g.rows.length > 0);
   const suspects = groups.reduce((n, g) => n + g.rows.length, 0);
+  // Resumo da lista recolhida: a mudança que está na tela (de → para · quando).
+  const cur = r.changes[sel >= 0 ? sel : 0];
+  const curHint = cur ? `${cur.oldValue || cur.checkpoint > 1 ? `${valueLabel(r, cur.oldValue)} → ` : `${P.createdAs} `}${valueLabel(r, cur.newValue)} · ${when(cur.at)}` : undefined;
   return (
     <div class="stack">
-      {r.changes.length > 0 && <div class="muted small">{P.historyIntro}</div>}
-      <div class="hist">
+      {rows.length > 0 && <Fold cls="hist-fold" title={fmt(P.histList, { field })} count={rows.length} hint={curHint} open={open} onToggle={onOpen}>
+      {r.changes.length > 0 && <div class="li"><span class="grow muted small">{P.historyIntro}</span></div>}
+      <div class="hist hist-in">
         {rows.map(({ at, i }) => {
           const p = parts(at);
           if (i === -1) {
@@ -594,17 +617,16 @@ function History({ r, origin, sel, onPick }: { r: Investigation; origin: string;
           );
         })}
       </div>
-      <details class="box fold">
-        <summary><h4>{fmt(P.otherRules, { field })}<span>{suspects} {Glyph.chevron}</span></h4></summary>
+      </Fold>}
+      {suspects === 0 && <FoldStatic cls="other-rules" title={fmt(P.otherRules, { field })} hint={s.noSuspects} />}
+      {suspects > 0 && <Fold cls="other-rules" title={fmt(P.otherRules, { field })} count={suspects} hint={groups.map((g) => `${g.title} ${g.rows.length}`).join(' · ')}>
         <div class="muted small pad">{P.otherRulesHint}</div>
-        {groups.map((g, gi) => (
-          <details class="grp" open={gi === 0 && groups.length <= 2}>
-            <summary><span class="ic sm">{g.icon}</span><b class="grow">{g.title}</b><i>{g.rows.length}</i><span class="chev">{Glyph.chevron}</span></summary>
+        {groups.map((g) => (
+          <Fold nested icon={g.icon} title={g.title} count={g.rows.length}>
             {g.rows}
-          </details>
+          </Fold>
         ))}
-        {suspects === 0 && <div class="li muted">{s.noSuspects}</div>}
-      </details>
+      </Fold>}
     </div>
   );
 }

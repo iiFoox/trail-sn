@@ -122,7 +122,7 @@ export function StateNow({ target, origin, observed }: { target: LockTarget; ori
       <div class="lk-chips sm">
         {ASPECTS.map((a) => <span class={`lk-chip ${isOn(res, a) ? 'on' : ''}`} title={res.aspects[a].observed !== undefined ? P.lkOnForm : P.lkByRules}><span class="lbl">{str(P.lkAspect)[a]}</span><b>{isOn(res, a) ? P.lkYes : P.lkNo}</b></span>)}
       </div>
-      <Fold nested cls="st-why" title={P.ux.stWhy} open={any}>
+      <Fold nested cls="st-why" title={P.ux.stWhy}>
         <div class="st-detail"><LockView res={res} origin={origin} compact quiet /></div>
       </Fold>
     </div>
@@ -172,7 +172,7 @@ export function LockView({ res, origin, compact = false, quiet = false }: { res:
         // Linhas da caixa: regras, conflitos, avisos e "pode ser". Mais de uma: começa recolhida, com a regra que decide no resumo.
         const rows = confirmed.length + x.conflicts.length + (x.unexplained ? 1 : 0) + (x.mismatch && !x.unexplained ? 1 : 0) + x.maybe.length;
         return (
-          <Fold cls="lk-aspect" title={str(P.lkAspect)[a]} count={rows || undefined} open={rows <= 1}
+          <Fold cls="lk-aspect" title={str(P.lkAspect)[a]} count={rows || undefined}
             badge={<span class={`pill ${on ? 'w' : ''}`}>{on ? P.lkYes : P.lkNo}</span>}
             hint={x.winner !== undefined ? <span class="lk-head"><b>{str(x.rules ? P.lkBecause : P.lkFreed)[a]}:</b> {ruleName(res.rules[x.winner]!)}</span> : undefined}>
             {confirmed.map(({ i }) => <Rule i={i} mark={i === x.winner ? 'win' : losers.has(i) ? 'lost' : undefined} />)}
@@ -262,9 +262,9 @@ export function FormStates({ table, sysId, origin, title = P.lkListTitle, lazy =
     if (!r) return '';
     return activeStates(r).map((s) => `${str(P.lkAspect)[s.aspect]}: ${s.rule ? fmt(P.lkListBy, { name: ruleName(s.rule) }) : s.maybe ? fmt(P.lkListMaybe, { name: ruleName(s.maybe) }) : s.aspect === 'read_only' ? P.lkListAcl : P.lkListNoRule}`).join(' · ');
   };
-  // Mais de um campo: começa recolhida (o padrão do painel); um só: aberta.
+  // Começa recolhida (o padrão do painel), com a contagem no cabeçalho.
   return (
-    <Fold cls="lk-list" title={title} count={fields ? active.length : undefined} pill="w" open={lazy ? shown : fields === undefined ? false : active.length <= 1} onToggle={lazy ? (o) => { setShown(o); if (o) setOpened(true); } : undefined}>
+    <Fold cls="lk-list" title={title} count={fields ? active.length : undefined} pill="w" open={lazy ? shown : undefined} onToggle={lazy ? (o) => { setShown(o); if (o) setOpened(true); } : undefined}>
       {fields && active.length > 0 && <div class="li"><span class="grow muted small">{P.lkListHint}</span></div>}
       {fields === undefined && <div class="li"><span class="spin" /><span class="grow muted small">{P.lkListLoading}</span></div>}
       {fields === null && <div class="li lk-noform"><span class="ck x">–</span><span class="grow small">{P.lkListNoForm}</span></div>}

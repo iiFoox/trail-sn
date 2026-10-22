@@ -65,7 +65,7 @@ export function Writers({ r, res, origin, labels, field, bare = false }: { r: In
   const lanes = LANES.map((l) => [l, res.writers.filter((i) => i.lane === l)] as const).filter(([, list]) => list.length > 0);
   const body = <>
       {lanes.map(([l, list]) => (
-        <Fold nested cls="lane" title={lane[l]} count={list.length} open={lanes.length === 1}>
+        <Fold nested cls="lane" title={lane[l]} count={list.length}>
           {list.map((i) => {
             const writes = i.values.slice(0, 3).map((v) => r.labels?.[v] ?? v).join(', ');
             return (
@@ -99,7 +99,7 @@ export function Dependents({ res, origin, labels, field, bare = false }: { res: 
   const phases = DEP_PHASES.map((ph) => [ph, res.dependents.filter((d) => d.phase === ph)] as const).filter(([, list]) => list.length > 0);
   const body = <>
       {phases.map(([ph, list]) => (
-        <Fold nested cls="lane" title={phase[ph]} count={list.length} open={phases.length === 1 && list.length === 1}>
+        <Fold nested cls="lane" title={phase[ph]} count={list.length}>
           {list.map((d) => {
             const x = describeDependent(d, lang, labels);
             const kind = str(U.depKind)[d.kind] ?? d.kind;
