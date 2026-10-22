@@ -16,7 +16,7 @@ Convenções:
 - **Correção (`site/b3/style.css`):** em até 600 px, o roadmap agora tem um eixo vertical contínuo, todos os marcadores compartilham exatamente o mesmo centro e o conteúdo das fases fica 37 px afastado da linha. O cursor decorativo é ocultado em telas estreitas, inclusive na emulação móvel do navegador.
 - **Teste (`tests/e2e/_site-demo.mjs`):** mede em 390 px se a linha está visível, se linha e marcador têm o mesmo centro, se existe pelo menos 32 px de respiro e se o cursor está oculto. O servidor do teste passou a escolher uma porta livre para não colidir com uma execução interrompida.
 - **Validação:** captura local em `.pedido-site/roadmap-fix-spaced/mobile-roadmap.png` (fora do Git) revisada visualmente. `_site-demo.mjs` passou com `lineMarkerDelta: 0`, `contentGap: 37`, `cursorDisplay: none`, nenhuma imagem quebrada e `errs: []`. `npm run typecheck` passou; Vitest programático passou em 28 arquivos/292 testes; `npm run e2e` passou nas 12 suítes. `npm test` e `npm run build` padrão continuam bloqueados pelo esbuild ao ler acima do workspace.
-- **Em aberto:** validar o mesmo trecho na URL publicada após o deploy.
+- **Produção:** commit `9595658` enviado ao `origin/master` por fast-forward, sem `--force`. Em `trail-sn.vercel.app/b3/?v=9595658`, a medição em 390 px confirmou linha visível, marcador alinhado (diferença de 1 px por arredondamento), 38 px de respiro, cursor oculto e nenhuma largura excedente. Não há pendência funcional nesta correção.
 
 ---
 
