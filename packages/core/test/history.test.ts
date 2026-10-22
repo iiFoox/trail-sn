@@ -79,6 +79,25 @@ describe('histórico do formulário (quem não lê sys_audit)', () => {
     expect(r.changes).toHaveLength(0);
   });
 
+  it('histórico falha uma vez: tenta de novo e as mudanças aparecem', async () => {
+    const c = itil();
+    let n = 0;
+    c.history = async () => (++n === 1 ? null : history);
+    const r = await investigate(c, { table: 'incident', sysId: SYS, field: 'impact' });
+    expect(n).toBe(2);
+    expect(r.auditFrom).toBe('history');
+    expect(r.changes).toHaveLength(1);
+  });
+
+  it('histórico não volta: a lacuna aparece (não é "nenhuma mudança" calada)', async () => {
+    const c = itil();
+    c.history = async () => null;
+    const r = await investigate(c, { table: 'incident', sysId: SYS, field: 'impact' });
+    expect(r.changes).toHaveLength(0);
+    expect(r.gaps).toContain('list_history: unavailable');
+    expect(r.gaps.some((g) => g.startsWith('sys_audit'))).toBe(true);
+  });
+
   it('com sys_audit liberada, o histórico nem é consultado', async () => {
     let asked = false;
     const c = itil(false).rows('sys_audit', [{ sys_id: 'x', tablename: 'incident', documentkey: SYS, fieldname: 'impact', oldvalue: '3', newvalue: '1', user: 'admin', sys_created_on: '2026-10-20 12:00:00', record_checkpoint: '2' }]);
