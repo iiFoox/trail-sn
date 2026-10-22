@@ -289,13 +289,6 @@
     'requestIdleCallback' in window ? requestIdleCallback(go, { timeout: 700 }) : setTimeout(go, 60);
   }), { rootMargin: '600px 0px' });
   $$('iframe[data-src]').forEach((f) => lazyFrames.observe(f));
-  // Com a página pronta, carrega um por vez no tempo ocioso: quem rola não pega o painel iniciando no meio do caminho.
-  const idle = (fn) => ('requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 1500 }) : setTimeout(fn, 200));
-  addEventListener('load', () => setTimeout(function next() {
-    const f = $$('iframe[data-src]').find((x) => !x.getAttribute('src'));
-    if (!f) return;
-    idle(() => { lazyFrames.unobserve(f); f.addEventListener('load', () => setTimeout(next, 250), { once: true }); f.setAttribute('src', f.dataset.src); });
-  }, 1200), { once: true });
 
   // ---------- animações CSS contínuas só rodam na seção visível ----------
   // (pulsos, brilho do título, letreiro, trilha da lupa): fora da tela ficam paradas e não pedem quadro.

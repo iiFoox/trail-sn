@@ -12,9 +12,9 @@ a{color:inherit}
 .wrap{max-width:1200px;margin:0 auto;padding-left:max(24px,env(safe-area-inset-left));padding-right:max(24px,env(safe-area-inset-right));position:relative}
 /* fundo vivo: duas luzes que seguem o cursor devagar */
 .glow{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
-.glow i{position:absolute;width:60vmax;height:60vmax;border-radius:50%;filter:blur(90px);opacity:.55;transition:transform 1.8s var(--ease)}
-.glow i:nth-child(1){background:radial-gradient(circle,rgba(43,179,159,.35),transparent 60%);left:-20vmax;top:-20vmax;transform:translate(var(--gx,0),var(--gy,0))}
-.glow i:nth-child(2){background:radial-gradient(circle,rgba(98,216,78,.14),transparent 60%);right:-25vmax;top:10vmax;transform:translate(calc(var(--gx,0) * -.6),calc(var(--gy,0) * -.6))}
+.glow i{position:absolute;width:60vmax;height:60vmax;border-radius:50%;opacity:.55;transition:transform 1.8s var(--ease)}
+.glow i:nth-child(1){background:radial-gradient(circle,rgba(43,179,159,.35),transparent 70%);left:-20vmax;top:-20vmax;transform:translate(var(--gx,0),var(--gy,0))}
+.glow i:nth-child(2){background:radial-gradient(circle,rgba(98,216,78,.14),transparent 70%);right:-25vmax;top:10vmax;transform:translate(calc(var(--gx,0) * -.6),calc(var(--gy,0) * -.6))}
 .grid-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:64px 64px;mask-image:radial-gradient(ellipse at 50% 0%,#000 20%,transparent 70%);opacity:.5}
 main{position:relative;z-index:1}
 /* nav de vidro */
@@ -352,6 +352,7 @@ section{padding-block:84px}
 .road-more:hover{background:#12333f;border-color:var(--green);color:var(--green)}
 @media (max-width:960px){.story{grid-template-columns:1fr 1fr}.compo{grid-template-columns:1fr}.compo .shot{border-radius:var(--r2) var(--r2) 0 0}.compo .side{border-left:1px solid var(--line2);border-top:0;border-radius:0 0 var(--r2) var(--r2)}.inside{grid-template-columns:1fr;gap:24px}.inside .shot{position:relative;height:680px}.ba,.faq{grid-template-columns:1fr}.who,.road{grid-template-columns:1fr}.road:before{display:none}.road>div{padding:0 0 22px 22px}.road>div:before{left:0;top:4px}.tbl{overflow-x:auto}.tbl table{min-width:640px}}
 @media (max-width:600px){.story{grid-template-columns:1fr}.seg{border-radius:16px}.btn.sm{padding:6px 10px;font-size:12.5px}.lang-btn{padding:3px 7px;font-size:11px}}
+@media (max-width:700px){nav{background:rgba(7,26,36,.88);backdrop-filter:none;-webkit-backdrop-filter:none}}
 
 /* demos ao vivo */
 .frame .pic.live,.frame .pic.snap{background:#f4f5f7}
