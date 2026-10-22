@@ -17,7 +17,8 @@ Convenções:
 - **Fundo:** reduzi a intensidade das curvas verdes e azuis para que elas não pareçam sublinhados sob o texto. A animação continua nítida, com resolução proporcional à tela, limite de custo, 20 quadros/s, luzes fixas e nenhuma reação ao cursor.
 - **Cobertura (`tests/e2e/_site-demo.mjs`):** agora verifica em 390 px que as métricas não colidem, a tabela não tem rolagem horizontal e nenhuma das seis células do caso foi escondida; em 360 px confirma largura da página, separação das métricas e mosaico em uma coluna. Resultado: `errs: []`, nenhuma imagem quebrada, zero overflow em 1280/390/360 px e escala do canvas igual a 1.
 - **Validação:** `npm run typecheck` passou; Vitest programático passou em 28 arquivos/292 testes; as 12 suítes de `npm run e2e` passaram e `recolhido.mjs` foi repetido isoladamente com `errors: []`; `git diff --check` passou. `npm test` e `npm run build` padrão continuam bloqueados pelo esbuild ao tentar ler acima do workspace (`Acesso negado`); nenhuma dependência foi alterada.
-- **Em aberto:** depois do envio, confirmar o deploy Ready no Vercel e repetir as medidas principais na URL publicada em viewport de celular.
+- **Entrega e produção:** commit `e07320f` enviado ao `origin/master` por fast-forward, sem `--force`, com e-mail Git noreply do iiFoox. O Vercel marcou o deploy desse SHA como **Ready**. Em `trail-sn.vercel.app/b3/?v=e07320f`, validei 390 e 360 px: dez casos, seis dados visíveis por cartão, tabela sem overflow, métricas sem colisão, mosaico em uma coluna e página sem largura excedente. O portal não conseguiu produzir screenshot porque a janela estava minimizada, mas as medidas do DOM e a árvore de acessibilidade responderam normalmente.
+- **Em aberto:** somente observação subjetiva do movimento no celular físico; não há falha funcional pendente nesta revisão.
 
 ---
 
