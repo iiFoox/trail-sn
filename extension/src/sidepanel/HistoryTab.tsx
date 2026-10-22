@@ -8,10 +8,12 @@ import { getPrefs } from '../shared/prefs';
 import { fieldName, parts, valueLabel, when } from './format';
 import { RecordRuns } from './RecordRuns';
 import { RecordTimeline } from './Timeline';
+import { Fold } from './Fold';
 import { Val } from './Val';
 import { WhoSees } from './WhoSees';
 
 const P = t(getPrefs().lang).p;
+const U = P.ux;
 
 export function HistoryTab({ r, origin, sel, me, mode, setMode, onPick, onField }: { r: Investigation; origin: string; sel: number; me?: string; mode: 'field' | 'record'; setMode: (m: 'field' | 'record') => void; onPick: (i: number) => void; onField: (f: string) => void }) {
   const field = fieldName(r);
@@ -40,10 +42,9 @@ function FieldHistory({ r, origin, sel, onPick }: { r: Investigation; origin: st
   const rows: Row[] = r.changes.map((c, i) => ({ at: c.at, i }));
   if (r.unaudited?.lastUpdatedOn) rows.push({ at: r.unaudited.lastUpdatedOn, i: -1 });
   rows.sort((a, b) => (a.at < b.at ? 1 : -1));
-  return (
-    <>
-      {r.changes.length > 0 && <div class="muted small">{P.historyIntro}</div>}
-      {!r.changes.length && <div class="muted small">{r.fieldNotInHistory ? t(getPrefs().lang).notInHistory : t(getPrefs().lang).noChanges}</div>}
+  const cur = r.changes[sel];
+  const curText = cur ? `${parts(cur.at).date} ${parts(cur.at).time} · ${cur.oldValue || cur.checkpoint > 1 ? `${valueLabel(r, cur.oldValue)} → ` : ''}${valueLabel(r, cur.newValue)}` : '';
+  const list = (
       <div class="hist">
         {rows.map(({ at, i }) => {
           const p = parts(at);
@@ -67,6 +68,11 @@ function FieldHistory({ r, origin, sel, onPick }: { r: Investigation; origin: st
           );
         })}
       </div>
-    </>
+  );
+  if (!r.changes.length) return <><div class="muted small">{r.fieldNotInHistory ? t(getPrefs().lang).notInHistory : t(getPrefs().lang).noChanges}</div>{list}</>;
+  return (
+    <Fold cls="hist-fold" title={U.foldHist} hint={rows.length > 1 && curText ? fmt(U.foldHistHint, { x: curText }) : undefined} count={rows.length}>
+      <div class="pad"><div class="muted small hist-intro">{P.historyIntro}</div>{list}</div>
+    </Fold>
   );
 }

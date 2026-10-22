@@ -13,6 +13,7 @@ import { recordLink } from '../shared/instances';
 import { askForm, send, type ObservedField } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
 import { trackedTab } from '../shared/tabRef';
+import { Fold } from './Fold';
 import { Val } from './Val';
 
 const lang = getPrefs().lang;
@@ -147,10 +148,12 @@ export function LockView({ res, origin, compact = false }: { res: FieldStateResu
         const on = x.observed ?? x.rules;
         const confirmed = res.rules.map((r, i) => ({ r, i })).filter(({ r }) => r.aspect === a && r.grade === 'confirmed' && r.sets !== undefined);
         const losers = new Set(x.conflicts.map((c) => c.loser));
+        // Linhas da caixa: regras, conflitos, avisos e "pode ser". Mais de uma: começa recolhida, com a regra que decide no resumo.
+        const rows = confirmed.length + x.conflicts.length + (x.unexplained ? 1 : 0) + (x.mismatch && !x.unexplained ? 1 : 0) + x.maybe.length;
         return (
-          <div class="box lk-aspect">
-            <h4><span>{str(P.lkAspect)[a]}</span><span class={`pill ${on ? 'w' : ''}`}>{on ? P.lkYes : P.lkNo}</span></h4>
-            {x.winner !== undefined && <div class="li lk-head"><span class="grow small"><b>{str(x.rules ? P.lkBecause : P.lkFreed)[a]}:</b> {ruleName(res.rules[x.winner]!)}</span></div>}
+          <Fold cls="lk-aspect" title={str(P.lkAspect)[a]} count={rows || undefined} open={rows <= 1}
+            badge={<span class={`pill ${on ? 'w' : ''}`}>{on ? P.lkYes : P.lkNo}</span>}
+            hint={x.winner !== undefined ? <span class="lk-head"><b>{str(x.rules ? P.lkBecause : P.lkFreed)[a]}:</b> {ruleName(res.rules[x.winner]!)}</span> : undefined}>
             {confirmed.map(({ i }) => <Rule i={i} mark={i === x.winner ? 'win' : losers.has(i) ? 'lost' : undefined} />)}
             {x.conflicts.map((c) => {
               const l = res.rules[c.loser]!, w = res.rules[c.winner]!;
@@ -163,17 +166,16 @@ export function LockView({ res, origin, compact = false }: { res: FieldStateResu
               <div class="li lk-sub"><span class="grow small"><b>{P.lkMaybe}</b> <span class="muted">· {P.lkMaybeHint}</span></span></div>
               {x.maybe.map((i) => <Rule i={i} />)}
             </>}
-          </div>
+          </Fold>
         );
       })}
       {!relevant.length && <div class="box"><div class="li"><span class="ck">{Glyph.check}</span><span class="grow">{P.lkNothing}</span></div></div>}
       {res.skipped.length > 0 && (
-        <details class="box fold">
-          <summary><h4><span class="grow">{P.lkSkipped}</span><span class="pill">{res.skipped.length}</span></h4></summary>
+        <Fold cls="lk-skipped" title={P.lkSkipped} count={res.skipped.length} open={false}>
           {res.skipped.map((k) => (
             <div class="li"><span class="ck x">–</span><div class="grow">{link(k)}<div class="det">{str(P.lkSkipWhy)[k.why]}</div>{k.condition && <div class="small lk-cond"><span class="muted">{P.lkWhen}</span> {human(k.condition)}</div>}<Now now={k.now} /></div></div>
           ))}
-        </details>
+        </Fold>
       )}
       <div class="muted small lk-foot">{P.lkAcl}{!compact && <> · {fmt(P.lkSummary, { n: res.rules.length + res.skipped.length, ms: res.timing.totalMs })}</>}</div>
     </>
@@ -213,10 +215,9 @@ export function FormStates({ table, sysId, origin }: { table: string; sysId: str
     if (!r) return '';
     return activeStates(r).map((s) => `${str(P.lkAspect)[s.aspect]}: ${s.rule ? fmt(P.lkListBy, { name: ruleName(s.rule) }) : s.maybe ? fmt(P.lkListMaybe, { name: ruleName(s.maybe) }) : s.aspect === 'read_only' ? P.lkListAcl : P.lkListNoRule}`).join(' · ');
   };
-  // Lista longa começa recolhida.
+  // Mais de um campo: começa recolhida (o padrão do painel); um só: aberta.
   return (
-    <details class="box fold lk-list" open={active.length > 0 && active.length <= 6}>
-      <summary><h4><span class="grow">{P.lkListTitle}<span class="why">{P.lkListHint}</span></span>{fields && <span class="pill w">{active.length}</span>}</h4></summary>
+    <Fold cls="lk-list" title={P.lkListTitle} hint={P.lkListHint} count={fields ? active.length : undefined} pill="w" open={fields === undefined ? false : active.length <= 1}>
       {fields === undefined && <div class="li"><span class="spin" /><span class="grow muted small">{P.lkListLoading}</span></div>}
       {fields === null && <div class="li lk-noform"><span class="ck x">–</span><span class="grow small">{P.lkListNoForm}</span></div>}
       {fields && !active.length && <div class="li"><span class="ck">{Glyph.check}</span><span class="grow small">{P.lkListNone}</span></div>}
@@ -239,6 +240,6 @@ export function FormStates({ table, sysId, origin }: { table: string; sysId: str
           </>
         );
       })}
-    </details>
+    </Fold>
   );
 }

@@ -20,6 +20,7 @@ import { conflictLines, humanField, isDemo, lang } from './format';
 import { Simulate } from './Simulate';
 import { CompareTool } from './Compare';
 import { kindIcon } from './kinds';
+import { Fold } from './Fold';
 
 const s = t(getPrefs().lang);
 const P = s.p;
@@ -94,14 +95,14 @@ function Writers({ r, res, origin, labels }: { r: Investigation; res: FieldRules
   ].filter((x) => !ids.has(x.sysId) && !names.has(x.name)).filter((x, i, a) => a.findIndex((y) => y.sysId === x.sysId && y.name === x.name) === i);
   const lane = str(P.fmLane);
   if (!res.writers.length && !extra.length) return <div class="box"><div class="li"><span class="ck">{Glyph.check}</span><span class="grow">{P.fmNone}</span></div></div>;
+  const lanes = LANES.map((l) => [l, res.writers.filter((i) => i.lane === l)] as const).filter(([, list]) => list.length > 0);
+  // Resumo do cabeçalho: quantos em cada momento ("Em segundo plano 1 · Por botão, job ou importação 1 · Também citam o campo 4").
+  const brief = [...lanes.map(([l, list]) => `${lane[l]} ${list.length}`), ...(extra.length ? [`${U.writersAlso} ${extra.length}`] : [])].join(' · ');
   return (
-    <div class="box writers">
-      {LANES.map((l) => {
-        const list = res.writers.filter((i) => i.lane === l);
-        if (!list.length) return null;
+    <Fold cls="writers" title={<span class="brief">{brief}</span>} count={res.writers.length + extra.length}>
+      {lanes.map(([l, list]) => {
         return (
-          <div class="lane">
-            <div class="lane-h">{lane[l]}</div>
+          <Fold nested cls="lane" title={lane[l]} count={list.length}>
             {list.map((i) => (
               <div class="li">
                 <span class="ck" title={s.type[i.kind as keyof typeof s.type] ?? i.kind}>{typeGlyph[i.kind] ?? Glyph.check}</span>
@@ -111,17 +112,16 @@ function Writers({ r, res, origin, labels }: { r: Investigation; res: FieldRules
                 </div>
               </div>
             ))}
-          </div>
+          </Fold>
         );
       })}
       {extra.length > 0 && (
-        <details class="grp">
-          <summary><span class="ic sm">{Glyph.search}</span><b class="grow">{U.writersAlso}</b><i>{extra.length}</i><span class="chev">{Glyph.chevron}</span></summary>
+        <Fold nested cls="writers-also" icon={Glyph.search} title={U.writersAlso} count={extra.length} open={false}>
           <div class="li muted small">{U.writersAlsoHint}</div>
           {extra.map((x) => <div class="li"><div class="grow"><a href={recordLink(origin, x.table, x.sysId)} target="_blank" rel="noreferrer">{x.name || '—'}</a>{x.det && <div class="det">{x.det}</div>}</div></div>)}
-        </details>
+        </Fold>
       )}
-    </div>
+    </Fold>
   );
 }
 
@@ -129,14 +129,12 @@ function Writers({ r, res, origin, labels }: { r: Investigation; res: FieldRules
 function Dependents({ res, origin, labels }: { res: FieldRules; origin: string; labels: Record<string, string> }) {
   if (!res.dependents.length) return <div class="box"><div class="li"><span class="ck">{Glyph.check}</span><span class="grow">{U.depsNone}</span></div></div>;
   const phase = str(U.depPhase);
+  const phases = DEP_PHASES.map((ph) => [ph, res.dependents.filter((d) => d.phase === ph)] as const).filter(([, list]) => list.length > 0);
   return (
-    <div class="box deps">
-      {DEP_PHASES.map((ph) => {
-        const list = res.dependents.filter((d) => d.phase === ph);
-        if (!list.length) return null;
+    <Fold cls="deps" title={<span class="brief">{phases.map(([ph, list]) => `${phase[ph]} ${list.length}`).join(' · ')}</span>} count={res.dependents.length}>
+      {phases.map(([ph, list]) => {
         return (
-          <div class="lane">
-            <div class="lane-h">{phase[ph]}<i>{list.length}</i></div>
+          <Fold nested cls="lane" title={phase[ph]} count={list.length}>
             {list.map((d) => {
               const x = describeDependent(d, lang, labels);
               return (
@@ -150,10 +148,10 @@ function Dependents({ res, origin, labels }: { res: FieldRules; origin: string; 
                 </div>
               );
             })}
-          </div>
+          </Fold>
         );
       })}
-    </div>
+    </Fold>
   );
 }
 
@@ -174,8 +172,7 @@ function NotSeen({ res }: { res: FieldRules }) {
 function Conflicts({ r, origin }: { r: Investigation; origin: string }) {
   const lines = conflictLines(r);
   return (
-    <div class="box conflict">
-      <h4 class="warnh">{P.cfTitle}<span>{lines.length}</span></h4>
+    <Fold cls="conflict" warn title={P.cfTitle} count={lines.length} pill="w">
       <div class="li"><span class="grow muted small">{P.cfHint}</span></div>
       {(r.conflicts ?? []).map((k, i) => (
         <div class="li"><span class="ck w">!</span><div class="grow">
@@ -184,7 +181,7 @@ function Conflicts({ r, origin }: { r: Investigation; origin: string }) {
           <div class="det">{lines[i]!.overlap} · {lines[i]!.win}</div>
         </div></div>
       ))}
-    </div>
+    </Fold>
   );
 }
 
@@ -205,8 +202,7 @@ function TableScan({ r, origin }: { r: Investigation; origin: string }) {
   };
   const lines = res ? conflictLines({ ...r, conflicts: res.conflicts }) : [];
   return (
-    <details class="box fold scan">
-      <summary><h4><span class="grow">{fmt(P.scTitle, { table })}</span>{res ? <span class="pill">{res.conflicts.length}</span> : <span>{Glyph.chevron}</span>}</h4></summary>
+    <Fold cls="scan" title={fmt(P.scTitle, { table })} count={res ? res.conflicts.length : undefined} open={false}>
       {st === 'idle' && <div class="li"><span class="grow muted small">{P.scHint}</span><button class="btn sm" onClick={run}>{Glyph.search} {P.scRun}</button></div>}
       {st === 'run' && <div class="li"><span class="spin" /><span class="grow muted small">{P.scRunning}</span></div>}
       {st === 'err' && <div class="li"><span class="ck w">!</span><span class="grow"><ErrorMsg msg={err} /></span></div>}
@@ -222,7 +218,7 @@ function TableScan({ r, origin }: { r: Investigation; origin: string }) {
           </div></div>
         ))}
       </>}
-    </details>
+    </Fold>
   );
 }
 

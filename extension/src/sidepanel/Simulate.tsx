@@ -13,6 +13,7 @@ import { getPrefs } from '../shared/prefs';
 import { trackedTab } from '../shared/tabRef';
 import { ErrorMsg } from './ErrorMsg';
 import { demoParam, isDemo, lang } from './format';
+import { Fold } from './Fold';
 import { kindIcon } from './kinds';
 import { Val } from './Val';
 
@@ -91,22 +92,20 @@ function SimOutcome({ res, r, origin, known }: { res: ValueSimulation; r: Invest
         ))}
         {changed.length <= 1 && <div class="li"><span class="ck">{Glyph.check}</span><span class="grow small">{P.wiNothing}</span></div>}
       </div>
-      <div class="box">
-        <h4>{U.simRuns}<span>{res.runs.length}</span></h4>
+      <Fold cls="sim-runs" title={U.simRuns} count={res.runs.length} open={res.runs.length <= 1}
+        hint={res.runs.length > 1 ? res.runs.slice(0, 3).map((x) => x.name).join(', ') + (res.runs.length > 3 ? '…' : '') : undefined}>
         {!res.runs.length && <div class="li"><span class="grow muted small">{U.simNoRuns}</span></div>}
         {res.runs.map((x) => <Row x={x} />)}
-      </div>
+      </Fold>
       {res.maybe.length > 0 && (
-        <details class="box fold" open>
-          <summary><h4><span class="grow">{U.simMaybe}<span class="why">{P.wiUncertainHint}</span></span><span class="pill w">{res.maybe.length}</span></h4></summary>
+        <Fold cls="sim-maybe" title={U.simMaybe} hint={P.wiUncertainHint} count={res.maybe.length} pill="w">
           {res.maybe.map((x) => <Row x={x} />)}
-        </details>
+        </Fold>
       )}
       {res.wontRun.length > 0 && (
-        <details class="box fold">
-          <summary><h4><span class="grow">{U.simWont}</span><span class="pill">{res.wontRun.length}</span></h4></summary>
+        <Fold cls="sim-wont" title={U.simWont} count={res.wontRun.length}>
           {res.wontRun.map((x) => <Row x={x} />)}
-        </details>
+        </Fold>
       )}
       {res.notSeen.length > 0 && <div class="notice small"><b>{U.notSeenTitle}</b> {[...new Set(res.notSeen.map((k) => str(U.depKindPlural)[k] ?? k))].join(', ')}.</div>}
       {!res.recordReadable && <div class="notice small">{U.simNoRecord}</div>}

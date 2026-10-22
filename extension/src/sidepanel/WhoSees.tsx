@@ -12,6 +12,7 @@ import { send } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
 import { trackedTab } from '../shared/tabRef';
 import { ErrorMsg } from './ErrorMsg';
+import { Fold } from './Fold';
 import { demoParam, isDemo, lang } from './format';
 
 const P = t(getPrefs().lang).p;
@@ -51,6 +52,7 @@ export function WhoSees({ table, sysId, field, display, origin, me, people }: { 
   const myself = me ?? (isDemo ? 'admin' : undefined);
   const name = res?.user?.name || res?.user?.userName || user;
   const verdict = res?.combined.verdict;
+  const reasons = res ? visibilityReasons(res) : [];
   return (
     <div class="box vis" id="who-sees">
       <h4>{U.visTitle}</h4>
@@ -73,12 +75,14 @@ export function WhoSees({ table, sysId, field, display, origin, me, people }: { 
               {res.notes.includes('user_inactive') && <div class="det">{U.visInactive}</div>}
             </div>
           </div>
-          {visibilityReasons(res).map((x) => <div class={`li vis-why ${x.tone}`}><span class={`ck ${x.tone === 'bad' ? 'x' : x.tone === 'unk' ? 'w' : ''}`}>{x.tone === 'ok' ? Glyph.check : x.tone === 'bad' ? '✕' : '?'}</span><span class="grow small">{x.text}</span></div>)}
+          {reasons.length > 0 && <Fold nested cls="vis-reasons" icon={Glyph.search} title={U.foldWhy} count={reasons.length}
+            hint={reasons.length > 1 ? reasons.find((x) => x.tone === (TONE[verdict] === 'ok' ? 'ok' : 'bad'))?.text ?? reasons[0]!.text : undefined}>
+            {reasons.map((x) => <div class={`li vis-why ${x.tone}`}><span class={`ck ${x.tone === 'bad' ? 'x' : x.tone === 'unk' ? 'w' : ''}`}>{x.tone === 'ok' ? Glyph.check : x.tone === 'bad' ? '✕' : '?'}</span><span class="grow small">{x.text}</span></div>)}
+          </Fold>}
           <div class="li"><span class="grow small muted">{U.visLimit}</span></div>
-          <details class="grp">
-            <summary><span class="ic sm">{Glyph.shield}</span><b class="grow">{U.visDetail}</b><span class="chev">{Glyph.chevron}</span></summary>
+          <Fold nested open={false} icon={Glyph.shield} title={U.visDetail}>
             <div class="pad vis-detail small">{describeVisibility(res, lang)}</div>
-          </details>
+          </Fold>
         </>
       )}
     </div>

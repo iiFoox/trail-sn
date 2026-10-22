@@ -18,6 +18,7 @@ import { parts, humanField } from './Result';
 import { Loading } from './Loading';
 import { Val } from './Val';
 import { ErrorMsg } from './ErrorMsg';
+import { Fold } from './Fold';
 
 const P = t(getPrefs().lang).p;
 type B = NonNullable<TabState['batch']>;
@@ -89,8 +90,8 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
   const groupOf = (i: BatchItem) => groups.find((g) => g.items.includes(key(i)))?.key ?? '';
   const rows = changed.filter((i) => !filter || groupOf(i) === filter).sort((a, c) => ((a.at ?? '') < (c.at ?? '') ? 1 : -1));
   const saves = rec ? groupSaves(rows) : groupCauses(rows);
-  // Abertos de saída: os três primeiros grupos, ou todos quando a lista é curta (até 10 linhas).
-  const openFirst = rows.length <= 10 ? saves.length : 3;
+  // Padrão do painel: com mais de um grupo, todos começam recolhidos (o cabeçalho já diz quem, quando e quantos).
+  const openAll = saves.length <= 1;
   const fieldLabel = b.items.find((i) => i.label)?.label ?? humanField(b.field);
   const title = rec ? fmt(P.btRecTitle, { rec: b.display ?? '' }) : fmt(P.btTitle, { field: fieldLabel, n: b.items.length });
   const sub = rec ? b.items.find((i) => i.title)?.title : b.table;
@@ -145,9 +146,9 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
       <div class="hist bt-list">
         {saves.map((group, i) => {
           const when = parts(group.at);
-          return <details class="bt-group" key={group.key} open={i < openFirst}>
+          return <details class="bt-group fold2" key={group.key} open={openAll} data-count={group.items.length}>
             <summary class="bt-group-head">
-              <span class="bt-group-arrow" aria-hidden="true" />
+              <span class="chev" aria-hidden="true">{Glyph.chevron}</span>
               <span class="bt-group-title">{rec && <><time dateTime={group.at.replace(' ', 'T') + 'Z'}>{when.date} {when.time}</time> · </>}{saveTitle(group, rec)}
                 {group.cause?.sysId && group.cause.table && group.cause.type !== 'user_action' && <a class="bt-group-link" href={recordLink(origin, group.cause.table, group.cause.sysId)} target="_blank" rel="noreferrer" title={fmt(P.openArtifact, { what: group.cause.name })} aria-label={fmt(P.openArtifact, { what: group.cause.name })} onClick={(e) => e.stopPropagation()}>↗</a>}
               </span>
@@ -160,16 +161,14 @@ export function Batch({ b, origin, onOpen }: { b: B; origin: string; onOpen: (sy
       </div>
 
       {quiet.length > 0 && !running && (
-        <details class="box fold">
-          <summary><h4><span class="grow">{rec ? P.btQuietRec : P.btQuiet}</span><span class="pill">{quiet.length}</span></h4></summary>
+        <Fold cls="bt-quiet" title={rec ? P.btQuietRec : P.btQuiet} count={quiet.length} open={false}>
           {quiet.map((it) => <div class="li"><span class="ck x">–</span><a class="grow" href="#" onClick={(e) => { e.preventDefault(); onOpen(it.sysId, it.field); }}>{rec ? it.label ?? it.field : it.display}</a><span class="muted small">{it.status === 'unaudited' ? P.btUnaudited : P.btNoChange}</span></div>)}
-        </details>
+        </Fold>
       )}
       {errors.length > 0 && !running && (
-        <details class="box fold">
-          <summary><h4 class="warnh"><span class="grow">{P.btErrors}</span><span class="pill">{errors.length}</span></h4></summary>
+        <Fold cls="bt-errors" warn title={P.btErrors} count={errors.length} pill="w">
           {errors.map((it) => <div class="li"><span class="ck w">!</span><div class="grow">{rec ? it.label ?? it.field : it.display}<div class="det"><ErrorMsg msg={it.error ?? ''} /></div></div></div>)}
-        </details>
+        </Fold>
       )}
       {/* Registro inteiro: os flows que rodaram neste registro e os configurados para a tabela. */}
       {/* Campos travados, obrigatórios ou escondidos agora (a porta de entrada dos escondidos, que não têm ícone). */}

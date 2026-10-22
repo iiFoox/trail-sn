@@ -77,7 +77,7 @@ try {
   await page.waitForSelector('.save-card h4 .pill', { timeout: 8000 });
   out.save = await text('.save-card h4');
   if (!/Este salvamento levou 0,9 s/.test(out.save) || !/Normal/.test(out.save)) errors.push('salvamento normal: ' + out.save);
-  out.why = await text('details.box.fold .why');
+  out.why = await text('details.why-not .why');
   if (!/enviou State = In Progress, não Resolved/.test(out.why)) errors.push('"por que não foi" sem o motivo bom: ' + out.why);
   if (await page.locator('.fmap, .scan').count()) errors.push('ferramentas (mapa/varredura) ainda em "Como aconteceu"');
   await open('tab=how&slow=1');
@@ -106,7 +106,7 @@ try {
 
   // 5. Regras do campo: estado agora, quem grava, quem depende; simular e comparar.
   await open('tab=rules');
-  await page.waitForSelector('.deps .dep', { timeout: 10000 }).catch(() => errors.push('sem "Quem depende"'));
+  await page.waitForSelector('.deps .dep', { state: 'attached', timeout: 10000 }).catch(() => errors.push('sem "Quem depende"'));
   out.secs = await page.$$eval('.rules .sec-h', (hs) => hs.map((h) => h.firstChild.textContent));
   if (JSON.stringify(out.secs) !== JSON.stringify(['Estado agora', 'Quem grava', 'Quem depende'])) errors.push('seções de Regras: ' + JSON.stringify(out.secs));
   out.writers = await page.$$eval('.writers .li a', (as) => as.map((a) => a.textContent));
@@ -116,7 +116,7 @@ try {
   if (!(await page.locator('.deps .dep', { hasText: 'envia a notificação' }).count())) errors.push('dependente sem "o que faz"');
 
   await open('tab=rules&sim=7');
-  await page.waitForSelector('.sim .sim-row', { timeout: 10000 }).catch(() => errors.push('simulação não rodou'));
+  await page.waitForSelector('.sim .sim-row', { state: 'attached', timeout: 10000 }).catch(() => errors.push('simulação não rodou'));
   out.sim = await page.$$eval('.sim .box', (bs) => bs.map((b) => b.querySelector('h4')?.textContent));
   if (!out.sim.some((h) => /^Rodaria/.test(h ?? '')) || !out.sim.some((h) => /Como o registro ficaria/.test(h ?? ''))) errors.push('simulação: ' + JSON.stringify(out.sim));
   if (!(await page.locator('.sim .sim-row', { hasText: 'Fecha as tarefas filhas' }).count())) errors.push('simular Closed deveria rodar "Fecha as tarefas filhas"');
@@ -125,7 +125,7 @@ try {
   await page.waitForSelector('.tool-panel.sim', { timeout: 8000 }).catch(() => errors.push('tab=whatif (apelido) não abriu o simular'));
 
   await open('tab=rules&compare=1');
-  await page.waitForSelector('.cmp-diffs .cmp-diff', { timeout: 10000 }).catch(() => errors.push('comparação sem diferenças'));
+  await page.waitForSelector('.cmp-diffs .cmp-diff', { state: 'attached', timeout: 10000 }).catch(() => errors.push('comparação sem diferenças'));
   out.cmp = await page.$$eval('.cmp-diff', (xs) => xs.map((x) => x.querySelector('.small')?.textContent));
   if (!out.cmp.some((x) => /'mark_resolved' tem condição diferente/.test(x ?? ''))) errors.push('comparação: ' + JSON.stringify(out.cmp));
   if (!(await page.locator('.cmp-link').count())) errors.push('comparação sem links para os dois lados');
@@ -137,6 +137,91 @@ try {
   if (!out.nologin.some((x) => /^Abrir sua-instancia-prod/.test(x)) || !out.nologin.includes('Tentar de novo')) errors.push('sem login: ' + JSON.stringify(out.nologin));
   await open('tab=rules&compare=none');
   await page.waitForSelector('.cmp-none', { timeout: 8000 }).catch(() => errors.push('sem instância: faltou "Conectar outra instância"'));
+
+  // 5b. Seções recolhidas: em cada aba (e nas ferramentas), nenhuma lista com mais de 1 item vem aberta;
+  //     abrir e fechar funciona (clique e teclado). Também confere que a resposta em si continua à vista.
+  const folds = async (what) => {
+    await page.waitForTimeout(1500);
+    const st = await page.evaluate(() => [...document.querySelectorAll('.tabpane details.fold2')].map((d) => ({ cls: d.className, n: d.dataset.count === undefined ? null : Number(d.dataset.count), open: d.open, visible: !!d.offsetParent || d.getClientRects().length > 0 })));
+    const bad = st.filter((x) => x.open && x.n !== null && x.n > 1);
+    if (bad.length) errors.push(`${what}: lista com mais de 1 item aberta: ` + JSON.stringify(bad));
+    out[`folds-${what}`] = st.map((x) => `${x.cls.replace(/\b(box|fold|fold2|grp)\b/g, '').trim()}:${x.n ?? '-'}${x.open ? ':aberta' : ''}`);
+    return st;
+  };
+  const toggle = async (sel, what) => {
+    const d = page.locator(sel).first();
+    if (!(await d.count())) { errors.push(`${what}: sem ${sel}`); return; }
+    if (await d.evaluate((el) => el.open)) { errors.push(`${what}: ${sel} deveria vir fechada`); return; }
+    const body = d.locator(':scope > :not(summary)').first();
+    await d.locator(':scope > summary').click();
+    await page.waitForTimeout(400);
+    if (!(await d.evaluate((el) => el.open)) || !(await body.isVisible())) errors.push(`${what}: ${sel} não abriu com clique`);
+    await d.locator(':scope > summary').click();
+    await page.waitForTimeout(400);
+    if (await d.evaluate((el) => el.open)) errors.push(`${what}: ${sel} não fechou com clique`);
+    await d.locator(':scope > summary').focus();
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+    if (!(await d.evaluate((el) => el.open))) errors.push(`${what}: ${sel} não abriu com Enter`);
+    await page.keyboard.press('Space');
+    await page.waitForTimeout(300);
+    if (await d.evaluate((el) => el.open)) errors.push(`${what}: ${sel} não fechou com Espaço`);
+  };
+  await open('tab=answer');
+  await page.waitForSelector('.ans-phrase');
+  await folds('resposta');
+  for (const sel of ['.ans-phrase', '.ans-cause', '.seal', '.copymenu > .btn']) if (!(await page.locator(sel).first().isVisible())) errors.push(`Resposta: ${sel} não está à vista`);
+  await open('tab=how');
+  await page.waitForSelector('.save-card h4 .pill', { timeout: 8000 });
+  await folds('como-foi');
+  if (!(await page.locator('.save-card h4').isVisible())) errors.push('Como foi: resumo do salvamento escondido');
+  await toggle('.save-card details.save-ran', 'Como foi');
+  await toggle('details.why-this', 'Como foi');
+  await toggle('details.missing', 'Como foi');
+  await open('tab=history&visibility=1');
+  await page.waitForSelector('.vis-verdict', { timeout: 10000 });
+  await page.waitForSelector('.rruns .pill.cnt', { timeout: 10000 }).catch(() => errors.push('"O que rodou neste registro" sem contagem'));
+  await folds('historico');
+  if (!(await page.locator('.vis-verdict').isVisible())) errors.push('Histórico: veredito do Quem enxerga escondido');
+  await toggle('details.hist-fold', 'Histórico');
+  await toggle('details.vis-reasons', 'Histórico');
+  // Aninhado: "O que rodou neste registro" › grupos também vêm fechados.
+  await page.click('details.rruns > summary');
+  await page.waitForTimeout(400);
+  await folds('historico-rruns');
+  await toggle('details.rruns details.grp.fold2:not([open])', 'Histórico › O que rodou');
+  await open('tab=history&hist=record');
+  await page.waitForSelector('ol.rtl > li', { timeout: 10000 });
+  await folds('historico-registro');
+  await open('tab=rules');
+  await page.waitForSelector('.deps', { timeout: 10000 });
+  await page.waitForFunction(() => document.querySelector('.lk-list')?.dataset.count !== undefined, null, { timeout: 10000 }).catch(() => errors.push('lista de campos bloqueados sem contagem'));
+  await folds('regras');
+  if ((await page.locator('.lk-state .lk-chip').count()) !== 3 || !(await page.locator('.lk-state').isVisible())) errors.push('Regras: os três quadros do Estado agora deveriam estar à vista');
+  out.depsHead = await text('details.deps > summary');
+  if (!/No navegador 3/.test(out.depsHead) || !/11/.test(out.depsHead)) errors.push('resumo de "Quem depende": ' + out.depsHead);
+  await toggle('details.deps', 'Regras');
+  await page.click('details.deps > summary');
+  await page.waitForTimeout(400);
+  await folds('regras-deps-aberta');
+  await toggle('details.deps details.lane', 'Regras › Quem depende');
+  await toggle('details.lk-list', 'Regras');
+  await toggle('details.writers', 'Regras');
+  await open('tab=rules&sim=7');
+  await page.waitForSelector('.sim .sim-row', { state: 'attached', timeout: 10000 });
+  await folds('regras-simular');
+  if (!(await page.locator('.sim .wi-result').isVisible())) errors.push('Simular: "Como o registro ficaria" deveria estar à vista');
+  await toggle('details.sim-runs', 'Simular');
+  await open('tab=rules&compare=1');
+  await page.waitForSelector('.cmp-diffs .cmp-diff', { state: 'attached', timeout: 10000 });
+  await folds('regras-comparar');
+  if (!(await page.locator('.cmp-sum').isVisible())) errors.push('Comparar: resumo deveria estar à vista');
+  await toggle('details.cmp-diffs', 'Comparar');
+  // Preferência "sem animações": abre na hora, sem transição.
+  await open('tab=rules&motion=off');
+  await page.evaluate(() => { document.documentElement.dataset.motion = 'off'; });
+  out.motionOff = await page.evaluate(() => { const d = document.querySelector('details.fold2'); return d ? getComputedStyle(d, '::details-content').transitionDuration : ''; });
+  if (out.motionOff && !/^0s/.test(out.motionOff)) errors.push('animação de abrir não respeita "sem animações": ' + out.motionOff);
 
   // 6. Estados do painel: acesso (Vejo / Não vejo), erro com "Tentar de novo" sem o vazio, carregando com o alvo, vazio.
   await open('access=1', 340, 'light');

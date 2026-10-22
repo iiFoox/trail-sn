@@ -1137,3 +1137,35 @@ ul.fl .fbtn .v .o, table.cmpt .o, .wi-ft .o, .bt-row .vals .o { text-decoration:
 @media (max-width: 400px) { .tabs-wrap .seg-tabs.t4 button { padding: 8px 6px; font-size: 12px; } }
 .cmp-diff .cmp-links { display: flex !important; flex-direction: row; flex-wrap: wrap; gap: 4px 14px; }
 .cmp-diff .cmp-links .cmp-link { display: inline-flex !important; width: auto; }
+
+/* ---------- Seções recolhíveis (Fold.tsx): um padrão só em todo o painel ----------
+   Lista com mais de um item começa recolhida: só o cabeçalho, com resumo curto, contagem à direita e seta que gira.
+   Abre com animação de altura (::details-content + interpolate-size, Chrome 131+); sem suporte, abre na hora. */
+:root { interpolate-size: allow-keywords; }
+details.fold2 > summary { list-style: none; cursor: pointer; }
+details.fold2 > summary::-webkit-details-marker { display: none; }
+details.fold2 > summary:focus-visible { outline: 2px solid var(--teal); outline-offset: -2px; border-radius: inherit; }
+details.box.fold2 > summary:hover { background: var(--hover, rgba(127,127,127,.06)); }
+details.fold2 > summary .chev { display: inline-flex; flex: none; color: var(--muted); }
+details.fold2 > summary .chev svg { width: 14px; height: 14px; transition: transform .2s cubic-bezier(.2,.8,.2,1); }
+details.fold2[open] > summary .chev svg { transform: rotate(90deg); }
+details.fold summary h4 .pill + .chev { display: inline-flex; }
+details.box.fold2 > summary h4 { gap: 8px; }
+details.box.fold2 > summary h4 > .grow { flex: 1; min-width: 0; color: inherit; font-weight: 700; font-size: 13px; }
+details.box.fold2 > summary h4 > .pill { flex: none; }
+details.grp.fold2 > summary b.grow { min-width: 0; }
+details.grp.fold2 > summary .why { display: block; font-weight: 400; font-size: 11.5px; color: var(--fg-2); margin-top: 2px; }
+details.box.fold2[open] > summary { border-bottom: 1px solid transparent; }
+details.fold2::details-content { block-size: 0; overflow: clip; opacity: 0; transition: block-size .26s cubic-bezier(.2,.8,.2,1), opacity .2s ease, content-visibility .26s allow-discrete; }
+details.fold2[open]::details-content { block-size: auto; opacity: 1; }
+@media (prefers-reduced-motion: reduce) { details.fold2::details-content, details.fold2 > summary .chev svg { transition: none !important; } }
+:root[data-motion="off"] details.fold2::details-content, :root[data-motion="off"] details.fold2 > summary .chev svg { transition: none !important; }
+/* Grupo aninhado dentro de outro grupo (ex.: Flows › Rodaram neste registro): recua um pouco. */
+details.grp.fold2 details.grp.fold2 > summary { padding-left: 24px; }
+/* Lanes de "Quem grava" / "Quem depende" e grupos do lote como grupos recolhíveis. */
+.writers details.grp.fold2 > .li, .deps details.grp.fold2 > .li { padding-left: 14px; }
+.flows .box.fold2 { box-shadow: none; }
+.bt-group.fold2 > summary .chev { margin-left: 2px; }
+.lk-aspect > summary .lk-head { display: block; }
+.hist-intro { margin-bottom: 8px; }
+details.box.fold2 > summary h4 .brief { font-weight: 500; font-size: 12.5px; color: var(--fg-2); }
