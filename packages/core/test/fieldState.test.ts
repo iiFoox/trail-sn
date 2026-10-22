@@ -270,3 +270,36 @@ describe('P3: comments e work_notes no campo de notas combinado do UI16', () => 
     expect(activeStates(r)).toEqual([expect.objectContaining({ aspect: 'hidden', rule: expect.objectContaining({ sysId: 'p1' }) })]);
   });
 });
+
+describe('Mesma camada e mesma ordem, valores opostos', () => {
+  // PDI 21/10/2026: com o ^OR avaliado, a OOB "Make fields read-only on close" (ordem 100, condição falsa, reverte) libera o
+  // Caller, e a [PT] VAL-FS A (ordem 100, script) trava. O formulário travou; o motor dava "livre" pela ordem da consulta.
+  const setup = () => {
+    const c = base({ state: '2', incident_state: '2', assignment_group: 'g1' });
+    c.rows('sys_ui_policy', [
+      policy({ sys_id: 'pOOB', short_description: 'Make fields read-only on close', conditions: 'incident_state=7^ORincident_state=8^EQ' }),
+      policy({ sys_id: 'pA', short_description: '[PT] VAL-FS A', conditions: '', run_scripts: 'true', script_true: `function onCondition() { g_form.setReadOnly('${F}', true); }` }),
+    ]);
+    c.rows('sys_ui_policy_action', [action({ ui_policy: 'pOOB', disabled: 'true' })]);
+    return c;
+  };
+
+  it('nenhuma vence: as duas viram "pode ser" (same_order) e o formulário travado não diverge', async () => {
+    const r = await run(setup(), { readOnly: true, mandatory: false, visible: true });
+    expect(r.rules.find((x) => x.sysId === 'pOOB')).toMatchObject({ sets: false, grade: 'maybe', why: 'same_order', whyBefore: 'cond_false_reverse' });
+    expect(r.rules.find((x) => x.sysId === 'pA' && x.aspect === 'read_only')).toMatchObject({ sets: true, grade: 'maybe', why: 'same_order' });
+    expect(r.aspects.read_only).toMatchObject({ mismatch: false, unexplained: false, conflicts: [] });
+    expect(r.aspects.read_only.winner).toBeUndefined();
+  });
+
+  it('ordens diferentes continuam com vencedor confirmado', async () => {
+    const c = setup();
+    c.rows('sys_ui_policy', [
+      policy({ sys_id: 'pOOB', short_description: 'Make fields read-only on close', conditions: 'incident_state=7^ORincident_state=8^EQ' }),
+      policy({ sys_id: 'pA', short_description: '[PT] VAL-FS A', conditions: '', run_scripts: 'true', order: '200', script_true: `function onCondition() { g_form.setReadOnly('${F}', true); }` }),
+    ]);
+    const r = await run(c, { readOnly: true, mandatory: false, visible: true });
+    expect(r.rules[r.aspects.read_only.winner!]).toMatchObject({ sysId: 'pA', grade: 'confirmed' });
+    expect(r.aspects.read_only).toMatchObject({ rules: true, mismatch: false });
+  });
+});

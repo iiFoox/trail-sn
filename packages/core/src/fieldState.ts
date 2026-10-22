@@ -49,7 +49,8 @@ export type StateWhy =
   | 'onchange' // client script que só roda quando outro campo muda
   | 'value_unknown' // o valor passado não é fixo (variável, expressão)
   | 'policy_script' // vem do script da UI policy (executar script)
-  | 'mandatory_empty'; // trava o campo, mas no UI16 g_form.setReadOnly não trava campo obrigatório e vazio
+  | 'mandatory_empty' // trava o campo, mas no UI16 g_form.setReadOnly não trava campo obrigatório e vazio
+  | 'same_order'; // outra regra da mesma camada e com a mesma ordem diz o contrário: não dá para saber qual roda por último
 
 export interface StateRule {
   kind: StateRuleKind;
@@ -77,7 +78,7 @@ export interface StateRule {
   serverOnly?: boolean;
   /** Índice (em `rules`) da regra posterior que desfaz esta. */
   overriddenBy?: number;
-  /** Motivo original quando `why` virou `mandatory_empty`. */
+  /** Motivo original quando `why` virou `mandatory_empty` ou `same_order`. */
   whyBefore?: StateWhy;
 }
 
@@ -380,6 +381,13 @@ export async function fieldStates(
         r.whyBefore = r.why; r.why = 'mandatory_empty'; r.grade = 'maybe';
       }
     }
+    // Mesma camada e mesma ordem, valores opostos: o formulário não garante qual roda por último. No PDI (21/10/2026),
+    // a OOB "Make fields read-only on close" (ordem 100, condição falsa, reverte = libera) e a [PT] VAL-FS A (ordem 100,
+    // trava por script) disputavam o Caller; o formulário travou, e o motor dava "livre" só pela ordem da consulta.
+    const tied = rules.map((r, i) => ({ r, i })).filter(({ r }) => r.aspect === aspect && r.grade === 'confirmed' && r.sets !== undefined && layer(r) > 1);
+    const ties = new Set<StateRule>();
+    for (const a of tied) for (const b of tied) if (a.i < b.i && layer(a.r) === layer(b.r) && a.r.order === b.r.order && a.r.sets !== b.r.sets) { ties.add(a.r); ties.add(b.r); }
+    for (const r of ties) { r.whyBefore = r.why; r.why = 'same_order'; r.grade = 'maybe'; }
     let state: boolean | undefined; let winner: number | undefined;
     const maybe: number[] = []; const conflicts: AspectSummary['conflicts'] = [];
     for (const { r, i } of seq) {
