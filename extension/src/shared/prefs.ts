@@ -13,10 +13,11 @@ export type Lang = 'pt' | 'en';
 export type PanelMode = 'float' | 'side' | 'window';
 export interface Prefs { theme: Theme; lang: Lang; panelMode: PanelMode; showIcons: boolean; showBubble: boolean;
   /** Animações do painel, da bolinha e da página. */ motion: boolean;
-  /** Atalho na página para abrir e fechar o painel (ex.: "Alt+Shift+P"); vazio desliga. */ panelKey: string; /** Versão da escolha do painel: antes da 0.12 'side' era o padrão gravado, não uma escolha. */ modeV?: number }
+  /** Atalho na página para abrir e fechar o painel (ex.: "Alt+Shift+P"); vazio desliga. */ panelKey: string;
+  /** Modo avançado: a aba "Avançado" com as ferramentas para administradores e desenvolvedores. Desligado por padrão. */ advanced: boolean; /** Versão da escolha do painel: antes da 0.12 'side' era o padrão gravado, não uma escolha. */ modeV?: number }
 
 export const DEFAULT_PANEL_KEY = 'Alt+Shift+P';
-export const DEFAULT_PREFS: Prefs = { theme: 'dark', lang: 'pt', panelMode: 'float', showIcons: true, showBubble: true, motion: true, panelKey: DEFAULT_PANEL_KEY, modeV: 2 };
+export const DEFAULT_PREFS: Prefs = { theme: 'dark', lang: 'pt', panelMode: 'float', showIcons: true, showBubble: true, motion: true, panelKey: DEFAULT_PANEL_KEY, advanced: false, modeV: 2 };
 const KEY = 'trail.prefs';
 export const PREFS_KEY = KEY;
 
@@ -51,6 +52,8 @@ export function normalize(p: Partial<Prefs> | undefined): Prefs {
     showBubble: p?.showBubble !== false,
     motion: p?.motion !== false,
     panelKey: typeof p?.panelKey === 'string' ? p.panelKey : DEFAULT_PANEL_KEY,
+    // Só liga com true explícito: quem nunca mexeu fica no painel simples.
+    advanced: p?.advanced === true,
     modeV: 2,
   };
 }

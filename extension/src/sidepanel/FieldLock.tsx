@@ -230,12 +230,15 @@ export function LockView({ res, origin, compact = false, quiet = false }: { res:
  * Lista do registro: todos os campos do formulário (inclusive escondidos, que não têm ícone) que estão
  * somente leitura, obrigatórios ou escondidos agora, cada um com o motivo resumido; clicar abre o detalhe.
  */
-export function FormStates({ table, sysId, origin }: { table: string; sysId: string; origin: string }) {
+export function FormStates({ table, sysId, origin, title = P.lkListTitle, lazy = false }: { table: string; sysId: string; origin: string; title?: string; /** Só lê o formulário e a instância quando a pessoa abre a seção. */ lazy?: boolean }) {
   const [fields, setFields] = useState<ObservedField[] | null>();
   const [res, setRes] = useState<FieldStateResult[]>();
   const [err, setErr] = useState('');
   const [sel, setSel] = useState<string>();
+  const [opened, setOpened] = useState(!lazy);
+  const [shown, setShown] = useState(false);
   useEffect(() => {
+    if (!opened) return;
     let alive = true;
     setFields(undefined); setRes(undefined); setErr('');
     (async () => {
@@ -253,7 +256,7 @@ export function FormStates({ table, sysId, origin }: { table: string; sysId: str
       } catch (e) { if (alive) setErr((e as Error).message); }
     })();
     return () => { alive = false; };
-  }, [table, sysId]);
+  }, [table, sysId, opened]);
   const active = (fields ?? []).filter((f) => activeText(f));
   const reason = (r: FieldStateResult | undefined) => {
     if (!r) return '';
@@ -261,7 +264,7 @@ export function FormStates({ table, sysId, origin }: { table: string; sysId: str
   };
   // Mais de um campo: começa recolhida (o padrão do painel); um só: aberta.
   return (
-    <Fold cls="lk-list" title={P.lkListTitle} count={fields ? active.length : undefined} pill="w" open={fields === undefined ? false : active.length <= 1}>
+    <Fold cls="lk-list" title={title} count={fields ? active.length : undefined} pill="w" open={lazy ? shown : fields === undefined ? false : active.length <= 1} onToggle={lazy ? (o) => { setShown(o); if (o) setOpened(true); } : undefined}>
       {fields && active.length > 0 && <div class="li"><span class="grow muted small">{P.lkListHint}</span></div>}
       {fields === undefined && <div class="li"><span class="spin" /><span class="grow muted small">{P.lkListLoading}</span></div>}
       {fields === null && <div class="li lk-noform"><span class="ck x">–</span><span class="grow small">{P.lkListNoForm}</span></div>}

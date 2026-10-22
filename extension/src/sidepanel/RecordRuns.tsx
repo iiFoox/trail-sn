@@ -13,12 +13,11 @@ import { send } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
 import { demoFlows, FlowsView } from './Flows';
 import { ErrorMsg } from './ErrorMsg';
-import { Fold } from './Fold';
 
 const P = t(getPrefs().lang).p;
 const isDemo = new URLSearchParams(location.search).has('demo');
 
-export function RecordRuns({ table, sysId, origin, items, labels = {}, open }: { table: string; sysId: string; origin: string; items: BatchItem[]; labels?: Record<string, string>; open?: boolean }) {
+export function RecordRuns({ table, sysId, origin, items }: { table: string; sysId: string; origin: string; items: BatchItem[] }) {
   const [res, setRes] = useState<TableAutomations>();
   const [err, setErr] = useState('');
   const [query, setQuery] = useState('');
@@ -52,7 +51,7 @@ export function RecordRuns({ table, sysId, origin, items, labels = {}, open }: {
         {isDemo ? <span class="lnk">{a.name}</span> : <a href={recordLink(origin, linkTable, a.sysId)} target="_blank" rel="noreferrer">{a.name}</a>}
         {hit(a) && <small class="fl-tag ran">{P.flRanHere}</small>}
         <div class="det">{[a.detail, a.table !== table && a.table !== linkTable ? a.table : '', a.scope ? fmt(P.flScope, { scope: a.scope }) : ''].filter(Boolean).join(' · ')}</div>
-        {a.writes.length > 0 && <small class="fl-writes">{P.flWrites} {a.writes.slice(0, 8).map((w) => <code title={w}>{labels[w] || w}</code>)}</small>}
+        {a.writes.length > 0 && <small class="fl-writes">{P.flWrites} {a.writes.slice(0, 8).map((w) => <code>{w}</code>)}</small>}
       </div>
     </div>
   );
@@ -65,7 +64,7 @@ export function RecordRuns({ table, sysId, origin, items, labels = {}, open }: {
     ] as const).map(([key, title, icon, tbl, list]) => ({ key, title, icon, denied: res.access[tbl] === 'denied', count: pick(list).length, body: pick(list).map((a) => row(a, tbl)) })),
     (() => {
       const fl = res.flows ? filterFlows(res.flows, terms, onlyRan) : undefined;
-      return { key: 'fl', title: P.rrFlows, icon: Glyph.flow, denied: false, count: (fl?.runs.length ?? 0) + (fl?.definitions.length ?? 0), body: fl ? <FlowsView res={fl} origin={origin} filtered={filtering} labels={labels} /> : null };
+      return { key: 'fl', title: P.rrFlows, icon: Glyph.flow, denied: false, count: (fl?.runs.length ?? 0) + (fl?.definitions.length ?? 0), body: fl ? <FlowsView res={fl} origin={origin} filtered={filtering} /> : null };
     })(),
     ...([
       ['cs', P.rrCs, Glyph.terminal, 'sys_script_client', res.clientScripts],
@@ -78,7 +77,8 @@ export function RecordRuns({ table, sysId, origin, items, labels = {}, open }: {
   ].filter((g) => g.count > 0 || (g.denied && !filtering));
   const total = groups.reduce((n, g) => n + g.count, 0);
   return (
-    <Fold cls="rruns" title={P.rrTitle} count={res ? total : undefined} open={open}>
+    <details class="box fold rruns" open>
+      <summary><h4>{P.rrTitle}<span>{res ? total : ''} {Glyph.chevron}</span></h4></summary>
       <div class="muted small pad">{fmt(P.rrHint, { table })}</div>
       {res && (
         <div class="rr-tools">
@@ -87,14 +87,14 @@ export function RecordRuns({ table, sysId, origin, items, labels = {}, open }: {
         </div>
       )}
       {!res && <div class="li"><span class="spin" /><span class="grow muted small">{P.rrLoading}</span></div>}
-      {groups.map((g) => (
-        <Fold nested key={`${g.key}-${filtering}`} open={filtering || g.denied || g.count <= 1} icon={g.icon} title={g.title} count={g.denied ? undefined : g.count}
-          badge={g.denied ? <i class="cnt">–</i> : undefined}>
+      {groups.map((g, gi) => (
+        <details class="grp" open={filtering} key={`${g.key}-${filtering}`}>
+          <summary><span class="ic sm">{g.icon}</span><b class="grow">{g.title}</b><i>{g.denied ? '–' : g.count}</i><span class="chev">{Glyph.chevron}</span></summary>
           {g.denied ? <div class="li muted small">{P.rrDenied}</div> : g.body}
-        </Fold>
+        </details>
       ))}
       {res && !groups.length && <div class="li muted">{filtering ? P.rrNoMatch : P.rrNone}</div>}
-    </Fold>
+    </details>
   );
 }
 

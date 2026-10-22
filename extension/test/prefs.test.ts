@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { comboFromEvent, DEFAULT_PANEL_KEY, normalize } from '../src/shared/prefs';
+import { comboFromEvent, DEFAULT_PANEL_KEY, DEFAULT_PREFS, normalize } from '../src/shared/prefs';
 
 function keyEvent(code: string, mods: { ctrlKey?: boolean; altKey?: boolean; shiftKey?: boolean; metaKey?: boolean } = {}): KeyboardEvent {
   return {
@@ -38,5 +38,19 @@ describe('preferências e atalho do painel', () => {
     expect(comboFromEvent(keyEvent('KeyP', { shiftKey: true }))).toBeNull();
     expect(comboFromEvent(keyEvent('F2'))).toBeNull();
     expect(comboFromEvent(keyEvent('AltLeft', { altKey: true }))).toBeNull();
+  });
+
+  it('Modo avançado: desligado por padrão e só liga com true explícito', () => {
+    expect(normalize(undefined).advanced).toBe(false);
+    expect(normalize({}).advanced).toBe(false);
+    expect(DEFAULT_PREFS.advanced).toBe(false);
+    expect(normalize({ advanced: true }).advanced).toBe(true);
+    expect(normalize({ advanced: false }).advanced).toBe(false);
+    // Valor estranho gravado por engano não liga as ferramentas.
+    expect(normalize({ advanced: 'true' as unknown as boolean }).advanced).toBe(false);
+    // Ligar o modo avançado não mexe no resto.
+    const p = normalize({ advanced: true, theme: 'light', panelKey: '' });
+    expect(p.theme).toBe('light');
+    expect(p.panelKey).toBe('');
   });
 });
