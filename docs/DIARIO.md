@@ -15,7 +15,8 @@ Convenções:
 - **Comportamento:** a política continua somente em `/privacidade/`; nenhum texto longo foi incorporado à página principal. O rodapé de `site/b3` ganhou o link “Privacidade”/“Privacy”, que abre a rota em uma nova aba com `target="_blank"` e `rel="noopener"`.
 - **Cobertura:** `_site-demo.mjs` agora confirma a tradução PT/EN do link, a abertura em outra aba com isolamento e a ausência do conteúdo da política dentro do `main` da página principal.
 - **Validação:** `npm run typecheck`, `node --check site/b3/i18n.js`, `_site-demo.mjs` e as 12 suítes de `npm run e2e` passaram. O teste visual manteve zero overflow em 1280, 390 e 360 px. `npm test` e `npm run build` padrão continuam bloqueados pelo esbuild ao tentar ler acima do workspace; o build do core passou antes do bloqueio da extensão.
-- **Em aberto:** publicar o commit e confirmar o link no site em produção. O envio às lojas continua exclusivo do dono.
+- **Produção:** commit `1639ef2` enviado ao `origin/master` por fast-forward. Em `trail-sn.vercel.app/b3/?v=1639ef2`, confirmei o link “Privacidade” com destino `/privacidade/`, `target="_blank"` e `rel="noopener"`; o texto longo não aparece no `main` e a página continua sem overflow em 390 px.
+- **Em aberto:** o envio às lojas continua exclusivo do dono.
 
 ---
 
