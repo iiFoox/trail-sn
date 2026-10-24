@@ -18,7 +18,7 @@ import { fieldRules } from './fieldDeps';
 import { fieldStates } from './fieldState';
 import { SharedClient } from './sharedClient';
 import type { AccessState, Row } from './types';
-import { conditionFields, humanQuery } from './util';
+import { conditionFields, humanQuery, safeValue } from './util';
 import { resolveDisplay } from './display';
 
 // ---------------------------------------------------------------- tipos
@@ -424,7 +424,8 @@ export async function compareInstances(
       if (!lonely.length || !readable(S[to].sc.access[art])) continue;
       const nm = (e: Entity) => { const r = from === 'a' ? e.rowA : e.rowB; const n = from === 'a' ? e.nomA : e.nomB; return r ? nameOf(art, r) : n?.name ?? ''; };
       const onOf = (e: Entity) => { const r = from === 'a' ? e.rowA : e.rowB; const n = from === 'a' ? e.nomA : e.nomB; return (spec.on && r?.[spec.on]) || n?.on || ''; };
-      const names = [...new Set(lonely.map(nm).filter((x) => x && !x.includes('^')))];
+      // A vírgula pode ficar (a comparação é por igualdade, sem lista IN); ^, quebra de linha e "javascript:" não.
+      const names = [...new Set(lonely.map(nm).filter((x) => x && safeValue(x.replace(/,/g, ''))))];
       if (!names.length) continue;
       let query: string;
       if (art === 'sys_dictionary_override') query = `name${inT}^element=${field}`;

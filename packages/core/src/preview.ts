@@ -9,7 +9,7 @@
 import type { RestClient } from './client/RestClient';
 import { writtenFields } from './conflicts';
 import { evalExpr, scriptVerdict, type Env } from './scriptEval';
-import { conditionFields, decodeFlowValues, evalCondition, isDynamicFlowValue, parseFieldValues, sameVal } from './util';
+import { conditionFields, decodeFlowValues, evalCondition, isDynamicFlowValue, parseFieldValues, safeValue, sameVal } from './util';
 import type { Row } from './types';
 import { resolveDisplay } from './display';
 
@@ -141,7 +141,9 @@ export async function previewChange(client: RestClient, target: { table: string;
     const sets = lkSet.filter((x) => x.dl_definition === id);
     const mt = sets[0]?.['dl_definition.matcher_table'];
     const match = lkMatch.filter((x) => x.dl_definition === id);
-    if (!mt || !sets.length || !match.length || match.some((m) => !((m.source_table_field ?? '') in rec))) return { writes: sets.map((x) => ({ field: x.source_table_field ?? '' })), sure: false };
+    // Valor do registro (ou o do "e se?") com ^, vírgula ou "javascript:" mudaria ou executaria o filtro: não consulta.
+    const unsafe = match.some((m) => !/^[a-z0-9_]+$/.test(m.matcher_table_field || m.source_table_field || '') || (rec[m.source_table_field ?? ''] && !safeValue(rec[m.source_table_field ?? ''])));
+    if (!mt || !/^[a-z0-9_]+$/.test(mt) || unsafe || !sets.length || !match.length || match.some((m) => !((m.source_table_field ?? '') in rec))) return { writes: sets.map((x) => ({ field: x.source_table_field ?? '' })), sure: false };
     const query = ['active=true', ...match.map((m) => `${m.matcher_table_field || m.source_table_field}=${rec[m.source_table_field ?? ''] ?? ''}`)].join('^');
     const row = (await q(mt, query, sets.map((x) => x.matcher_table_field || x.source_table_field || ''), 1))[0];
     if (!row) return { writes: [], sure: true };

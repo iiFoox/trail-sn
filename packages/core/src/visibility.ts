@@ -687,6 +687,8 @@ const USER_FIELDS = ['sys_id', 'user_name', 'name', 'active', 'sys_domain', 'com
 export function userSearchQuery(text: string): string {
   const x = text.trim().replace(/[\^\n\r]/g, ' ').replace(/\s+/g, ' ');
   if (isSysId(x)) return `sys_id=${x}`;
+  // "javascript:" no valor faz a instância executar o texto no servidor: nunca sai.
+  if (/javascript:/i.test(x)) return 'sys_id=-1';
   return `active=true^user_name=${x}^ORnameSTARTSWITH${x}^ORfirst_nameSTARTSWITH${x}^ORlast_nameSTARTSWITH${x}`;
 }
 
@@ -696,7 +698,8 @@ export function userSearchQuery(text: string): string {
  */
 export async function findUsers(client: RestClient, text: string, opts: { timeoutMs?: number; limit?: number } = {}): Promise<UserSearch> {
   const t = text.trim();
-  if (t.length < 2 && !isSysId(t)) return { users: [], access: 'empty' };
+  // A partir de 3 letras: cada busca percorre a sys_user (centenas de milhares de pessoas numa empresa grande).
+  if ((t.length < 3 && !isSysId(t)) || /javascript:/i.test(t)) return { users: [], access: 'empty' };
   const sc = shared(client, opts.timeoutMs);
   const r = await sc.query({ table: 'sys_user', query: `${userSearchQuery(t)}^ORDERBYname`, fields: USER_FIELDS, limit: opts.limit ?? 8 });
   const users = r.rows.filter((u) => u.sys_id).map((u) => ({ sysId: u.sys_id!, ...(u.user_name ? { userName: u.user_name } : {}), ...(u.name ? { name: u.name } : {}) }));

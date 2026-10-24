@@ -133,7 +133,7 @@ export async function recordTimeline(client: RestClient, target: Omit<Target, 'f
     q('syslog_transaction', `sys_created_on>=${w.from}^sys_created_on<=${w.to}^ORDERBYsys_created_on`, ['sys_created_on', 'type', 'url', 'sys_created_by'], 200)))).flat();
   const retentionMs = (opts.retentionDays ?? 56) * 864e5;
   const uiIds = [...new Set(tx.filter((t) => (t.url ?? '').includes(sysId)).map((t) => uiActionRef(t.url) ?? '').filter(Boolean))];
-  const uiRows = uiIds.length ? await q('sys_ui_action', uiActionQuery(uiIds, [target.table]), ['sys_id', 'name', 'action_name'], 30) : [];
+  const uiRows = uiActionQuery(uiIds, [target.table]) ? await q('sys_ui_action', uiActionQuery(uiIds, [target.table]), ['sys_id', 'name', 'action_name'], 30) : [];
 
   // ---------- classificação de cada gravação ----------
   // Cada transação explica uma gravação só: a mais antiga do segundo fica com o formulário/API, as seguintes são encadeadas.

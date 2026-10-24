@@ -191,23 +191,58 @@ async function languageFor(origin: string, tabId?: number, explicit?: string): P
 async function rememberToken(origin: string, token: string | undefined): Promise<void> {
   if (token) await session.set({ [storageKey.token(origin)]: token });
 }
-async function tokenProvider(origin: string): Promise<string | null> {
-  // Caminho rápido: token repassado pelo page/. Fallback: HTML da instância (confirmado na PDI).
-  const o = await session.get(storageKey.token(origin));
-  const fromPage = o[storageKey.token(origin)] as string | undefined;
-  if (fromPage) {
-    await session.remove(storageKey.token(origin)); // usa uma vez; se der 401, o próximo pedido cai no HTML
-    return fromPage;
+/**
+ * Token buscado no HTML da instância, por origem. Vale até a instância recusar (401): antes, cada ação do painel
+ * baixava a página inteira da interface, fora do limite de chamadas. Pedidos juntos esperam a mesma busca.
+ */
+const htmlTokens = new Map<string, { at: number; p: Promise<string | null> }>();
+const HTML_TOKEN_TTL_MS = 10 * 60 * 1000;
+async function tokenProvider(origin: string, refresh = false): Promise<string | null> {
+  // Caminho rápido: token repassado pelo page/ (renovado a cada página aberta). Fallback: HTML da instância.
+  const key = storageKey.token(origin);
+  if (refresh) await session.remove(key); // a instância recusou: o próximo vem do HTML
+  else {
+    const fromPage = (await session.get(key))[key] as string | undefined;
+    if (fromPage) return fromPage;
   }
-  const fromHtml = await fetchTokenFromHtml(origin).catch(() => null);
-  return fromHtml;
+  const hit = htmlTokens.get(origin);
+  // Renovação: reaproveita só uma busca que acabou de começar (várias consultas recebendo 401 juntas).
+  if (hit && Date.now() - hit.at < (refresh ? 5000 : HTML_TOKEN_TTL_MS)) {
+    const t = await hit.p;
+    if (t || refresh) return t;
+  }
+  const p = fetchTokenFromHtml(origin).catch(() => null);
+  htmlTokens.set(origin, { at: Date.now(), p });
+  return p;
 }
 function makeClient(origin: string): FetchRestClient {
   const tzKey = storageKey.timeZone(origin);
-  return new FetchRestClient({ baseUrl: origin, getToken: () => tokenProvider(origin),
+  return new FetchRestClient({ baseUrl: origin, getToken: (refresh) => tokenProvider(origin, refresh),
     getTimeZone: () => session.get(tzKey).then((o) => o[tzKey] as string | undefined, () => undefined),
     // ui/meta das tabelas (o que o usuário pode filtrar), guardado enquanto o navegador estiver aberto.
     store: { get: (k) => session.get(k).then((o) => o[k]), set: (k, v) => session.set({ [k]: v }) } });
+}
+
+/**
+ * Cliente de uma rodada (registro inteiro, lote): a mesma consulta pedida por várias investigações (auditoria do
+ * registro, transações e eventos das mesmas janelas, hierarquia) vai à instância uma vez só. Prazo estourado ou
+ * resposta desconhecida não ficam guardados.
+ */
+function roundClient(origin: string): FetchRestClient {
+  const c = makeClient(origin);
+  const memo = new Map<string, ReturnType<FetchRestClient['query']>>();
+  const query = c.query.bind(c);
+  c.query = (req) => {
+    const key = `${req.table}|${req.query}|${req.fields.join(',')}|${req.limit}`;
+    let p = memo.get(key);
+    if (!p) {
+      p = query(req);
+      memo.set(key, p);
+      void p.then((r) => { if (r.access === 'timeout' || r.access === 'unknown') memo.delete(key); }, () => memo.delete(key));
+    }
+    return p;
+  };
+  return c;
 }
 
 // ---------- cache de metadados (10 min, por instância+tabela) ----------
@@ -549,7 +584,7 @@ async function runBatch(tabId: number, origin: string, table: string, field: str
   const items: BatchItem[] = sysIds.map((sysId) => ({ sysId, display: sysId, status: 'pending' }));
   const save = async (status: 'running' | 'done') => setTab({ ...(await getTab(tabId)), tabId, status: 'idle', result: undefined, error: undefined, batch: { table, field, items: [...items], status, startedAt: new Date(started).toISOString(), ...(status === 'done' ? { ms: Date.now() - started } : {}) } });
   await save('running');
-  const client = makeClient(origin);
+  const client = roundClient(origin);
   const retention = await retentionFor(origin, client);
   let next = 0;
   let last = 0;
@@ -564,7 +599,8 @@ async function runBatch(tabId: number, origin: string, table: string, field: str
       if (Date.now() - last > 700) { last = Date.now(); await save('running'); }
     }
   };
-  await Promise.all([worker(), worker(), worker()]);
+  // Duas por vez: a instância atende no máximo 2 consultas do Trail ao mesmo tempo.
+  await Promise.all([worker(), worker()]);
   await save('done');
 }
 
@@ -572,7 +608,7 @@ async function runBatch(tabId: number, origin: string, table: string, field: str
 async function runRecord(tabId: number, origin: string, table: string, record: string, language: string, token?: string): Promise<void> {
   await rememberToken(origin, token);
   const started = Date.now();
-  const client = makeClient(origin);
+  const client = roundClient(origin);
   const base = { table, field: '*', kind: 'fields' as const, startedAt: new Date(started).toISOString() };
   const fail = async (error: string) => setTab({ ...(await getTab(tabId)), tabId, status: 'idle', result: undefined, batch: { ...base, items: [], status: 'done', error } });
   await setTab({ ...(await getTab(tabId)), tabId, status: 'idle', result: undefined, error: undefined, batch: { ...base, items: [], status: 'running' } });
@@ -602,7 +638,8 @@ async function runRecord(tabId: number, origin: string, table: string, record: s
         if (Date.now() - last > 700) { last = Date.now(); await save('running'); }
       }
     };
-    await Promise.all([worker(), worker(), worker()]);
+    // Duas por vez: a instância atende no máximo 2 consultas do Trail ao mesmo tempo.
+    await Promise.all([worker(), worker()]);
     await save('done');
   } catch (e) { await fail((e as Error).message); }
 }
@@ -640,9 +677,46 @@ async function requestTab(msg: { tabId?: number }, sender: chrome.runtime.Messag
   return sender.tab?.id ?? (await activeTabId());
 }
 
+/**
+ * Confere o que vira parte de uma consulta antes de chegar aos motores: tabela e campo só com minúsculas, números e _;
+ * sys_id com 32 hexadecimais; número sem ^ nem vírgula (um "INC001^NQ" digitado ou publicado por um script da página
+ * tiraria o filtro da consulta); instância como origem https. O content script só fala da própria instância.
+ */
+const NAME_RE = /^[a-z0-9_]{1,80}$/;
+const SYSID_RE = /^[0-9a-f]{32}$/;
+const NUMBER_RE = /^[A-Za-z0-9_.-]{1,40}$/;
+function badInput(msg: Message, sender: chrome.runtime.MessageSender): string | undefined {
+  const m = msg as unknown as Record<string, unknown>;
+  const origins = [m.origin, (m.ctx as { origin?: unknown } | undefined)?.origin, m.other].filter((o) => o !== undefined);
+  for (const o of origins) {
+    try {
+      const u = new URL(String(o));
+      const local = u.protocol === 'http:' && /^(localhost|127\.0\.0\.1)$/.test(u.hostname);
+      if ((u.protocol !== 'https:' && !local) || u.origin !== o) return 'origem';
+    } catch { return 'origem'; }
+  }
+  if (sender.tab && sender.url && msg.type === 'context') {
+    try { if (new URL(sender.url).origin !== msg.ctx.origin) return 'origem'; } catch { return 'origem'; }
+  }
+  // O contexto da página não é recusado (formulário novo tem sys_id -1): o que não passar é descartado no 'context'.
+  const objs = [m, m.target as Record<string, unknown> | undefined].filter((x): x is Record<string, unknown> => !!x && typeof x === 'object');
+  for (const o of objs) {
+    if (o.table !== undefined && o.table !== '' && !NAME_RE.test(String(o.table))) return 'tabela';
+    if (o.field !== undefined && o.field !== '' && o.field !== '*' && !NAME_RE.test(String(o.field))) return 'campo';
+    if (o.sysId !== undefined && o.sysId !== '' && !SYSID_RE.test(String(o.sysId))) return 'sys_id';
+    if (o.number !== undefined && o.number !== '' && !NUMBER_RE.test(String(o.number))) return 'número';
+  }
+  if (m.record !== undefined && !SYSID_RE.test(String(m.record)) && !NUMBER_RE.test(String(m.record))) return 'registro';
+  if (Array.isArray(m.sysIds) && !m.sysIds.every((s) => SYSID_RE.test(String(s)))) return 'sys_id';
+  if (Array.isArray(m.fields) && !m.fields.every((f) => NAME_RE.test(String((f as { field?: unknown })?.field ?? f)))) return 'campo';
+  return undefined;
+}
+
 chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
   (async () => {
     const tabId = sender.tab?.id;
+    const bad = badInput(msg, sender);
+    if (bad) throw new Error(`Pedido recusado: ${bad} inválido.`);
     switch (msg.type) {
       case 'context': {
         if (tabId === undefined) return;
@@ -652,14 +726,15 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
         // O número do registro só vem do quadro com o formulário; o quadro de cima (só URL) não apaga o que já se sabe.
         const display = msg.ctx.display ?? (prev.ctx?.sysId && prev.ctx.sysId === msg.ctx.sysId ? prev.ctx.display : undefined);
         const safeCtx: PageContext = { ...msg.ctx, token: undefined, language, ...(display ? { display } : {}) }; // o token não fica no estado da aba
+        if (safeCtx.table && !NAME_RE.test(safeCtx.table)) safeCtx.table = undefined;
+        if (safeCtx.sysId && !SYSID_RE.test(safeCtx.sysId)) safeCtx.sysId = undefined;
         // O painel acompanha o registro aberto: ao trocar de registro (e com nada rodando), o resultado do anterior
-        // sai de cena. Se a pessoa estava vendo o registro inteiro, ele é refeito para o registro novo.
+        // sai de cena. O registro inteiro não é refeito sozinho: são ~25 investigações, e quem vai clicando de registro
+        // em registro na lista ocuparia a instância por minutos sem ter pedido. A pessoa pede de novo no painel.
         const moved = !!safeCtx.sysId && !!prev.ctx?.sysId && (safeCtx.sysId !== prev.ctx.sysId || safeCtx.table !== prev.ctx.table);
         const busy = prev.status === 'running' || prev.batch?.status === 'running';
         if (moved && !busy && (prev.result || prev.error || prev.batch)) {
-          const wasRecord = prev.batch?.kind === 'fields' && !prev.batch.error;
           await setTab({ tabId, ctx: safeCtx, status: 'idle', ...(prev.access ? { access: prev.access } : {}) });
-          if (wasRecord && safeCtx.table) void runRecord(tabId, safeCtx.origin, safeCtx.table, safeCtx.sysId!, await languageFor(safeCtx.origin, tabId, safeCtx.language), msg.ctx.token);
         } else await setTab({ ...prev, tabId, ctx: safeCtx });
         if (msg.ctx.language) await session.set({ [storageKey.language(msg.ctx.origin)]: normalizeInstanceLanguage(msg.ctx.language) });
         if (msg.ctx.timeZone) await session.set({ [storageKey.timeZone(msg.ctx.origin)]: msg.ctx.timeZone });

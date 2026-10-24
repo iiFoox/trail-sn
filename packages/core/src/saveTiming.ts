@@ -26,7 +26,7 @@ import { evalExpr, type Env } from './scriptEval';
 import { shared, type SharedClient } from './sharedClient';
 import type { AccessState, Row } from './types';
 import type { QueryRequest, QueryResult } from './client/RestClient';
-import { evalCondition, isFormSubmitFor, isRecordWrite, isWorkspaceAction, mergeWindows, shift, toMs, withTimeout } from './util';
+import { evalCondition, inList, isFormSubmitFor, isRecordWrite, isWorkspaceAction, mergeWindows, shift, toMs, validDate, withTimeout } from './util';
 
 // ---------------------------------------------------------------- campos de tempo
 
@@ -172,7 +172,7 @@ function quick(sc: SharedClient, req: QueryRequest, ms: number): Promise<QueryRe
  * para duas.
  */
 export function windowsQuery(instants: string[], before: number, after: number, extra = ''): string {
-  const ws = mergeWindows(instants.filter(Boolean).map((t) => ({ from: shift(t, -before), to: shift(t, after) })));
+  const ws = mergeWindows(instants.filter(validDate).map((t) => ({ from: shift(t, -before), to: shift(t, after) })));
   return ws.map((w) => `${extra ? `${extra}^` : ''}sys_created_on>=${w.from}^sys_created_on<=${w.to}`).join('^NQ');
 }
 
@@ -286,6 +286,8 @@ function baselineScope(via: SaveTxVia, url: string, tables: string[]): { query: 
   if (via === 'form') return { query: `urlLIKE/${table}.do?^urlLIKEsys_uniqueValue=`, keep: (r) => (r.url ?? '').startsWith(`/${table}.do?`) && /sys_uniqueValue=[0-9a-f]{32}/.test(r.url ?? ''), scope: 'table' };
   if (via === 'api') return { query: `urlLIKE/table/${table}/`, keep: (r) => new RegExp(`/api/now/(?:v\\d+/)?table/${table}/[0-9a-f]{32}`).test(r.url ?? ''), scope: 'table' };
   if (via === 'workspace') return { query: 'urlLIKE/api/now/ui/ui_action/', keep: (r) => isWorkspaceAction(r.url), scope: 'any_table' };
+  // Nome de job com ^ derrubaria a janela de horário da consulta; "javascript:" seria executado no servidor.
+  if ((via === 'job' || via === 'async') && (/[\^\r\n]/.test(url) || /javascript:/i.test(url))) return undefined;
   if (via === 'job' || via === 'async') return { query: `url=${url}`, keep: (r) => r.url === url, scope: 'url' };
   return undefined;
 }
@@ -371,7 +373,7 @@ export async function saveTiming(
   const [ranCond, asyncTx, logs, events, flows, bRows, metric] = await Promise.all([
     ranFromConditions(),
     Promise.resolve(txRes.rows.filter((t) => (t.url ?? '').startsWith('JOB: ASYNC: ') && (t.sys_created_on ?? '') >= start)),
-    rulesP().then((brs) => brs.length ? q('syslog', `sys_created_on>=${shift(start, -1)}^sys_created_on<=${shift(end, 1)}^sourceIN${[...new Set(brs.map((b) => b.name ?? '').filter((n) => n && !/[,^]/.test(n)))].slice(0, 100).join(',')}`, ['source', 'sys_created_on'], 50) : []),
+    rulesP().then((brs) => { const names = inList([...new Set(brs.map((b) => b.name ?? ''))].slice(0, 100)); return names ? q('syslog', `sys_created_on>=${shift(start, -1)}^sys_created_on<=${shift(end, 1)}^sourceIN${names}`, ['source', 'sys_created_on'], 50) : []; }),
     q('sysevent', `instance=${sysId}^sys_created_on>=${shift(start, -1)}^sys_created_on<=${shift(end, 1)}`, ['sys_id', 'name', 'sys_created_on'], 50),
     q('sys_flow_context', `source_record=${sysId}^sys_created_on>=${shift(start, -1)}^sys_created_on<=${shift(end, 5)}`, ['sys_id', 'name', 'sys_created_on'], 20),
     baselineRows(),

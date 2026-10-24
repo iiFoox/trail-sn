@@ -1,5 +1,6 @@
 import type { HistoryChange, HistoryEntry, HistoryResult } from './client/RestClient';
 import type { Row } from './types';
+import { safeValue } from './util';
 
 type Quiet = (table: string, query: string, fields: string[], limit?: number) => Promise<Row[]>;
 
@@ -36,11 +37,11 @@ export async function historyToAudit(h: HistoryResult, tables: string[], quiet: 
   }
   const [choices, users, refRows] = await Promise.all([
     fields.length && !h.choices ? quiet('sys_choice', `nameIN${tables.join(',')}^elementIN${fields.join(',')}^inactive=false`, ['name', 'element', 'value', 'label'], 500) : Promise.resolve([] as Row[]),
-    userIds.length ? quiet('sys_user', `sys_idIN${userIds.join(',')}`, ['sys_id', 'user_name'], 50) : Promise.resolve([] as Row[]),
+    userIds.some((u) => /^[0-9a-f]{32}$/.test(u)) ? quiet('sys_user', `sys_idIN${userIds.filter((u) => /^[0-9a-f]{32}$/.test(u)).join(',')}`, ['sys_id', 'user_name'], 50) : Promise.resolve([] as Row[]),
     Promise.all(Object.entries(refNames).map(async ([table, names]) => {
       // Pelo campo de exibição do ui/meta; sem ui/meta (cliente de teste), tenta os mais comuns.
       // Nome com vírgula ou ^ mudaria o filtro (a vírgula separa a lista): fica de fora.
-      const safe = names.filter((n) => !/[,^\r\n]/.test(n));
+      const safe = names.filter(safeValue);
       if (!safe.length) return { table, rows: [] as { sys_id: string; name: string }[] };
       for (const field of refShown[table] ? [refShown[table]!] : ['name', 'number', 'display_name']) {
         const rows = await quiet(table, `${field}IN${safe.join(',')}`, ['sys_id', field], 60);

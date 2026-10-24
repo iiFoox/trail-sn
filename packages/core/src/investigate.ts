@@ -47,6 +47,10 @@ export async function investigate(
   cache: MetaCache = noCache,
 ): Promise<Investigation> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
+  // Tabela, campo e registro entram nas consultas: fora do padrão, nada sai (a extensão já confere; aqui é a segunda trava).
+  const badTarget = !/^[a-z0-9_]+$/.test(target.table) || !/^[a-z0-9_]+$/.test(target.field)
+    || (target.sysId ? !/^[0-9a-f]{32}$/.test(target.sysId) : !/^[A-Za-z0-9_.-]+$/.test(target.number ?? ''));
+  if (badTarget) throw new RecordNotFoundError(target);
   const started = Date.now();
   const callsBefore = client.calls;
   const access: Record<string, AccessState> = {};
@@ -71,8 +75,10 @@ export async function investigate(
   const importRowsNear = async (tables: string[], instants: string[]): Promise<Row[]> => {
     const maps = await quiet('sys_transform_map', `target_tableIN${tables.join(',')}`, ['sys_id', 'source_table'], 50);
     const sources = unique(maps.map((m) => m.source_table ?? '').filter((t) => /^[a-z0-9_]+$/.test(t))).slice(0, 10);
+    const near = windowsFilter('sys_updated_on', instants, 60, 60, `sys_target_sys_id=${sysId}`);
+    if (!near) return [];
     const rows = await Promise.all(sources.map(async (table) => (await quiet(table,
-      `${windowsFilter('sys_updated_on', instants, 60, 60, `sys_target_sys_id=${sysId}`)}^ORDERBYDESCsys_updated_on`,
+      `${near}^ORDERBYDESCsys_updated_on`,
       ['sys_id', 'sys_import_set', 'sys_import_set.number', 'sys_transform_map', 'sys_transform_map.name', 'sys_import_state', 'sys_updated_on', 'sys_updated_by'], 30))
       .map((r): Row => ({ ...r, sys_class_name: table }))));
     return rows.flat().sort((a, b) => toMs(b.sys_updated_on ?? '') - toMs(a.sys_updated_on ?? ''));
@@ -148,21 +154,26 @@ export async function investigate(
   const refTable = dict.find((d) => d.internal_type === 'reference' && d.reference)?.reference;
   // Rótulo do campo como aparece no formulário (business_service → Service): a tabela mais específica ganha.
   const fieldLabel = fieldLabels(docs, dict, meta.tables, opts.language)[target.field];
+  /** Alguma mudança sem gravação da própria pessoa, fora de rotina, na janela: aí vale procurar rotinas e importações. */
+  const unexplained = (tx: Row[]) => fieldChanges.some((c) => !tx.some((t) => t.sys_created_by === c.user && !/^JOB: /.test(t.url ?? '') && isRecordWrite(t.url, sysId) && inWindow(t, c, opts)));
   const changeUsers = unique(fieldChanges.map((c) => c.user ?? '').filter(Boolean));
+  const txP = Promise.all(merged.map((w) => q('syslog_transaction', `sys_created_on>=${w.from}^sys_created_on<=${w.to}^ORDERBYsys_created_on`, ['sys_id', 'sys_created_on', 'type', 'url', 'sys_created_by'], 200))).then((r) => r.flat());
   const [txAll, evAll, flowsAll, wfAll, labelRows, importRows, userRows, recordedAll] = await Promise.all([
-    Promise.all(merged.map((w) => q('syslog_transaction', `sys_created_on>=${w.from}^sys_created_on<=${w.to}^ORDERBYsys_created_on`, ['sys_id', 'sys_created_on', 'type', 'url', 'sys_created_by'], 200))).then((r) => r.flat()),
-    Promise.all(merged.map((w) => q('sysevent', `instance=${sysId}^processed>=${shift(w.from, -1)}^processed<=${shift(w.to, 1)}`, ['sys_id', 'name', 'processed', 'sys_created_on'], 50))).then((r) => r.flat()),
+    txP,
+    Promise.all(merged.map((w) => q('sysevent', `instance=${sysId}^sys_created_on>=${shift(w.from, -86400)}^sys_created_on<=${shift(w.to, 1)}^processed>=${shift(w.from, -1)}^processed<=${shift(w.to, 1)}`, ['sys_id', 'name', 'processed', 'sys_created_on'], 50))).then((r) => r.flat()),
     fieldChanges.length ? q('sys_flow_context', `source_record=${sysId}`, ['sys_id', 'name', 'state', 'flow', 'sys_created_on', 'sys_updated_on'], 50) : Promise.resolve([]),
     fieldChanges.length ? q('wf_context', `id=${sysId}`, ['sys_id', 'workflow_version.name', 'state', 'started', 'ended'], 50) : Promise.resolve([]),
     !values.length ? Promise.resolve([])
-      : refTable ? quiet(refTable, `sys_idIN${values.filter((v) => /^[0-9a-f]{32}$/.test(v)).join(',')}`, ['sys_id', 'name', 'number', 'user_name'], 50)
+      : refTable ? (values.some((v) => /^[0-9a-f]{32}$/.test(v)) ? quiet(refTable, `sys_idIN${values.filter((v) => /^[0-9a-f]{32}$/.test(v)).join(',')}`, ['sys_id', 'name', 'number', 'user_name'], 50) : Promise.resolve([] as Row[]))
         .then((rows) => rows.map((r) => ({ value: r.sys_id ?? '', label: r.name || r.number || r.user_name || '' })))
       : quiet('sys_choice', `nameIN${meta.tables.join(',')}^element=${target.field}^inactive=false`, ['name', 'value', 'label', 'language'], 300)
         // A tabela mais específica ganha (incident.state 2 = In Progress; task.state 2 = Work in Progress); depois o inglês.
         .then((rows) => rows.sort((a, b) => (meta.tables.indexOf(a.name ?? '') - meta.tables.indexOf(b.name ?? '')) || ((a.language === 'en' ? -1 : 0) - (b.language === 'en' ? -1 : 0)))),
     // Importação: linhas de import set que gravaram neste registro. Nunca pela tabela base sys_import_set_row: ela junta
     // todas as tabelas de staging da instância (milhões de linhas em produção) e sys_target_sys_id não tem índice.
-    fieldChanges.length ? importRowsNear(meta.tables, fieldChanges.map((c) => c.sys_created_on ?? '')) : Promise.resolve([]),
+    // Só quando alguma mudança não tem gravação de pessoa que a explique (como as rotinas, abaixo): as tabelas de
+    // staging costumam ser enormes e sem índice nos campos do filtro.
+    fieldChanges.length ? txP.then((tx) => (unexplained(tx) ? importRowsNear(meta.tables, fieldChanges.map((c) => c.sys_created_on ?? '')) : [])) : Promise.resolve([]),
     // Quem gravou: usuário só de API ou de integração interna é uma integração, não uma pessoa.
     inList(changeUsers) ? quiet('sys_user', `user_nameIN${inList(changeUsers)}`, ['sys_id', 'user_name', 'name', 'web_service_access_only', 'internal_integration_user'], 20) : Promise.resolve([]),
     meta.recorder && fieldChanges.length ? quiet(meta.recorder, `u_registro=${sysId}^sys_created_on>=${shift(fieldChanges[fieldChanges.length - 1]?.sys_created_on ?? '', -5)}^ORDERBYsys_created_on`, ['sys_created_on', 'u_campos', 'u_servidor', 'u_usuario', 'u_transacao', 'u_origem'], 200) : Promise.resolve([] as Row[]),
@@ -175,15 +186,16 @@ export async function investigate(
   const eventNames = unique(evAll.map((e) => e.name ?? '').filter(Boolean));
   const uiActionIds = unique(txAll.filter((t) => (t.url ?? '').includes(sysId)).map((t) => uiActionRef(t.url) ?? '').filter(Boolean));
   // Só transações DESTE registro contam: o mesmo usuário mexendo em outras telas na hora não explica a mudança.
-  const needsJobScan = fieldChanges.some((c) => !txAll.some((t) => t.sys_created_by === c.user && !/^JOB: /.test(t.url ?? '') && isRecordWrite(t.url, sysId) && inWindow(t, c, opts)));
+  const needsJobScan = unexplained(txAll);
 
   const isAssignmentField = target.field === 'assignment_group' || target.field === 'assigned_to';
   const flowIds = unique(flowsAll.map((f) => f.flow ?? '').filter(Boolean));
   const mapIds = unique(importRows.map((r) => r.sys_transform_map ?? '').filter(Boolean));
+  const listWindows = inList(changeUsers) ? windowsFilter('sys_created_on', fieldChanges.map((c) => c.sys_created_on ?? ''), 1800, 5, `type=list^sys_created_byIN${inList(changeUsers)}`) : '';
   const [jobsByName, scriptActions, uiActions, jobsByScript, assignmentRules, lookupSets, clientRows, uiActionSuspects, flowActionRows, transformEntries, transformScripts, policyRows, listViews] = await Promise.all([
     inList(jobNames) ? q('sysauto_script', `nameIN${inList(jobNames)}`, ['sys_id', 'name', 'script'], 50) : Promise.resolve([]),
     inList(eventNames) ? q('sysevent_script_action', `active=true^event_nameIN${inList(eventNames)}`, ['sys_id', 'name', 'event_name', 'script'], 50) : Promise.resolve([]),
-    uiActionIds.length ? q('sys_ui_action', uiActionQuery(uiActionIds, meta.tables), ['sys_id', 'name', 'script', 'table', 'action_name'], 20) : Promise.resolve([]),
+    uiActionQuery(uiActionIds, meta.tables) ? q('sys_ui_action', uiActionQuery(uiActionIds, meta.tables), ['sys_id', 'name', 'script', 'table', 'action_name'], 20) : Promise.resolve([]),
     needsJobScan ? q('sysauto_script', `scriptLIKE${target.field}^scriptLIKE${target.table}`, ['sys_id', 'name', 'script', 'run_type', 'run_start', 'run_time', 'run_as.user_name', 'active'], 50) : Promise.resolve([]),
     isAssignmentField ? q('sysrule_assignment', `active=true^tableIN${meta.tables.join(',')}`, ['sys_id', 'name', 'table', 'condition', 'group', 'user', 'order'], 50) : Promise.resolve([]),
     quiet('dl_definition_rel_set', `source_table_field=${target.field}^dl_definition.active=true^dl_definition.source_tableIN${meta.tables.join(',')}`, ['dl_definition', 'dl_definition.name', 'dl_definition.run_on_form_change', 'dl_definition.run_on_update', 'dl_definition.matcher_table', 'matcher_table_field'], 20),
@@ -215,7 +227,7 @@ export async function investigate(
     // Edição direto na lista (célula) não registra transação: a última abertura da lista da tabela pela pessoa é a pista.
     // Meia hora antes de cada mudança, em janelas separadas: um intervalo único da primeira à última mudança podia
     // cobrir meses de syslog_transaction.
-    needsJobScan && inList(changeUsers) ? quiet('syslog_transaction', `${windowsFilter('sys_created_on', fieldChanges.map((c) => c.sys_created_on ?? ''), 1800, 5, `type=list^sys_created_byIN${inList(changeUsers)}`)}^ORDERBYDESCsys_created_on`, ['sys_created_on', 'sys_created_by', 'url', 'type'], 50)
+    needsJobScan && listWindows ? quiet('syslog_transaction', `${listWindows}^ORDERBYDESCsys_created_on`, ['sys_created_on', 'sys_created_by', 'url', 'type'], 50)
       .then((rows) => rows.filter((t) => meta.tables.some((tb) => (t.url ?? '').includes(`${tb}_list.do`)))) : Promise.resolve([] as Row[]),
   ]);
 
@@ -416,7 +428,8 @@ export async function investigate(
     const cached = await cache.get(table);
     const base = cached ?? (await loadMetaBase(table));
     // Metadados incompletos (consulta de regras estourou o tempo) não vão para o cache: senão o erro se repetiria.
-    if (!cached && !base.incomplete) await cache.set(table, base);
+    // Guardar é só economia: armazenamento cheio (cota da sessão do navegador) não derruba a investigação.
+    if (!cached && !base.incomplete) await Promise.resolve(cache.set(table, base)).catch(() => undefined);
     // O que depende do campo é recalculado a partir do cache (barato, sem rede).
     const brField = base.businessRules.filter((b) => refsField(b.script, field) || refsField(b.template, field));
     const siField = base.scriptIncludes.filter((s) => refsField(s.script, field));

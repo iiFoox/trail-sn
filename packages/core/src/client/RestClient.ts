@@ -11,6 +11,8 @@ export interface QueryRequest {
    * chamadas simultâneas, a espera na fila estourava o prazo e a pista sumia sem o servidor ter demorado.
    */
   timeoutMs?: number;
+  /** Quem pediu desistiu: se a consulta ainda estiver na fila, sai dela sem ir à instância. */
+  signal?: AbortSignal;
 }
 
 export interface QueryResult {

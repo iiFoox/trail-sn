@@ -65,7 +65,8 @@ export function groupBatch(items: BatchItem[]): BatchGroup[] {
 }
 
 const csvCell = (v: string | number | undefined) => {
-  const s = String(v ?? '');
+  // Texto da instância começando com = + - @ vira fórmula no Excel: vai como texto.
+  const s = typeof v === 'string' && /^[=+\-@\t\r]/.test(v) ? `'${v}` : String(v ?? '');
   return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 

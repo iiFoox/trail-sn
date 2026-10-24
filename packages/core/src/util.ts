@@ -5,8 +5,18 @@ export function toMs(t: string): number {
   return new Date(t.replace(' ', 'T') + 'Z').getTime();
 }
 
+/**
+ * Data deslocada em segundos. Data inválida volta vazia (não lança): o filtro com valor vazio é recusado pelo cliente,
+ * em vez de derrubar a ferramenta ou sair sem janela.
+ */
 export function shift(t: string, seconds: number): string {
-  return new Date(toMs(t) + seconds * 1000).toISOString().replace('T', ' ').slice(0, 19);
+  const ms = toMs(t) + seconds * 1000;
+  return Number.isFinite(ms) ? new Date(ms).toISOString().replace('T', ' ').slice(0, 19) : '';
+}
+
+/** Data no formato da ServiceNow ("AAAA-MM-DD hh:mm:ss") e que existe no calendário. */
+export function validDate(t: string | undefined): t is string {
+  return !!t && SN_DATE.test(t) && Number.isFinite(toMs(t)) && new Date(toMs(t)).toISOString().slice(0, 19).replace('T', ' ') === t;
 }
 
 export function timeOfDay(t: string | undefined): string {
@@ -49,13 +59,16 @@ export function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<
   });
 }
 
-/** Funde janelas [from,to] que se sobrepõem, para consultar uma vez só. */
+const SN_DATE = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+
 /**
  * Filtro "campo dentro de qualquer uma destas janelas" (janelas fundidas, unidas por ^NQ), com `extra` repetido em cada
  * bloco. Mantém a consulta nos minutos que importam em vez de um intervalo único da primeira à última mudança.
+ * Só datas no formato da ServiceNow entram; sem nenhuma, volta vazio e quem chama não consulta (sem janela, a consulta
+ * varreria a tabela inteira).
  */
 export function windowsFilter(field: string, instants: string[], before: number, after: number, extra = ''): string {
-  const ws = mergeWindows(instants.filter(Boolean).map((t) => ({ from: shift(t, -before), to: shift(t, after) })));
+  const ws = mergeWindows(instants.filter(validDate).map((t) => ({ from: shift(t, -before), to: shift(t, after) })));
   return ws.map((w) => `${extra ? `${extra}^` : ''}${field}>=${w.from}^${field}<=${w.to}`).join('^NQ');
 }
 
@@ -64,7 +77,15 @@ export function windowsFilter(field: string, instants: string[], before: number,
  * um valor com eles mudaria o sentido da consulta, então fica de fora (perde-se só aquela pista).
  */
 export function inList(values: string[]): string {
-  return values.filter((v) => v && !/[,^\r\n]/.test(v)).join(',');
+  return values.filter(safeValue).join(',');
+}
+
+/**
+ * Valor livre que pode entrar num filtro: sem `,` `^` nem quebra de linha (mudariam o filtro) e sem "javascript:" (a
+ * instância executa o texto no servidor, na sessão de quem usa o Trail; quem edita um nome poderia gravar um).
+ */
+export function safeValue(v: string | undefined): v is string {
+  return !!v && !/[,^\r\n]/.test(v) && !/javascript:/i.test(v);
 }
 
 /**
@@ -72,9 +93,13 @@ export function inList(values: string[]): string {
  * só vale para cliente sem prazo próprio (testes) ou fila travada; o resultado de prazo estourado é `timeout`.
  */
 export function timedQuery(client: { query: (r: QueryRequest) => Promise<QueryResult> }, req: QueryRequest, ms: number): Promise<QueryResult> {
-  return withTimeout(client.query({ ...req, timeoutMs: ms }), ms * 5, { rows: [], status: 0, access: 'timeout' as AccessState });
+  // Desistiu de esperar na fila: a consulta sai da fila e não vai mais à instância.
+  const ctrl = new AbortController();
+  return withTimeout(client.query({ ...req, timeoutMs: ms, signal: ctrl.signal }), ms * 5, { rows: [], status: 0, access: 'timeout' as AccessState })
+    .then((r) => { if (r.access === 'timeout') ctrl.abort(); return r; });
 }
 
+/** Funde janelas [from,to] que se sobrepõem, para consultar uma vez só. */
 export function mergeWindows(windows: { from: string; to: string }[]): { from: string; to: string }[] {
   const sorted = [...windows].sort((a, b) => a.from.localeCompare(b.from));
   const out: { from: string; to: string }[] = [];

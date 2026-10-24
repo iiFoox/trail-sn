@@ -1,11 +1,12 @@
 import { classifyAccess, type HistoryResult, type QueryRequest, type QueryResult, type RestClient } from './RestClient';
 import type { Row } from '../types';
+import { validDate } from '../util';
 
 export interface FetchRestClientOptions {
   /** https://devXXXXXX.service-now.com */
   baseUrl: string;
-  /** Devolve o X-UserToken (g_ck). Chamado de novo após 401 para renovar. */
-  getToken: () => Promise<string | null>;
+  /** Devolve o X-UserToken (g_ck). Chamado de novo com `refresh` após 401, para renovar. */
+  getToken: (refresh?: boolean) => Promise<string | null>;
   /** Implementação de fetch (injetável nos testes). */
   fetchImpl?: typeof fetch;
   /** Máximo de chamadas simultâneas por instância. */
@@ -59,6 +60,7 @@ export class FetchRestClient implements RestClient {
   async query(req: QueryRequest): Promise<QueryResult> {
     // Tabela vira parte do caminho da URL: fora do padrão (minúsculas, números e _), não sai.
     if (!TABLE_NAME.test(req.table) || !req.fields.every((f) => FIELD_NAME.test(f))) return { rows: [], status: 0, access: 'unknown' };
+    if (brokenFilter(req.query)) return { rows: [], status: 0, access: 'unknown' };
     if (!this.token) this.token = await this.opts.getToken();
     const allowed = await this.filterAllowed(req);
     if (allowed !== 'ok') {
@@ -66,14 +68,15 @@ export class FetchRestClient implements RestClient {
       // formulário usa). Quem pode consultar (admin) continua lendo o dicionário, como sempre: o ui/meta descreve o
       // tipo de outro jeito (choice onde o dicionário diz integer) e o motor compara valores pelo tipo.
       const fromMeta = await this.fromUiMeta(req);
-      return fromMeta ?? { rows: [], status: 403, access: allowed };
+      return fromMeta ?? { rows: [], status: allowed === 'unknown' ? 0 : 403, access: allowed };
     }
     const known = refusals.get(this.opts.baseUrl, this.token, req);
     if (known) return known;
-    await this.acquire();
+    if (!(await this.gate.acquire(req.signal))) return { rows: [], status: 0, access: 'timeout' };
     try {
       const r = await this.doQuery(req, true);
-      if (r.access === 'denied' || r.access === 'no_filter') refusals.put(this.opts.baseUrl, this.token, req, r);
+      // 401 não fica guardado: costuma ser sessão expirando, e esconderia a fonte por 10 min depois do novo login.
+      if ((r.access === 'denied' && r.status === 403) || r.access === 'no_filter') refusals.put(this.opts.baseUrl, this.token, req, r);
       return r;
     } finally {
       this.release();
@@ -85,27 +88,44 @@ export class FetchRestClient implements RestClient {
    * Responde com as ACLs de quem está logado; no PDI, um usuário só com `itil` recebe 403 em `sys_audit` e 200 aqui.
    */
   async history(table: string, sysId: string): Promise<HistoryResult | null> {
+    if (!TABLE_NAME.test(table) || !SYS_ID.test(sysId)) return null;
+    if (!this.token) this.token = await this.opts.getToken();
+    // As opções das listas da tabela (o que o formulário usa para mostrar os rótulos), do mesmo cache das consultas.
+    // Antes da vaga: o ui/meta ocupa a sua própria.
+    const cols = await this.uiMeta(table);
+    const meta = cols ? { result: { columns: cols } } : null;
+    // O mesmo registro pedido por várias investigações (registro inteiro, lote) vai à instância uma vez só.
+    const key = `${this.opts.baseUrl.replace(/\/$/, '')}|${this.token ?? ''}|${table}|${sysId}`;
+    let entry = histCache.get(key);
+    if (!entry || Date.now() - entry.at >= HIST_TTL_MS) { entry = { at: Date.now(), p: this.fetchHistory(table, sysId) }; histCache.set(key, entry); }
+    const hist = await entry.p;
+    if (!hist) histCache.delete(key);
+    const h = parseHistory(hist);
+    if (h) {
+      const choices = parseMetaChoices(meta); if (choices) h.choices = choices;
+      const refs = parseMetaRefs(meta); if (refs) h.refs = refs;
+      const shown = parseMetaRefDisplay(meta); if (shown) h.refDisplay = shown;
+      const tz = await this.opts.getTimeZone?.().catch(() => undefined); if (tz) h.timeZone = tz;
+    }
+    return h;
+  }
+
+  private async fetchHistory(table: string, sysId: string): Promise<unknown> {
     await this.acquire();
+    // Com prazo: um histórico que nunca chega prenderia uma das 2 vagas da instância.
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), this.timeoutMs);
     try {
-      if (!this.token) this.token = await this.opts.getToken();
       const headers: Record<string, string> = { Accept: 'application/json' };
       if (this.token) headers['X-UserToken'] = this.token;
-      const base = this.opts.baseUrl.replace(/\/$/, '');
-      const get = (url: string) => { this.calls++; return this.fetchImpl(url, { method: 'GET', headers, credentials: 'include' }).then((r) => (r.status === 200 ? r.json() : null), () => null).catch(() => null); };
-      // Junto com o histórico, as opções das listas da tabela (o que o formulário usa para mostrar os rótulos).
-      const [hist, meta] = await Promise.all([
-        get(`${base}/angular.do?${new URLSearchParams({ sysparm_type: 'list_history', table, sys_id: sysId })}`),
-        get(`${base}/api/now/ui/meta/${encodeURIComponent(table)}`),
-      ]);
-      const h = parseHistory(hist);
-      if (h) {
-        const choices = parseMetaChoices(meta); if (choices) h.choices = choices;
-        const refs = parseMetaRefs(meta); if (refs) h.refs = refs;
-        const shown = parseMetaRefDisplay(meta); if (shown) h.refDisplay = shown;
-        const tz = await this.opts.getTimeZone?.().catch(() => undefined); if (tz) h.timeZone = tz;
-      }
-      return h;
+      this.calls++;
+      const url = `${this.opts.baseUrl.replace(/\/$/, '')}/angular.do?${new URLSearchParams({ sysparm_type: 'list_history', table, sys_id: sysId })}`;
+      const r = await this.fetchImpl(url, { method: 'GET', headers, credentials: 'include', redirect: 'manual', signal: ctrl.signal });
+      return r.status === 200 ? await r.json() : null;
+    } catch {
+      return null;
     } finally {
+      clearTimeout(timer);
       this.release();
     }
   }
@@ -127,36 +147,35 @@ export class FetchRestClient implements RestClient {
     const headers: Record<string, string> = { Accept: 'application/json' };
     if (this.token) headers['X-UserToken'] = this.token;
 
+    // O prazo vale até o fim da leitura do corpo: uma resposta grande e lenta também prenderia a vaga.
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), req.timeoutMs ?? this.timeoutMs);
     let res: Response;
+    let text: string;
     try {
       this.calls++;
-      res = await this.fetchImpl(this.buildUrl(req), { method: 'GET', headers, credentials: 'include', signal: ctrl.signal });
+      // Sem seguir redirecionamento: o X-UserToken não pode ir junto para outro endereço (SSO, proxy).
+      res = await this.fetchImpl(this.buildUrl(req), { method: 'GET', headers, credentials: 'include', redirect: 'manual', signal: ctrl.signal });
+      // Prazo estourado lendo o corpo é 'timeout'; outro erro de leitura vira corpo vazio.
+      text = await res.text().catch((e: Error) => { if (e?.name === 'AbortError') throw e; return ''; });
     } catch (e) {
-      clearTimeout(timer);
       if ((e as Error).name === 'AbortError') return { rows: [], status: 0, access: 'timeout' };
       throw e;
+    } finally {
+      clearTimeout(timer);
     }
-    clearTimeout(timer);
 
     if (res.status === 401 && mayRetryAuth) {
       // Token ausente ou expirado: renova e repete uma vez.
-      this.token = await this.opts.getToken();
+      this.token = await this.opts.getToken(true);
       if (this.token) return this.doQuery(req, false, attempt);
     }
-    // Repete só o que costuma passar: limite de taxa e gateway/serviço indisponível. 500 da Table API é erro do pedido
-    // (no PDI, sys_choice para escopo.user dá 500 sempre): repetir só gasta tempo.
-    if ((res.status === 429 || res.status === 502 || res.status === 503 || res.status === 504) && attempt < 2) {
-      await sleep(300 * 2 ** attempt);
-      return this.doQuery(req, mayRetryAuth, attempt + 1);
-    }
-
-    const text = await res.text().catch(() => '');
-    // 500 que não é JSON vem do balanceador da ServiceNow ("snow_adc"), não da Table API: no PDI aparece ao acaso,
-    // em qualquer página. Uma nova tentativa. Erro de verdade da API vem em JSON e não se repete.
-    if (res.status === 500 && !text.trimStart().startsWith('{') && attempt < 1) {
-      await sleep(400);
+    // Uma repetição só, e só do que costuma passar: limite de taxa, gateway/serviço indisponível e o 500 em HTML do
+    // balanceador da ServiceNow ("snow_adc", aparece ao acaso no PDI). 500 em JSON é erro do pedido (no PDI, sys_choice
+    // para escopo.user dá 500 sempre): repetir só gasta tempo. Instância sobrecarregada não recebe rajada de repetições.
+    const html500 = res.status === 500 && !text.trimStart().startsWith('{');
+    if ((res.status === 429 || res.status === 502 || res.status === 503 || res.status === 504 || html500) && attempt < 1) {
+      await sleep(retryDelay(res));
       return this.doQuery(req, mayRetryAuth, attempt + 1);
     }
     let rows: Row[] = [];
@@ -181,17 +200,25 @@ export class FetchRestClient implements RestClient {
    * - Nenhuma coluna: o usuário não lê nada ali → 'denied' (é o que leva ao histórico do formulário quando falta sys_audit).
    * - Coluna do filtro ausente ou sem canmatch → 'no_filter'. Ordenação só exige que a coluna exista.
    * - Coluna com ponto (flow.active): confere cada tabela do caminho.
-   * - ui/meta indisponível: segue como antes.
+   * - ui/meta que não respondeu (prazo, 5xx, rede, página de login): a consulta não sai ('unknown'). Sem a conferência
+   *   ela poderia deixar mensagens vermelhas justo quando a instância está lenta.
+   * - ui/meta que respondeu sem colunas legíveis (formato desconhecido, 4xx): segue sem a conferência, como na 1.4.4.
    */
-  private async filterAllowed(req: QueryRequest): Promise<'ok' | 'denied' | 'no_filter'> {
-    if (!req.query) return 'ok';
+  private async filterAllowed(req: QueryRequest): Promise<'ok' | 'denied' | 'no_filter' | 'unknown'> {
+    if (!req.query) {
+      // Sem filtro não há mensagem vermelha, mas tabela que o usuário não lê vira erro no log da instância a cada sondagem.
+      const all = await this.uiMeta(req.table);
+      return all && !Object.keys(all).length ? 'denied' : 'ok';
+    }
     const cols = await this.uiMeta(req.table);
+    if (cols === undefined) return 'unknown';
     if (!cols) return 'ok';
     if (!Object.keys(cols).length) return 'denied';
     for (const { path, order } of queryTerms(req.query)) {
       if (path === 'sys_id') continue;
       let c: Record<string, MetaColumn> | null = cols;
       const parts = path.split('.');
+      if (!path) return 'no_filter';
       for (let i = 0; i < parts.length && c; i++) {
         const col: MetaColumn | undefined = c[parts[i]!];
         if (!col) return 'no_filter';
@@ -199,16 +226,21 @@ export class FetchRestClient implements RestClient {
         if (last && !order && col.canmatch !== true) return 'no_filter';
         if (!last) {
           if (!col.reference) return 'no_filter';
-          c = await this.uiMeta(col.reference);
-          if (c && !Object.keys(c).length) return 'no_filter';
+          const next = await this.uiMeta(col.reference);
+          if (next === undefined) return 'unknown';
+          if (next && !Object.keys(next).length) return 'no_filter';
+          c = next;
         }
       }
     }
     return 'ok';
   }
 
-  /** Colunas de /api/now/ui/meta/<tabela>, guardadas por 10 min por instância e sessão. Nulo se a instância negar. */
-  private uiMeta(table: string): Promise<Record<string, MetaColumn> | null> {
+  /**
+   * Colunas de /api/now/ui/meta/<tabela>, guardadas por 10 min por instância e sessão. Nulo: respondeu, mas sem colunas
+   * (4xx, formato desconhecido). Indefinido: não respondeu (prazo, 5xx, rede, página de login), guardado por 20 s.
+   */
+  private uiMeta(table: string): Promise<Record<string, MetaColumn> | null | undefined> {
     // Consultas simultâneas à mesma tabela esperam a mesma busca em vez de cada uma pedir o ui/meta.
     const key = `${this.opts.baseUrl.replace(/\/$/, '')}|${this.token ?? ''}|${table}`;
     const running = metaInflight.get(key);
@@ -218,29 +250,51 @@ export class FetchRestClient implements RestClient {
     return p;
   }
 
-  private async loadUiMeta(table: string): Promise<Record<string, MetaColumn> | null> {
+  private async loadUiMeta(table: string, mayRetryAuth = true): Promise<Record<string, MetaColumn> | null | undefined> {
     if (!TABLE_NAME.test(table)) return null;
     const key = `${this.opts.baseUrl.replace(/\/$/, '')}|${this.token ?? ''}|${table}`;
     const hit = metaCache.get(key);
-    if (hit && Date.now() - hit.at < META_TTL_MS) return hit.columns;
-    const stored = (await this.opts.store?.get(`meta|${key}`).catch(() => undefined)) as { at: number; columns: Record<string, MetaColumn> | null } | undefined;
-    if (stored && Date.now() - stored.at < META_TTL_MS) { metaCache.set(key, stored); return stored.columns; }
+    if (hit && Date.now() < hit.until) return hit.columns;
+    const stored = (await this.opts.store?.get(`meta|${key}`).catch(() => undefined)) as { until?: number; columns?: Record<string, MetaColumn> } | undefined;
+    if (stored?.columns && typeof stored.until === 'number' && Date.now() < stored.until) {
+      metaCache.set(key, { until: stored.until, columns: stored.columns });
+      return stored.columns;
+    }
     await this.acquire();
+    // Com prazo até o fim do corpo: uma resposta que nunca chega prenderia uma das 2 vagas da instância.
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), this.timeoutMs);
+    let columns: Record<string, MetaColumn> | null | undefined;
+    let status = 0;
     try {
       this.calls++;
       const headers: Record<string, string> = { Accept: 'application/json' };
       if (this.token) headers['X-UserToken'] = this.token;
-      const res = await this.fetchImpl(`${this.opts.baseUrl.replace(/\/$/, '')}/api/now/ui/meta/${encodeURIComponent(table)}`, { method: 'GET', headers, credentials: 'include' });
-      const raw = res.status === 200 ? ((await res.json()) as { result?: { columns?: Record<string, MetaColumn> } })?.result?.columns : undefined;
-      const columns = raw && typeof raw === 'object' && !Array.isArray(raw) ? slimColumns(raw) : null;
-      const entry = { at: Date.now(), columns };
-      metaCache.set(key, entry);
-      // Só respostas boas vão para o armazenamento: uma falha passageira não fica valendo por 10 min.
-      if (columns) await this.opts.store?.set(`meta|${key}`, entry).catch(() => undefined);
-      return columns;
-    } catch { return null; } finally {
+      const res = await this.fetchImpl(`${this.opts.baseUrl.replace(/\/$/, '')}/api/now/ui/meta/${encodeURIComponent(table)}`, { method: 'GET', headers, credentials: 'include', redirect: 'manual', signal: ctrl.signal });
+      status = res.status;
+      if (status === 200) {
+        const text = await res.text();
+        let json: { result?: { columns?: Record<string, MetaColumn> } } | undefined;
+        try { json = JSON.parse(text) as typeof json; } catch { json = undefined; }
+        const raw = json?.result?.columns;
+        // 200 que não é JSON é página de login do SSO ou de proxy: não respondeu.
+        columns = json === undefined ? undefined : raw && typeof raw === 'object' && !Array.isArray(raw) ? slimColumns(raw) : null;
+      } else {
+        columns = status >= 400 && status < 500 && status !== 401 && status !== 429 ? null : undefined;
+      }
+    } catch { columns = undefined; } finally {
+      clearTimeout(timer);
       this.release();
     }
+    if (status === 401 && mayRetryAuth) {
+      this.token = await this.opts.getToken(true);
+      if (this.token) return this.loadUiMeta(table, false);
+    }
+    // Resposta boa vale 10 min (e vai para o armazenamento); sem colunas, 1 min; sem resposta, 20 s.
+    const entry = { until: Date.now() + (columns ? META_TTL_MS : columns === null ? 60_000 : 20_000), columns };
+    metaCache.set(key, entry);
+    if (columns) await this.opts.store?.set(`meta|${key}`, entry).catch(() => undefined);
+    return columns;
   }
 
   /**
@@ -278,8 +332,8 @@ export class FetchRestClient implements RestClient {
     return { rows: rows.slice(0, req.limit), status: 200, access: rows.length ? 'ok' : 'empty' };
   }
 
-  private acquire(): Promise<void> {
-    return this.gate.acquire();
+  private async acquire(): Promise<void> {
+    await this.gate.acquire();
   }
 
   private release(): void {
@@ -295,10 +349,14 @@ const DEFAULT_CONCURRENCY = 2;
 const TABLE_NAME = /^[a-z0-9_]+$/;
 const FIELD_NAME = /^[a-z0-9_.]+$/;
 
-interface MetaColumn { canmatch?: boolean; label?: string; type?: string; reference?: string; mandatory?: boolean; read_only?: boolean; attributes?: string; choices?: { label?: string; value?: string }[] }
+interface MetaColumn { canmatch?: boolean; label?: string; type?: string; reference?: string; reference_display_field?: string; mandatory?: boolean; read_only?: boolean; attributes?: string; choices?: { label?: string; value?: string }[] }
 const META_TTL_MS = 10 * 60 * 1000;
-const metaCache = new Map<string, { at: number; columns: Record<string, MetaColumn> | null }>();
-const metaInflight = new Map<string, Promise<Record<string, MetaColumn> | null>>();
+const metaCache = new Map<string, { until: number; columns: Record<string, MetaColumn> | null | undefined }>();
+const metaInflight = new Map<string, Promise<Record<string, MetaColumn> | null | undefined>>();
+/** Histórico do formulário por registro, reaproveitado por 1 min (registro inteiro e lote pedem o mesmo registro). */
+const HIST_TTL_MS = 60 * 1000;
+const histCache = new Map<string, { at: number; p: Promise<unknown> }>();
+const SYS_ID = /^[0-9a-f]{32}$/;
 /** Campos que o ui/meta sabe preencher, por tabela de configuração. */
 const META_FIELDS: Record<string, string[]> = {
   sys_dictionary: ['sys_id', 'name', 'element', 'column_label', 'internal_type', 'reference', 'read_only', 'mandatory', 'active', 'attributes'],
@@ -312,9 +370,16 @@ class Gate {
   private active = 0;
   private queue: (() => void)[] = [];
   constructor(private readonly limit: number) {}
-  acquire(): Promise<void> {
-    if (this.active < this.limit) { this.active++; return Promise.resolve(); }
-    return new Promise((resolve) => this.queue.push(() => { this.active++; resolve(); }));
+  /** Falso se `signal` desistiu antes da vez: o pedido sai da fila sem ocupar vaga nem ir à instância. */
+  acquire(signal?: AbortSignal): Promise<boolean> {
+    if (signal?.aborted) return Promise.resolve(false);
+    if (this.active < this.limit) { this.active++; return Promise.resolve(true); }
+    return new Promise((resolve) => {
+      const go = () => { signal?.removeEventListener('abort', quit); this.active++; resolve(true); };
+      const quit = () => { const i = this.queue.indexOf(go); if (i >= 0) this.queue.splice(i, 1); resolve(false); };
+      this.queue.push(go);
+      signal?.addEventListener('abort', quit, { once: true });
+    });
   }
   release(): void {
     this.active--;
@@ -354,10 +419,11 @@ const refusals = {
 };
 
 /** Só o que o motor usa de cada coluna do ui/meta (guardado na sessão do navegador). */
-function slimColumns(raw: Record<string, MetaColumn & { reference_display_field?: string }>): Record<string, MetaColumn> {
+function slimColumns(raw: Record<string, MetaColumn>): Record<string, MetaColumn> {
   const out: Record<string, MetaColumn> = {};
   for (const [name, c] of Object.entries(raw)) {
-    out[name] = { canmatch: c.canmatch === true, label: c.label, type: c.type, reference: c.reference, mandatory: c.mandatory, read_only: c.read_only, attributes: c.attributes,
+    if (!c || typeof c !== 'object') continue;
+    out[name] = { canmatch: c.canmatch === true, label: c.label, type: c.type, reference: c.reference, reference_display_field: c.reference_display_field, mandatory: c.mandatory, read_only: c.read_only, attributes: c.attributes,
       ...(c.choices?.length ? { choices: c.choices.map((x) => ({ label: x.label, value: x.value })) } : {}) };
   }
   return out;
@@ -365,9 +431,24 @@ function slimColumns(raw: Record<string, MetaColumn & { reference_display_field?
 
 /** Colunas do filtro e se são só de ordenação: "a=1^ORDERBYb" → [{a}, {b, order}]. Sem /i: operador é maiúsculo. */
 function queryTerms(query: string): { path: string; order: boolean }[] {
-  return query.split(/\^(?:OR|NQ)?/).flatMap((t) => {
+  // OR e NQ no começo do termo são conectores; o OR de ORDERBY não ("^ORDERBYx" é ordenação por x).
+  return query.split(/\^(?:NQ|OR(?!DERBY))?/).flatMap((t) => {
+    if (!t || /^[A-Z]+$/.test(t)) return []; // EQ e outros marcadores sem campo
     const m = t.match(/^(ORDERBYDESC|ORDERBY)?([a-z0-9_.]+)/);
-    return m ? [{ path: m[2]!, order: !!m[1] }] : [];
+    // Termo que não começa por um campo válido (U_Campo=1, texto solto): não dá para conferir, então conta como recusado.
+    return m ? [{ path: m[2]!, order: !!m[1] }] : [{ path: '', order: false }];
+  });
+}
+
+/**
+ * Filtro quebrado: comparação, lista ou LIKE sem valor ("campo>=", "campoIN"), data inválida. Na instância, termo assim
+ * é ignorado e a consulta devolve linhas quaisquer, ou varre a tabela sem a janela de data. Nunca sai.
+ */
+export function brokenFilter(query: string): boolean {
+  return query.split('^').some((raw) => {
+    const t = raw.replace(/^(?:NQ|OR(?!DERBY))/, '');
+    const m = t.match(/^[a-z0-9_.]+(>=|<=|>|<|NOT IN|IN|NOT LIKE|LIKE|STARTSWITH|ENDSWITH|BETWEEN)(.*)$/);
+    return (!!m && m[2]!.trim() === '') || /Invalid Date|NaN/.test(t);
   });
 }
 
@@ -398,7 +479,7 @@ export function parseHistory(json: unknown): HistoryResult | null {
         field: c.field_name!, label: c.field_label, type: c.field_type, oldValue: c.old_value ?? '', newValue: c.new_value ?? '',
       })),
     }))
-    .filter((e) => e.changes.length && e.at)
+    .filter((e) => e.changes.length && validDate(e.at))
     .sort((a, b) => a.at.localeCompare(b.at));
   const fields = (j.fields ?? []).filter((f) => f.name && !f.isJournal && !f.name.startsWith('*')).map((f) => f.name!);
   return { entries, fields };
@@ -439,15 +520,29 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+/** Espera antes da repetição: o Retry-After da instância (no máximo 5 s) ou 400 ms. */
+function retryDelay(res: Response): number {
+  const s = Number(res.headers?.get?.('Retry-After'));
+  return Number.isFinite(s) && s > 0 ? Math.min(s, 5) * 1000 : 400;
+}
+
 /**
  * Obtém o g_ck a partir do HTML de uma página leve da instância.
  * Confirmado na PDI: /navpage.do devolve o mesmo token que window.g_ck da página.
  * Usado quando o page/ não forneceu token (Workspace, painel manual) ou após 401.
  */
 export async function fetchTokenFromHtml(baseUrl: string, fetchImpl: typeof fetch = fetch): Promise<string | null> {
-  const res = await fetchImpl(`${baseUrl.replace(/\/$/, '')}/navpage.do`, { credentials: 'include' });
-  if (!res.ok) return null;
-  const html = await res.text();
+  // Com prazo: a página inteira da interface pode demorar numa instância lenta.
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
+  let html: string;
+  try {
+    const res = await fetchImpl(`${baseUrl.replace(/\/$/, '')}/navpage.do`, { credentials: 'include', signal: ctrl.signal });
+    if (!res.ok) return null;
+    html = await res.text();
+  } finally {
+    clearTimeout(timer);
+  }
   const m = html.match(/g_ck\s*=\s*['"]([0-9a-f]{32,})['"]/);
   return m ? m[1] ?? null : null;
 }

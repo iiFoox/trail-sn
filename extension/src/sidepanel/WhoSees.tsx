@@ -37,7 +37,9 @@ function useUserSuggest(origin: string, text: string, skip: boolean): { list: Us
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     const q = text.trim();
-    if (skip || q.length < 2) { setList([]); setBusy(false); return undefined; }
+    // A partir de 3 letras e 600 ms depois da última tecla: cada busca percorre a sys_user (centenas de milhares de
+    // pessoas numa empresa grande).
+    if (skip || q.length < 3) { setList([]); setBusy(false); return undefined; }
     let alive = true;
     setBusy(true);
     const id = setTimeout(async () => {
@@ -46,7 +48,7 @@ function useUserSuggest(origin: string, text: string, skip: boolean): { list: Us
         if (alive) setList(out?.users ?? []);
       } catch { if (alive) setList([]); }
       if (alive) setBusy(false);
-    }, 300);
+    }, 600);
     return () => { alive = false; clearTimeout(id); };
   }, [origin, text, skip]);
   return { list, busy };

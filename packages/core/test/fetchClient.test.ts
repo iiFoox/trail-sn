@@ -32,17 +32,19 @@ describe('FetchRestClient', () => {
     const c = new FetchRestClient({ baseUrl: 'https://dev.example.com', getToken: async () => tokens[n++] ?? null, fetchImpl });
     const r = await c.query({ table: 'incident', query: '', fields: ['sys_id'], limit: 1 });
     expect(r.status).toBe(200);
-    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    // O ui/meta (sondagem de quem pode ler) também renova; a Table API vai uma vez só, já com o token novo.
+    expect(tableCalls(fetchImpl)).toBe(1);
   });
 
   it('500 não é repetido (no PDI, sys_choice dava 500 sempre para escopo.user); 503 é', async () => {
-    const f500 = vi.fn(async () => json(500, { error: { message: 'Internal' }, status: 'failure' })) as unknown as typeof fetch;
+    // ui/meta responde sem colunas (segue sem conferência); a Table API dá 500 em JSON.
+    const f500 = vi.fn(async (i: RequestInfo | URL) => (String(i).includes('/ui/meta/') ? json(200, { result: {} }) : json(500, { error: { message: 'Internal' }, status: 'failure' }))) as unknown as typeof fetch;
     const c = new FetchRestClient({ baseUrl: 'https://dev.example.com', getToken: async () => 't', fetchImpl: f500 });
     const r = await c.query({ table: 'sys_ui_policy', query: 'table=incident', fields: ['sys_id'], limit: 1 });
     expect(r).toMatchObject({ status: 500, access: 'unknown' });
     expect(tableCalls(f500)).toBe(1);
     let n = 0;
-    const f503 = vi.fn(async () => (n++ ? json(200, { result: [{ sys_id: 'x' }] }) : json(503, {}))) as unknown as typeof fetch;
+    const f503 = vi.fn(async (i: RequestInfo | URL) => (String(i).includes('/ui/meta/') ? json(200, { result: {} }) : n++ ? json(200, { result: [{ sys_id: 'x' }] }) : json(503, {}))) as unknown as typeof fetch;
     const c2 = new FetchRestClient({ baseUrl: 'https://dev.example.com', getToken: async () => 't', fetchImpl: f503 });
     expect((await c2.query({ table: 'incident', query: '', fields: ['sys_id'], limit: 1 })).status).toBe(200);
     expect(tableCalls(f503)).toBe(2);
@@ -82,7 +84,7 @@ describe('FetchRestClient protege a instância', () => {
     const urls: string[] = [];
     const fetchImpl = vi.fn(async (i: RequestInfo | URL) => { urls.push(String(i)); return json(200, { result: [] }); }) as unknown as typeof fetch;
     await new FetchRestClient({ baseUrl: 'https://nocount.example.com', getToken: async () => 't', fetchImpl }).query({ table: 'sys_audit', query: '', fields: ['sys_id'], limit: 1 });
-    expect(new URL(urls[0]!).searchParams.get('sysparm_no_count')).toBe('true');
+    expect(new URL(urls.find((u) => u.includes('/api/now/table/'))!).searchParams.get('sysparm_no_count')).toBe('true');
   });
 
   it('o limite de chamadas simultâneas vale para a instância, não para cada cliente', async () => {
@@ -109,7 +111,7 @@ describe('FetchRestClient protege a instância', () => {
   });
 
   it('"Insufficient rights to query records" (Query ACL): não repete o mesmo formato de consulta, mas tenta outros', async () => {
-    const fetchImpl = vi.fn(async (i: RequestInfo | URL) => (new URL(String(i)).searchParams.get('sysparm_query')!.startsWith('sys_created_on>=')
+    const fetchImpl = vi.fn(async (i: RequestInfo | URL) => (String(i).includes('/ui/meta/') ? json(200, { result: {} }) : new URL(String(i)).searchParams.get('sysparm_query')!.startsWith('sys_created_on>=')
       ? deny('Insufficient rights to query records', 'Field(s) present in the query do not have permission to be read')
       : json(200, { result: [{ sys_id: 'x' }] }))) as unknown as typeof fetch;
     const c = new FetchRestClient({ baseUrl: 'https://qacl.example.com', getToken: async () => 't', fetchImpl });
@@ -208,7 +210,7 @@ describe('respostas estranhas e nomes inválidos', () => {
     const c = new FetchRestClient({ baseUrl: 'https://badname.example.com', getToken: async () => 't', fetchImpl });
     for (const table of ['incident?sysparm_query=x', '../stats', 'Incident', 'u stage', '']) expect((await c.query({ table, query: '', fields: ['sys_id'], limit: 1 })).access).toBe('unknown');
     expect((await c.query({ table: 'x_2270630_pttrail__pedido', query: '', fields: ['sys_id'], limit: 1 })).access).toBe('ok');
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(tableCalls(fetchImpl)).toBe(1);
   });
 
   it('padrão: no máximo 2 chamadas ao mesmo tempo por instância (a sessão do usuário atende em fila)', async () => {

@@ -245,16 +245,20 @@ describe('Regras do campo (Quem grava + Quem depende)', () => {
     ]);
   });
 
-  it('SharedClient: segunda tentativa quando estoura o prazo; consulta igual vai uma vez só', async () => {
-    let n = 0;
-    const slow = { calls: 0, async query() { this.calls++; n++; if (n === 1) await new Promise((r) => setTimeout(r, 50)); return { rows: [{ a: '1' }], status: 200, access: 'ok' as const }; } };
-    const sc = new SharedClient(slow, { timeoutMs: 10 });
+  it('SharedClient: consulta igual vai uma vez só; prazo estourado não repete (a consulta continua no servidor)', async () => {
+    const quick = { calls: 0, async query() { this.calls++; return { rows: [{ a: '1' }], status: 200, access: 'ok' as const }; } };
+    const sc = new SharedClient(quick, { timeoutMs: 10 });
     const req = { table: 't', query: 'x=1', fields: ['a'], limit: 1 };
     const [a, b] = await Promise.all([sc.query(req), sc.query(req)]);
     expect(a.rows).toEqual([{ a: '1' }]);
     expect(b).toBe(a);
-    expect(sc.calls).toBe(2); // a primeira estourou, a segunda respondeu
+    expect(sc.calls).toBe(1);
     expect(sc.access.t).toBe('ok');
+    const stuck = { calls: 0, query() { this.calls++; return new Promise<never>(() => undefined); } };
+    const sc2 = new SharedClient(stuck, { timeoutMs: 5 });
+    expect((await sc2.query(req)).access).toBe('timeout');
+    expect(sc2.calls).toBe(1);
+    expect(sc2.access.t).toBe('timeout');
   });
 });
 
