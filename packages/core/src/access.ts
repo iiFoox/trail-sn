@@ -1,6 +1,6 @@
 import type { RestClient } from './client/RestClient';
 import type { AccessState } from './types';
-import { withTimeout } from './util';
+import { timedQuery, withTimeout } from './util';
 
 /** Fontes que o detector verifica e o que cada uma habilita. */
 export const SOURCES = [
@@ -40,11 +40,9 @@ export interface AccessReport {
  * para `slow`, separado de `denied` (401/403).
  */
 export async function detectAccess(client: RestClient, timeoutMs = 8000): Promise<AccessReport> {
-  const probe = (table: Source) => withTimeout(
-    client.query({ table, query: '', fields: ['sys_id'], limit: 1 }),
-    timeoutMs,
-    { rows: [], status: 0, access: 'timeout' as AccessState },
-  ).then((r) => [table, r.access] as const);
+  // Prazo contado quando a sondagem sai da fila; desistiu, sai da fila sem ir à instância.
+  const probe = (table: Source) => timedQuery(client, { table, query: '', fields: ['sys_id'], limit: 1 }, timeoutMs)
+    .then((r) => [table, r.access] as const);
   // Sem segunda tentativa: o navegador desiste da resposta, mas a consulta continua rodando no servidor. Repetir só
   // somava carga justamente quando a instância já estava lenta.
   const states = Object.fromEntries(await Promise.all(SOURCES.map(probe))) as Record<Source, AccessState>;

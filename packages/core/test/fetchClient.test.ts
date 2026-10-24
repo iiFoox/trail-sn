@@ -202,7 +202,8 @@ describe('respostas estranhas e nomes inválidos', () => {
   it('200 que não é JSON (página de login do SSO) não vira "vazio", que o motor leria como "nada aconteceu"', async () => {
     const fetchImpl = vi.fn(async () => new Response('<html><body>Sign in with your account</body></html>', { status: 200, headers: { 'content-type': 'text/html' } })) as unknown as typeof fetch;
     const r = await new FetchRestClient({ baseUrl: 'https://sso.example.com', getToken: async () => 't', fetchImpl }).query({ table: 'sys_audit', query: 'documentkey=a', fields: ['sys_id'], limit: 1 });
-    expect(r.access).toBe('unknown');
+    // Nem "vazio" nem "ok": a fonte fica como não respondida (o ui/meta também veio como página de login).
+    expect(['unknown', 'timeout']).toContain(r.access);
   });
 
   it('nome de tabela fora do padrão do ServiceNow não vira chamada', async () => {
@@ -287,5 +288,17 @@ describe('500 do balanceador', () => {
     const api = vi.fn(async (i: RequestInfo | URL) => (String(i).includes('/ui/meta/') ? json(403, {}) : json(500, { error: { message: 'x' } }))) as unknown as typeof fetch;
     await new FetchRestClient({ baseUrl: 'https://api500.example.com', getToken: async () => 't', fetchImpl: api }).query({ table: 'incident', query: 'active=true', fields: ['sys_id'], limit: 1 });
     expect(tableCalls(api)).toBe(1);
+  });
+});
+
+describe('ui/meta que não respondeu (revisão 24/10)', () => {
+  it('o registro (filtro só por sys_id) ainda é lido; consulta filtrada vira fonte lenta, nunca "vazia"', async () => {
+    const fetchImpl = vi.fn(async (i: RequestInfo | URL) => (String(i).includes('/ui/meta/') ? json(503, {}) : json(200, { result: [{ sys_id: 'a'.repeat(32) }] }))) as unknown as typeof fetch;
+    const c = new FetchRestClient({ baseUrl: 'https://slowmeta.example.com', getToken: async () => 't', fetchImpl });
+    const rec = await c.query({ table: 'incident', query: `sys_id=${'a'.repeat(32)}`, fields: ['sys_id'], limit: 1 });
+    expect(rec.access).toBe('ok');
+    const audit = await c.query({ table: 'sys_audit', query: `documentkey=${'a'.repeat(32)}^ORDERBYDESCsys_created_on`, fields: ['fieldname'], limit: 10 });
+    expect(audit.access).toBe('timeout');
+    expect(tableCalls(fetchImpl)).toBe(1);
   });
 });

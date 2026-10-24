@@ -206,10 +206,11 @@ async function tokenProvider(origin: string, refresh = false): Promise<string | 
     if (fromPage) return fromPage;
   }
   const hit = htmlTokens.get(origin);
-  // Renovação: reaproveita só uma busca que acabou de começar (várias consultas recebendo 401 juntas).
-  if (hit && Date.now() - hit.at < (refresh ? 5000 : HTML_TOKEN_TTL_MS)) {
+  // Renovação reaproveita só uma busca que acabou de começar (várias consultas recebendo 401 juntas). Sem token (sessão
+  // expirada, SSO), a falta vale 30 s: senão cada consulta baixaria a página de novo, seguindo até o login do provedor.
+  if (hit) {
     const t = await hit.p;
-    if (t || refresh) return t;
+    if (Date.now() - hit.at < (refresh ? 5000 : t ? HTML_TOKEN_TTL_MS : 30_000)) return t;
   }
   const p = fetchTokenFromHtml(origin).catch(() => null);
   htmlTokens.set(origin, { at: Date.now(), p });

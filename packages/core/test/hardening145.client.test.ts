@@ -184,10 +184,10 @@ describe('precheck no ui/meta antes de consulta filtrada', () => {
     });
   }
   for (const mode of ['html', 'throw', 's500', 's429', 's401', 'hang'] as const) {
-    it(`ui/meta não respondeu (${mode}): consulta filtrada não sai e volta unknown/0`, async () => {
+    it(`ui/meta não respondeu (${mode}): consulta filtrada não sai e volta timeout/0 (fonte lenta, não vazia)`, async () => {
       const s = sim({ meta: () => mode });
       const r = await mk(s.fetchImpl, { timeoutMs: 40 }).query({ table: 'incident', query: 'state=2', fields: ['sys_id'], limit: 1 });
-      expect(r).toMatchObject({ access: 'unknown', status: 0 });
+      expect(r).toMatchObject({ access: 'timeout', status: 0 });
       expect(s.log.length).toBe(0);
     });
   }
@@ -216,7 +216,7 @@ describe('precheck no ui/meta antes de consulta filtrada', () => {
     const c = mk(s.fetchImpl, { timeoutMs: 40 });
     const t0 = Date.now();
     const rs = await Promise.all([1, 2, 3, 4].map(() => c.query({ table: 'incident', query: 'state=2', fields: ['sys_id'], limit: 1 })));
-    expect(rs.every((r) => r.access === 'unknown')).toBe(true);
+    expect(rs.every((r) => r.access === 'timeout')).toBe(true);
     expect((await c.query({ table: 'problem', query: 'state=2', fields: ['sys_id'], limit: 1 })).access).toBe('empty');
     expect(Date.now() - t0).toBeLessThan(1000);
     expect(s.metaLog.filter((t) => t === 'incident').length).toBe(1);
@@ -409,7 +409,7 @@ describe('Gate: no máximo 2 chamadas em andamento por instância, sem travar', 
       : json(200, { result: [] }))) as typeof fetch;
     const c = new FetchRestClient({ baseUrl: base(), getToken: async () => 't', fetchImpl: f });
     const rs = await Promise.all(['incident', 'problem', 'change_request', 'sc_task'].map((t) => c.query({ table: t, query: 'active=true', fields: ['sys_id'], limit: 1 })));
-    expect(rs.every((r) => r.access === 'unknown')).toBe(true);
+    expect(rs.every((r) => r.access === 'timeout')).toBe(true);
     bad = false;
     const r = await Promise.race([c.query({ table: 'task', query: 'active=true', fields: ['sys_id'], limit: 1 }).then((x) => x.access), sleep(1000).then(() => 'travou')]);
     expect(r).toBe('empty');

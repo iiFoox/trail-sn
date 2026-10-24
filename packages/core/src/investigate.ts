@@ -160,7 +160,7 @@ export async function investigate(
   const txP = Promise.all(merged.map((w) => q('syslog_transaction', `sys_created_on>=${w.from}^sys_created_on<=${w.to}^ORDERBYsys_created_on`, ['sys_id', 'sys_created_on', 'type', 'url', 'sys_created_by'], 200))).then((r) => r.flat());
   const [txAll, evAll, flowsAll, wfAll, labelRows, importRows, userRows, recordedAll] = await Promise.all([
     txP,
-    Promise.all(merged.map((w) => q('sysevent', `instance=${sysId}^sys_created_on>=${shift(w.from, -86400)}^sys_created_on<=${shift(w.to, 1)}^processed>=${shift(w.from, -1)}^processed<=${shift(w.to, 1)}`, ['sys_id', 'name', 'processed', 'sys_created_on'], 50))).then((r) => r.flat()),
+    Promise.all(merged.map((w) => q('sysevent', `instance=${sysId}^sys_created_on>=${shift(w.from, -7 * 86400)}^sys_created_on<=${shift(w.to, 1)}^processed>=${shift(w.from, -1)}^processed<=${shift(w.to, 1)}`, ['sys_id', 'name', 'processed', 'sys_created_on'], 50))).then((r) => r.flat()),
     fieldChanges.length ? q('sys_flow_context', `source_record=${sysId}`, ['sys_id', 'name', 'state', 'flow', 'sys_created_on', 'sys_updated_on'], 50) : Promise.resolve([]),
     fieldChanges.length ? q('wf_context', `id=${sysId}`, ['sys_id', 'workflow_version.name', 'state', 'started', 'ended'], 50) : Promise.resolve([]),
     !values.length ? Promise.resolve([])

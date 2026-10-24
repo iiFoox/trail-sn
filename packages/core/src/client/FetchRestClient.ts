@@ -68,7 +68,7 @@ export class FetchRestClient implements RestClient {
       // formulário usa). Quem pode consultar (admin) continua lendo o dicionário, como sempre: o ui/meta descreve o
       // tipo de outro jeito (choice onde o dicionário diz integer) e o motor compara valores pelo tipo.
       const fromMeta = await this.fromUiMeta(req);
-      return fromMeta ?? { rows: [], status: allowed === 'unknown' ? 0 : 403, access: allowed };
+      return fromMeta ?? { rows: [], status: allowed === 'timeout' ? 0 : 403, access: allowed };
     }
     const known = refusals.get(this.opts.baseUrl, this.token, req);
     if (known) return known;
@@ -200,18 +200,20 @@ export class FetchRestClient implements RestClient {
    * - Nenhuma coluna: o usuário não lê nada ali → 'denied' (é o que leva ao histórico do formulário quando falta sys_audit).
    * - Coluna do filtro ausente ou sem canmatch → 'no_filter'. Ordenação só exige que a coluna exista.
    * - Coluna com ponto (flow.active): confere cada tabela do caminho.
-   * - ui/meta que não respondeu (prazo, 5xx, rede, página de login): a consulta não sai ('unknown'). Sem a conferência
+   * - ui/meta que não respondeu (prazo, 5xx, rede, página de login): a consulta não sai ('timeout', "instância lenta"). Sem a conferência
    *   ela poderia deixar mensagens vermelhas justo quando a instância está lenta.
    * - ui/meta que respondeu sem colunas legíveis (formato desconhecido, 4xx): segue sem a conferência, como na 1.4.4.
    */
-  private async filterAllowed(req: QueryRequest): Promise<'ok' | 'denied' | 'no_filter' | 'unknown'> {
+  private async filterAllowed(req: QueryRequest): Promise<'ok' | 'denied' | 'no_filter' | 'timeout'> {
     if (!req.query) {
       // Sem filtro não há mensagem vermelha, mas tabela que o usuário não lê vira erro no log da instância a cada sondagem.
       const all = await this.uiMeta(req.table);
       return all && !Object.keys(all).length ? 'denied' : 'ok';
     }
     const cols = await this.uiMeta(req.table);
-    if (cols === undefined) return 'unknown';
+    // Filtro só por sys_id (e ordenação) não depende de coluna liberada: segue mesmo sem ui/meta (o registro aberto).
+    // Fora isso, sem ui/meta a fonte é "lenta" (timeout), e não vazia: a tela avisa que faltou, em vez de "nada mudou".
+    if (cols === undefined) return queryTerms(req.query).every((t) => t.path === 'sys_id' || t.order) ? 'ok' : 'timeout';
     if (!cols) return 'ok';
     if (!Object.keys(cols).length) return 'denied';
     for (const { path, order } of queryTerms(req.query)) {
@@ -227,7 +229,7 @@ export class FetchRestClient implements RestClient {
         if (!last) {
           if (!col.reference) return 'no_filter';
           const next = await this.uiMeta(col.reference);
-          if (next === undefined) return 'unknown';
+          if (next === undefined) return 'timeout';
           if (next && !Object.keys(next).length) return 'no_filter';
           c = next;
         }
@@ -448,7 +450,7 @@ export function brokenFilter(query: string): boolean {
   return query.split('^').some((raw) => {
     const t = raw.replace(/^(?:NQ|OR(?!DERBY))/, '');
     const m = t.match(/^[a-z0-9_.]+(>=|<=|>|<|NOT IN|IN|NOT LIKE|LIKE|STARTSWITH|ENDSWITH|BETWEEN)(.*)$/);
-    return (!!m && m[2]!.trim() === '') || /Invalid Date|NaN/.test(t);
+    return (!!m && m[2]!.trim() === '') || /Invalid Date|(?:[<>]=?)NaN/.test(t);
   });
 }
 

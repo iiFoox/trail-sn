@@ -179,8 +179,8 @@ export async function fieldStates(
   // Cada fonte é opcional: negada, vazia ou lenta vira lacuna, nunca erro. Estourou o prazo: tenta mais uma vez.
   const q = async (t: string, query: string, fields: string[], limit: number, track = true): Promise<Row[]> => {
     const once = () => timedQuery({ query: (r) => client.query(r).catch(() => ({ rows: [], status: 0, access: 'unknown' as AccessState })) }, { table: t, query, fields, limit }, timeoutMs);
-    let r = await once();
-    if (r.access === 'timeout') r = await once();
+    const r = await once();
+    // Sem segunda tentativa: as consultas daqui têm dezenas de LIKE, e a abandonada continua rodando no servidor.
     if (track) note(t, r.access);
     return r.rows;
   };
