@@ -941,6 +941,14 @@ describe('importação por transform map (Fase 13)', () => {
     expect(e.type).toBe('import_set');
     expect(atLeast(e.grade, 'probable')).toBe(true);
   });
+  it('PATCH do mesmo usuário 5 s depois (outra gravação): não esconde a importação (F13-IMP3, PDI 24/10)', async () => {
+    const s = scenario();
+    audit(s, 'description', '', 'Carga do parceiro', T0, 'admin', 1);
+    audit(s, 'impact', '3', '2', shiftStr(T0, 5), 'admin', 2);
+    tx(s, shiftStr(T0, 5), 'rest', `/api/now/table/incident/${INC.sysId}?`, 'admin');
+    const e = top(await go(imp(s, [{ source_field: 'u_descricao', target_field: 'description' }], { u_descricao: 'Carga do parceiro' }), 'description'));
+    expect(e.type).toBe('import_set');
+  });
   it('o transform map não grava o campo: a importação não é a causa', async () => {
     const s = scenario();
     audit(s, 'urgency', '3', '2', T0, 'admin', 1);

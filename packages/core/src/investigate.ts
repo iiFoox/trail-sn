@@ -157,7 +157,11 @@ export async function investigate(
   // Rótulo do campo como aparece no formulário (business_service → Service): a tabela mais específica ganha.
   const fieldLabel = fieldLabels(docs, dict, meta.tables, opts.language)[target.field];
   /** Alguma mudança sem gravação da própria pessoa, fora de rotina, na janela: aí vale procurar rotinas e importações. */
-  const unexplained = (tx: Row[]) => fieldChanges.some((c) => !tx.some((t) => t.sys_created_by === c.user && !/^JOB: /.test(t.url ?? '') && isRecordWrite(t.url, sysId) && inWindow(t, c, opts)));
+  // A transação só explica a mudança se vier antes da gravação seguinte do registro: no PDI (F13-IMP3), a importação
+  // gravou às 20:00:40 e um PATCH do mesmo admin às 20:00:45 caía na janela e escondia a importação.
+  const writeTimes = unique(audit.map((a) => a.sys_created_on ?? '')).map(toMs).filter((t) => !Number.isNaN(t)).sort((a, b) => a - b);
+  const beforeNextWrite = (t: Row, c: Row) => toMs(t.sys_created_on ?? '') < (writeTimes.find((w) => w > toMs(c.sys_created_on ?? '')) ?? Infinity);
+  const unexplained = (tx: Row[]) => fieldChanges.some((c) => !tx.some((t) => t.sys_created_by === c.user && !/^JOB: /.test(t.url ?? '') && isRecordWrite(t.url, sysId) && inWindow(t, c, opts) && beforeNextWrite(t, c)));
   const changeUsers = unique(fieldChanges.map((c) => c.user ?? '').filter(Boolean));
   const txP = Promise.all(merged.map((w) => q('syslog_transaction', `sys_created_on>=${w.from}^sys_created_on<=${w.to}^ORDERBYsys_created_on`, ['sys_id', 'sys_created_on', 'type', 'url', 'sys_created_by'], 200))).then((r) => r.flat());
   const [txAll, evAll, flowsAll, wfAll, labelRows, importRows, userRows, recordedAll] = await Promise.all([
