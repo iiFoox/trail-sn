@@ -583,8 +583,17 @@ A pedido do dono, dois agentes à parte: um revisor de código e segurança (só
 
 **Reteste incremental com `bundle-145c` (2699f3a, 24/10):** o bloco C somente para `pt.trail.itil` completou 300 alvos em cada versão (1.4.4 × 145c), sem divergências; 145c teve zero alertas vermelhos. Os blocos A de `pt.trail.itil` e `pt.trail.escopo.user` completaram 270 chamadas cada, ambos com zero alertas vermelhos e zero isolamentos; 75 recusas `Record not found or not readable` por perfil foram esperadas. Brutos e detalhes estão na nova seção de `tests/regression/seguranca/RELATORIO-5000.md`. Sessão final em admin/Global.
 
+**Reteste incremental com `bundle-145d` (9ba8849, 24/10):** A para `pt.trail.itil` e `pt.trail.escopo.user`: 270 chamadas cada, zero mensagens vermelhas e zero isolamentos; 75 recusas de leitura esperadas por perfil. C somente para ITIL: 300 alvos em 1.4.4 × 145d, ambos 300/300, sem divergências. A 1.4.4 registrou avisos de Query ACL; 145d não teve mensagens vermelhas antes/depois nem alertas novos nas checagens dos lotes. Sessão final conferida em admin/Global. Dados brutos em `tests/regression/seguranca/results/`; resumo em `tests/regression/seguranca/RELATORIO-5000.md`.
+
 ## 24/10/2026: perícia como admin (441 casos) com o bundle-145c
 
 - 436/441. Falhas: C4 e F5-EVENT-sev (as mesmas de sempre, retenção), F1-MANY (3,2 s, perto do limite de 3,5 s), C1 e F13-IMP3-description.
 - Repeti 3 vezes cada, alternando com a 1.4.4: **C1** falha também na 1.4.4 (dados envelheceram, como o C4). **F13-IMP3** falhava sempre na 1.4.5 e passava sempre na 1.4.4: regressão da regra "staging só quando nenhuma gravação da pessoa explica". A importação gravou às 20:00:40 e um PATCH do mesmo admin às 20:00:45 (outro campo) caía na janela. Agora a transação só explica a mudança se vier antes da gravação seguinte do registro. Teste novo; 1027 passando (commit 9ba8849).
 - Mediana 3,36 s (1.4.4: 2,47 s; 1.4.5 de ontem: 3,6 s).
+
+## 24/10/2026: 1.4.5 fechada (bundle-145d, commit 9ba8849)
+
+- Perícia como admin: 437/441 (C1, C4, F5-EVENT-sev falham também na 1.4.4; F1-MANY certo, mas 3,7 s). F13-IMP3 voltou a passar.
+- Codex com o 145d: A itil e escopo.user 270 cada sem mensagens vermelhas; C itil 300/300, 0 divergências, auditoria pelo histórico em todos.
+- Pacotes em `docs/store/packages/` (trail-chrome-1.4.5.zip 274.712 bytes, trail-extensao-1.4.5.zip), ficha da loja e site atualizados (FAQ nova, privacidade 1.4.5). Os pacotes 1.4.4 saíram da pasta: a 1.4.4 não deve ser publicada.
+- Envio às lojas: só o dono.
