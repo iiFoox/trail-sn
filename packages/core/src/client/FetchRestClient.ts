@@ -252,7 +252,7 @@ export class FetchRestClient implements RestClient {
     return p;
   }
 
-  private async loadUiMeta(table: string, mayRetryAuth = true): Promise<Record<string, MetaColumn> | null | undefined> {
+  private async loadUiMeta(table: string, mayRetryAuth = true, attempt = 0): Promise<Record<string, MetaColumn> | null | undefined> {
     if (!TABLE_NAME.test(table)) return null;
     const key = `${this.opts.baseUrl.replace(/\/$/, '')}|${this.token ?? ''}|${table}`;
     const hit = metaCache.get(key);
@@ -263,6 +263,7 @@ export class FetchRestClient implements RestClient {
       return stored.columns;
     }
     await this.acquire();
+    let retryAfter: number | undefined;
     // Com prazo até o fim do corpo: uma resposta que nunca chega prenderia uma das 2 vagas da instância.
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), this.timeoutMs);
@@ -283,6 +284,11 @@ export class FetchRestClient implements RestClient {
         columns = json === undefined ? undefined : raw && typeof raw === 'object' && !Array.isArray(raw) ? slimColumns(raw) : null;
       } else {
         columns = status >= 400 && status < 500 && status !== 401 && status !== 429 ? null : undefined;
+        // O mesmo que passa numa segunda tentativa nas consultas: limite de taxa, gateway e o 500 em HTML do balanceador.
+        if (attempt < 1 && (status === 429 || status === 502 || status === 503 || status === 504 || status === 500)) {
+          const text = status === 500 ? await res.text().catch(() => '') : '';
+          if (status !== 500 || !text.trimStart().startsWith('{')) retryAfter = retryDelay(res);
+        }
       }
     } catch { columns = undefined; } finally {
       clearTimeout(timer);
@@ -290,7 +296,11 @@ export class FetchRestClient implements RestClient {
     }
     if (status === 401 && mayRetryAuth) {
       this.token = await this.opts.getToken(true);
-      if (this.token) return this.loadUiMeta(table, false);
+      if (this.token) return this.loadUiMeta(table, false, attempt);
+    }
+    if (retryAfter !== undefined) {
+      await sleep(retryAfter);
+      return this.loadUiMeta(table, mayRetryAuth, attempt + 1);
     }
     // Resposta boa vale 10 min (e vai para o armazenamento); sem colunas, 1 min; sem resposta, 20 s.
     const entry = { until: Date.now() + (columns ? META_TTL_MS : columns === null ? 60_000 : 20_000), columns };

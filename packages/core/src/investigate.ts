@@ -122,7 +122,9 @@ export async function investigate(
   let auditFrom: 'audit' | 'history' = 'audit';
   let historyFields: string[] | undefined;
   let historyUnavailable = false;
-  if (access.sys_audit === 'denied' && client.history) {
+  // Auditoria que não respondeu (no PDI, o 500 ao acaso na conferência do ui/meta) também tenta o histórico: é a
+  // mesma informação, e sem ele a tela ficava só com "auditoria lenta" (bloco C, 24/10/2026: 6 de 300 para itil).
+  if ((access.sys_audit === 'denied' || access.sys_audit === 'timeout') && client.history) {
     // No PDI (21/10/2026) o histórico às vezes não volta (1 em ~300 investigações por perfil): uma segunda tentativa, e
     // se ainda falhar, a lacuna aparece em vez de "nenhuma mudança".
     const ask = () => client.history!(target.table, sysId).catch(() => null);

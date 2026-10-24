@@ -570,3 +570,11 @@ A pedido do dono, dois agentes à parte: um revisor de código e segurança (só
 - **Pendentes:** permissão de filtrar por intervalo/LIKE (`query_range`) não é conferida pelo `canmatch` (precisa de medição no PDI); painel embutível por qualquer site (`use_dynamic_url` arrisca o painel flutuante, testar no navegador); scripts inteiros baixados nas abas de regras; ui/meta pedido por consulta abandonada ainda sai (baixo).
 - Testes: 1022 passando.
 - **Segunda leitura do revisor (diff 889b44c..1efaab9):** achou uma regressão minha. Com o ui/meta lento, a fonte voltava "desconhecida" e a auditoria vazia aparecia como "nada mudou", sem aviso, até para admin. Agora o ui/meta sem resposta faz a fonte voltar **lenta** (`timeout`, que a tela mostra como lacuna). Filtro só por `sys_id` (o próprio registro) segue mesmo sem ui/meta. Também: token ausente guardado por 30 s (antes, cada consulta baixava `navpage.do` de novo, seguindo até o login do SSO); sondagem de acesso com `timedQuery` (sai da fila ao desistir); `fieldStates` sem segunda tentativa (consultas com dezenas de LIKE); `sysevent` com 7 dias de folga em `sys_created_on` (eventos agendados); "NaN" só conta como quebrado quando está depois de uma comparação. Testes: 1023.
+
+## 24/10/2026: bateria real do Codex com o bundle-145b (a9590a3)
+
+- **Repetição do aviso vermelho do itil (fieldStates no INC0010134):** 5 de 5 sem mensagem vermelha.
+- **Bloco A (11 perfis × 270 execuções):** zero mensagem vermelha, zero exceção. As falhas são todas "Record not found or not readable" em registros que o perfil não lê (esperado).
+- **Bloco C (1.4.4 × 1.4.5, itil 300 alvos e escopo.user 100):** a 1.4.4 deixou mensagens vermelhas em sys_dictionary e sys_choice para itil; a 1.4.5 nenhuma. 6 alvos do itil perderam a mudança na 1.4.5: o ui/meta do `sys_audit` levou o 500 ao acaso do PDI, a fonte voltou "lenta" e o histórico do formulário não foi tentado (a tela mostrava a lacuna, não "nada mudou").
+- **Bloco D (carga):** no máximo 2 chamadas simultâneas nos 3 perfis; p95 dos pings da instância 250–427 ms.
+- **Correções:** o ui/meta repete uma vez em 429/502/503/504 e 500 em HTML (como a Table API); auditoria sem resposta também usa o histórico do formulário. Testes: 1026.

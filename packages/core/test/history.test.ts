@@ -98,6 +98,13 @@ describe('histórico do formulário (quem não lê sys_audit)', () => {
     expect(r.gaps.some((g) => g.startsWith('sys_audit'))).toBe(true);
   });
 
+  it('auditoria que não respondeu (timeout): também usa o histórico (bloco C, 24/10)', async () => {
+    const c = itil(false).respond('sys_audit', () => ({ rows: [], status: 0, access: 'timeout' })).withHistory(history);
+    const r = await investigate(c, { table: 'incident', sysId: SYS, field: 'impact' });
+    expect(r.auditFrom).toBe('history');
+    expect(r.changes.map((x) => [x.oldValue, x.newValue])).toEqual([['3', '1']]);
+  });
+
   it('com sys_audit liberada, o histórico nem é consultado', async () => {
     let asked = false;
     const c = itil(false).rows('sys_audit', [{ sys_id: 'x', tablename: 'incident', documentkey: SYS, fieldname: 'impact', oldvalue: '3', newvalue: '1', user: 'admin', sys_created_on: '2026-10-20 12:00:00', record_checkpoint: '2' }]);

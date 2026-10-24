@@ -301,4 +301,32 @@ describe('ui/meta que não respondeu (revisão 24/10)', () => {
     expect(audit.access).toBe('timeout');
     expect(tableCalls(fetchImpl)).toBe(1);
   });
+
+  it('500 em HTML do balanceador no ui/meta: repete uma vez e a consulta sai conferida (bloco C, 24/10)', async () => {
+    let metaCalls = 0;
+    const fetchImpl = vi.fn(async (i: RequestInfo | URL) => {
+      if (!String(i).includes('/ui/meta/')) return json(200, { result: [] });
+      return ++metaCalls === 1
+        ? new Response('<html>snow_adc</html>', { status: 500, headers: { 'Content-Type': 'text/html' } })
+        : json(200, { result: { columns: { documentkey: { name: 'documentkey', canmatch: true } } } });
+    }) as unknown as typeof fetch;
+    const c = new FetchRestClient({ baseUrl: 'https://html500meta.example.com', getToken: async () => 't', fetchImpl });
+    const audit = await c.query({ table: 'sys_audit', query: `documentkey=${'a'.repeat(32)}`, fields: ['fieldname'], limit: 10 });
+    expect(metaCalls).toBe(2);
+    expect(audit.access).toBe('empty');
+  });
+
+  it('500 em JSON no ui/meta: não repete (erro do pedido, não do balanceador)', async () => {
+    let metaCalls = 0;
+    const fetchImpl = vi.fn(async (i: RequestInfo | URL) => {
+      if (!String(i).includes('/ui/meta/')) return json(200, { result: [] });
+      metaCalls++;
+      return json(500, { error: { message: 'x' } });
+    }) as unknown as typeof fetch;
+    const c = new FetchRestClient({ baseUrl: 'https://json500meta.example.com', getToken: async () => 't', fetchImpl });
+    const audit = await c.query({ table: 'sys_audit', query: `documentkey=${'a'.repeat(32)}`, fields: ['fieldname'], limit: 10 });
+    expect(metaCalls).toBe(1);
+    expect(audit.access).toBe('timeout');
+    expect(tableCalls(fetchImpl)).toBe(0);
+  });
 });
