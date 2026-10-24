@@ -6,6 +6,11 @@ export interface QueryRequest {
   query: string;
   fields: string[];
   limit: number;
+  /**
+   * Prazo do servidor para esta consulta, contado a partir de quando ela sai (não da fila). Sem ele, com poucas
+   * chamadas simultâneas, a espera na fila estourava o prazo e a pista sumia sem o servidor ter demorado.
+   */
+  timeoutMs?: number;
 }
 
 export interface QueryResult {
@@ -31,6 +36,8 @@ export interface HistoryResult {
   choices?: Record<string, Record<string, string>>;
   /** Campos de referência da tabela (campo → tabela referenciada), de /api/now/ui/meta: o histórico mostra o nome, não o sys_id. */
   refs?: Record<string, string>;
+  /** Campo de exibição de cada referência (reference_display_field do ui/meta): campo → name, number, u_nome... */
+  refDisplay?: Record<string, string>;
   /** Fuso do usuário (IANA): com ele, cada data volta para UTC com o horário de verão certo daquela data. */
   timeZone?: string;
 }

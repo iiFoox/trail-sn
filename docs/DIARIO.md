@@ -499,3 +499,56 @@ Pedidos do dono depois de testar a 0.12.2 no Edge:
   - **Sem mudança:** o resto bate pixel a pixel com a 1.0.0 (popup, E se?, balão, relatório, diff), e nenhuma chave de texto nem token de CSS sumiu.
 - **Site:** `docs/PEDIDO-SITE.md`, pacote completo para outra IA.
 - **Vídeo:** `docs/VIDEO-LINKEDIN.md`, com roteiro de 40 s, trilha, legendas pt/en e prompt para o Fable. Os prints 2× ficam em `video-assets/`.
+
+## 23/10/2026: revisão de segurança para a instância (erros vermelhos e 500)
+Motivo: o dono viu, numa instância real, várias mensagens vermelhas no registro ao usar o Trail com usuários sem acesso e em apps escopados; na mesma época, alguém comentou que APIs caíram; e o PDI estava dando 500.
+
+**500 no PDI: não é a extensão.** O erro vem do balanceador da ServiceNow (`Server: snow_adc`). Aparece em pedidos anônimos sem sessão (curl na tela de login), alterna entre 200 e 500 a cada pedido e responde em menos de 1 s, com o nó da aplicação ocioso (`sem_wait 1ms`, `db 1ms`). É defeito na infraestrutura do PDI.
+
+**Mensagens vermelhas: eram do Trail.** Reproduzido no PDI com `pt.trail.escopo.user` e também com `pt.trail.itil` num incidente comum. Cada consulta barrada pelas **Query ACLs** (403 "Insufficient rights to query records") grava mensagens na sessão do usuário, que aparecem na próxima página: "Part of the query on sys_dictionary has been ignored because of insufficient access for 'query_match' operation on sys_dictionary.element". Origem: as consultas de rótulos, tipos e opções em `sys_dictionary`, `sys_choice` e `sys_documentation` por name/element, e o `syslog` por horário (`query_range`). A consulta é barrada antes de rodar no banco, então isso não pesa na instância, mas enche a tela do usuário de erros. Tabela negada inteira (403 "User Not Authorized", ex.: `sys_audit`) não gera mensagem.
+
+**Carga na instância: três problemas reais, corrigidos.**
+1. Faltava `sysparm_no_count=true`. Sem ele, a Table API faz um COUNT(*) com o mesmo filtro em toda chamada. Na sondagem de acesso, que não tem filtro, isso contava a tabela inteira: 416 mil linhas de `syslog_transaction` no PDI, o dobro do tempo; numa produção são milhões.
+2. O limite de chamadas simultâneas era por cliente, e o painel cria um cliente por mensagem. Agora o limite é um só por instância (6).
+3. A sondagem de acesso repetia o que estourava o prazo, e o relatório "lento" não ficava guardado, então toda análise refazia ~10 sondagens nas tabelas pesadas justo com a instância lenta. Agora não repete, e o relatório lento vale 3 min. Lembrete: quando o navegador desiste por prazo, a consulta continua rodando no servidor.
+
+**Correções (todas no `FetchRestClient`, valem para o motor inteiro):**
+- `sysparm_no_count=true` em toda consulta.
+- Fila única por instância.
+- Recusas guardadas por 10 min por instância e sessão (token): tabela negada não é consultada de novo; consulta barrada por Query ACL não se repete com o mesmo conjunto de campos.
+- Rótulos, tipos, referências, obrigatório/somente leitura e opções vêm do `/api/now/ui/meta/<tabela>` (o que o formulário usa), e não do dicionário. O cliente responde por ele as consultas `name…^element…` de `sys_dictionary`, `sys_choice` e `sys_documentation`.
+- Antes de filtrar `sys_dictionary`, `sys_dictionary_override`, `sys_choice`, `sys_documentation` e `syslog`, confere no `ui/meta` da tabela: ele só lista, com `canmatch=true`, as colunas que o usuário pode filtrar (admin vê; itil e escopo não). Coluna fora da lista: a consulta nem sai.
+- "Tempo de gravação" de job: busca do histórico do mesmo url limitada a 6 h (era 24 h de `syslog_transaction` varridas por um campo sem índice).
+- Corrigido `queryFields`: com `/i`, "sourceINx" virava o campo "sourceINx".
+
+**Medido no PDI (código antigo × novo, mesma investigação):**
+- `escopo.user`, 4 campos de `x_2270630_pttrail__pedido`: 63 → 23 chamadas, 18,2 s → 6,1 s. Mensagens vermelhas: 2 por investigação → nenhuma.
+- itil num incidente: o antigo deixava 2 mensagens; o novo, nenhuma, com o mesmo resultado.
+- admin: mesmo resultado, 31 → 27 chamadas.
+- Linha do tempo, "O que roda neste registro", Flows e estado dos campos como `escopo.user`: nenhuma mensagem.
+- Testes: 301 passando (inclui os novos de `fetchClient.test.ts`).
+
+## 24/10/2026: revisão a fundo (1.4.5)
+Pedido do dono: revisar tudo, em detalhe, antes de usar em instância real ("não pode haver erros em produção, com vários campos customizados"). Inventário de **160 pontos de consulta em 60 tabelas** (`packages/core/src`), lidos um a um nas tabelas que crescem sem parar e nas tabelas dinâmicas. Novos achados, todos corrigidos:
+
+- **Mensagens vermelhas em qualquer tabela, não só no dicionário.** Depois da primeira correção ainda apareciam: `sys_data_policy_rule` (usuário de escopo) e `sysauto_script` (itil, `query_match` e `query_range`). Regra nova, sem lógica por papel: antes de filtrar **qualquer** tabela, o cliente confere no `ui/meta` dela se o usuário pode filtrar cada coluna do filtro (`canmatch=true`), inclusive colunas com ponto (confere a tabela referenciada). Medido no PDI: para itil e escopo, o `ui/meta` das tabelas de sistema vem **sem colunas**; para admin vem com todas e `canmatch=true`. Sem colunas = "negado" (é o que mantém o histórico do formulário como plano B quando falta `sys_audit`). O `ui/meta` fica guardado em `chrome.storage.session` (o service worker perde a memória depois de ~30 s parado), e buscas iguais simultâneas esperam a mesma resposta.
+- **A sessão do usuário atende em fila.** Com consultas pesadas do Trail em paralelo, a página do próprio usuário levou 0,8 s (1), 6 s (3), 15 s (6) e 28 s (12). Limite caiu de 6 para **2** chamadas simultâneas por instância. Lote pela lista caiu de 200 para **50** registros.
+- **Import sets pela tabela base.** Toda investigação com mudanças consultava `sys_import_set_row` por `sys_target_sys_id`: a tabela base junta todas as tabelas de staging da instância, e o campo não tem índice. Agora em duas etapas: `sys_import_set` (cabeçalhos, tabela pequena) atualizado perto das mudanças, depois só as tabelas de staging desses imports, filtrando pelo import set.
+- **Edição na lista:** a busca em `syslog_transaction` ia da primeira à última mudança (podia ser meses); agora meia hora antes de cada mudança, em janelas separadas (`windowsFilter` em `util.ts`).
+- **Filtro com campo inexistente é ignorado pela instância** (medido no PDI: `u_campo_que_nao_existe=abc` em grupos devolveu grupos quaisquer). O histórico do formulário chutava `name`, `number`, `display_name` para achar referências; agora usa o `reference_display_field` do `ui/meta` e, sem ele, não consulta.
+- **Valores livres em listas IN** (valor gravado no campo, nome de usuário, nome de job, nome de evento): valor com `,`, `^` ou quebra de linha sai da lista (`inList` em `util.ts`); lista que fica vazia não vira consulta.
+- **Resposta 200 que não é JSON** (SSO, proxy) era lida como "vazio" ("nada aconteceu"); agora é "desconhecido". Nome de tabela ou campo fora de `^[a-z0-9_.]+$` não vira chamada.
+- **Recusa depende do filtro:** no PDI, `sys_script` sem filtro dá 403 para o usuário de escopo e, filtrada pelo app dele, 200 com as regras. A memória de recusas passou a valer só para o mesmo formato de consulta (tabela + campos do filtro). Observação: o que esse usuário vê em `sys_script` muda com o aplicativo atual da sessão (dentro do app, vê; no Global, 403) — comportamento do ServiceNow; o `ui/meta` acompanha.
+- **Página:** o observador do DOM rodava a decoração a cada mudança; agora agrupa e roda no máximo a cada 250 ms.
+- Conferido e sem problema: `innerHTML` só com textos fixos (e o título da janela de comparação com escape); links do painel sempre montados a partir da instância; nenhuma escrita no formulário (`g_form`); busca de pessoas com `STARTSWITH` e texto limpo; janelas de log da investigação estreitas (3 s antes, 15 s depois, até 10 mudanças).
+
+**Validação no PDI (1.4.5), mensagens lidas na tela depois de cada rodada:** `escopo.user` (4 campos do app, linha do tempo, estado dos campos, "O que roda", Flows), `pt.trail.itil` e admin (incidente com flow e subflow): **nenhuma mensagem vermelha**; admin com a mesma causa da 1.4.4 ("[PT] F14 flow chama subflow", certeza alta). Testes: 308 passando.
+
+**Próximo:** bateria de 5.000 testes pelo Codex (`tests/regression/seguranca/TAREFA-5000.md`), comparando 1.4.4 × 1.4.5.
+
+**A bateria pegou duas regressões da própria revisão (corrigidas antes de publicar):**
+- 441 casos como admin com a primeira versão da 1.4.5: **416/441**. 18 casos de importação e alguns de regra before/booleano falhavam.
+- Importação: a busca pelo cabeçalho `sys_import_set` perto da mudança não acha nada, porque a API de importação reaproveita o mesmo import set o dia inteiro e a data dele não acompanha as linhas. Agora as tabelas de staging vêm dos transform maps que gravam na tabela (`sys_transform_map.target_table`), e em cada uma só o minuto em volta de cada mudança (`sys_target_sys_id` + `sys_updated_on`).
+- Dicionário pelo `ui/meta` também para o admin: o `ui/meta` descreve o tipo de outro jeito (`choice` onde o dicionário diz `integer`), e o motor compara valores pelo tipo. Agora **quem pode consultar o dicionário continua lendo o dicionário**, como na 1.4.4; o `ui/meta` só substitui quando a consulta seria barrada.
+- Os 25 casos que falharam, rodados de novo: 23 passam. Os 2 restantes (C4 e F5-EVENT-sev, eventos) falham igual na 1.4.4: os eventos desses casos já saíram da retenção do PDI.
+- Segunda rodada completa: **437/441**. C4 e F5 como na 1.4.4; F1-MANY só por lentidão; **F13-IMP2-correlation_id-2** tinha passado isolado e falhou na bateria. Causa: o prazo de cada fonte (3 s) contava desde a entrada na fila. Com 2 chamadas simultâneas a fila cresce, a fonte "estourava" sem o servidor ter demorado, e a pista sumia ao acaso. Agora o prazo vai no pedido (`QueryRequest.timeoutMs`) e o `FetchRestClient` conta a partir de quando a consulta sai; a espera na fila tem teto de 5× o prazo (`timedQuery` em `util.ts`, usado em investigação, linha do tempo e estado dos campos).

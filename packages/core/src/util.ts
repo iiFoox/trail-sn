@@ -1,4 +1,5 @@
-import type { Row } from './types';
+import type { QueryRequest, QueryResult } from './client/RestClient';
+import type { AccessState, Row } from './types';
 /** Datas da ServiceNow são "YYYY-MM-DD HH:mm:ss" em UTC. */
 export function toMs(t: string): number {
   return new Date(t.replace(' ', 'T') + 'Z').getTime();
@@ -49,6 +50,31 @@ export function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<
 }
 
 /** Funde janelas [from,to] que se sobrepõem, para consultar uma vez só. */
+/**
+ * Filtro "campo dentro de qualquer uma destas janelas" (janelas fundidas, unidas por ^NQ), com `extra` repetido em cada
+ * bloco. Mantém a consulta nos minutos que importam em vez de um intervalo único da primeira à última mudança.
+ */
+export function windowsFilter(field: string, instants: string[], before: number, after: number, extra = ''): string {
+  const ws = mergeWindows(instants.filter(Boolean).map((t) => ({ from: shift(t, -before), to: shift(t, after) })));
+  return ws.map((w) => `${extra ? `${extra}^` : ''}${field}>=${w.from}^${field}<=${w.to}`).join('^NQ');
+}
+
+/**
+ * Valores livres (gravados em campos, nomes de usuário) para uma lista IN. Vírgula separa a lista e ^ separa termos:
+ * um valor com eles mudaria o sentido da consulta, então fica de fora (perde-se só aquela pista).
+ */
+export function inList(values: string[]): string {
+  return values.filter((v) => v && !/[,^\r\n]/.test(v)).join(',');
+}
+
+/**
+ * Consulta com prazo do servidor (`ms`, contado quando a consulta sai) e um teto maior para a espera na fila. O teto
+ * só vale para cliente sem prazo próprio (testes) ou fila travada; o resultado de prazo estourado é `timeout`.
+ */
+export function timedQuery(client: { query: (r: QueryRequest) => Promise<QueryResult> }, req: QueryRequest, ms: number): Promise<QueryResult> {
+  return withTimeout(client.query({ ...req, timeoutMs: ms }), ms * 5, { rows: [], status: 0, access: 'timeout' as AccessState });
+}
+
 export function mergeWindows(windows: { from: string; to: string }[]): { from: string; to: string }[] {
   const sorted = [...windows].sort((a, b) => a.from.localeCompare(b.from));
   const out: { from: string; to: string }[] = [];

@@ -23,7 +23,7 @@ import {
 import { isSaveButton } from './signatures/uiAction';
 import { formSubmitOf } from './signatures/sameTransaction';
 import { decodeFlowValues, isBatchCall, isFormSubmitFor, isMultiUpdate, isRecordWrite, isWorkspaceAction, parseFieldValues, uiActionMatches, uiActionQuery, uiActionRef } from './util';
-import { conditionFields, mergeWindows, refsField, shift, toMs, withTimeout } from './util';
+import { conditionFields, inList, mergeWindows, refsField, shift, timedQuery, toMs, windowsFilter, withTimeout } from './util';
 
 /** Cache de metadados por tabela (hierarquia, BRs, script includes). A extensão guarda em chrome.storage.session. */
 export interface MetaCache {
@@ -53,7 +53,7 @@ export async function investigate(
 
   const q = async (table: string, query: string, fields: string[], limit = 100, tag = table): Promise<Row[]> => {
     const req: QueryRequest = { table, query, fields, limit };
-    const r = await withTimeout(client.query(req), opts.sourceTimeoutMs, { rows: [], status: 0, access: 'timeout' as AccessState });
+    const r = await timedQuery(client, req, opts.sourceTimeoutMs);
     const prev = access[tag];
     if (!prev || prev === 'empty' || prev === 'unknown' || (prev === 'timeout' && r.access !== 'timeout')) access[tag] = r.access;
     return r.rows;
@@ -61,19 +61,34 @@ export async function investigate(
 
   // Consultas só para rótulos: falha aqui não é lacuna de perícia, então não entra no relatório de acesso.
   const quiet = async (table: string, query: string, fields: string[], limit = 100): Promise<Row[]> =>
-    (await withTimeout(client.query({ table, query, fields, limit }), opts.sourceTimeoutMs, { rows: [], status: 0, access: 'timeout' as AccessState })).rows;
+    (await timedQuery(client, { table, query, fields, limit }, opts.sourceTimeoutMs)).rows;
+
+  /**
+   * Linhas de staging que gravaram neste registro perto dos instantes dados. As tabelas de staging vêm dos transform maps
+   * que gravam nesta tabela (sys_transform_map, tabela pequena), e em cada uma só o minuto em volta de cada mudança.
+   * Não usa o cabeçalho sys_import_set: a API de importação reaproveita o mesmo import set o dia inteiro.
+   */
+  const importRowsNear = async (tables: string[], instants: string[]): Promise<Row[]> => {
+    const maps = await quiet('sys_transform_map', `target_tableIN${tables.join(',')}`, ['sys_id', 'source_table'], 50);
+    const sources = unique(maps.map((m) => m.source_table ?? '').filter((t) => /^[a-z0-9_]+$/.test(t))).slice(0, 10);
+    const rows = await Promise.all(sources.map(async (table) => (await quiet(table,
+      `${windowsFilter('sys_updated_on', instants, 60, 60, `sys_target_sys_id=${sysId}`)}^ORDERBYDESCsys_updated_on`,
+      ['sys_id', 'sys_import_set', 'sys_import_set.number', 'sys_transform_map', 'sys_transform_map.name', 'sys_import_state', 'sys_updated_on', 'sys_updated_by'], 30))
+      .map((r): Row => ({ ...r, sys_class_name: table }))));
+    return rows.flat().sort((a, b) => toMs(b.sys_updated_on ?? '') - toMs(a.sys_updated_on ?? ''));
+  };
 
   // ---------- rodada 1: registro, auditoria e metadados ----------
   const recQuery = target.sysId ? `sys_id=${target.sysId}` : `number=${target.number ?? ''}`;
   const recReq: QueryRequest = { table: target.table, query: recQuery, fields: ['sys_id', 'number', 'name', 'short_description', 'sys_mod_count', 'sys_created_on', 'sys_updated_on', 'sys_updated_by'], limit: 1 };
   const recTimeout = { rows: [] as Row[], status: 0, access: 'timeout' as AccessState };
   const [recFirst, metaOrNull] = await Promise.all([
-    withTimeout(client.query(recReq), opts.sourceTimeoutMs, recTimeout),
+    timedQuery(client, recReq, opts.sourceTimeoutMs),
     loadMeta(target.table, target.field),
   ]);
   // Sem resposta útil (prazo estourado ou erro 5xx): tenta de novo uma vez, com mais folga, como nas regras de negócio.
   const recRes = !recFirst.rows[0] && recordUnanswered(recFirst.access)
-    ? await withTimeout(client.query(recReq), opts.sourceTimeoutMs * 3, recTimeout)
+    ? await timedQuery(client, recReq, opts.sourceTimeoutMs * 3)
     : recFirst;
   access.record = recRes.access;
   const rec = recRes.rows[0];
@@ -145,10 +160,11 @@ export async function investigate(
       : quiet('sys_choice', `nameIN${meta.tables.join(',')}^element=${target.field}^inactive=false`, ['name', 'value', 'label', 'language'], 300)
         // A tabela mais específica ganha (incident.state 2 = In Progress; task.state 2 = Work in Progress); depois o inglês.
         .then((rows) => rows.sort((a, b) => (meta.tables.indexOf(a.name ?? '') - meta.tables.indexOf(b.name ?? '')) || ((a.language === 'en' ? -1 : 0) - (b.language === 'en' ? -1 : 0)))),
-    // Importação: linhas de import set que gravaram neste registro (a tabela base devolve todas as tabelas de staging).
-    fieldChanges.length ? quiet('sys_import_set_row', `sys_target_sys_id=${sysId}^ORDERBYDESCsys_updated_on`, ['sys_id', 'sys_class_name', 'sys_import_set', 'sys_import_set.number', 'sys_transform_map', 'sys_transform_map.name', 'sys_import_state', 'sys_updated_on', 'sys_updated_by'], 30) : Promise.resolve([]),
+    // Importação: linhas de import set que gravaram neste registro. Nunca pela tabela base sys_import_set_row: ela junta
+    // todas as tabelas de staging da instância (milhões de linhas em produção) e sys_target_sys_id não tem índice.
+    fieldChanges.length ? importRowsNear(meta.tables, fieldChanges.map((c) => c.sys_created_on ?? '')) : Promise.resolve([]),
     // Quem gravou: usuário só de API ou de integração interna é uma integração, não uma pessoa.
-    changeUsers.length ? quiet('sys_user', `user_nameIN${changeUsers.join(',')}`, ['sys_id', 'user_name', 'name', 'web_service_access_only', 'internal_integration_user'], 20) : Promise.resolve([]),
+    inList(changeUsers) ? quiet('sys_user', `user_nameIN${inList(changeUsers)}`, ['sys_id', 'user_name', 'name', 'web_service_access_only', 'internal_integration_user'], 20) : Promise.resolve([]),
     meta.recorder && fieldChanges.length ? quiet(meta.recorder, `u_registro=${sysId}^sys_created_on>=${shift(fieldChanges[fieldChanges.length - 1]?.sys_created_on ?? '', -5)}^ORDERBYsys_created_on`, ['sys_created_on', 'u_campos', 'u_servidor', 'u_usuario', 'u_transacao', 'u_origem'], 200) : Promise.resolve([] as Row[]),
   ]);
   const labels: Record<string, string> = {};
@@ -165,8 +181,8 @@ export async function investigate(
   const flowIds = unique(flowsAll.map((f) => f.flow ?? '').filter(Boolean));
   const mapIds = unique(importRows.map((r) => r.sys_transform_map ?? '').filter(Boolean));
   const [jobsByName, scriptActions, uiActions, jobsByScript, assignmentRules, lookupSets, clientRows, uiActionSuspects, flowActionRows, transformEntries, transformScripts, policyRows, listViews] = await Promise.all([
-    jobNames.length ? q('sysauto_script', `nameIN${jobNames.join(',')}`, ['sys_id', 'name', 'script'], 50) : Promise.resolve([]),
-    eventNames.length ? q('sysevent_script_action', `active=true^event_nameIN${eventNames.join(',')}`, ['sys_id', 'name', 'event_name', 'script'], 50) : Promise.resolve([]),
+    inList(jobNames) ? q('sysauto_script', `nameIN${inList(jobNames)}`, ['sys_id', 'name', 'script'], 50) : Promise.resolve([]),
+    inList(eventNames) ? q('sysevent_script_action', `active=true^event_nameIN${inList(eventNames)}`, ['sys_id', 'name', 'event_name', 'script'], 50) : Promise.resolve([]),
     uiActionIds.length ? q('sys_ui_action', uiActionQuery(uiActionIds, meta.tables), ['sys_id', 'name', 'script', 'table', 'action_name'], 20) : Promise.resolve([]),
     needsJobScan ? q('sysauto_script', `scriptLIKE${target.field}^scriptLIKE${target.table}`, ['sys_id', 'name', 'script', 'run_type', 'run_start', 'run_time', 'run_as.user_name', 'active'], 50) : Promise.resolve([]),
     isAssignmentField ? q('sysrule_assignment', `active=true^tableIN${meta.tables.join(',')}`, ['sys_id', 'name', 'table', 'condition', 'group', 'user', 'order'], 50) : Promise.resolve([]),
@@ -197,7 +213,9 @@ export async function investigate(
       ...rows, ...(await quiet('sys_transform_map', `sys_idIN${mapIds.join(',')}^run_script=true^scriptLIKE${target.field}`, ['sys_id', 'script'], 10)).map((m): Row => ({ map: m.sys_id ?? '', when: 'map', script: m.script ?? '' }))]) : Promise.resolve([] as Row[]),
     quiet('sys_ui_policy', `tableIN${meta.tables.join(',')}^active=true^run_scripts=true^script_trueLIKE${target.field}^ORscript_falseLIKE${target.field}`, ['sys_id', 'short_description', 'table', 'conditions', 'script_true', 'script_false', 'ui_type', 'reverse_if_false'], 20),
     // Edição direto na lista (célula) não registra transação: a última abertura da lista da tabela pela pessoa é a pista.
-    needsJobScan ? quiet('syslog_transaction', `type=list^sys_created_byIN${changeUsers.join(',')}^sys_created_on>=${shift(fieldChanges[fieldChanges.length - 1]?.sys_created_on ?? '', -1800)}^sys_created_on<=${shift(fieldChanges[0]?.sys_created_on ?? '', 5)}^ORDERBYDESCsys_created_on`, ['sys_created_on', 'sys_created_by', 'url', 'type'], 50)
+    // Meia hora antes de cada mudança, em janelas separadas: um intervalo único da primeira à última mudança podia
+    // cobrir meses de syslog_transaction.
+    needsJobScan && inList(changeUsers) ? quiet('syslog_transaction', `${windowsFilter('sys_created_on', fieldChanges.map((c) => c.sys_created_on ?? ''), 1800, 5, `type=list^sys_created_byIN${inList(changeUsers)}`)}^ORDERBYDESCsys_created_on`, ['sys_created_on', 'sys_created_by', 'url', 'type'], 50)
       .then((rows) => rows.filter((t) => meta.tables.some((tb) => (t.url ?? '').includes(`${tb}_list.do`)))) : Promise.resolve([] as Row[]),
   ]);
 
@@ -230,7 +248,7 @@ export async function investigate(
       const r = lookupSets.find((x) => x.dl_definition === id)!;
       const mt = r['dl_definition.matcher_table'];
       const col = r.matcher_table_field || target.field;
-      return mt && newValues.length ? quiet(mt, `active=true^${col}IN${newValues.join(',')}`, [], 50) : Promise.resolve(null);
+      return mt && inList(newValues) && /^[a-z0-9_]+$/.test(col) ? quiet(mt, `active=true^${col}IN${inList(newValues)}`, [], 50) : Promise.resolve(null);
     }),
   ]);
   const dataLookups = lookupIds.map((id, i) => {
@@ -426,8 +444,8 @@ export async function investigate(
     }
     const brReq = { table: 'sys_script', query: `collectionIN${tables.join(',')}^active=true`, fields: ['sys_id', 'name', 'when', 'order', 'collection', 'script', 'template', 'condition', 'filter_condition', 'action_insert', 'action_update'], limit: 500 };
     // As regras são a base de tudo: se a consulta estourar o tempo, tenta de novo com mais folga antes de seguir sem elas.
-    let brRes = await withTimeout(client.query(brReq), opts.sourceTimeoutMs, { rows: [] as Row[], status: 0, access: 'timeout' as AccessState });
-    if (brRes.access === 'timeout') brRes = await withTimeout(client.query(brReq), opts.sourceTimeoutMs * 3, { rows: [] as Row[], status: 0, access: 'timeout' as AccessState });
+    let brRes = await timedQuery(client, brReq, opts.sourceTimeoutMs);
+    if (brRes.access === 'timeout') brRes = await timedQuery(client, brReq, opts.sourceTimeoutMs * 3);
     if (!access.sys_script || access.sys_script === 'timeout') access.sys_script = brRes.access;
     const businessRules = brRes.rows;
     const incomplete = brRes.access === 'timeout';

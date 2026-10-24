@@ -2,7 +2,7 @@ import type { QueryRequest, RestClient } from './client/RestClient';
 import { documentation, fieldLabels } from './display';
 import { historyToAudit } from './history';
 import { RecordNotFoundError, RecordUnavailableError, recordUnanswered, type AccessState, type Row, type Target } from './types';
-import { isFormSubmitFor, isWorkspaceAction, shift, toMs, uiActionMatches, uiActionQuery, uiActionRef, withTimeout } from './util';
+import { isFormSubmitFor, isWorkspaceAction, shift, toMs, uiActionMatches, uiActionQuery, uiActionRef, timedQuery, withTimeout } from './util';
 
 /**
  * Linha do tempo do registro inteiro: cada gravação (checkpoint da auditoria) com quem gravou,
@@ -54,7 +54,7 @@ export async function recordTimeline(client: RestClient, target: Omit<Target, 'f
   const timeout = opts.sourceTimeoutMs ?? 4000;
   const q = async (table: string, query: string, fields: string[], limit = 100): Promise<Row[]> => {
     const req: QueryRequest = { table, query, fields, limit };
-    return (await withTimeout(client.query(req), timeout, { rows: [], status: 0, access: 'timeout' as AccessState })).rows;
+    return (await timedQuery(client, req, timeout)).rows;
   };
 
   // ---------- registro e hierarquia ----------
@@ -62,11 +62,11 @@ export async function recordTimeline(client: RestClient, target: Omit<Target, 'f
   const recReq: QueryRequest = { table: target.table, query: recQuery, fields: ['sys_id', 'number', 'name', 'short_description', 'sys_created_on', 'sys_created_by'], limit: 1 };
   const recTimeout = { rows: [] as Row[], status: 0, access: 'timeout' as AccessState };
   const [recFirst, tables] = await Promise.all([
-    withTimeout(client.query(recReq), timeout, recTimeout),
+    timedQuery(client, recReq, timeout),
     hierarchy(target.table),
   ]);
   // Sem resposta útil (prazo ou 5xx): uma segunda tentativa com mais folga antes de desistir.
-  const recRes = !recFirst.rows[0] && recordUnanswered(recFirst.access) ? await withTimeout(client.query(recReq), timeout * 3, recTimeout) : recFirst;
+  const recRes = !recFirst.rows[0] && recordUnanswered(recFirst.access) ? await timedQuery(client, recReq, timeout * 3) : recFirst;
   const rec = recRes.rows[0];
   if (!rec) {
     if (recordUnanswered(recRes.access)) throw new RecordUnavailableError({ ...target, field: '' }, recRes.access === 'timeout' ? 'timeout' : 'error', recRes.status);
@@ -75,8 +75,8 @@ export async function recordTimeline(client: RestClient, target: Omit<Target, 'f
   const sysId = rec.sys_id ?? '';
 
   // ---------- auditoria completa (mais recentes primeiro) ----------
-  const auditRes = await withTimeout(client.query({ table: 'sys_audit', query: `tablename=${target.table}^documentkey=${sysId}^ORDERBYDESCsys_created_on`,
-    fields: ['fieldname', 'oldvalue', 'newvalue', 'user', 'sys_created_on', 'record_checkpoint'], limit: MAX_AUDIT }), timeout, { rows: [], status: 0, access: 'timeout' as AccessState });
+  const auditRes = await timedQuery(client, { table: 'sys_audit', query: `tablename=${target.table}^documentkey=${sysId}^ORDERBYDESCsys_created_on`,
+    fields: ['fieldname', 'oldvalue', 'newvalue', 'user', 'sys_created_on', 'record_checkpoint'], limit: MAX_AUDIT }, timeout);
   let audit = auditRes.rows;
   // Quem não lê sys_audit vê o histórico no formulário: a linha do tempo sai dele (mais recentes primeiro, como a auditoria).
   let fromHistory: { auditFrom: 'history'; historyFields: string[] } | undefined;

@@ -612,9 +612,11 @@ describe('Rastro e rótulos', () => {
     const map = id();
     const c = build(s);
     // Duas linhas do mesmo transform map (criação + atualização) não podem virar empate.
-    c.rows('sys_import_set_row', [
-      { sys_id: id(), sys_target_sys_id: INC.sysId, sys_transform_map: map, 'sys_transform_map.name': '[PT] Importa incidentes', 'sys_import_set.number': 'ISET0010001', sys_import_state: 'updated', sys_updated_on: T0, sys_updated_by: 'admin' },
-      { sys_id: id(), sys_target_sys_id: INC.sysId, sys_transform_map: map, 'sys_transform_map.name': '[PT] Importa incidentes', 'sys_import_set.number': 'ISET0010000', sys_import_state: 'inserted', sys_updated_on: T0, sys_updated_by: 'admin' },
+    // Como na instância: o transform map diz a tabela de staging; as linhas ficam nela.
+    c.rows('sys_transform_map', [{ sys_id: map, target_table: 'incident', source_table: 'u_stage_inc' }]);
+    c.rows('u_stage_inc', [
+      { sys_id: id(), sys_import_set: 'isA', 'sys_import_set.number': 'ISET0010001', sys_target_sys_id: INC.sysId, sys_transform_map: map, 'sys_transform_map.name': '[PT] Importa incidentes', sys_import_state: 'updated', sys_updated_on: T0, sys_updated_by: 'admin' },
+      { sys_id: id(), sys_import_set: 'isB', 'sys_import_set.number': 'ISET0010000', sys_target_sys_id: INC.sysId, sys_transform_map: map, 'sys_transform_map.name': '[PT] Importa incidentes', sys_import_state: 'inserted', sys_updated_on: T0, sys_updated_by: 'admin' },
     ]);
     c.rows('sys_transform_entry', [{ map, source_field: 'u_severidade', target_field: 'severity' }]);
     const e = (await investigate(c, { table: 'incident', number: INC.number, field: 'severity' })).changes[0]!.evidence[0]!;
@@ -908,11 +910,10 @@ describe('importação por transform map (Fase 13)', () => {
   const imp = (s: ReturnType<typeof scenario>, entries: Record<string, string>[], stage: Record<string, string>, scripts: Record<string, string>[] = []) => {
     tx(s, T0, 'rest', '/api/now/import/u_stage', 'admin');
     const c = build(s);
-    c.rows('sys_import_set_row', [{ sys_id: ROW, sys_class_name: 'u_stage', sys_target_sys_id: INC.sysId, sys_import_set: 'is1', 'sys_import_set.number': 'ISET001', sys_transform_map: MAP, 'sys_transform_map.name': 'PT mapa', sys_import_state: 'updated', sys_updated_on: T0, sys_updated_by: 'admin' }]);
     c.rows('sys_transform_entry', entries.map((e) => ({ map: MAP, ...e })));
     c.rows('sys_transform_script', scripts.map((e) => ({ map: MAP, active: 'true', ...e })));
-    c.rows('sys_transform_map', [{ sys_id: MAP, run_script: 'false', script: '' }]);
-    c.rows('u_stage', [{ sys_id: ROW, ...stage }]);
+    c.rows('sys_transform_map', [{ sys_id: MAP, run_script: 'false', script: '', target_table: 'incident', source_table: 'u_stage' }]);
+    c.rows('u_stage', [{ sys_id: ROW, sys_target_sys_id: INC.sysId, sys_import_set: 'is1', 'sys_import_set.number': 'ISET001', sys_transform_map: MAP, 'sys_transform_map.name': 'PT mapa', sys_import_state: 'updated', sys_updated_on: T0, sys_updated_by: 'admin', ...stage }]);
     return c;
   };
   const go = async (c: ReturnType<typeof build>, field: string) => investigate(c, { table: 'incident', number: INC.number, field });

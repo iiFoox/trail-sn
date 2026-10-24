@@ -26,7 +26,7 @@ export interface AccessReport {
   states: Record<Source, AccessState>;
   /** Fontes negadas (401/403), por nome técnico, para o usuário copiar no chamado. */
   denied: Source[];
-  /** Fontes que não responderam a tempo nem na segunda tentativa: não é falta de acesso, é instância lenta. */
+  /** Fontes que não responderam a tempo: não é falta de acesso, é instância lenta. */
   slow: Source[];
   checkedAt: string;
 }
@@ -36,8 +36,8 @@ export interface AccessReport {
  * Decide o que o painel pode prometer: perícia completa, parcial ou só orientação.
  *
  * O prazo conta também o tempo na fila do cliente (6 por vez), então com a instância lenta as últimas fontes
- * estouravam e apareciam como "sem acesso" para quem é admin. Agora: prazo maior, segunda tentativa só para as que
- * estouraram, e o que continuar sem resposta vai para `slow`, separado de `denied` (401/403).
+ * estouravam e apareciam como "sem acesso" para quem é admin. Agora: prazo maior, e o que não responder a tempo vai
+ * para `slow`, separado de `denied` (401/403).
  */
 export async function detectAccess(client: RestClient, timeoutMs = 8000): Promise<AccessReport> {
   const probe = (table: Source) => withTimeout(
@@ -45,9 +45,9 @@ export async function detectAccess(client: RestClient, timeoutMs = 8000): Promis
     timeoutMs,
     { rows: [], status: 0, access: 'timeout' as AccessState },
   ).then((r) => [table, r.access] as const);
+  // Sem segunda tentativa: o navegador desiste da resposta, mas a consulta continua rodando no servidor. Repetir só
+  // somava carga justamente quando a instância já estava lenta.
   const states = Object.fromEntries(await Promise.all(SOURCES.map(probe))) as Record<Source, AccessState>;
-  const retry = SOURCES.filter((s) => states[s] === 'timeout');
-  if (retry.length) Object.assign(states, Object.fromEntries(await Promise.all(retry.map(probe))));
   // Só 'ok' e 'empty' contam como leitura (tabela vazia é acessível).
   const readable = (s: AccessState) => s === 'ok' || s === 'empty';
   const denied = SOURCES.filter((s) => states[s] === 'denied');

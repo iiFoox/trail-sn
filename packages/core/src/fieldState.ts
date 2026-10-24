@@ -13,7 +13,7 @@
 import type { RestClient } from './client/RestClient';
 import { scriptVerdict, type Env } from './scriptEval';
 import type { AccessState, Row } from './types';
-import { conditionFields, evalCondition, withTimeout } from './util';
+import { conditionFields, evalCondition, timedQuery, withTimeout } from './util';
 import { resolveDisplay } from './display';
 
 export type StateAspect = 'read_only' | 'mandatory' | 'hidden';
@@ -178,7 +178,7 @@ export async function fieldStates(
   const note = (t: string, a: AccessState) => { const prev = access[t]; if (!prev || rank[a] > rank[prev]) access[t] = a; };
   // Cada fonte é opcional: negada, vazia ou lenta vira lacuna, nunca erro. Estourou o prazo: tenta mais uma vez.
   const q = async (t: string, query: string, fields: string[], limit: number, track = true): Promise<Row[]> => {
-    const once = () => withTimeout(client.query({ table: t, query, fields, limit }).catch(() => ({ rows: [], status: 0, access: 'unknown' as AccessState })), timeoutMs, { rows: [], status: 0, access: 'timeout' as AccessState });
+    const once = () => timedQuery({ query: (r) => client.query(r).catch(() => ({ rows: [], status: 0, access: 'unknown' as AccessState })) }, { table: t, query, fields, limit }, timeoutMs);
     let r = await once();
     if (r.access === 'timeout') r = await once();
     if (track) note(t, r.access);

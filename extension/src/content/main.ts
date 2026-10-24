@@ -30,6 +30,7 @@ function dispose(): void {
   if (disposed) return;
   disposed = true;
   mo.disconnect();
+  window.clearTimeout(moTimer);
   clearInterval(livenessTimer);
   clearTimeout(wsTimer);
   document.removeEventListener('click', scheduleWorkspaceScan, true);
@@ -411,12 +412,19 @@ document.addEventListener('click', scheduleWorkspaceScan, true);
 for (const ms of [1500, 4000, 8000, 15000]) window.setTimeout(decorateWorkspace, ms);
 
 // Reage a navegação dentro da página (Workspace é SPA) e a formulários que carregam depois.
+// Agrupado: formulários vivos (activity stream, relógios, Workspace) mudam o DOM o tempo todo, e varrer rótulos a cada
+// mudança pesava no navegador do usuário. Roda no máximo a cada 250 ms.
+let moTimer: number | undefined;
 const mo = new MutationObserver(() => {
-  if (!checkContext()) return;
-  checkUrl();
-  decorateForm();
-  decorateList();
-  decoratePortal();
+  if (moTimer !== undefined) return;
+  moTimer = window.setTimeout(() => {
+    moTimer = undefined;
+    if (!checkContext()) return;
+    checkUrl();
+    decorateForm();
+    decorateList();
+    decoratePortal();
+  }, 250);
 });
 mo.observe(document.documentElement, { childList: true, subtree: true });
 

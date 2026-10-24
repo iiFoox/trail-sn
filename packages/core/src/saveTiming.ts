@@ -429,8 +429,9 @@ export async function saveTiming(
   async function baselineRows(): Promise<Row[]> {
     if (!bscope) return [];
     const done = (r: QueryResult) => { if (r.access === 'timeout') baselineSlow = true; return r.rows; };
-    // Job/rotina: o mesmo url (exato), numa tentativa só.
-    if (bscope.scope === 'url') return done(await quick(sc, { table: 'syslog_transaction', query: `${bscope.query}^sys_created_on>=${shift(at, -hours * 3600)}^sys_created_on<=${at}`, fields: requestFields(fset), limit: opts.baselineLimit ?? 200 }, bTimeout));
+    // Job/rotina: o mesmo url (exato), numa tentativa só. No máximo 6 h: url não tem índice e, numa instância grande,
+    // 24 h de syslog_transaction são milhões de linhas varridas (o servidor continua a consulta mesmo após o prazo daqui).
+    if (bscope.scope === 'url') return done(await quick(sc, { table: 'syslog_transaction', query: `${bscope.query}^sys_created_on>=${shift(at, -Math.min(hours, 6) * 3600)}^sys_created_on<=${at}`, fields: requestFields(fset), limit: opts.baselineLimit ?? 200 }, bTimeout));
     // Formulário, API e Workspace: janelas em volta das últimas gravações de outros registros da tabela.
     // Um prazo só para as duas consultas. Últimas gravações de outros registros da tabela (sys_updated_on costuma ter índice).
     const deadline = Date.now() + bTimeout;

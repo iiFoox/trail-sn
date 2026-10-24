@@ -1,5 +1,5 @@
 /** Bundle para rodar a bateria dentro de uma aba logada da instância (console/devtools). */
-import { FetchRestClient, detectAccess, investigate, previewChange, fieldMap, recordFlows, tableAutomations, fieldState as coreFieldState, fieldStates as coreFieldStates, fieldRules as coreFieldRules, fieldDeps as coreFieldDeps, simulateValue as coreSimulateValue, saveTiming as coreSaveTiming, recordSaveTimes as coreRecordSaveTimes, timingFields as coreTimingFields, visibility as coreVisibility, readQueryScript as coreReadQueryScript, compareInstances as coreCompareInstances, type Grade, type FieldObserved } from '../../../packages/core/src/index';
+import { FetchRestClient, detectAccess, investigate, recordTimeline, previewChange, fieldMap, recordFlows, tableAutomations, fieldState as coreFieldState, fieldStates as coreFieldStates, fieldRules as coreFieldRules, fieldDeps as coreFieldDeps, simulateValue as coreSimulateValue, saveTiming as coreSaveTiming, recordSaveTimes as coreRecordSaveTimes, timingFields as coreTimingFields, visibility as coreVisibility, readQueryScript as coreReadQueryScript, compareInstances as coreCompareInstances, type Grade, type FieldObserved } from '../../../packages/core/src/index';
 import cases from '../cases.json';
 
 const order: Grade[] = ['candidate', 'probable', 'confirmed'];
@@ -7,7 +7,7 @@ const order: Grade[] = ['candidate', 'probable', 'confirmed'];
 function makeClient() {
   const w = window as unknown as { g_ck?: string };
   const z = window as unknown as { g_user_timezone?: string; g_tz?: string };
-  return new FetchRestClient({ baseUrl: location.origin, getToken: async () => w.g_ck ?? null, concurrency: 6, getTimeZone: async () => z.g_user_timezone || z.g_tz });
+  return new FetchRestClient({ baseUrl: location.origin, getToken: async () => w.g_ck ?? null, getTimeZone: async () => z.g_user_timezone || z.g_tz });
 }
 
 /** Investiga um alvo e devolve um resumo compacto (para conferir rastro, rótulos e evidências). */
@@ -204,6 +204,7 @@ export async function map(t: { table: string; field: string }): Promise<unknown>
 
 export async function flows(t: { table: string; sysId: string }): Promise<unknown> { return recordFlows(makeClient(), t); }
 export async function automations(t: { table: string; sysId: string }): Promise<unknown> { return tableAutomations(makeClient(), t); }
+export async function timeline(t: { table: string; sysId: string }): Promise<unknown> { return recordTimeline(makeClient(), t); }
 
 // ---------------------------------------------------------------- motores novos (validação no PDI, 21/10/2026)
 
@@ -229,7 +230,7 @@ export const readQueryScript = coreReadQueryScript;
 /** Comparar instâncias com o mesmo PDI nos dois lados (A×A) ou com um lado B sem sessão (cookies omitidos, sem token). */
 export async function compareInstances(t: { table: string; field: string }, mode: 'same' | 'nosession' = 'same', o: { language?: string; versions?: boolean } = {}): Promise<unknown> {
   const a = makeClient();
-  const b = mode === 'same' ? makeClient() : new FetchRestClient({ baseUrl: location.origin, getToken: async () => null, concurrency: 6,
+  const b = mode === 'same' ? makeClient() : new FetchRestClient({ baseUrl: location.origin, getToken: async () => null,
     fetchImpl: (input, init) => fetch(input, { ...init, credentials: 'omit' }) });
   const t0 = performance.now();
   const result = await coreCompareInstances({ client: a, label: 'A' }, { client: b, label: mode === 'same' ? 'A2' : 'SEM' }, t, o);

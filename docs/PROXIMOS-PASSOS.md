@@ -1,6 +1,22 @@
 # Próximos passos
 
-## Estado em 22/10/2026, 10h30 (atual)
+## Estado em 24/10/2026 (atual) — revisão de segurança, 1.4.5 candidata
+
+**Não enviar a 1.4.4 às lojas nem usar em instância real.** A revisão de 23 e 24/10 achou problemas que pesam numa instância de produção e deixam mensagens vermelhas na tela do usuário sem acesso. Detalhes em `docs/DIARIO.md` (23/10 e 24/10). Em resumo:
+- COUNT(*) a cada consulta;
+- chamadas simultâneas sem teto, travando a página do próprio usuário;
+- import sets pela tabela base;
+- consultas barradas por Query ACL gravando mensagens na sessão do usuário;
+- filtro com campo inexistente devolvendo linhas quaisquer;
+- valores livres dentro de filtros.
+
+**1.4.5 candidata** (commit desta data): todas as correções, 310 testes passando e, no PDI, nenhuma mensagem vermelha em admin, itil e usuário de escopo. A bateria de 441 casos como admin dá 435 a 437, com casos que variam entre rodadas e passam isolados; a 1.4.4 ainda não foi medida no mesmo dia para comparar. A 1.4.5 está mais lenta (~3,5 s contra ~2,5 s por caso).
+
+**Próximo:** bateria de 5.000 testes pelo Codex, em `tests/regression/seguranca/TAREFA-5000.md`, comparando 1.4.4 × 1.4.5. Ferramentas em `tests/regression/seguranca/` (`portal.mjs`, `bateria441.mjs`). Só depois de aprovada: zip de loja da 1.4.5, atualização de `docs/store/` e envio pelo dono.
+
+---
+
+## Estado em 22/10/2026, 10h30 (histórico)
 
 **Versão pronta para as lojas: 1.4.4.** Os dois arquivos entregues pelo dono foram conferidos e adicionados em `docs/store/packages/`:
 

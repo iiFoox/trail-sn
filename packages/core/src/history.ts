@@ -20,9 +20,15 @@ export async function historyToAudit(h: HistoryResult, tables: string[], quiet: 
   const userIds = unique(entries.map((e) => e.userId ?? '').filter(Boolean));
   // Nomes exibidos em campos de referência, por tabela referenciada (no máximo 20 por tabela).
   const refNames: Record<string, string[]> = {};
+  // Campo de exibição da tabela referenciada, pelo ui/meta. Sem ele não se chuta name/number: na instância, filtro com
+  // campo inexistente é ignorado e a consulta devolve linhas quaisquer da tabela (medido no PDI em 23/10/2026).
+  const refShown: Record<string, string> = {};
   for (const e of entries) for (const c of e.changes) {
     const ref = h.refs?.[c.field];
     if (!ref) continue;
+    const shown = h.refDisplay?.[c.field];
+    if (h.refDisplay && !shown) continue;
+    if (shown && !refShown[ref]) refShown[ref] = shown;
     for (const v of [c.oldValue, c.newValue]) {
       const list = (refNames[ref] ??= []);
       if (v && !SYS_ID.test(v) && list.length < 20 && !list.includes(v)) list.push(v);
@@ -32,9 +38,12 @@ export async function historyToAudit(h: HistoryResult, tables: string[], quiet: 
     fields.length && !h.choices ? quiet('sys_choice', `nameIN${tables.join(',')}^elementIN${fields.join(',')}^inactive=false`, ['name', 'element', 'value', 'label'], 500) : Promise.resolve([] as Row[]),
     userIds.length ? quiet('sys_user', `sys_idIN${userIds.join(',')}`, ['sys_id', 'user_name'], 50) : Promise.resolve([] as Row[]),
     Promise.all(Object.entries(refNames).map(async ([table, names]) => {
-      // Campo de exibição mais comum: name; senão number. Consulta com campo inexistente volta vazia.
-      for (const field of ['name', 'number', 'display_name']) {
-        const rows = await quiet(table, `${field}IN${names.map((n) => n.replace(/,/g, '')).join(',')}`, ['sys_id', field], 60);
+      // Pelo campo de exibição do ui/meta; sem ui/meta (cliente de teste), tenta os mais comuns.
+      // Nome com vírgula ou ^ mudaria o filtro (a vírgula separa a lista): fica de fora.
+      const safe = names.filter((n) => !/[,^\r\n]/.test(n));
+      if (!safe.length) return { table, rows: [] as { sys_id: string; name: string }[] };
+      for (const field of refShown[table] ? [refShown[table]!] : ['name', 'number', 'display_name']) {
+        const rows = await quiet(table, `${field}IN${safe.join(',')}`, ['sys_id', field], 60);
         if (rows.length) return { table, rows: rows.map((r) => ({ sys_id: r.sys_id ?? '', name: r[field] ?? '' })) };
       }
       return { table, rows: [] as { sys_id: string; name: string }[] };

@@ -204,8 +204,10 @@ async function tokenProvider(origin: string): Promise<string | null> {
 }
 function makeClient(origin: string): FetchRestClient {
   const tzKey = storageKey.timeZone(origin);
-  return new FetchRestClient({ baseUrl: origin, getToken: () => tokenProvider(origin), concurrency: 6,
-    getTimeZone: () => session.get(tzKey).then((o) => o[tzKey] as string | undefined, () => undefined) });
+  return new FetchRestClient({ baseUrl: origin, getToken: () => tokenProvider(origin),
+    getTimeZone: () => session.get(tzKey).then((o) => o[tzKey] as string | undefined, () => undefined),
+    // ui/meta das tabelas (o que o usuário pode filtrar), guardado enquanto o navegador estiver aberto.
+    store: { get: (k) => session.get(k).then((o) => o[k]), set: (k, v) => session.set({ [k]: v }) } });
 }
 
 // ---------- cache de metadados (10 min, por instância+tabela) ----------
@@ -515,16 +517,18 @@ async function probeAuth(origin: string): Promise<ProbeResult> {
 }
 
 // ---------- acesso ----------
+const SLOW_ACCESS_TTL_MS = 3 * 60 * 1000;
+const MAX_BATCH = 50;
 async function checkAccess(origin: string, force = false): Promise<AccessReport> {
   const key = storageKey.access(origin);
   if (!force) {
     const o = await session.get(key);
     const cached = o[key] as AccessReport | undefined;
-    if (cached) return cached;
+    // Com fonte lenta, o relatório vale 3 min: refazer a sondagem a cada análise pesava justo na instância lenta.
+    if (cached && (!cached.slow?.length || Date.now() - Date.parse(cached.checkedAt) < SLOW_ACCESS_TTL_MS)) return cached;
   }
   const report = await detectAccess(makeClient(origin));
-  // Fonte que só demorou não fica guardada: a próxima análise confere de novo.
-  if (!report.slow?.length) await session.set({ [key]: report });
+  await session.set({ [key]: report });
   return report;
 }
 
@@ -702,7 +706,8 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
         const id = await requestTab(msg, sender);
         if (id === undefined) return;
         await openPanel(id, msg.mode);
-        await runBatch(id, msg.origin, msg.table, msg.field, msg.sysIds.slice(0, 200), await languageFor(msg.origin, id, msg.language), msg.token);
+        // No máximo 50 registros por lote: cada um são ~20 consultas, e a sessão do usuário atende em fila.
+        await runBatch(id, msg.origin, msg.table, msg.field, msg.sysIds.slice(0, MAX_BATCH), await languageFor(msg.origin, id, msg.language), msg.token);
         return;
       }
       case 'float-get': {
