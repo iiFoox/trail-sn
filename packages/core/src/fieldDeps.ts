@@ -260,14 +260,16 @@ export async function fieldDeps(client: RestClient, target: { table: string; fie
   // Só sys_id: um número (INC0010001) como task= daria "nenhuma anexada" sem ser verdade.
   const recId = target.sysId && /^\w+$/.test(target.sysId) && !/^[A-Z]{2,}[A-Z0-9]*\d{3,}$/.test(target.sysId) ? target.sysId : undefined;
 
+  // As regras vão uma vez só: delas saem os script includes que elas chamam.
+  const brsP = run(S.businessRules);
   const [brs, cs, pols, dps, lookups, uas, sis, rules, triggers, mails, slas, refs, taskSlas] = await Promise.all([
-    run(S.businessRules),
+    brsP,
     run(S.clientScripts),
     run(S.uiPolicies),
     q('sys_data_policy2', `model_table${inT}^active=true^conditionsLIKE${field}`, ['sys_id', 'short_description', 'model_table', 'conditions', 'enforce_ui', 'inherit', 'reverse_if_false'], 200),
     q('dl_definition_rel_match', `source_table_field=${field}^dl_definition.active=true^dl_definition.source_table${inT}`, ['dl_definition', 'dl_definition.name', 'dl_definition.source_table', 'dl_definition.run_on_form_change', 'dl_definition.run_on_update'], 50),
     run(S.uiActions),
-    run(S.scriptIncludes),
+    brsP.then((b) => { const x = S.scriptIncludes(b); return x ? run(x) : []; }),
     run(S.assignmentRules),
     run(S.flowTriggers),
     q('sysevent_email_action', `collection${inT}^active=true^conditionLIKE${field}^ORadvanced_conditionLIKE${field}`, ['sys_id', 'name', 'collection', 'condition', 'advanced_condition', 'action_insert', 'action_update', 'generation_type', 'event_name', 'order'], 200),

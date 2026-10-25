@@ -37,11 +37,25 @@ export function sharedQueries(tables: string[], field: string) {
     clientScripts: { table: 'sys_script_client', query: `table${inT}^active=true^field=${field}^ORscriptLIKE${field}`, fields: ['sys_id', 'name', 'type', 'field', 'table', 'script', 'ui_type'], limit: 300 },
     uiPolicies: { table: 'sys_ui_policy', query: `table${inT}^active=true^conditionsLIKE${field}^ORscript_trueLIKE${field}^ORscript_falseLIKE${field}`, fields: ['sys_id', 'short_description', 'table', 'conditions', 'run_scripts', 'script_true', 'script_false', 'reverse_if_false', 'on_load', 'ui_type', 'order'], limit: 300 },
     uiActions: { table: 'sys_ui_action', query: `table${inT}^active=true^scriptLIKE${field}^ORconditionLIKE${field}`, fields: ['sys_id', 'name', 'table', 'script', 'condition', 'order'], limit: 300 },
-    scriptIncludes: { table: 'sys_script_include', query: `active=true^scriptLIKE${field}`, fields: ['sys_id', 'name', 'script'], limit: 200 },
+    // Só os script includes que as regras chamam, pelo nome: por conteúdo (scriptLIKE<campo>), um campo como state casava
+    // com milhares e vinham 200 scripts inteiros (vários MB). Os dois módulos acham os mesmos nomes nas mesmas regras.
+    scriptIncludes: (brs: Row[]): SharedQuery | undefined => {
+      const names = calledScriptIncludes(brs);
+      return names.length ? { table: 'sys_script_include', query: `active=true^nameIN${names.join(',')}`, fields: ['sys_id', 'name', 'script'], limit: names.length } : undefined;
+    },
     assignmentRules: { table: 'sysrule_assignment', query: `active=true^table${inT}`, fields: ['sys_id', 'name', 'table', 'condition', 'group', 'user', 'order'], limit: 200 },
     flowTriggers: { table: 'sys_hub_trigger_instance_v2', query: 'flow.active=true^flow.sys_class_name=sys_hub_flow^trigger_typeSTARTSWITHrecord', fields: ['flow', 'flow.name', 'trigger_type', 'trigger_inputs'], limit: 200 },
     flowActions: (flow: string): SharedQuery => ({ table: 'sys_hub_action_instance_v2', query: `flow=${flow}^ORDERBYorder`, fields: ['order', 'values'], limit: 50 }),
-  } satisfies Record<string, SharedQuery | ((x: string) => SharedQuery)>;
+  } satisfies Record<string, SharedQuery | ((x: string) => SharedQuery) | ((x: Row[]) => SharedQuery | undefined)>;
+}
+
+/** Classes do próprio ServiceNow e do JavaScript, que aparecem como `new X(` ou `X.y(` e nunca são script includes. */
+const NOT_SI = /^(Glide|GlideRecord|GlideAggregate|GlideDateTime|GlideDuration|GlideSysAttachment|JSON|Math|Object|String|Array|Date|Number|RegExp|Boolean|Packages|XMLDocument2?|SNC|Class|ArrayUtil|TableUtils)$|^Glide/;
+/** Nomes de script include citados nas regras (`new X(`, `X.metodo(`, com ou sem `global.`), em ordem, no máximo 60. */
+export function calledScriptIncludes(brs: Row[]): string[] {
+  const names = new Set<string>();
+  for (const b of brs) for (const m of (b.script ?? '').matchAll(/(?:\bnew\s+|(?<![\w.]))(?:global\.)?([A-Z][A-Za-z0-9_]+)\s*(?:\(|\.\s*[a-zA-Z_]\w*\s*\()/g)) if (!NOT_SI.test(m[1]!)) names.add(m[1]!);
+  return [...names].sort().slice(0, 60);
 }
 
 /** Sobe a hierarquia da tabela (incident → task). Com o `SharedClient`, as consultas são reaproveitadas. */
@@ -65,14 +79,16 @@ export async function fieldMap(client: RestClient, target: { table: string; fiel
   const S = sharedQueries(tables, field);
   const run = (x: SharedQuery) => q(x.table, x.query, x.fields, x.limit);
   const inT = `IN${tables.join(',')}`;
+  // As regras vão uma vez só: delas saem os script includes que elas chamam.
+  const brsP = run(S.businessRules);
   const [brs, cs, pols, dls, rules, uas, sis, jobs, entries, triggers] = await Promise.all([
-    run(S.businessRules),
+    brsP,
     run(S.clientScripts),
     run(S.uiPolicies),
     q('dl_definition_rel_set', `source_table_field=${field}^dl_definition.active=true^dl_definition.source_table${inT}`, ['dl_definition', 'dl_definition.name', 'dl_definition.source_table', 'dl_definition.run_on_form_change', 'dl_definition.run_on_update'], 50),
     isAssign ? run(S.assignmentRules) : Promise.resolve([] as Row[]),
     run(S.uiActions),
-    run(S.scriptIncludes),
+    brsP.then((b) => { const x = S.scriptIncludes(b); return x ? run(x) : []; }),
     q('sysauto_script', `active=true^scriptLIKE${field}^scriptLIKE${table}`, ['sys_id', 'name', 'script', 'run_type', 'run_time', 'run_dayofweek'], 50),
     q('sys_transform_entry', `target_table${inT}^target_field=${field}^map.active=true`, ['map', 'map.name', 'source_field', 'use_source_script', 'target_table'], 50),
     run(S.flowTriggers),

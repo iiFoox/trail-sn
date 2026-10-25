@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FakeRestClient } from '../src/client/FakeRestClient';
 import { describeDependent, fieldDeps, fieldRules, simulateValue, conditionUses, serverReads } from '../src/fieldDeps';
-import { fieldMap } from '../src/fieldMap';
+import { calledScriptIncludes, fieldMap } from '../src/fieldMap';
 import { previewChange } from '../src/preview';
 import { SharedClient } from '../src/sharedClient';
 
@@ -200,7 +200,7 @@ describe('Regras do campo (Quem grava + Quem depende)', () => {
     const c = base();
     c.rows('sys_script', [
       br({ sys_id: 'b1', name: 'Grava estado', script: "current.state = 2;" }),
-      br({ sys_id: 'b2', name: 'Lê estado', filter_condition: 'stateVALCHANGES^EQ', script: "current.u_x = 'y';" }),
+      br({ sys_id: 'b2', name: 'Lê estado', filter_condition: 'stateVALCHANGES^EQ', script: "current.u_x = new MeuUtil().x(); var g = new GlideRecord('task');" }),
     ]);
     c.rows('sys_script_client', [{ sys_id: 'c1', name: 'Cliente', type: 'onChange', field: 'category', table: 'incident', active: 'true', ui_type: '0', script: "g_form.setValue('state', '2');" }]);
     c.rows('sys_hub_trigger_instance_v2', [trig({ flow: 'f1', name: 'F', condition: 'state=6^EQ' })]);
@@ -212,6 +212,8 @@ describe('Regras do campo (Quem grava + Quem depende)', () => {
       expect(c.log.filter((x) => x.table === t), t).toHaveLength(1);
     }
     expect(c.log.filter((x) => x.table === 'sys_db_object')).toHaveLength(2);
+    // Script includes pelo nome dos que as regras chamam, nunca por conteúdo (M5: scriptLIKE<campo> trazia milhares).
+    expect(c.log.find((x) => x.table === 'sys_script_include')?.query).toBe('active=true^nameINMeuUtil');
     expect(r.timing.calls).toBe(c.calls);
     expect(r.denied).toEqual([]);
   });
@@ -394,5 +396,12 @@ describe('P7: when=before_display', () => {
     c.rows('sys_script', [br({ sys_id: 'bd', name: 'Antes de mostrar', when: 'before_display', filter_condition: 'stateVALCHANGES^EQ', script: "current.u_x = 'y';" })]);
     const d = await fieldDeps(c, { table: 'incident', field: 'state' });
     expect(d.dependents.find((x) => x.sysId === 'bd')).toMatchObject({ phase: 'before', kind: 'br_before' });
+  });
+});
+
+describe('script includes chamados pelas regras (M5, 25/10)', () => {
+  it('new X(, global.X e X.metodo( entram; classes do ServiceNow e do JavaScript e métodos de objeto não', () => {
+    const brs = [{ script: "var a = new global.Foo(); Bar.go(current); obj.Baz(1); var g = new GlideRecord('x'); Math.max(1, 2); JSON.parse(s); new Foo().run();" }];
+    expect(calledScriptIncludes(brs)).toEqual(['Bar', 'Foo']);
   });
 });
