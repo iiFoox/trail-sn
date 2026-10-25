@@ -1,6 +1,7 @@
 import { render } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import '../shared/ui.css';
+import { embedAllowed } from '../shared/embedGuard';
 import { bootPage, getPrefs } from '../shared/prefs';
 import { t } from '../shared/i18n';
 import { TrailMark } from '../shared/icons';
@@ -33,4 +34,4 @@ function DiffPage() {
     </>
   );
 }
-render(<DiffPage />, document.getElementById('app')!);
+void embedAllowed().then((ok) => { if (ok) render(<DiffPage />, document.getElementById('app')!); });
