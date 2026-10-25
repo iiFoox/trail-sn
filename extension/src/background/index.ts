@@ -536,11 +536,12 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
  * mesmo com Origin chrome-extension://? Três GETs, nada é gravado.
  */
 async function probeAuth(origin: string): Promise<ProbeResult> {
-  const url = `${origin}/api/now/table/sys_properties?sysparm_limit=1&sysparm_fields=sys_id`;
+  const url = `${origin}/api/now/table/sys_properties?sysparm_limit=1&sysparm_fields=sys_id&sysparm_no_count=true`;
   const steps: ProbeResult['steps'] = [];
   const get = async (step: ProbeResult['steps'][number]['step'], headers: Record<string, string>) => {
     try {
-      const r = await fetch(url, { headers: { Accept: 'application/json', ...headers }, credentials: 'include' });
+      // Como as consultas: com prazo e sem seguir redirecionamento (o X-UserToken não vai para outro endereço).
+      const r = await fetch(url, { headers: { Accept: 'application/json', ...headers }, credentials: 'include', redirect: 'manual', signal: AbortSignal.timeout(8000) });
       const body = (await r.text()).slice(0, 120);
       steps.push({ step, status: r.status, ok: r.status === 200, detail: body });
       return r.status;
