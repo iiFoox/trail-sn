@@ -456,10 +456,19 @@ export async function investigate(
   async function loadMetaBase(table: string): Promise<TableMeta> {
     const tables: string[] = [];
     let cur: string | undefined = table;
+    // Passo da hierarquia sem resposta (no PDI, dois 500 seguidos do balanceador): a tabela pareceria sem pai e o
+    // incident perderia as regras e as opções de task (urgency sem rótulo). Tenta mais uma vez; se faltar de novo, os
+    // metadados ficam incompletos e não vão para o cache.
+    let hierarchyGap = false;
     for (let i = 0; cur && i < 10; i++) {
       tables.push(cur);
-      const o: Row | undefined = (await q('sys_db_object', `name=${cur}`, ['super_class.name'], 1))[0];
-      cur = o?.['super_class.name'] || undefined;
+      const req = { table: 'sys_db_object', query: `name=${cur}`, fields: ['super_class.name'], limit: 1 };
+      let r = await timedQuery(client, req, opts.sourceTimeoutMs);
+      if (r.access === 'timeout' || r.access === 'unknown') r = await timedQuery(client, req, opts.sourceTimeoutMs);
+      if (r.access === 'timeout' || r.access === 'unknown') hierarchyGap = true;
+      const prev = access.sys_db_object;
+      if (!prev || prev === 'empty' || prev === 'unknown' || (prev === 'timeout' && r.access !== 'timeout')) access.sys_db_object = r.access;
+      cur = r.rows[0]?.['super_class.name'] || undefined;
     }
     const brReq = { table: 'sys_script', query: `collectionIN${tables.join(',')}^active=true`, fields: ['sys_id', 'name', 'when', 'order', 'collection', 'script', 'template', 'condition', 'filter_condition', 'action_insert', 'action_update'], limit: 500 };
     // As regras são a base de tudo: se a consulta estourar o tempo, tenta de novo com mais folga antes de seguir sem elas.
@@ -467,7 +476,7 @@ export async function investigate(
     if (brRes.access === 'timeout') brRes = await timedQuery(client, brReq, opts.sourceTimeoutMs * 3);
     if (!access.sys_script || access.sys_script === 'timeout') access.sys_script = brRes.access;
     const businessRules = brRes.rows;
-    const incomplete = brRes.access === 'timeout';
+    const incomplete = brRes.access === 'timeout' || hierarchyGap;
     // Script includes citados pelas BRs (por nome; buscar por conteúdo traz centenas de scripts nativos).
     const siNames = new Set<string>();
     for (const b of businessRules) (b.script ?? '').replace(/new\s+(?:global\.)?([A-Z][A-Za-z0-9_]+)\s*\(/g, (_m, n: string) => { siNames.add(n); return _m; });

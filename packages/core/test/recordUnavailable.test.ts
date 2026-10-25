@@ -66,3 +66,36 @@ describe('registro indisponível não é registro inexistente', () => {
     await expect(recordTimeline(build(scenario()).deny('incident'), { table: 'incident', sysId: INC.sysId })).rejects.toBeInstanceOf(RecordNotFoundError);
   });
 });
+
+describe('hierarquia da tabela sem resposta (1.4.6, M9 no PDI)', () => {
+  /** sys_db_object do incident falha `fails` vezes (500 do balanceador) e depois responde que o pai é task. */
+  function hierarchyFails(fails: number) {
+    const s = scenario();
+    audit(s, 'state', '1', '2', T0, 'admin', 1);
+    const c = build(s);
+    let n = 0;
+    c.respond('sys_db_object', (req) => {
+      if (req.query === 'name=incident' && n++ < fails) return { rows: [], status: 500, access: 'unknown' };
+      if (req.query === 'name=incident') return [{ name: 'incident', 'super_class.name': 'task' }];
+      if (req.query === 'name=task') return [{ name: 'task', 'super_class.name': '' }];
+      return [];
+    });
+    const stored: unknown[] = [];
+    const cache = { get: async () => undefined, set: async (_t: string, m: unknown) => { stored.push(m); } };
+    return { c, cache, stored };
+  }
+
+  it('uma falha: repete o passo e acha task', async () => {
+    const { c, cache, stored } = hierarchyFails(1);
+    await investigate(c, { table: 'incident', sysId: INC.sysId, field: 'state' }, {}, cache);
+    expect(c.log.find((x) => x.table === 'sys_script')?.query).toContain('collectionINincident,task');
+    expect(stored).toHaveLength(1);
+  });
+
+  it('duas falhas: segue só com incident, mas os metadados não vão para o cache', async () => {
+    const { c, cache, stored } = hierarchyFails(2);
+    const r = await investigate(c, { table: 'incident', sysId: INC.sysId, field: 'state' }, {}, cache);
+    expect(r.access.sys_db_object).toBe('unknown');
+    expect(stored).toHaveLength(0);
+  });
+});
