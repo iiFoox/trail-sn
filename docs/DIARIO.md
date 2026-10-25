@@ -597,3 +597,14 @@ A pedido do dono, dois agentes à parte: um revisor de código e segurança (só
 - Codex com o 145d: A itil e escopo.user 270 cada sem mensagens vermelhas; C itil 300/300, 0 divergências, auditoria pelo histórico em todos.
 - Pacotes em `docs/store/packages/` (trail-chrome-1.4.5.zip 274.712 bytes, trail-extensao-1.4.5.zip), ficha da loja e site atualizados (FAQ nova, privacidade 1.4.5). Os pacotes 1.4.4 saíram da pasta: a 1.4.4 não deve ser publicada.
 - Envio às lojas: só o dono.
+
+## 25/10/2026: 1.4.6 (melhorias da revisão de segurança que ficaram de fora da 1.4.5)
+
+- **M9, clique novo cancela o anterior:** cada aba guarda um `AbortController`; campo, registro inteiro e lote cancelam a investigação anterior da mesma aba. O `FetchRestClient` aceita `signal` do cliente: consultas na fila saem dela sem ir à instância e as que estão no ar são abortadas. O ui/meta e o histórico do formulário não são cancelados (são compartilhados com outros clientes). A rodada cancelada não grava mais nada no painel. No `roundClient`, a consulta reaproveitada só sai da fila quando todos que a esperam desistiram (antes valia o prazo de quem pediu primeiro).
+- **M5, script includes nas regras do campo:** antes `sys_script_include scriptLIKE<campo>`, limite 200, script inteiro (um campo como `state` casava com milhares). Agora só os nomes que as regras chamam (`new X(`, `X.metodo(`), por `nameIN`; as regras vão uma vez só por pergunta.
+- **M8, armazenamento da sessão:** as entregas `diff:` e `report:` (janela de diferença e PDF) com mais de 30 min saem a cada nova entrega. O cache de metadados já não derrubava a investigação com a cota cheia.
+- **B2, painel embutível:** dentro de iframe, o painel e a diferença só abrem se todos os quadros acima forem da extensão ou de uma instância conectada. Não usei `use_dynamic_url` (risco para o painel flutuante). A demonstração do site (fora da extensão) abre sempre.
+- **B4/B5, diagnóstico de conexão (opções):** com prazo de 8 s, `sysparm_no_count` e sem seguir redirecionamento com o token.
+- Já estavam feitos: M3 (fieldStates sem segunda tentativa), M10 (busca de pessoas com 3 letras) e B3 (CSV sem fórmula).
+- Testes: 1033 passando. Bundle de regressão `tests/regression/seguranca/results/bundle-146a`.
+- **Falta:** validação no PDI (Codex) e medir `query_range`/LIKE para perfis sem admin.
