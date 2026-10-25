@@ -1,22 +1,22 @@
-# Ficha de preenchimento das lojas (Trail 1.4.5)
+# Ficha de preenchimento das lojas (Trail 1.4.6)
 
 Tudo pronto para copiar e colar, campo por campo. Os textos estão em texto puro, porque as lojas não aceitam markdown.
-Arquivos: pacote de loja `packages/trail-chrome-1.4.5.zip` (serve para Chrome e Edge); pacote da pasta carregada manualmente `packages/trail-extensao-1.4.5.zip`; imagens nesta pasta (`docs/store/`).
+Arquivos: pacote de loja `packages/trail-chrome-1.4.6.zip` (serve para Chrome e Edge); pacote da pasta carregada manualmente `packages/trail-extensao-1.4.6.zip`; imagens nesta pasta (`docs/store/`).
 
 | Campo | Arquivo | Tamanho | Chrome | Edge |
 |---|---|---|---|---|
-| Pacote da loja | `packages/trail-chrome-1.4.5.zip` | 274.712 bytes | obrigatório | obrigatório |
-| Pasta empacotada para instalação manual | `packages/trail-extensao-1.4.5.zip` | 867.648 bytes | não enviar | não enviar |
+| Pacote da loja | `packages/trail-chrome-1.4.6.zip` | 276.260 bytes | obrigatório | obrigatório |
+| Pasta empacotada para instalação manual | `packages/trail-extensao-1.4.6.zip` | 277.020 bytes | não enviar | não enviar |
 | Logo da loja | `logo-300.png` | 300×300 | — (usa o ícone do pacote) | obrigatório |
 | Capturas de tela | `shot-1-resposta.png` … `shot-5-flows.png` | 1280×800 | 1 a 5 | 1 a 6 |
 | Bloco promocional pequeno | `tile-440x280.png` | 440×280 | obrigatório | opcional |
 
 O nome localizado (`Trail — Perícia de registros ServiceNow` / `Trail — ServiceNow Record Forensics`) e a descrição curta vêm do próprio pacote no Chrome. No Edge, use os campos abaixo.
 
-## Notas da versão 1.4.5
-PT: Mais segurança para instâncias de produção: o Trail confere antes o que o seu perfil pode filtrar e não deixa mais mensagens de acesso na sua sessão. Menos carga na instância (no máximo 2 consultas por vez), histórico do formulário quando a auditoria não responde e identificação mais precisa de importações.
+## Notas da versão 1.4.6
+PT: Mais seguro e mais leve em instâncias de produção: o Trail confere antes o que o seu perfil pode filtrar e não deixa mensagens de acesso na sua sessão; faz no máximo 2 consultas por vez; ao clicar em outro campo, a investigação anterior para na hora; e lê só os script includes que as regras chamam (muito menos dados em instâncias grandes). Usa o histórico do formulário quando a auditoria não responde, identifica importações com mais precisão e se recupera melhor de instâncias instáveis.
 
-EN: Safer on production instances: Trail checks first what your user may filter, so it no longer leaves access messages in your session. Lighter on the instance (at most 2 requests at a time), form history when the audit log does not answer, and more accurate detection of imports.
+EN: Safer and lighter on production instances: Trail checks first what your user may filter, so it leaves no access messages in your session; it makes at most 2 requests at a time; clicking another field stops the previous investigation right away; and it reads only the script includes your rules call (far less data on large instances). It uses the form history when the audit log does not answer, detects imports more accurately and recovers better from unstable instances.
 
 ## Descrição curta (Edge pede; até 132 caracteres)
 PT: Descubra o que mudou qualquer campo do ServiceNow e por quê. Funciona sem admin, sem instalar nada nem criar papel. Só leitura.

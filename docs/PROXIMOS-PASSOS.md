@@ -1,6 +1,12 @@
 # Próximos passos
 
-## Estado em 24/10/2026 (atual) — revisão de segurança, 1.4.5 candidata
+## Estado em 25/10/2026 (atual) — 1.4.6 pronta para as lojas
+
+**1.4.6** (inclui a 1.4.5, que pode ser pulada nas lojas): melhorias da revisão de segurança (M3, M5, M8, M9, M10, B2 a B5) e a correção da hierarquia sem resposta que ia para o cache. 1035 testes passando. No PDI: B 416/441 (as diferenças são eventos [PT] que saíram da retenção de 7 dias; reemitidos, passam nas duas versões), M5 igual ou melhor que a 1.4.5 em 21 campos, M9 sem efeito do cancelamento nos resultados, A sem mensagens vermelhas. Pacotes, checksums e ficha em `docs/store/`. **Falta:** o dono enviar às lojas.
+
+**Depois:** medir `query_range`/LIKE para perfis sem admin no PDI; dar ao `pt.trail.escopo.user` acesso ao app A (403 hoje) para repetir o bloco A naquele contexto.
+
+## Estado em 24/10/2026 — revisão de segurança, 1.4.5 candidata
 
 **Não enviar a 1.4.4 às lojas nem usar em instância real.** A revisão de 23 e 24/10 achou problemas que pesam numa instância de produção e deixam mensagens vermelhas na tela do usuário sem acesso. Detalhes em `docs/DIARIO.md` (23/10 e 24/10). Em resumo:
 - COUNT(*) a cada consulta;
