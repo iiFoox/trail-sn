@@ -465,9 +465,10 @@ export async function investigate(
       const req = { table: 'sys_db_object', query: `name=${cur}`, fields: ['super_class.name'], limit: 1 };
       let r = await timedQuery(client, req, opts.sourceTimeoutMs);
       if (r.access === 'timeout' || r.access === 'unknown') r = await timedQuery(client, req, opts.sourceTimeoutMs);
-      if (r.access === 'timeout' || r.access === 'unknown') hierarchyGap = true;
       const prev = access.sys_db_object;
       if (!prev || prev === 'empty' || prev === 'unknown' || (prev === 'timeout' && r.access !== 'timeout')) access.sys_db_object = r.access;
+      // Sem resposta nas duas: vira fonte lenta (entra nas lacunas e o painel avisa), não 'unknown', que passaria calado.
+      if (r.access === 'timeout' || r.access === 'unknown') { hierarchyGap = true; access.sys_db_object = 'timeout'; }
       cur = r.rows[0]?.['super_class.name'] || undefined;
     }
     const brReq = { table: 'sys_script', query: `collectionIN${tables.join(',')}^active=true`, fields: ['sys_id', 'name', 'when', 'order', 'collection', 'script', 'template', 'condition', 'filter_condition', 'action_insert', 'action_update'], limit: 500 };

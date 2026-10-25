@@ -95,7 +95,8 @@ describe('hierarquia da tabela sem resposta (1.4.6, M9 no PDI)', () => {
   it('duas falhas: segue só com incident, mas os metadados não vão para o cache', async () => {
     const { c, cache, stored } = hierarchyFails(2);
     const r = await investigate(c, { table: 'incident', sysId: INC.sysId, field: 'state' }, {}, cache);
-    expect(r.access.sys_db_object).toBe('unknown');
+    expect(r.access.sys_db_object).toBe('timeout');
+    expect(r.gaps).toContain('sys_db_object: timeout');
     expect(stored).toHaveLength(0);
   });
 });
