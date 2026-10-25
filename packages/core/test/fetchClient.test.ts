@@ -330,3 +330,28 @@ describe('ui/meta que não respondeu (revisão 24/10)', () => {
     expect(tableCalls(fetchImpl)).toBe(0);
   });
 });
+
+describe('cliente cancelado (M9: clique novo na mesma aba, 25/10)', () => {
+  it('a consulta no ar é abortada e a da fila sai sem ir à instância', async () => {
+    const urls: string[] = [];
+    const fetchImpl = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      urls.push(String(input));
+      if (String(input).includes('/ui/meta/')) return Promise.resolve(json(200, { result: { columns: { sys_id: { canmatch: true } } } }));
+      return new Promise<Response>((_res, rej) => init?.signal?.addEventListener('abort', () => rej(Object.assign(new Error('abort'), { name: 'AbortError' }))));
+    }) as unknown as typeof fetch;
+    const ctrl = new AbortController();
+    const c = new FetchRestClient({ baseUrl: 'https://cancel.example.com', getToken: async () => 'tok', fetchImpl, signal: ctrl.signal });
+    const q = (n: number) => c.query({ table: 'incident', query: '', fields: ['sys_id'], limit: n });
+    const all = Promise.all([q(1), q(2), q(3)]);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(tableCalls(fetchImpl)).toBe(2); // no máximo 2 por instância: a terceira espera na fila
+    ctrl.abort();
+    const rs = await all;
+    expect(rs.map((r) => r.access)).toEqual(['timeout', 'timeout', 'timeout']);
+    expect(tableCalls(fetchImpl)).toBe(2);
+    // A vaga foi devolvida: outro cliente da mesma instância segue normalmente.
+    const ok = vi.fn(async () => json(200, { result: [{ sys_id: 'x' }] })) as unknown as typeof fetch;
+    const c2 = new FetchRestClient({ baseUrl: 'https://cancel.example.com', getToken: async () => 'tok', fetchImpl: ok });
+    expect((await c2.query({ table: 'incident', query: '', fields: ['sys_id'], limit: 1 })).access).toBe('ok');
+  });
+});

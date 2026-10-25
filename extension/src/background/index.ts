@@ -216,9 +216,9 @@ async function tokenProvider(origin: string, refresh = false): Promise<string | 
   htmlTokens.set(origin, { at: Date.now(), p });
   return p;
 }
-function makeClient(origin: string): FetchRestClient {
+function makeClient(origin: string, signal?: AbortSignal): FetchRestClient {
   const tzKey = storageKey.timeZone(origin);
-  return new FetchRestClient({ baseUrl: origin, getToken: (refresh) => tokenProvider(origin, refresh),
+  return new FetchRestClient({ baseUrl: origin, ...(signal ? { signal } : {}), getToken: (refresh) => tokenProvider(origin, refresh),
     getTimeZone: () => session.get(tzKey).then((o) => o[tzKey] as string | undefined, () => undefined),
     // ui/meta das tabelas (o que o usuário pode filtrar), guardado enquanto o navegador estiver aberto.
     store: { get: (k) => session.get(k).then((o) => o[k]), set: (k, v) => session.set({ [k]: v }) } });
@@ -227,23 +227,48 @@ function makeClient(origin: string): FetchRestClient {
 /**
  * Cliente de uma rodada (registro inteiro, lote): a mesma consulta pedida por várias investigações (auditoria do
  * registro, transações e eventos das mesmas janelas, hierarquia) vai à instância uma vez só. Prazo estourado ou
- * resposta desconhecida não ficam guardados.
+ * resposta desconhecida não ficam guardados. A consulta só sai da fila quando todos os que a esperam desistiram: antes,
+ * o prazo de quem pediu primeiro valia para os outros.
  */
-function roundClient(origin: string): FetchRestClient {
-  const c = makeClient(origin);
-  const memo = new Map<string, ReturnType<FetchRestClient['query']>>();
+function roundClient(origin: string, signal?: AbortSignal): FetchRestClient {
+  const c = makeClient(origin, signal);
+  const memo = new Map<string, { p: ReturnType<FetchRestClient['query']>; ctrl: AbortController; waiting: number }>();
   const query = c.query.bind(c);
   c.query = (req) => {
     const key = `${req.table}|${req.query}|${req.fields.join(',')}|${req.limit}`;
-    let p = memo.get(key);
-    if (!p) {
-      p = query(req);
-      memo.set(key, p);
-      void p.then((r) => { if (r.access === 'timeout' || r.access === 'unknown') memo.delete(key); }, () => memo.delete(key));
+    let entry = memo.get(key);
+    if (!entry || entry.ctrl.signal.aborted) {
+      const ctrl = new AbortController();
+      const e = { p: query({ ...req, signal: ctrl.signal }), ctrl, waiting: 0 };
+      memo.set(key, e);
+      void e.p.then((r) => { if (r.access === 'timeout' || r.access === 'unknown') memo.delete(key); }, () => memo.delete(key));
+      entry = e;
     }
-    return p;
+    const e = entry;
+    if (!req.signal) e.waiting = Infinity; // quem não pode desistir segura a consulta
+    else if (!req.signal.aborted) {
+      e.waiting++;
+      req.signal.addEventListener('abort', () => { if (--e.waiting <= 0) e.ctrl.abort(); }, { once: true });
+    }
+    if (e.waiting <= 0) e.ctrl.abort();
+    return e.p;
   };
   return c;
+}
+
+/**
+ * Investigação em andamento de cada aba: um clique novo (campo, registro inteiro ou lote) cancela a anterior, que sai da
+ * fila sem ir à instância e não grava mais nada no painel.
+ */
+const runs = new Map<number, AbortController>();
+function startRun(tabId: number): AbortSignal {
+  runs.get(tabId)?.abort();
+  const ctrl = new AbortController();
+  runs.set(tabId, ctrl);
+  return ctrl.signal;
+}
+function endRun(tabId: number, signal: AbortSignal): void {
+  if (runs.get(tabId)?.signal === signal) runs.delete(tabId);
 }
 
 // ---------- cache de metadados (10 min, por instância+tabela) ----------
@@ -580,17 +605,22 @@ async function retentionFor(origin: string, client: FetchRestClient) {
 // ---------- investigação ----------
 /** Investiga o mesmo campo em vários registros (selecionados na lista), três de cada vez, com o cache da tabela. */
 async function runBatch(tabId: number, origin: string, table: string, field: string, sysIds: string[], language: string, token?: string): Promise<void> {
+  const signal = startRun(tabId);
+  try { await batchRun(tabId, signal, origin, table, field, sysIds, language, token); } finally { endRun(tabId, signal); }
+}
+async function batchRun(tabId: number, signal: AbortSignal, origin: string, table: string, field: string, sysIds: string[], language: string, token?: string): Promise<void> {
   await rememberToken(origin, token);
   const started = Date.now();
   const items: BatchItem[] = sysIds.map((sysId) => ({ sysId, display: sysId, status: 'pending' }));
-  const save = async (status: 'running' | 'done') => setTab({ ...(await getTab(tabId)), tabId, status: 'idle', result: undefined, error: undefined, batch: { table, field, items: [...items], status, startedAt: new Date(started).toISOString(), ...(status === 'done' ? { ms: Date.now() - started } : {}) } });
+  // Cancelado por um clique novo: o painel já mostra a investigação seguinte.
+  const save = async (status: 'running' | 'done') => signal.aborted ? undefined : setTab({ ...(await getTab(tabId)), tabId, status: 'idle', result: undefined, error: undefined, batch: { table, field, items: [...items], status, startedAt: new Date(started).toISOString(), ...(status === 'done' ? { ms: Date.now() - started } : {}) } });
   await save('running');
-  const client = roundClient(origin);
+  const client = roundClient(origin, signal);
   const retention = await retentionFor(origin, client);
   let next = 0;
   let last = 0;
   const worker = async () => {
-    while (next < items.length) {
+    while (next < items.length && !signal.aborted) {
       const i = next++;
       try {
         const r = await investigate(client, { table, sysId: items[i]!.sysId, field }, { retention, language }, metaCache(origin));
@@ -607,11 +637,15 @@ async function runBatch(tabId: number, origin: string, table: string, field: str
 
 /** Registro inteiro: investiga cada campo que mudou no registro (os mais recentes primeiro, até 25 campos). */
 async function runRecord(tabId: number, origin: string, table: string, record: string, language: string, token?: string): Promise<void> {
+  const signal = startRun(tabId);
+  try { await recordRun(tabId, signal, origin, table, record, language, token); } finally { endRun(tabId, signal); }
+}
+async function recordRun(tabId: number, signal: AbortSignal, origin: string, table: string, record: string, language: string, token?: string): Promise<void> {
   await rememberToken(origin, token);
   const started = Date.now();
-  const client = roundClient(origin);
+  const client = roundClient(origin, signal);
   const base = { table, field: '*', kind: 'fields' as const, startedAt: new Date(started).toISOString() };
-  const fail = async (error: string) => setTab({ ...(await getTab(tabId)), tabId, status: 'idle', result: undefined, batch: { ...base, items: [], status: 'done', error } });
+  const fail = async (error: string) => signal.aborted ? undefined : setTab({ ...(await getTab(tabId)), tabId, status: 'idle', result: undefined, batch: { ...base, items: [], status: 'done', error } });
   await setTab({ ...(await getTab(tabId)), tabId, status: 'idle', result: undefined, error: undefined, batch: { ...base, items: [], status: 'running' } });
   try {
     const isId = /^[0-9a-f]{32}$/.test(record);
@@ -627,12 +661,12 @@ async function runRecord(tabId: number, origin: string, table: string, record: s
     const lbl: Record<string, string> = {};
     for (const d of [...dict].sort((a, b) => rank(a.name) - rank(b.name))) if (d.element && d.column_label && !(d.element in lbl)) lbl[d.element] = d.column_label;
     const items: BatchItem[] = fields.map((f) => ({ sysId: rec.sys_id!, display, field: f, ...(lbl[f] ? { label: lbl[f] } : {}), status: 'pending' }));
-    const save = async (status: 'running' | 'done') => setTab({ ...(await getTab(tabId)), tabId, status: 'idle', result: undefined, batch: { ...base, sysId: rec.sys_id, display, items: [...items], status, ...(status === 'done' ? { ms: Date.now() - started } : {}) } });
+    const save = async (status: 'running' | 'done') => signal.aborted ? undefined : setTab({ ...(await getTab(tabId)), tabId, status: 'idle', result: undefined, batch: { ...base, sysId: rec.sys_id, display, items: [...items], status, ...(status === 'done' ? { ms: Date.now() - started } : {}) } });
     await save('running');
     const retention = await retentionFor(origin, client);
     let next = 0, last = 0;
     const worker = async () => {
-      while (next < items.length) {
+      while (next < items.length && !signal.aborted) {
         const i = next++;
         try { const prev = items[i]!; const done = batchItemFrom(await investigate(client, { table, sysId: rec.sys_id!, field: prev.field! }, { retention, language }, metaCache(origin))); items[i] = { ...done, field: prev.field!, label: done.label ?? prev.label ?? prev.field! }; }
         catch (e) { items[i] = { ...items[i]!, status: 'error', error: (e as Error).message }; }
@@ -646,22 +680,24 @@ async function runRecord(tabId: number, origin: string, table: string, record: s
 }
 
 async function runInvestigation(tabId: number, origin: string, target: { table: string; sysId?: string; number?: string; field: string }, language: string, token?: string, shown: { label?: string; display?: string } = {}): Promise<void> {
+  const signal = startRun(tabId);
   await rememberToken(origin, token);
   const prev = await getTab(tabId);
   const display = shown.display || target.number;
   const pending = { target, ...(shown.label ? { label: shown.label } : {}), ...(display ? { display } : {}) };
   await setTab({ ...prev, tabId, status: 'running', startedAt: new Date().toISOString(), result: undefined, error: undefined, batch: undefined, pending });
   try {
-    const client = makeClient(origin);
+    const client = makeClient(origin, signal);
     const retention = await retentionFor(origin, client);
     const [result, access] = await Promise.all([
       investigate(client, target, { retention, language }, metaCache(origin)),
       checkAccess(origin),
     ]);
-    await setTab({ ...(await getTab(tabId)), status: 'done', result, access });
+    // Cancelada por um clique novo: o painel já mostra a investigação seguinte.
+    if (!signal.aborted) await setTab({ ...(await getTab(tabId)), status: 'done', result, access });
   } catch (e) {
-    await setTab({ ...(await getTab(tabId)), status: 'error', error: (e as Error).message });
-  }
+    if (!signal.aborted) await setTab({ ...(await getTab(tabId)), status: 'error', error: (e as Error).message });
+  } finally { endRun(tabId, signal); }
 }
 
 // ---------- mensagens ----------
@@ -855,4 +891,4 @@ async function activeTabId(): Promise<number | undefined> {
   return tab?.id;
 }
 
-chrome.tabs.onRemoved.addListener((tabId) => { void session.remove(storageKey.tab(tabId)); void floatStore.remove(`float:${tabId}`); });
+chrome.tabs.onRemoved.addListener((tabId) => { runs.get(tabId)?.abort(); runs.delete(tabId); void session.remove(storageKey.tab(tabId)); void floatStore.remove(`float:${tabId}`); });

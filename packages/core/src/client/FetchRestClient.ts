@@ -20,6 +20,11 @@ export interface FetchRestClientOptions {
    * ~30 s parado e perde a memória; sem isso, cada investigação conferiria as tabelas de novo.
    */
   store?: { get(key: string): Promise<unknown>; set(key: string, value: unknown): Promise<void> };
+  /**
+   * Quem criou o cliente desistiu (na extensão, um clique novo na mesma aba): as consultas na fila saem dela e as que
+   * estão no ar são abortadas, como prazo estourado. O ui/meta e o histórico não: são compartilhados com outros clientes.
+   */
+  signal?: AbortSignal;
 }
 
 /**
@@ -72,7 +77,8 @@ export class FetchRestClient implements RestClient {
     }
     const known = refusals.get(this.opts.baseUrl, this.token, req);
     if (known) return known;
-    if (!(await this.gate.acquire(req.signal))) return { rows: [], status: 0, access: 'timeout' };
+    const signal = req.signal && this.opts.signal ? AbortSignal.any([req.signal, this.opts.signal]) : req.signal ?? this.opts.signal;
+    if (!(await this.gate.acquire(signal))) return { rows: [], status: 0, access: 'timeout' };
     try {
       const r = await this.doQuery(req, true);
       // 401 não fica guardado: costuma ser sessão expirando, e esconderia a fonte por 10 min depois do novo login.
@@ -150,6 +156,9 @@ export class FetchRestClient implements RestClient {
     // O prazo vale até o fim da leitura do corpo: uma resposta grande e lenta também prenderia a vaga.
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), req.timeoutMs ?? this.timeoutMs);
+    const quit = () => ctrl.abort();
+    this.opts.signal?.addEventListener('abort', quit, { once: true });
+    if (this.opts.signal?.aborted) ctrl.abort();
     let res: Response;
     let text: string;
     try {
@@ -163,6 +172,7 @@ export class FetchRestClient implements RestClient {
       throw e;
     } finally {
       clearTimeout(timer);
+      this.opts.signal?.removeEventListener('abort', quit);
     }
 
     if (res.status === 401 && mayRetryAuth) {
@@ -176,6 +186,7 @@ export class FetchRestClient implements RestClient {
     const html500 = res.status === 500 && !text.trimStart().startsWith('{');
     if ((res.status === 429 || res.status === 502 || res.status === 503 || res.status === 504 || html500) && attempt < 1) {
       await sleep(retryDelay(res));
+      if (this.opts.signal?.aborted) return { rows: [], status: 0, access: 'timeout' };
       return this.doQuery(req, mayRetryAuth, attempt + 1);
     }
     let rows: Row[] = [];
