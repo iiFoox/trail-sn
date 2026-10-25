@@ -18,6 +18,7 @@ import { FieldMapBox } from './FieldMap';
 import { fullReport, plainSummary, savePdf } from './export';
 import { diffLines, looksLong } from '../shared/diff';
 import { DiffView, type DiffLabels } from '../shared/DiffView';
+import { handoff } from '../shared/handoff';
 import { Val } from './Val';
 import { ErrorMsg } from './ErrorMsg';
 import { AdvancedTab } from './AdvancedTab';
@@ -686,8 +687,7 @@ function DiffOverlay({ at, title, sub, oldText, newText, onClose }: { at: { x: n
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); close(); } }; addEventListener('keydown', k); return () => removeEventListener('keydown', k); }, []);
   const sideBySide = async () => {
     if (isDemo) return;
-    const key = `diff:${Date.now()}:${Math.random().toString(36).slice(2)}`;
-    await chrome.storage.session.set({ [key]: { title, sub, oldText, newText } });
+    const key = await handoff('diff', { title, sub, oldText, newText });
     // Primeiro tenta a janela estilo Mac por cima da página do ServiceNow; sem a página (aba fechada, outra origem), abre uma janela do navegador.
     const tab = trackedTab();
     const ok = tab !== undefined && await chrome.tabs.sendMessage(tab, { type: 'diff-window', key, title, sub, theme: resolvedTheme(getPrefs().theme), from: getPrefs().panelMode === 'window' ? 'left' : 'right', labels: { close: P.close, min: P.winMin, max: P.winMax } })

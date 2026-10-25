@@ -4,6 +4,7 @@ import { getPrefs } from '../shared/prefs';
 import { recordLink } from '../shared/instances';
 import { factText, fieldName, localizeTimes, parts, traceTitle, valueLabel, when } from './Result';
 import { looksLong } from '../shared/diff';
+import { handoff } from '../shared/handoff';
 
 const s = t(getPrefs().lang);
 const P = s.p;
@@ -68,7 +69,6 @@ export function fullReport(r: Investigation, c: Change, origin: string): string 
 /** Abre a página de relatório numa janela; ela renderiza e chama a impressão (Salvar como PDF). */
 export async function savePdf(r: Investigation, sel: number, origin: string, demo: () => void): Promise<void> {
   if (isDemo) { demo(); return; }
-  const key = `report:${Date.now()}`;
-  await chrome.storage.session.set({ [key]: { r, sel, origin } });
+  const key = await handoff('report', { r, sel, origin });
   await chrome.windows.create({ url: chrome.runtime.getURL(`src/report/index.html?k=${encodeURIComponent(key)}`), type: 'popup', width: 900, height: 900 });
 }
