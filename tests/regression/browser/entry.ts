@@ -4,10 +4,26 @@ import cases from '../cases.json';
 
 const order: Grade[] = ['candidate', 'probable', 'confirmed'];
 
-function makeClient() {
+function makeClient(signal?: AbortSignal) {
   const w = window as unknown as { g_ck?: string };
   const z = window as unknown as { g_user_timezone?: string; g_tz?: string };
-  return new FetchRestClient({ baseUrl: location.origin, getToken: async () => w.g_ck ?? null, getTimeZone: async () => z.g_user_timezone || z.g_tz });
+  return new FetchRestClient({ baseUrl: location.origin, ...(signal ? { signal } : {}), getToken: async () => w.g_ck ?? null, getTimeZone: async () => z.g_user_timezone || z.g_tz });
+}
+
+/**
+ * M9 (1.4.6): investigação cancelada depois de `abortAfterMs`, como um clique novo na mesma aba. Devolve quanto tempo
+ * levou para parar e quantas chamadas fez; logo depois, rode `runOne` no mesmo alvo e compare com uma rodada sem
+ * cancelamento (o cancelamento não pode envenenar caches: ui/meta, recusas, histórico).
+ */
+export async function runCancelled(target: { table: string; number?: string; sysId?: string; field: string }, abortAfterMs: number): Promise<{ ms: number; stopMs: number; calls: number; error?: string }> {
+  const ctrl = new AbortController();
+  const c = makeClient(ctrl.signal);
+  const t0 = performance.now();
+  let tAbort = 0;
+  const timer = setTimeout(() => { tAbort = performance.now(); ctrl.abort(); }, abortAfterMs);
+  try { await investigate(c, target); } catch (e) { return { ms: Math.round(performance.now() - t0), stopMs: tAbort ? Math.round(performance.now() - tAbort) : -1, calls: c.calls, error: (e as Error).message }; }
+  finally { clearTimeout(timer); }
+  return { ms: Math.round(performance.now() - t0), stopMs: tAbort ? Math.round(performance.now() - tAbort) : -1, calls: c.calls };
 }
 
 /** Investiga um alvo e devolve um resumo compacto (para conferir rastro, rótulos e evidências). */
