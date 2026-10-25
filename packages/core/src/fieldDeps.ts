@@ -14,12 +14,12 @@
  */
 import type { RestClient } from './client/RestClient';
 import { writtenFields } from './conflicts';
-import { fieldMap, sharedQueries, tableHierarchy, type MapItem } from './fieldMap';
+import { fieldMap, sharedQueries, type MapItem } from './fieldMap';
 import { previewChange, type ChangePreview, type PreviewStep, type PreviewWrite } from './preview';
 import { evalExpr, fieldsRead, type Env } from './scriptEval';
 import { SharedClient, shared } from './sharedClient';
 import type { AccessState, Row } from './types';
-import { assignedLiterals, decodeFlowValues, escapeRegExp, evalCondition, humanQuery, isDynamicFlowValue, parseFieldValues } from './util';
+import { assignedLiterals, decodeFlowValues, escapeRegExp, evalCondition, humanQuery, isDynamicFlowValue, parseFieldValues, walkHierarchy } from './util';
 import { resolveDisplay } from './display';
 
 // ---------------------------------------------------------------- tipos
@@ -137,6 +137,8 @@ export const DEP_SOURCES: Record<string, { main: DepKind[]; detail: DepKind[] }>
   task_sla: { main: [], detail: ['sla'] },
   sysrule_assignment: { main: ['assignment_rule'], detail: [] },
   sys_dictionary: { main: ['reference'], detail: [] },
+  // Sem a hierarquia, o que vem de task (regras, scripts, policies, botões) pode ter ficado de fora.
+  sys_db_object: { main: ['br_before', 'br_after', 'br_async', 'br_display', 'client_script', 'ui_policy', 'ui_action'], detail: [] },
 };
 
 // ---------------------------------------------------------------- leitura de condições e scripts
@@ -245,7 +247,9 @@ export async function fieldDeps(client: RestClient, target: { table: string; fie
   const calls0 = sc.calls;
   const q = async (t: string, query: string, fields: string[], limit: number): Promise<Row[]> => (await sc.query({ table: t, query, fields, limit })).rows;
   const { table, field } = target;
-  const tables = await tableHierarchy(q, table);
+  const { tables, gap } = await walkHierarchy(q, table);
+  // Hierarquia cortada: as regras herdadas (de task) podem ter ficado de fora; vira fonte lenta e o painel avisa.
+  if (gap) sc.mark('sys_db_object', 'timeout');
   // No incidente, state e incident_state andam juntos (BR do sistema): regra, SLA ou notificação com um vale para o outro.
   const twins = twinFields(tables, field);
   const cu = (c: string | undefined): DepHow[] => { const seen = new Set<string>(); return twins.flatMap((f) => conditionUses(c, f)).filter((h) => { const k = `${h.code}|${h.detail ?? ''}`; if (seen.has(k)) return false; seen.add(k); return true; }); };

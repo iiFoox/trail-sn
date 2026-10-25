@@ -382,3 +382,41 @@ export function humanQuery(q: string | undefined, lang: 'pt' | 'en' = 'pt'): str
     .map((t, i) => (t.startsWith('OR') && i > 0 ? `${pt ? 'ou' : 'or'} ${term(t.slice(2))}` : term(t)))
     .reduce((acc, t) => (!acc ? t : /^(ou|or) /.test(t) ? `${acc} ${t}` : `${acc} ${pt ? 'e' : 'and'} ${t}`), '')).join(pt ? '; ou ' : '; or ');
 }
+
+type RowQuery = (table: string, query: string, fields: string[], limit: number) => Promise<Row[]>;
+
+/**
+ * Sobe a hierarquia da tabela (incident → task). Toda tabela tem a sua linha em sys_db_object: passo sem linha é falha
+ * (no PDI, dois 500 seguidos do balanceador) ou leitura negada, e repete uma vez. Se faltar de novo, `gap`: a
+ * hierarquia pode ter ficado cortada, e com ela as regras e as opções herdadas (de task, por exemplo).
+ */
+export async function walkHierarchy(q: RowQuery, table: string, max = 10): Promise<{ tables: string[]; gap: boolean }> {
+  const tables: string[] = [];
+  let gap = false;
+  let cur: string | undefined = table;
+  for (let i = 0; cur && i < max; i++) {
+    tables.push(cur);
+    let rows = await q('sys_db_object', `name=${cur}`, ['super_class.name'], 1);
+    if (!rows.length) rows = await q('sys_db_object', `name=${cur}`, ['super_class.name'], 1);
+    if (!rows.length) gap = true;
+    cur = rows[0]?.['super_class.name'] || undefined;
+  }
+  return { tables, gap };
+}
+
+/**
+ * Consultas que anotam as fontes que não responderam (prazo, 5xx, rede, página de login), para módulos que antes
+ * tratavam a falha como lista vazia e mostravam um resultado incompleto sem avisar. Negado não entra: é o perfil, e
+ * o relatório de acesso já mostra. A mesma consulta que responde numa segunda tentativa sai da lista.
+ */
+export function trackedQuery(client: { query: (r: QueryRequest) => Promise<QueryResult> }): { q: RowQuery; missing: () => string[]; mark: (table: string) => void } {
+  const failing = new Map<string, string>();
+  const q: RowQuery = async (table, query, fields, limit) => {
+    const key = `${table}|${query}|${fields.join(',')}|${limit}`;
+    const r = await client.query({ table, query, fields, limit }).catch(() => ({ rows: [] as Row[], status: 0, access: 'unknown' as AccessState }));
+    if (r.access === 'timeout' || r.access === 'unknown') failing.set(key, table); else failing.delete(key);
+    return r.rows;
+  };
+  const marked = new Set<string>();
+  return { q, missing: () => [...new Set([...failing.values(), ...marked])].sort(), mark: (t) => { marked.add(t); } };
+}

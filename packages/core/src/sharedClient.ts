@@ -36,11 +36,19 @@ export class SharedClient implements RestClient {
       // Prazo contado quando a consulta sai da fila, e sem repetição: a consulta abandonada continua rodando no servidor,
       // e repetir só somava carga justo quando a instância estava lenta.
       p = timedQuery({ query: (r) => this.inner.query(r).catch(() => ({ rows: [], status: 0, access: 'unknown' as AccessState })) }, req, this.timeoutMs)
-        .then((r) => { this.note(req.table, r.access); return r; });
+        .then((r) => {
+          this.note(req.table, r.access);
+          // Erro (500, rede, página de login) não fica guardado: quem repetir vai à instância. Prazo continua guardado.
+          if (r.access === 'unknown') this.memo.delete(key);
+          return r;
+        });
       this.memo.set(key, p);
     }
     return p;
   }
+
+  /** Marca uma fonte, como a hierarquia que faltou nas duas tentativas (vira lenta e entra em `slow`). */
+  mark(table: string, a: AccessState): void { this.note(table, a); }
 
   private note(table: string, a: AccessState): void {
     const prev = this.access[table];

@@ -4,7 +4,7 @@
  */
 import type { RestClient } from './client/RestClient';
 import { writtenFields } from './conflicts';
-import { assignedLiterals, decodeFlowValues, humanQuery, isDynamicFlowValue, parseFieldValues } from './util';
+import { assignedLiterals, decodeFlowValues, humanQuery, isDynamicFlowValue, parseFieldValues, trackedQuery, walkHierarchy } from './util';
 import type { Row } from './types';
 
 export type MapLane = 'client' | 'before' | 'after' | 'async' | 'other';
@@ -22,7 +22,12 @@ export interface MapItem {
   /** Valores que grava, quando são fixos. */
   values: string[];
 }
-export interface FieldMap { table: string; field: string; tables: string[]; items: MapItem[]; timing: { totalMs: number; calls: number } }
+export interface FieldMap {
+  table: string; field: string; tables: string[]; items: MapItem[];
+  /** Fontes que não responderam (prazo, 5xx): o mapa pode estar incompleto. */
+  missing?: string[];
+  timing: { totalMs: number; calls: number };
+}
 
 export interface SharedQuery { table: string; query: string; fields: string[]; limit: number }
 /**
@@ -60,19 +65,14 @@ export function calledScriptIncludes(brs: Row[]): string[] {
 
 /** Sobe a hierarquia da tabela (incident → task). Com o `SharedClient`, as consultas são reaproveitadas. */
 export async function tableHierarchy(q: (t: string, query: string, fields: string[], limit: number) => Promise<Row[]>, table: string): Promise<string[]> {
-  const tables: string[] = [];
-  let cur: string | undefined = table;
-  for (let i = 0; cur && i < 10; i++) {
-    tables.push(cur);
-    cur = (await q('sys_db_object', `name=${cur}`, ['super_class.name'], 1))[0]?.['super_class.name'] || undefined;
-  }
-  return tables;
+  return (await walkHierarchy(q, table)).tables;
 }
 
 export async function fieldMap(client: RestClient, target: { table: string; field: string }): Promise<FieldMap> {
   const started = Date.now();
   const calls0 = client.calls;
-  const q = async (t: string, query: string, fields: string[], limit: number): Promise<Row[]> => { try { return (await client.query({ table: t, query, fields, limit })).rows; } catch { return []; } };
+  // Fonte que não respondeu vira lista vazia, mas fica anotada: o painel avisa que o mapa pode estar incompleto.
+  const { q, missing } = trackedQuery(client);
   const { table, field } = target;
   const tables = await tableHierarchy(q, table);
   const isAssign = field === 'assignment_group' || field === 'assigned_to';
@@ -159,5 +159,6 @@ export async function fieldMap(client: RestClient, target: { table: string; fiel
   }
   const laneOrder: Record<MapLane, number> = { client: 0, before: 1, after: 2, async: 3, other: 4 };
   items.sort((a, b) => laneOrder[a.lane] - laneOrder[b.lane] || a.order - b.order || a.name.localeCompare(b.name));
-  return { table, field, tables, items, timing: { totalMs: Date.now() - started, calls: client.calls - calls0 } };
+  const gone = missing();
+  return { table, field, tables, items, ...(gone.length ? { missing: gone } : {}), timing: { totalMs: Date.now() - started, calls: client.calls - calls0 } };
 }
