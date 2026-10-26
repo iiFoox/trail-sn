@@ -45,6 +45,8 @@ export type EvidenceType =
   | 'br_before'
   | 'br_after'
   | 'br_via_script_include'
+  /** Regra que roda ao salvar outro registro (o pai, um problema) e grava neste por GlideRecord. */
+  | 'br_other_record'
   | 'script_action'
   | 'ui_action'
   | 'scheduled_job'

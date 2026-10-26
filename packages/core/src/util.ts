@@ -371,6 +371,19 @@ export function sentMatches(sent: { value: string; cut: boolean }, value: string
   return sent.value.length >= 3 && sent.value.length < value.length && n(value).startsWith(n(sent.value));
 }
 
+/**
+ * Gravação de OUTRO registro nesta URL de transação (envio de formulário ou PUT/PATCH da Table API): a tabela e o
+ * sys_id dele. Uma regra que roda nessa gravação pode gravar neste registro (pai que atualiza os filhos).
+ */
+export function otherRecordWrite(url: string | undefined, sysId: string): { table: string; sysId: string } | null {
+  const u = url ?? '';
+  const api = u.match(/\/api\/now\/(?:v\d+\/)?table\/([a-z0-9_]+)\/([0-9a-f]{32})(?:[?/]|$)/);
+  if (api) return api[2] !== sysId ? { table: api[1]!, sysId: api[2]! } : null;
+  const form = u.match(/^\/([a-z0-9_]+)\.do\?/);
+  const id = u.match(/[?&]sys_uniqueValue=([0-9a-f]{32})/)?.[1];
+  return form && id && id !== sysId ? { table: form[1]!, sysId: id } : null;
+}
+
 /** Atualização de vários registros de uma vez pela lista. */
 export function isMultiUpdate(url: string | undefined): boolean {
   // O envio vai para <tabela>.do com sys_action=sysverb_post_update; abrir o formulário de atualização (<tabela>_update.do) não grava.

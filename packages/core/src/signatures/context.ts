@@ -40,6 +40,8 @@ export interface Traces {
   clientScripts: Row[];
   /** Contexto gravado na hora pela própria instância (app do Trail / protótipo): linhas desta gravação. */
   recorded?: Row[];
+  /** BRs das tabelas de outros registros salvos no instante que abrem esta tabela por GlideRecord e citam o campo. */
+  crossRules?: Row[];
   /** Aberturas da lista da tabela pela pessoa nos 30 min antes da mudança (edição na lista não registra transação). */
   listViews?: Row[];
   /** UI policies com script (Run scripts) que gravam o campo: uma linha por ramo (`branch` 'true' ou 'false'). */

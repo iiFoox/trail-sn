@@ -250,7 +250,7 @@ const dict = {
       calledBy: 'Chamado por {br}',
       kind: {
         br_async: 'Regra automática · roda logo depois de salvar', br_before: 'Regra automática · roda no momento de salvar', br_after: 'Regra automática · roda depois de salvar',
-        br_via_script_include: 'Regra automática que chama um script', script_action: 'Ação disparada por um evento', ui_action: 'Botão do formulário', scheduled_job: 'Job agendado',
+        br_via_script_include: 'Regra automática que chama um script', br_other_record: 'Regra de outro registro · rodou ao salvar outro registro e gravou aqui', script_action: 'Ação disparada por um evento', ui_action: 'Botão do formulário', scheduled_job: 'Job agendado',
         flow: 'Flow do Flow Designer', workflow: 'Workflow', background_script: 'Script rodado à mão (Scripts - Background)', user_action: 'Uma pessoa, pelo formulário', user_api: 'Uma pessoa ou integração, pela API',
         server_change: 'O servidor, no momento de salvar', assignment_rule: 'Regra de atribuição', unknown_background: 'Processo em segundo plano',
         data_lookup: 'Data lookup · tabela de regras que preenche o campo', client_script: 'Client script · roda no navegador antes de salvar', ui_policy: 'UI policy com script · roda no navegador quando a condição muda', import_set: 'Importação (Import Set e transform map)', user_integration: 'Uma integração, pela API',
@@ -370,6 +370,7 @@ const dict = {
       br_before: 'BR before',
       br_after: 'BR after',
       br_via_script_include: 'BR → script include',
+      br_other_record: 'BR de outro registro',
       script_action: 'Script action (evento)',
       ui_action: 'UI action',
       scheduled_job: 'Job agendado',
@@ -644,7 +645,7 @@ const dict = {
       calledBy: 'Called by {br}',
       kind: {
         br_async: 'Automatic rule · runs right after save', br_before: 'Automatic rule · runs on save', br_after: 'Automatic rule · runs after save',
-        br_via_script_include: 'Automatic rule that calls a script', script_action: 'Action triggered by an event', ui_action: 'Form button', scheduled_job: 'Scheduled job',
+        br_via_script_include: 'Automatic rule that calls a script', br_other_record: 'Rule from another record · ran when another record was saved and wrote here', script_action: 'Action triggered by an event', ui_action: 'Form button', scheduled_job: 'Scheduled job',
         flow: 'Flow Designer flow', workflow: 'Workflow', background_script: 'Script run by hand (Scripts - Background)', user_action: 'A person, through the form', user_api: 'A person or integration, through the API',
         server_change: 'The server, on save', assignment_rule: 'Assignment rule', unknown_background: 'Background process',
         data_lookup: 'Data lookup · rules table that fills the field', client_script: 'Client script · runs in the browser before save', ui_policy: 'UI policy script · runs in the browser when its condition changes', import_set: 'Import (Import Set and transform map)', user_integration: 'An integration, through the API',
@@ -764,6 +765,7 @@ const dict = {
       br_before: 'Before business rule',
       br_after: 'After business rule',
       br_via_script_include: 'BR → script include',
+      br_other_record: 'Business rule from another record',
       script_action: 'Script action (event)',
       ui_action: 'UI action',
       scheduled_job: 'Scheduled job',

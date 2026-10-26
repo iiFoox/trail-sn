@@ -22,7 +22,7 @@ import {
 } from './types';
 import { isSaveButton } from './signatures/uiAction';
 import { formSubmitOf } from './signatures/sameTransaction';
-import { decodeFlowValues, formSent, isBatchCall, isFormSubmitFor, isMultiUpdate, isRecordWrite, isWorkspaceAction, parseFieldValues, uiActionMatches, uiActionQuery, uiActionRef } from './util';
+import { decodeFlowValues, formSent, otherRecordWrite, isBatchCall, isFormSubmitFor, isMultiUpdate, isRecordWrite, isWorkspaceAction, parseFieldValues, uiActionMatches, uiActionQuery, uiActionRef } from './util';
 import { conditionFields, inList, mergeWindows, refsField, shift, timedQuery, toMs, windowsFilter, withTimeout } from './util';
 
 /** Cache de metadados por tabela (hierarquia, BRs, script includes). A extensão guarda em chrome.storage.session. */
@@ -357,6 +357,13 @@ export async function investigate(
     }
     return out;
   };
+  // Outro registro de outra tabela salvo no instante (problema que resolve os incidentes): as regras dele que abrem esta
+  // tabela por GlideRecord e citam o campo. Só quando há essa gravação; as da própria hierarquia já estão nos metadados.
+  const otherTables = unique(txAll.map((t) => otherRecordWrite(t.url, sysId)?.table ?? '').filter((t) => t && !meta.tables.includes(t))).slice(0, 5);
+  const crossRules = otherTables.length
+    ? (await quiet('sys_script', `collectionIN${otherTables.join(',')}^active=true^scriptLIKEGlideRecord^scriptLIKE${target.field}`, ['sys_id', 'name', 'when', 'order', 'collection', 'script', 'condition', 'filter_condition', 'action_insert', 'action_update'], 50))
+      .filter((b) => refsField(b.script, target.field))
+    : [];
   const inactive = await inactiveP;
   // Só para mudanças anteriores à alteração da regra: depois dela, a regra já podia estar desligada.
   const metaAt = (at: string): TableMeta => {
@@ -381,6 +388,7 @@ export async function investigate(
       // Desligado hoje só conta para mudanças anteriores à alteração dele.
       clientScripts: clientScripts.filter((x) => x.active !== 'false' || (x.sys_updated_on ?? '') > at),
       uiPolicies: uiPolicies.filter((x) => x.active !== 'false' || (x.sys_updated_on ?? '') > at),
+      crossRules,
       recorded: recordedAll.filter((r) => Math.abs(toMs(r.sys_created_on ?? '') - toMs(at)) <= 5000),
       dataLookups,
       flowSteps,

@@ -675,3 +675,9 @@ A pedido do dono, dois agentes à parte: um revisor de código e segurança (só
 - Leitura do XML própria (`shared/versions.ts`, sem DOMParser): campos vazios, texto escapado, CDATA (inclusive "]]>" partido em duas seções e `</script>` dentro do script) e `display_value` das referências.
 - Core: `recordVersions` e `versionPayloads` (`versions.ts`). Testes: 3 no core, 5 no leitor; 1065 passando.
 - **Falta:** conferir no painel real (o dono, no script include SOWMraUtils) e pôr no site.
+
+## 26/10/2026: regra de outro registro que grava neste (pai → filho)
+
+- **Achado do Codex (146h):** BR [PT] do incidente pai gravou a descrição do filho por GlideRecord ao salvar o pai. O filho não tem gravação própria; o Trail deixava a regra como `br_before candidate 5`, ao lado de um job sem execução. Caso comum na vida real (pai atualiza filhos, problema resolve incidentes, mudança fecha tarefas).
+- **Novo tipo de causa `br_other_record`** (`signatures/otherRecord.ts`): quando a mudança não tem gravação própria e **outro registro foi salvo no mesmo instante** (formulário com `sys_uniqueValue` de outro sys_id ou PUT/PATCH na Table API; `otherRecordWrite` em util), as regras que abrem esta tabela por `GlideRecord('<tabela>')` e citam o campo entram como causa: salvo no instante (20) + abre a tabela (10) + cita o campo (20), mais valor literal no código (15) e mesma pessoa (10). Lacuna: as condições da regra valem para o outro registro, que o Trail não lê. Regras de outra tabela (ex.: problem) vêm numa consulta só quando há essa gravação (`collectionIN<tabelas>^active=true^scriptLIKEGlideRecord^scriptLIKE<campo>`, até 5 tabelas, 50 regras).
+- Painel: rótulos pt/en, ícone e categoria na exportação. 4 testes (`outroRegistro.test.ts`; 3 falham sem a correção); 1069 passando. Bundle `bundle-146i`.

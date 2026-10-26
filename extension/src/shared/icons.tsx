@@ -58,6 +58,7 @@ export const typeGlyph: Record<EvidenceType, preact.JSX.Element> = {
   br_before: Glyph.rule,
   br_after: Glyph.rule,
   br_via_script_include: Glyph.include,
+  br_other_record: Glyph.rule,
   script_action: Glyph.event,
   ui_action: Glyph.click,
   scheduled_job: Glyph.clock,

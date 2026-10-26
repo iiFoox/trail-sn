@@ -6,6 +6,7 @@ import { fact } from '../scoring';
 import { isFormSubmitFor, isRecordWrite, toMs } from '../util';
 import { flow, workflow } from './flowAndWorkflow';
 import { importSet } from './importSet';
+import { otherRecordRule } from './otherRecord';
 import { backgroundBefores, backgroundChain, batchWrite, listEdit, sameTransaction } from './sameTransaction';
 import { scheduledJobWithTransaction, scheduledJobWithoutTransaction } from './scheduledJob';
 import { scriptAction } from './scriptAction';
@@ -79,6 +80,8 @@ function runSignaturesInner(full: ChangeContext): Evidence[] {
     || (isSystemUser(ctx.user) && ctx.traces.transactions.some((t) => !/^JOB: /.test(t.url ?? '') && isRecordWrite(t.url, ctx.sysId) && Math.abs(toMs(t.sys_created_on ?? '') - toMs(ctx.at)) <= 2000));
   const anySubmit = ctx.traces.transactions.some((t) => t.type === 'form' && isFormSubmitFor(t.url, ctx.sysId));
   if (!strong && !anyUserTx && !anySubmit) {
+    // Gravação de outro registro no instante (pai que atualiza os filhos): a regra dele pode ter gravado aqui.
+    out.push(...otherRecordRule(ctx));
     out.push(...scheduledJobWithoutTransaction(ctx));
     // A gravação de fundo (script action, job, evento) também roda as BRs before: elas podem ter gravado este campo.
     out.push(...backgroundBefores(ctx));
