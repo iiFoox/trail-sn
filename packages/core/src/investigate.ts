@@ -34,6 +34,12 @@ export interface MetaCache {
 export const noCache: MetaCache = { get: async () => undefined, set: async () => {} };
 /** Quanto antes do processamento um evento pode ter sido criado (agendado) e ainda entrar na busca. */
 const EVENT_LOOKBACK_S = 86400;
+/**
+ * Quanto antes da mudança a abertura da lista pela pessoa ainda conta como pista de edição na célula. Cada minuto a mais
+ * é mais syslog_transaction lido (a tabela que mais cresce numa instância); quem edita pela lista costuma abrir,
+ * filtrar e editar em poucos minutos.
+ */
+const LIST_LOOKBACK_S = 600;
 
 /**
  * Pipeline de uma investigação, em três rodadas de chamadas paralelas:
@@ -206,7 +212,7 @@ export async function investigate(
   const isAssignmentField = target.field === 'assignment_group' || target.field === 'assigned_to';
   const flowIds = unique(flowsAll.map((f) => f.flow ?? '').filter(Boolean));
   const mapIds = unique(importRows.map((r) => r.sys_transform_map ?? '').filter(Boolean));
-  const listWindows = inList(changeUsers) ? windowsFilter('sys_created_on', fieldChanges.map((c) => c.sys_created_on ?? ''), 1800, 5, `type=list^sys_created_byIN${inList(changeUsers)}`) : '';
+  const listWindows = inList(changeUsers) ? windowsFilter('sys_created_on', fieldChanges.map((c) => c.sys_created_on ?? ''), LIST_LOOKBACK_S, 5, `type=list^sys_created_byIN${inList(changeUsers)}`) : '';
   const [jobsByName, scriptActions, uiActions, jobsByScript, assignmentRules, lookupSets, clientRows, uiActionSuspects, flowActionRows, transformEntries, transformScripts, policyRows, listViews] = await Promise.all([
     inList(jobNames) ? q('sysauto_script', `nameIN${inList(jobNames)}`, ['sys_id', 'name', 'script'], 50) : Promise.resolve([]),
     inList(eventNames) ? q('sysevent_script_action', `active=true^event_nameIN${inList(eventNames)}`, ['sys_id', 'name', 'event_name', 'script'], 50) : Promise.resolve([]),
@@ -240,7 +246,7 @@ export async function investigate(
       ...rows, ...(await quiet('sys_transform_map', `sys_idIN${mapIds.join(',')}^run_script=true^scriptLIKE${target.field}`, ['sys_id', 'script'], 10)).map((m): Row => ({ map: m.sys_id ?? '', when: 'map', script: m.script ?? '' }))]) : Promise.resolve([] as Row[]),
     quiet('sys_ui_policy', `tableIN${meta.tables.join(',')}^active=true^run_scripts=true^script_trueLIKE${target.field}^ORscript_falseLIKE${target.field}`, ['sys_id', 'short_description', 'table', 'conditions', 'script_true', 'script_false', 'ui_type', 'reverse_if_false'], 20),
     // Edição direto na lista (célula) não registra transação: a última abertura da lista da tabela pela pessoa é a pista.
-    // Meia hora antes de cada mudança, em janelas separadas: um intervalo único da primeira à última mudança podia
+    // Dez minutos antes de cada mudança, em janelas separadas: um intervalo único da primeira à última mudança podia
     // cobrir meses de syslog_transaction.
     needsJobScan && listWindows ? quiet('syslog_transaction', `${listWindows}^ORDERBYDESCsys_created_on`, ['sys_created_on', 'sys_created_by', 'url', 'type'], 50)
       .then((rows) => rows.filter((t) => meta.tables.some((tb) => (t.url ?? '').includes(`${tb}_list.do`)))) : Promise.resolve([] as Row[]),
@@ -344,7 +350,7 @@ export async function investigate(
       jobsByName,
       uiActions,
       jobsByScript,
-      listViews: listViews.filter((t) => t.sys_created_by === c.user && (t.sys_created_on ?? '') <= shift(at, 2) && (t.sys_created_on ?? '') >= shift(at, -1800)),
+      listViews: listViews.filter((t) => t.sys_created_by === c.user && (t.sys_created_on ?? '') <= shift(at, 2) && (t.sys_created_on ?? '') >= shift(at, -LIST_LOOKBACK_S)),
       assignmentRules,
       clientScripts,
       uiPolicies,

@@ -270,7 +270,7 @@ describe('consultas específicas (defeitos isolados)', () => {
     const { s, error, problems } = await runTool((c) => investigate(c, { table: 'incident', sysId: S, field: 'state' }), w, 'admin');
     expect(error).toBeUndefined();
     if (problems.length) throw new Error('PROBLEMAS: ' + problems.join(' || '));
-    // Edição em lista: janela de meia hora por mudança, nunca um intervalo de meses.
+    // Edição em lista: janela de dez minutos por mudança, nunca um intervalo de meses.
     for (const l of s.log.filter((x) => x.table === 'syslog_transaction')) {
       for (const block of l.query.split('^NQ')) {
         const from = block.match(/sys_created_on>=([^^]+)/)?.[1];

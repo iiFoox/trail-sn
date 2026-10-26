@@ -986,6 +986,19 @@ describe('lista: atualizar selecionados e edição na célula (Fase 13)', () => 
     expect(e.type).toBe('user_action');
     expect(e.grade).toBe('probable');
   });
+  it('lista aberta 9 min antes ainda é pista; a busca não volta mais de 10 min (revisão de carga)', async () => {
+    const s = scenario();
+    audit(s, 'category', 'inquiry', 'software', T0, 'admin', 1);
+    tx(s, shiftStr(T0, -540), 'list', '/incident_list.do?sysparm_query=active=true', 'admin');
+    const c = build(s);
+    c.rows('sys_user', [{ sys_id: id(), user_name: 'admin', name: 'System Administrator', web_service_access_only: 'false', internal_integration_user: 'false' }]);
+    const e = top(await investigate(c, { table: 'incident', number: INC.number, field: 'category' }));
+    expect([e.type, e.grade]).toEqual(['user_action', 'probable']);
+    const list = c.log.filter((x) => x.table === 'syslog_transaction' && x.query.startsWith('type=list'));
+    expect(list).toHaveLength(1);
+    const from = list[0]!.query.match(/sys_created_on>=([^^]+)/)![1]!;
+    expect(Date.parse(`${T0.replace(' ', 'T')}Z`) - Date.parse(`${from.replace(' ', 'T')}Z`)).toBe(600_000);
+  });
 });
 
 describe('flow que chama subflow (Fase 14)', () => {
