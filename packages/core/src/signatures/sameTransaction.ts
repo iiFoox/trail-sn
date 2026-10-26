@@ -2,7 +2,7 @@ import { fact } from '../scoring';
 import { evalCondition, refsField, toMs, batchAt } from '../util';
 import { evalExpr, scriptVerdict, writesOf } from '../scriptEval';
 import { envFor, reactsFacts, resolveOrder, scriptFacts, UNKNOWN_VALUE } from './scriptFacts';
-import { conditionFields as conditionFieldsOf, isFormSubmitFor, isRecordWrite, parseFieldValues, sameVal, uiActionMatches, uiActionRef } from '../util';
+import { conditionFields as conditionFieldsOf, formSent, isFormSubmitFor, isRecordWrite, parseFieldValues, sameVal, sentMatches, uiActionMatches, uiActionRef } from '../util';
 import { isSaveButton } from './uiAction';
 import { evidence, isSystemUser, type ChangeContext, type Signature } from './context';
 import type { Evidence, Fact, Row } from '../types';
@@ -230,11 +230,12 @@ function formSubmits(ctx: ChangeContext): Row[] {
 /** O envio de formulário que gravou esta mudança (o mesmo que a análise usa), ou nenhum. */
 export function formSubmitOf(ctx: ChangeContext): Row | undefined {
   for (const t of formSubmits(ctx)) {
-    const sent = new URLSearchParams((t.url ?? '').split('?')[1] ?? '').get(`${ctx.table}.${ctx.field}`);
-    if (sent === null) continue;
     const nv = ctx.audit.newvalue ?? '', ov = ctx.audit.oldvalue ?? '';
-    const cut = sent.length >= 3 && sent.length < nv.length && nv.startsWith(sent);
-    if (cut && ov.startsWith(sent)) continue;
+    const sent = formSent(t.url, ctx.table, ctx.field, nv);
+    if (sent === null) continue;
+    // Só o começo foi guardado e ele também é o começo do valor antigo: não dá para dizer se este envio gravou a mudança.
+    const partial = !sameVal(sent.value, nv) && sentMatches(sent, nv);
+    if (partial && ov.replace(/\r\n/g, '\n').startsWith(sent.value.replace(/\r\n/g, '\n'))) continue;
     return t;
   }
   return undefined;
@@ -285,13 +286,12 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
   let sentValue: string | undefined;
   const t = formSubmitOf(ctx);
   if (t) {
-    const sent = new URLSearchParams((t.url ?? '').split('?')[1] ?? '').get(`${ctx.table}.${ctx.field}`) ?? '';
-    // A URL da transação é cortada (tamanho da coluna ou caractere acentuado): valor enviado incompleto.
-    // Se ele é o começo do valor novo e não do antigo, o formulário mandou o novo (formSubmitOf já descarta o ambíguo).
+    // A URL da transação é cortada (999 caracteres + "...", tamanho da coluna, caractere acentuado): valor enviado
+    // incompleto. Se ele é o começo do valor novo e não do antigo, o formulário mandou o novo (formSubmitOf já descarta o ambíguo).
     const nv = ctx.audit.newvalue ?? '';
-    const cut = sent.length >= 3 && sent.length < nv.length && nv.startsWith(sent);
-    verdict = sameVal(sent, nv) || cut ? 'user' : 'server';
-    sentValue = sent;
+    const sent = formSent(t.url, ctx.table, ctx.field, nv) ?? { value: '', cut: false };
+    verdict = sentMatches(sent, nv) ? 'user' : 'server';
+    sentValue = sent.value;
     formAt = t.sys_created_on ?? '';
     formUser = t.sys_created_by ?? ctx.user;
   }

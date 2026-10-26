@@ -279,8 +279,13 @@ ol.tl li.res::before { background: var(--mint); border-color: var(--mint); }
 /* Rastro do mais recente para o mais antigo: o destaque (borda e brilho) e a bolinha verde ficam sempre no item do topo.
    A causa continua marcada pela etiqueta "Causa" e pela bolinha azul-esverdeada, sem o brilho. */
 ol.tl.rev > li.key { border-color: var(--line); box-shadow: var(--shadow); }
-ol.tl.rev > li:first-child:not(.gapi) { border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-soft); }
-ol.tl.rev > li:first-child::before { background: var(--mint); border-color: var(--mint); }
+ol.tl.rev > li.res:not(.gapi) { border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-soft); }
+/* A causa vem antes da linha do tempo, sozinha: sem o traço que a ligaria aos itens de baixo. */
+ol.tl.cause > li::after { display: none; }
+.tl .chl { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
+.tl .chl code { font: 12px var(--mono); padding: 3px 6px; border-radius: 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tl .chl code.add { background: color-mix(in srgb, #3ecf8e 13%, transparent); }
+.tl .chl code.del { background: color-mix(in srgb, #ef5b6b 13%, transparent); }
 ol.tl li.gapi { border-style: dashed; background: transparent; box-shadow: none; }
 ol.tl li.gapi::before { border-style: dashed; border-color: #f0c75a; }
 .tl .t { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; color: var(--muted); }

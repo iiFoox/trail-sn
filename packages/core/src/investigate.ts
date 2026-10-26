@@ -22,7 +22,7 @@ import {
 } from './types';
 import { isSaveButton } from './signatures/uiAction';
 import { formSubmitOf } from './signatures/sameTransaction';
-import { decodeFlowValues, isBatchCall, isFormSubmitFor, isMultiUpdate, isRecordWrite, isWorkspaceAction, parseFieldValues, uiActionMatches, uiActionQuery, uiActionRef } from './util';
+import { decodeFlowValues, formSent, isBatchCall, isFormSubmitFor, isMultiUpdate, isRecordWrite, isWorkspaceAction, parseFieldValues, uiActionMatches, uiActionQuery, uiActionRef } from './util';
 import { conditionFields, inList, mergeWindows, refsField, shift, timedQuery, toMs, windowsFilter, withTimeout } from './util';
 
 /** Cache de metadados por tabela (hierarquia, BRs, script includes). A extensão guarda em chrome.storage.session. */
@@ -547,12 +547,15 @@ function buildTrace(ctx: ChangeContext, top: Change['evidence'][number] | undefi
       // Trail ou de outras extensões, e não entram no rastro como "Gravação via API".
       const path = url.split('?')[0] ?? url;
       if (!path.includes(ctx.sysId)) continue;
+      // Leituras da própria interface com o sys_id no caminho (o editor de scripts busca os pontos de depuração em
+      // /api/now/js/debugpoints/script/<tabela>/<sys_id>; ui/meta, UX framework, GraphQL) não gravam o registro.
+      if (/\/api\/now\/(?:v\d+\/)?(?:js|ui|uxf|graphql|sp|cxs|ais|form|related_list)\//.test(path)) continue;
       items.push({ ...base, kind: 'api', label: path.slice(0, 80) });
       continue;
     }
     // Só envios de formulário contam; o recarregamento da página depois de salvar (GET ?sys_id=) não.
     if (!isFormSubmitFor(url, ctx.sysId)) continue;
-    const sent = new URLSearchParams(url.split('?')[1] ?? '').get(`${ctx.table}.${ctx.field}`);
+    const sent = formSent(url, ctx.table, ctx.field, ctx.audit.newvalue ?? '')?.value ?? null;
     // Só o envio que gravou esta mudança é causa; outros salvamentos na janela (antes ou depois) são só contexto.
     const formCause = !!top && ['user_action', 'br_before', 'server_change', 'assignment_rule', 'data_lookup', 'client_script', 'ui_policy'].includes(top.type);
     items.push({ ...base, kind: 'form', label: isMultiUpdate(url) ? 'Update Selected (lista)' : ua?.name ?? url.split('?')[0] ?? url, ...(sent !== null ? { sent } : {}), cause: formCause && sent !== null && t === submit });

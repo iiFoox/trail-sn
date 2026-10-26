@@ -16,7 +16,7 @@ import { RecordTimeline } from './Timeline';
 import { WhatIf } from './WhatIf';
 import { FieldMapBox } from './FieldMap';
 import { fullReport, plainSummary, savePdf } from './export';
-import { diffLines, looksLong } from '../shared/diff';
+import { changedLines, diffLines, looksLong } from '../shared/diff';
 import { DiffView, type DiffLabels } from '../shared/DiffView';
 import { handoff } from '../shared/handoff';
 import { Val } from './Val';
@@ -358,32 +358,39 @@ function Trace({ r, c, origin, field, denied, expired }: { r: Investigation; c: 
   const items = c.trace ?? [];
   const blind = denied.filter((d) => ['sys_flow_context', 'wf_context', 'sysevent', 'syslog_transaction'].includes(d));
   const txIds = items.filter((it) => it.ref?.table === 'syslog_transaction' && it.ref.sysId).map((it) => it.ref!.sysId!);
+  // A causa vem primeiro, sozinha e destacada; o resto do que aconteceu na janela vem depois, do mais recente ao mais antigo.
+  const causes = items.filter((it) => it.cause);
+  const rest = [...items].reverse().filter((it) => !it.cause);
+  const long = looksLong(c.oldValue ?? '', c.newValue ?? '');
+  const item = (it: TraceItem, idx: number) => {
+    const p = parts(it.at);
+    const isChange = it.kind === 'change';
+    const isWrite = it.kind === 'write';
+    return (
+      <li class={`${it.cause ? 'key' : ''} ${isChange ? 'res' : ''} ${isWrite ? 'other' : ''}`} style={`--i:${idx}`}>
+        <div class="t"><b>{p.full}</b>{it.cause ? <span class="tag">{P.cause}</span> : it.user ? <span class="muted">{it.user}</span> : null}</div>
+        <div class="x"><span class="ti">{isWrite ? Glyph.rule : traceIcon[it.kind]}</span>{isWrite ? P.otherWrite : isChange && long ? fmt(P.tr.changeLong ?? P.tr.change ?? '', { field }) : traceTitle(r, c, it, field)}</div>
+        {isChange && long && <ChangedLines oldText={c.oldValue ?? ''} newText={c.newValue ?? ''} />}
+        {(it.kind === 'async' || it.kind === 'job') && <div class="sub2">{it.label}</div>}
+        {it.sent !== undefined && <div class="sub2">{long ? (sentIsNew(it.sent, c.newValue ?? '') ? fmt(P.sentNew, { field }) : fmt(P.sentOther, { field })) : fmt(P.sent, { field, value: valueLabel(r, it.sent) })}</div>}
+        {isWrite && <ul class="fw">{(it.fields ?? []).slice(0, 6).map((f) => <li><b>{otherName(r, f.field)}</b> <OtherVal r={r} f={f.field} v={f.oldValue} origin={origin} /> → <OtherVal r={r} f={f.field} v={f.newValue} origin={origin} /></li>)}{(it.fields?.length ?? 0) > 6 && <li class="muted">{fmt(P.moreFields, { n: (it.fields?.length ?? 0) - 6 })}</li>}</ul>}
+        {isChange && it.fields?.length ? <div class="sub2 muted">{fmt(P.sameWrite, { list: it.fields.map((f) => otherName(r, f.field)).join(', ') })}</div> : null}
+        <div class="src">
+          <span>{P.srcName[it.source] ?? it.source}{isChange || isWrite ? ` · ${fmt(P.checkpoint, { n: it.checkpoint ?? c.checkpoint })}` : ''}{it.kind === 'form' || it.kind === 'api' ? ` · ${it.label}` : ''}</span>
+          {it.ref && <a class="see" href={refLink(origin, it.ref)} target="_blank" rel="noreferrer">{P.seeInSn} {Glyph.open}</a>}
+        </div>
+      </li>
+    );
+  };
   return (
     <div class="stack">
+      {causes.length > 0 && <ol class="tl cause">{causes.map(item)}</ol>}
       <div class="muted small">{fmt(P.traceIntro, WINDOW)}</div>
       {txIds.length > 1 && (
         <a class="btn sm openall" href={refLink(origin, { table: 'syslog_transaction', query: `sys_idIN${txIds.join(',')}` })} target="_blank" rel="noreferrer">{Glyph.open} {fmt(P.openAllTx, { n: txIds.length })}</a>
       )}
       <ol class="tl rev">
-        {[...items].reverse().map((it, idx) => {
-          const p = parts(it.at);
-          const isChange = it.kind === 'change';
-          const isWrite = it.kind === 'write';
-          return (
-            <li class={`${it.cause ? 'key' : ''} ${isChange ? 'res' : ''} ${isWrite ? 'other' : ''}`} style={`--i:${idx}`}>
-              <div class="t"><b>{p.full}</b>{it.cause ? <span class="tag">{P.cause}</span> : it.user ? <span class="muted">{it.user}</span> : null}</div>
-              <div class="x"><span class="ti">{isWrite ? Glyph.rule : traceIcon[it.kind]}</span>{isWrite ? P.otherWrite : traceTitle(r, c, it, field)}</div>
-              {(it.kind === 'async' || it.kind === 'job') && <div class="sub2">{it.label}</div>}
-              {it.sent !== undefined && <div class="sub2">{fmt(P.sent, { field, value: valueLabel(r, it.sent) })}</div>}
-              {isWrite && <ul class="fw">{(it.fields ?? []).slice(0, 6).map((f) => <li><b>{otherName(r, f.field)}</b> <OtherVal r={r} f={f.field} v={f.oldValue} origin={origin} /> → <OtherVal r={r} f={f.field} v={f.newValue} origin={origin} /></li>)}{(it.fields?.length ?? 0) > 6 && <li class="muted">{fmt(P.moreFields, { n: (it.fields?.length ?? 0) - 6 })}</li>}</ul>}
-              {isChange && it.fields?.length ? <div class="sub2 muted">{fmt(P.sameWrite, { list: it.fields.map((f) => otherName(r, f.field)).join(', ') })}</div> : null}
-              <div class="src">
-                <span>{P.srcName[it.source] ?? it.source}{isChange || isWrite ? ` · ${fmt(P.checkpoint, { n: it.checkpoint ?? c.checkpoint })}` : ''}{it.kind === 'form' || it.kind === 'api' ? ` · ${it.label}` : ''}</span>
-                {it.ref && <a class="see" href={refLink(origin, it.ref)} target="_blank" rel="noreferrer">{P.seeInSn} {Glyph.open}</a>}
-              </div>
-            </li>
-          );
-        })}
+        {rest.map((it, idx) => item(it, idx + causes.length))}
         {expired && <li class="gapi"><div class="t"><b>—</b><span class="tag a">{P.notChecked}</span></div><div class="x small">{P.expiredText}</div></li>}
         {!expired && blind.length > 0 && (
           <li class="gapi"><div class="t"><b>{parts(c.at).time}</b><span class="tag a">{P.notChecked}</span></div>
@@ -394,6 +401,25 @@ function Trace({ r, c, origin, field, denied, expired }: { r: Investigation; c: 
       {items.length <= 1 && !expired && <div class="muted small">{P.traceEmpty}</div>}
     </div>
   );
+}
+
+/** Texto longo (script, descrição): as linhas que mudaram, em vez do começo do texto, que costuma ser igual nos dois lados. */
+function ChangedLines({ oldText, newText }: { oldText: string; newText: string }) {
+  const d = useMemo(() => diffLines(oldText, newText), [oldText, newText]);
+  const lines = changedLines(d);
+  const more = d.added + d.removed - lines.length;
+  return (
+    <div class="sub2 chl">
+      {lines.map((o) => <code class={o.t}>{o.t === 'add' ? '+ ' : '− '}{o.text.trim().slice(0, 120) || ' '}</code>)}
+      {more > 0 && <span class="muted small">{fmt(P.moreLines, { n: more })}</span>}
+    </div>
+  );
+}
+
+/** O formulário guarda só o começo dos textos longos (999 caracteres): basta ser o começo do valor gravado. */
+function sentIsNew(sent: string, value: string): boolean {
+  const n = (x: string) => x.replace(/\r\n/g, '\n');
+  return n(sent) === n(value) || (sent.length >= 3 && n(value).startsWith(n(sent)));
 }
 
 // ---------- Provas ----------
@@ -672,7 +698,7 @@ const diffLabels = (): DiffLabels => ({ onlyChanges: P.diffOnly, whole: P.diffWh
 /** Valor longo (script, descrição): em vez do texto inteiro, quantas linhas mudaram e a primeira delas. */
 function DiffSummary({ oldText, newText, onOpen }: { oldText: string; newText: string; onOpen: (x: number, y: number) => void }) {
   const d = useMemo(() => diffLines(oldText, newText), [oldText, newText]);
-  const first = d.ops.find((o) => o.t !== 'eq');
+  const first = changedLines(d, 1)[0];
   return (
     <button class="dsum" onClick={(e) => onOpen(e.clientX, e.clientY)}>
       <span class="stat"><b class="add">+{d.added}</b> <b class="del">−{d.removed}</b> {P.diffLines}</span>

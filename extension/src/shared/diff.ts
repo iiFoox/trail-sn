@@ -65,6 +65,13 @@ function markPairs(ops: Op[]): void {
   }
 }
 
+/** As primeiras linhas que mudaram, sem as em branco (uma linha vazia acrescentada não diz nada sobre a mudança). */
+export function changedLines(d: Diff, max = 3): Op[] {
+  const changed = d.ops.filter((o) => o.t !== 'eq');
+  const filled = changed.filter((o) => o.text.trim());
+  return (filled.length ? filled : changed).slice(0, max);
+}
+
 /** Agrupa em trechos com algumas linhas de contexto; o resto vira "N linhas iguais". */
 export type Hunk = { kind: 'ops'; ops: Op[] } | { kind: 'gap'; count: number; from: number };
 export function hunks(ops: Op[], context = 3): Hunk[] {

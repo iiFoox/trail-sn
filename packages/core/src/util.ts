@@ -343,6 +343,34 @@ export function isFormSubmitFor(url: string | undefined, sysId: string): boolean
   return isMultiUpdate(u);
 }
 
+/**
+ * Valor que o formulário clássico enviou para `table.field`, lido da URL da transação (ou null se não foi enviado).
+ * - A instância guarda só os primeiros 999 caracteres de cada valor e acrescenta "..." (medido no PDI: script include de
+ *   1.914 caracteres). `cut` diz que só o começo pode ser comparado; os "..." saem do valor.
+ * - A URL é guardada já decodificada: um "+" do valor é "+" mesmo (o URLSearchParams o trocaria por espaço, e um script
+ *   com `a + b` parecia "o formulário enviou outro valor"). Um "&" dentro do valor corta a leitura: vira começo do valor,
+ *   que a comparação por prefixo já aceita.
+ */
+export function formSent(url: string | undefined, table: string, field: string, newValue?: string): { value: string; cut: boolean } | null {
+  const q = (url ?? '').split('?').slice(1).join('?');
+  const key = `${table}.${field}`;
+  const part = q.split('&').find((p) => p === key || p.startsWith(`${key}=`));
+  if (part === undefined) return null;
+  const read = (value: string) => (value.length > 999 && value.endsWith('...') ? { value: value.slice(0, -3), cut: true } : { value, cut: false });
+  const raw = read(part.slice(key.length + 1));
+  // Também a leitura decodificada (URL guardada codificada, como nos testes e em versões antigas): fica a que bate.
+  const decoded = read(new URLSearchParams(q).get(key) ?? '');
+  if (newValue === undefined) return decoded;
+  return sentMatches(raw, newValue) ? raw : decoded;
+}
+
+/** O valor enviado (ou o começo dele, quando cortado) bate com o gravado. Quebra de linha \r\n e \n contam igual. */
+export function sentMatches(sent: { value: string; cut: boolean }, value: string): boolean {
+  const n = (s: string) => s.replace(/\r\n/g, '\n');
+  if (sameVal(sent.value, value) || n(sent.value) === n(value)) return true;
+  return sent.value.length >= 3 && sent.value.length < value.length && n(value).startsWith(n(sent.value));
+}
+
 /** Atualização de vários registros de uma vez pela lista. */
 export function isMultiUpdate(url: string | undefined): boolean {
   // O envio vai para <tabela>.do com sys_action=sysverb_post_update; abrir o formulário de atualização (<tabela>_update.do) não grava.
