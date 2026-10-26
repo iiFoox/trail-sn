@@ -355,3 +355,16 @@ describe('cliente cancelado (M9: clique novo na mesma aba, 25/10)', () => {
     expect((await c2.query({ table: 'incident', query: '', fields: ['sys_id'], limit: 1 })).access).toBe('ok');
   });
 });
+
+describe('resposta depois do prazo (caça 1.4.6)', () => {
+  it('fetch que ignora o cancelamento e devolve 200 vazio depois do prazo é timeout, não lista vazia', async () => {
+    const fetchImpl = vi.fn(async (url: RequestInfo | URL) => {
+      if (String(url).includes('/ui/meta/')) return new Response('', { status: 404 });
+      await new Promise((r) => setTimeout(r, 80));
+      return new Response(JSON.stringify({ result: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    });
+    const c = new FetchRestClient({ baseUrl: 'https://late.example.com', getToken: async () => 't', fetchImpl, timeoutMs: 20 });
+    const r = await c.query({ table: 'sys_audit', query: 'sys_id=0123456789abcdef0123456789abcdef', fields: ['sys_id'], limit: 1 });
+    expect(r.access).toBe('timeout');
+  });
+});

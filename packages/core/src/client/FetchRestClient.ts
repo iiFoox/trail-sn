@@ -167,6 +167,9 @@ export class FetchRestClient implements RestClient {
       res = await this.fetchImpl(this.buildUrl(req), { method: 'GET', headers, credentials: 'include', redirect: 'manual', signal: ctrl.signal });
       // Prazo estourado lendo o corpo é 'timeout'; outro erro de leitura vira corpo vazio.
       text = await res.text().catch((e: Error) => { if (e?.name === 'AbortError') throw e; return ''; });
+      // Resposta que chegou depois do prazo (fetch que não respeita o cancelamento: proxy, polyfill, outra extensão) é prazo
+      // estourado, não lista vazia: no PDI, a auditoria atrasada virava "campo sem auditoria".
+      if (ctrl.signal.aborted) return { rows: [], status: 0, access: 'timeout' };
     } catch (e) {
       if ((e as Error).name === 'AbortError') return { rows: [], status: 0, access: 'timeout' };
       throw e;
@@ -290,6 +293,8 @@ export class FetchRestClient implements RestClient {
         const text = await res.text();
         let json: { result?: { columns?: Record<string, MetaColumn> } } | undefined;
         try { json = JSON.parse(text) as typeof json; } catch { json = undefined; }
+        // Chegou depois do prazo (fetch que não respeita o cancelamento): não respondeu.
+        if (ctrl.signal.aborted) json = undefined;
         const raw = json?.result?.columns;
         // 200 que não é JSON é página de login do SSO ou de proxy: não respondeu.
         columns = json === undefined ? undefined : raw && typeof raw === 'object' && !Array.isArray(raw) ? slimColumns(raw) : null;
