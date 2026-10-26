@@ -72,3 +72,21 @@ describe('desempate entre regras de outro registro', () => {
     expect(r.changes[0]!.evidence[0]!.artifact.sysId).toBe(exact.sys_id);
   });
 });
+
+describe('regras que não gravam outro registro', () => {
+  it('reabre só o próprio registro salvo (gr.get(current.sys_id)): fora', async () => {
+    const s = cascade('incident');
+    br(s, '[PT] F2 async varios', 'async_always', "var gr = new GlideRecord('incident');\nif (gr.get(current.sys_id) && gr.description != 'F2 async') { gr.description = 'F2 async'; gr.update(); }");
+    const r = await investigate(build(s), { table: 'incident', number: INC.number, field: 'description' });
+    expect(r.changes[0]!.evidence.some((e) => e.type === 'br_other_record')).toBe(false);
+  });
+
+  it('grava outro valor fixo: fica descartada', async () => {
+    const s = cascade('incident');
+    br(s, '[PT] Outro valor', 'before', "var gr = new GlideRecord('incident'); gr.addQuery('parent_incident', current.sys_id); gr.query(); while (gr.next()) { gr.setValue('description', 'outro texto'); gr.update(); }");
+    const r = await investigate(build(s), { table: 'incident', number: INC.number, field: 'description' });
+    const e = r.changes[0]!.evidence.find((x) => x.type === 'br_other_record')!;
+    expect(e.facts.map((f) => f.kind)).toContain('sets_other_value');
+    expect(e.grade).toBe('candidate');
+  });
+});

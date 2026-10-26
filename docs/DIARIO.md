@@ -688,3 +688,9 @@ A pedido do dono, dois agentes à parte: um revisor de código e segurança (só
 - **Correção:** chamada da Table API no caminho do registro só conta como gravação até 5 s da mudança (formulário segue como antes). No Rastro, "Gravação via API" virou "Chamada à API neste registro" (não dá para saber se leu ou gravou).
 - **Desempate:** regra de outro registro cujo código cita o sys_id deste registro ganha `trace_identifies_mechanism` (no PDI, uma BR antiga [PT] também abria incidentes e citava a descrição e empatava).
 - 2 testes novos (falham sem a correção); 1071 passando. Bundle `bundle-146j`.
+
+## 26/10/2026: regra de outro registro — descartar as que gravam só o próprio registro ou outro valor (146k)
+
+- **Reteste do Codex (146j):** depois do teste, a BR da cascata voltou ao script original (que não grava mais a descrição), e o topo passou a ser "[PT] F2 async varios" provável 60 — uma regra que faz `gr.get(current.sys_id)` (reabre o próprio registro salvo) e grava o valor fixo 'F2 async'.
+- **Correção em `otherRecord.ts`:** regra cujo GlideRecord só reabre o próprio registro (`get(current.sys_id)`/`getUniqueValue()`, sem `addQuery`) não é cascata e fica fora; valores literais gravados no campo pelo GlideRecord (`gr.campo = 'x'`, `gr.setValue('campo','x')`) diferentes do valor novo dão `sets_other_value`. Sem a regra verdadeira visível (script alterado depois), o resultado fica sem causa identificada em vez de apontar a errada.
+- 2 testes novos; 1073 passando. Bundle `bundle-146k`.
