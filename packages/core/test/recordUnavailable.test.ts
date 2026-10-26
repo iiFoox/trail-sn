@@ -123,3 +123,20 @@ describe('fonte com uma consulta sem resposta (1.4.6, caça no PDI)', () => {
     expect(r.gaps).toContain('sysevent: timeout');
   });
 });
+
+describe('regras de negócio com 500 (caça 1.4.6, 146d)', () => {
+  it('repete, e se faltar de novo a fonte é lenta e os metadados não vão para o cache', async () => {
+    const s = scenario();
+    audit(s, 'state', '1', '2', T0, 'admin', 1);
+    const c = build(s);
+    let n = 0;
+    c.respond('sys_script', () => { n++; return { rows: [], status: 500, access: 'unknown' }; });
+    const stored: unknown[] = [];
+    const cache = { get: async () => undefined, set: async (_t: string, m: unknown) => { stored.push(m); } };
+    const r = await investigate(c, { table: 'incident', sysId: INC.sysId, field: 'state' }, {}, cache);
+    expect(n).toBe(2);
+    expect(r.gaps).toContain('sys_script: timeout');
+    expect(stored).toHaveLength(0);
+    expect(JSON.stringify(r.changes)).not.toContain('no_competing_automation');
+  });
+});

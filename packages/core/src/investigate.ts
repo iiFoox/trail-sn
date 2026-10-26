@@ -481,11 +481,13 @@ export async function investigate(
     }
     const brReq = { table: 'sys_script', query: `collectionIN${tables.join(',')}^active=true`, fields: ['sys_id', 'name', 'when', 'order', 'collection', 'script', 'template', 'condition', 'filter_condition', 'action_insert', 'action_update'], limit: 500 };
     // As regras são a base de tudo: se a consulta estourar o tempo, tenta de novo com mais folga antes de seguir sem elas.
+    // 500, rede ou página de login ('unknown') também: sem as regras, a pessoa saía "confirmada" por falta de concorrente.
+    const unanswered = (a: AccessState) => a === 'timeout' || a === 'unknown';
     let brRes = await timedQuery(client, brReq, opts.sourceTimeoutMs);
-    if (brRes.access === 'timeout') brRes = await timedQuery(client, brReq, opts.sourceTimeoutMs * 3);
-    if (!access.sys_script || access.sys_script === 'timeout') access.sys_script = brRes.access;
+    if (unanswered(brRes.access)) brRes = await timedQuery(client, brReq, opts.sourceTimeoutMs * 3);
+    if (!access.sys_script || unanswered(access.sys_script)) access.sys_script = brRes.access === 'unknown' ? 'timeout' : brRes.access;
     const businessRules = brRes.rows;
-    const incomplete = brRes.access === 'timeout' || hierarchyGap;
+    const incomplete = unanswered(brRes.access) || hierarchyGap;
     // Script includes citados pelas BRs (por nome; buscar por conteúdo traz centenas de scripts nativos).
     const siNames = new Set<string>();
     for (const b of businessRules) (b.script ?? '').replace(/new\s+(?:global\.)?([A-Z][A-Za-z0-9_]+)\s*\(/g, (_m, n: string) => { siNames.add(n); return _m; });
