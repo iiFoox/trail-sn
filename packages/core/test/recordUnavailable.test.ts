@@ -100,3 +100,26 @@ describe('hierarquia da tabela sem resposta (1.4.6, M9 no PDI)', () => {
     expect(stored).toHaveLength(0);
   });
 });
+
+describe('fonte com uma consulta sem resposta (1.4.6, caça no PDI)', () => {
+  it('uma janela de syslog_transaction com 500 e outra respondendo: a fonte entra nas lacunas', async () => {
+    const s = scenario();
+    audit(s, 'state', '1', '2', T0, 'admin', 1);
+    audit(s, 'state', '2', '3', '2026-10-18 05:00:00', 'admin', 2);
+    const c = build(s);
+    let n = 0;
+    c.respond('syslog_transaction', () => (n++ === 0 ? { rows: [], status: 500, access: 'unknown' } : []));
+    const r = await investigate(c, { table: 'incident', sysId: INC.sysId, field: 'state' });
+    expect(c.log.filter((x) => x.table === 'syslog_transaction').length).toBeGreaterThan(1);
+    expect(r.gaps).toContain('syslog_transaction: timeout');
+  });
+
+  it('500 em sysevent (unknown) não passa calado', async () => {
+    const s = scenario();
+    audit(s, 'state', '1', '2', T0, 'admin', 1);
+    const c = build(s);
+    c.respond('sysevent', () => ({ rows: [], status: 500, access: 'unknown' }));
+    const r = await investigate(c, { table: 'incident', sysId: INC.sysId, field: 'state' });
+    expect(r.gaps).toContain('sysevent: timeout');
+  });
+});

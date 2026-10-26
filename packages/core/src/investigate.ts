@@ -60,8 +60,13 @@ export async function investigate(
     const r = await timedQuery(client, req, opts.sourceTimeoutMs);
     const prev = access[tag];
     if (!prev || prev === 'empty' || prev === 'unknown' || (prev === 'timeout' && r.access !== 'timeout')) access[tag] = r.access;
+    // Falha por consulta: a janela que respondeu não apaga a que não respondeu (no PDI, syslog_transaction de uma janela
+    // estourou, a outra respondeu, e a fonte saía "ok" com a prova rebaixada). A mesma consulta repetida com sucesso sai.
+    const key = `${table}|${query}|${fields.join(',')}|${limit}`;
+    if (r.access === 'timeout' || r.access === 'unknown') failed.set(key, tag); else failed.delete(key);
     return r.rows;
   };
+  const failed = new Map<string, string>();
 
   // Consultas só para rótulos: falha aqui não é lacuna de perícia, então não entra no relatório de acesso.
   const quiet = async (table: string, query: string, fields: string[], limit = 100): Promise<Row[]> =>
@@ -398,6 +403,9 @@ export async function investigate(
   for (const c of changes) for (const t of c.trace ?? []) for (const f of t.fields ?? []) (wanted[f.field] ??= []).push(f.oldValue, f.newValue);
   const display = Object.keys(wanted).length ? await resolveDisplay(quiet, meta.tables, wanted, opts.language) : undefined;
 
+  // Fonte com alguma consulta sem resposta (prazo, 500, página de login) vira lenta, mesmo que outra consulta a ela tenha
+  // respondido: antes, um 500 ('unknown') ou uma janela perdida passava calado e a perícia saía incompleta.
+  for (const tag of new Set(failed.values())) if (access[tag] !== 'denied' && access[tag] !== 'no_filter') access[tag] = 'timeout';
   const gaps = Object.entries(access)
     .filter(([k, s]) => (s === 'denied' || s === 'timeout' || s === 'no_filter') && !(k === 'sys_audit' && auditFrom === 'history'))
     .map(([k, s]) => `${k}: ${s}`);
