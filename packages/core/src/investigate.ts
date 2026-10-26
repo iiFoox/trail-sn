@@ -78,9 +78,13 @@ export async function investigate(
   };
   const failed = new Map<string, string>();
 
-  // Consultas só para rótulos: falha aqui não é lacuna de perícia, então não entra no relatório de acesso.
-  const quiet = async (table: string, query: string, fields: string[], limit = 100): Promise<Row[]> =>
-    (await timedQuery(client, { table, query, fields, limit }, opts.sourceTimeoutMs)).rows;
+  // Consultas opcionais (rótulos, tabelas que podem não existir): recusa não entra no relatório de acesso. Mas fonte de
+  // automação que não respondeu (prazo, 5xx) entra: no PDI, data lookups em 500 passavam calados.
+  const quiet = async (table: string, query: string, fields: string[], limit = 100): Promise<Row[]> => {
+    const r = await timedQuery(client, { table, query, fields, limit }, opts.sourceTimeoutMs);
+    if (AUTOMATION_SOURCES.includes(table) && (r.access === 'timeout' || r.access === 'unknown')) failed.set(`${table}|${query}|${fields.join(',')}|${limit}`, table);
+    return r.rows;
+  };
 
   /**
    * Linhas de staging que gravaram neste registro perto dos instantes dados. As tabelas de staging vêm dos transform maps
@@ -520,8 +524,9 @@ export async function investigate(
     // Regra criada, ativada, desativada ou editada depois que o cache foi guardado (10 min na extensão): no PDI, uma BR
     // ativada para um teste ficava de fora. Uma consulta mínima pergunta se alguma regra da tabela mudou desde então.
     if (cached?.loadedAt) {
-      const changed = await quiet('sys_script', `collectionIN${cached.tables.join(',')}^sys_updated_on>=${shift(cached.loadedAt, -120)}`, ['sys_id'], 1);
-      if (changed.length) cached = undefined;
+      const r = await timedQuery(client, { table: 'sys_script', query: `collectionIN${cached.tables.join(',')}^sys_updated_on>=${shift(cached.loadedAt, -120)}`, fields: ['sys_id'], limit: 1 }, opts.sourceTimeoutMs);
+      // Sem resposta, não dá para saber se alguma regra mudou: recarrega.
+      if (r.rows.length || r.access === 'timeout' || r.access === 'unknown') cached = undefined;
     }
     const base = cached ?? (await loadMetaBase(table));
     // Metadados incompletos (consulta de regras estourou o tempo) não vão para o cache: senão o erro se repetiria.
