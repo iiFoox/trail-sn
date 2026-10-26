@@ -3,7 +3,7 @@ import { detectPingPong } from './pingpong';
 import { documentation, fieldLabels, resolveDisplay } from './display';
 import type { QueryRequest, RestClient } from './client/RestClient';
 import { historyToAudit } from './history';
-import { scoreAll } from './scoring';
+import { scoreAll, THRESHOLDS } from './scoring';
 import { fieldsRead, writesOf } from './scriptEval';
 import { siCallsWithField } from './util';
 import { runSignatures, type ChangeContext, type TableMeta, type Traces } from './signatures';
@@ -34,6 +34,8 @@ export interface MetaCache {
 export const noCache: MetaCache = { get: async () => undefined, set: async () => {} };
 /** Quanto antes do processamento um evento pode ter sido criado (agendado) e ainda entrar na busca. */
 const EVENT_LOOKBACK_S = 86400;
+/** Fontes de automação: se uma delas não respondeu, a pessoa não sai "confirmada" como autora. */
+const AUTOMATION_SOURCES = ['sys_script', 'sysrule_assignment', 'dl_definition_rel_set', 'sys_script_client', 'sys_ui_policy', 'sys_flow_context', 'wf_context', 'sysevent', 'sysevent_script_action', 'sysauto_script'];
 /**
  * Quanto antes da mudança a abertura da lista pela pessoa ainda conta como pista de edição na célula. Cada minuto a mais
  * é mais syslog_transaction lido (a tabela que mais cresce numa instância); quem edita pela lista costuma abrir,
@@ -436,6 +438,20 @@ export async function investigate(
       ...((trace as { omitted?: number }).omitted ? { traceOmitted: (trace as { omitted?: number }).omitted } : {}),
     };
   });
+
+  // Fonte de automação que não respondeu (prazo, 5xx): "foi a pessoa" não pode ser confirmado, porque a automação que
+  // faltou pode ter feito a mudança. Na B-441 (F9-B6), com sysrule_assignment em 500, saía "system, certeza alta".
+  const failedTags = new Set(failed.values());
+  const silent = AUTOMATION_SOURCES.filter((t) => access[t] === 'timeout' || (failedTags.has(t) && access[t] !== 'denied' && access[t] !== 'no_filter'));
+  if (silent.length) {
+    for (const c of changes) {
+      const top = c.evidence[0];
+      if (!top || top.type !== 'user_action' || top.grade !== 'confirmed') continue;
+      top.grade = 'probable';
+      top.score = Math.min(top.score, THRESHOLDS.confirmed - 1);
+      top.gaps.push(`${silent.join(', ')} não respondeu: uma automação dessa fonte pode ter feito a mudança`);
+    }
+  }
 
   // ---------- atualizações sem auditoria (setWorkflow(false) etc.) ----------
   let unaudited: Investigation['unaudited'] = null;
