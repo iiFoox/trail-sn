@@ -13,7 +13,7 @@ import { getPrefs, resolvedTheme } from '../shared/prefs';
 import { trackedTab } from '../shared/tabRef';
 import { FlowsTab } from './Flows';
 import { RecordTimeline } from './Timeline';
-import { WhatIf } from './WhatIf';
+import { VersionsTab } from './Versions';
 import { FieldMapBox } from './FieldMap';
 import { fullReport, plainSummary, savePdf } from './export';
 import { changedLines, diffLines, looksLong } from '../shared/diff';
@@ -30,8 +30,8 @@ const s = t(lang);
 const P = s.p;
 const WINDOW = { before: 3, after: 15 };
 
-type Tab = 'answer' | 'trace' | 'proof' | 'history' | 'flows' | 'whatif' | 'advanced';
-const TABS: Tab[] = ['answer', 'trace', 'proof', 'history', 'flows', 'whatif'];
+type Tab = 'answer' | 'trace' | 'proof' | 'history' | 'flows' | 'versions' | 'advanced';
+const TABS: Tab[] = ['answer', 'trace', 'proof', 'history', 'flows', 'versions'];
 /** Com o Modo avançado ligado, uma aba a mais no fim: "Avançado". */
 const tabsFor = (advanced: boolean): Tab[] => (advanced ? [...TABS, 'advanced'] : TABS);
 const demoParams = new URLSearchParams(location.search);
@@ -201,7 +201,7 @@ export function Result({ r, origin, access, toast, onField, advanced = false, me
       {c && (
         <div class={`seg-tabs ${advanced ? 't7' : ''}`} role="tablist" ref={tabsRef} style={`--ix:${ind.x}px;--iw:${ind.w}px`}>
           <span class="ind" aria-hidden="true" />
-          {([['answer', P.tabAnswer, 0], ['trace', P.tabTrace, c.trace?.length ?? 0], ['proof', P.tabProof, c.evidence[0]?.facts.length ?? 0], ['history', P.tabHistory, r.changes.length + (r.unaudited ? 1 : 0)], ['flows', P.tabFlows, 0], ['whatif', P.wiTab, 0], ...(advanced ? [['advanced', P.adv.tab, 0]] : [])] as [Tab, string, number][]).map(([k, label, n]) => (
+          {([['answer', P.tabAnswer, 0], ['trace', P.tabTrace, c.trace?.length ?? 0], ['proof', P.tabProof, c.evidence[0]?.facts.length ?? 0], ['history', P.tabHistory, r.changes.length + (r.unaudited ? 1 : 0)], ['flows', P.tabFlows, 0], ['versions', P.vrTab, 0], ...(advanced ? [['advanced', P.adv.tab, 0]] : [])] as [Tab, string, number][]).map(([k, label, n]) => (
             <button role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>
               {label}{k !== 'answer' && n > 0 && <i>{n}</i>}{k === 'proof' && (denied.length > 0 || r.unaudited || expired) && <span class="wdot" />}
             </button>
@@ -215,7 +215,7 @@ export function Result({ r, origin, access, toast, onField, advanced = false, me
       {c && tab === 'trace' && <Trace r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} />}
       {c && tab === 'proof' && <Proof r={r} c={c} origin={origin} field={field} denied={denied} expired={expired} access={access} copy={copy} />}
       {c && tab === 'flows' && <FlowsTab target={r.target} origin={origin} field={r.target.field} />}
-      {c && tab === 'whatif' && <WhatIf r={r} origin={origin} field={field} />}
+      {c && tab === 'versions' && <VersionsTab target={r.target} origin={origin} title={r.target.display ?? r.target.table} />}
       {c && advanced && tab === 'advanced' && <AdvancedTab r={r} c={c} origin={origin} field={field} {...(me ? { me } : {})} />}
       {c && tab === 'history' && (
         <>
@@ -696,7 +696,7 @@ function History({ r, origin, sel, onPick, open, onOpen }: { r: Investigation; o
 const diffLabels = (): DiffLabels => ({ onlyChanges: P.diffOnly, whole: P.diffWhole, same: P.diffSame, added: P.diffAdded, removed: P.diffRemoved, before: P.diffBefore, after: P.diffAfter });
 
 /** Valor longo (script, descrição): em vez do texto inteiro, quantas linhas mudaram e a primeira delas. */
-function DiffSummary({ oldText, newText, onOpen }: { oldText: string; newText: string; onOpen: (x: number, y: number) => void }) {
+export function DiffSummary({ oldText, newText, onOpen }: { oldText: string; newText: string; onOpen: (x: number, y: number) => void }) {
   const d = useMemo(() => diffLines(oldText, newText), [oldText, newText]);
   const first = changedLines(d, 1)[0];
   return (
@@ -709,7 +709,7 @@ function DiffSummary({ oldText, newText, onOpen }: { oldText: string; newText: s
 }
 
 /** Diferença em tela cheia dentro do painel, com opção de abrir lado a lado numa janela larga. */
-function DiffOverlay({ at, title, sub, oldText, newText, onClose }: { at: { x: number; y: number }; title: string; sub: string; oldText: string; newText: string; onClose: () => void }) {
+export function DiffOverlay({ at, title, sub, oldText, newText, onClose }: { at: { x: number; y: number }; title: string; sub: string; oldText: string; newText: string; onClose: () => void }) {
   const [closing, setClosing] = useState(false);
   const close = () => { setClosing(true); setTimeout(onClose, 220); };
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); close(); } }; addEventListener('keydown', k); return () => removeEventListener('keydown', k); }, []);

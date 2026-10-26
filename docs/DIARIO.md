@@ -667,3 +667,11 @@ A pedido do dono, dois agentes à parte: um revisor de código e segurança (só
 - **Correção:** BRs, client scripts e UI policies **inativos alterados depois da mudança mais antiga** entram como suspeitos (consultas à parte, até 20 cada, com `sys_updated_on>=`), só para mudanças anteriores à alteração deles, com o aviso "está desativado hoje; foi alterado em …, depois da mudança (confira se estava ativo na hora)". Ficam fora do alerta de conflitos.
 - **Cache das regras (10 min na extensão):** guardava as regras da tabela; uma regra criada, ativada ou editada logo antes ficava de fora. Agora o cache guarda `loadedAt` e, antes de usar, uma consulta mínima (`sys_script`, `sys_updated_on>=` 2 min antes, limite 1) pergunta se alguma regra da tabela mudou; se mudou, recarrega.
 - 5 testes novos (`regraDesativada.test.ts`; 4 falham sem a correção); 1057 passando. Bundle `bundle-146h`.
+
+## 26/10/2026: aba Versões no lugar do "E se?"
+
+- **Pedido do dono:** o "E se?" era a função menos útil; sai das abas e fica escondido em Avançado (seção "E se?", só com o Modo avançado). No lugar, a aba **Versões**.
+- **Versões:** lista as versões salvas do registro (`sys_update_version`, a mesma lista "Versions" do formulário), da mais nova à mais antiga, com quem salvou, quando, se está em uso e de onde veio (update set com nome, atualização da plataforma, outra origem). Ao escolher uma, lê só o conteúdo dela e da anterior (o registro inteiro em XML, no máximo 2 por vez) e mostra os campos que mudaram; texto longo vem com as linhas alteradas e abre a diferença lado a lado. Campos de controle (`sys_*`) ficam fora. Registro sem versões (incidente, chamado) e perfil sem acesso têm aviso próprio.
+- Leitura do XML própria (`shared/versions.ts`, sem DOMParser): campos vazios, texto escapado, CDATA (inclusive "]]>" partido em duas seções e `</script>` dentro do script) e `display_value` das referências.
+- Core: `recordVersions` e `versionPayloads` (`versions.ts`). Testes: 3 no core, 5 no leitor; 1065 passando.
+- **Falta:** conferir no painel real (o dono, no script include SOWMraUtils) e pôr no site.

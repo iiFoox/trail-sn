@@ -15,6 +15,7 @@ import { Fold } from './Fold';
 import { Dependents, NotSeen, useFieldRules, Writers } from './RulesTab';
 import { SaveTimingCard } from './SaveTiming';
 import { Simulate } from './Simulate';
+import { WhatIf } from './WhatIf';
 import { WhoSees } from './WhoSees';
 
 const P = t(getPrefs().lang).p;
@@ -61,6 +62,7 @@ export function AdvancedTab({ r, c, origin, field, me }: { r: Investigation; c: 
       <Lazy id="deps" title={A.deps} count={rules.res?.dependents.length} onOpen={() => setWantRules(true)}>
         {() => rulesBody((res) => <><Dependents res={res} origin={origin} labels={labels} field={field} bare /><NotSeen res={res} /></>)}
       </Lazy>
+      <Lazy id="whatif" title={P.wiTab}>{() => <WhatIf r={r} origin={origin} field={field} />}</Lazy>
       <Lazy id="sim" title={A.sim}>{(close) => <Simulate r={r} origin={origin} field={field} labels={labels} onClose={close} />}</Lazy>
       <Lazy id="cmp" title={A.cmp}>{(close) => <CompareTool r={r} origin={origin} field={field} onClose={close} />}</Lazy>
       <Lazy id="save" title={A.save}>{() => <SaveTimingCard r={r} c={c} origin={origin} />}</Lazy>

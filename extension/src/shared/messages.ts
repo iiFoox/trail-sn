@@ -31,6 +31,8 @@ export type Message =
   | { type: 'record'; origin: string; table: string; record: string; token?: string; language?: string; mode?: import('./prefs').PanelMode; tabId?: number }
   | { type: 'field-map'; origin: string; table: string; field: string }
   | { type: 'flows'; origin: string; table: string; sysId: string }
+  | { type: 'versions'; origin: string; table: string; sysId: string }
+  | { type: 'version-payloads'; origin: string; sysIds: string[] }
   | { type: 'automations'; origin: string; table: string; sysId: string }
   | { type: 'preview'; origin: string; target: { table: string; sysId: string; field: string; value: string }; language?: string; tabId?: number }
   | { type: 'field-state'; origin: string; target: { table: string; sysId: string; field: string }; observed?: import('@trail/core').FieldObserved; language?: string; tabId?: number }

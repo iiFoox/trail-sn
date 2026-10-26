@@ -1167,3 +1167,21 @@ details.box.fold2 > summary h4 > .caret { margin-top: 5px; }
 details.grp.fold2 > summary { align-items: flex-start; }
 details.grp.fold2 > summary > .caret { margin-top: 5px; }
 details.box.fold2 > summary h4 > .grow { display: block; }
+
+/* Aba Versões: lista das versões salvas e, abaixo da escolhida, o que mudou em relação à anterior. */
+.vr-list .vr-row { width: 100%; border: 0; border-top: 1px solid var(--line); background: transparent; text-align: left; font: inherit; cursor: pointer; align-items: center; }
+.vr-list .vr-row:first-child { border-top: 0; }
+.vr-list .vr-row:hover, .vr-list .vr-row.on { background: var(--teal-soft); }
+.vr-list .vr-row .tag { margin-left: 6px; }
+.vr-src { display: block; margin-top: 2px; overflow-wrap: anywhere; }
+.vr-chev svg { width: 14px; height: 14px; color: var(--muted); transition: transform .15s; }
+.vr-row.on .vr-chev svg { transform: rotate(90deg); }
+.vr-body { padding: 8px 14px 12px; display: flex; flex-direction: column; gap: 8px; font-size: 12.5px; border-top: 1px dashed var(--line); }
+.vr-body .see { font: 600 11px var(--font); color: var(--accent); display: inline-flex; gap: 4px; align-items: center; text-decoration: none; }
+.vr-body .see svg { width: 11px; height: 11px; }
+.vr-h { font-weight: 700; color: var(--fg-2); }
+.vr-f { display: flex; flex-direction: column; gap: 4px; }
+.vr-f code { font: 11px var(--mono); }
+.vr-val { overflow-wrap: anywhere; }
+.vr-val .del { background: color-mix(in srgb, #ef5b6b 13%, transparent); border-radius: 4px; padding: 0 4px; }
+.vr-val .add { background: color-mix(in srgb, #3ecf8e 13%, transparent); border-radius: 4px; padding: 0 4px; }
