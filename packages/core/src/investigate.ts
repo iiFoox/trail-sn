@@ -361,7 +361,8 @@ export async function investigate(
   // tabela por GlideRecord e citam o campo. Só quando há essa gravação; as da própria hierarquia já estão nos metadados.
   const otherTables = unique(txAll.map((t) => otherRecordWrite(t.url, sysId)?.table ?? '').filter((t) => t && !meta.tables.includes(t))).slice(0, 5);
   const crossRules = otherTables.length
-    ? (await quiet('sys_script', `collectionIN${otherTables.join(',')}^active=true^scriptLIKEGlideRecord^scriptLIKE${target.field}`, ['sys_id', 'name', 'when', 'order', 'collection', 'script', 'condition', 'filter_condition', 'action_insert', 'action_update'], 50))
+    // Ativas, e as desligadas depois da mudança mais antiga (no PDI, a regra do problema foi desligada logo após o teste).
+    ? (await quiet('sys_script', [`active=true`, ...(firstChange ? [`active=false^sys_updated_on>=${firstChange}`] : [])].map((a) => `collectionIN${otherTables.join(',')}^${a}^scriptLIKEGlideRecord^scriptLIKE${target.field}`).join('^NQ'), ['sys_id', 'name', 'when', 'order', 'collection', 'script', 'condition', 'filter_condition', 'action_insert', 'action_update', 'active', 'sys_updated_on'], 50))
       .filter((b) => refsField(b.script, target.field))
     : [];
   const inactive = await inactiveP;

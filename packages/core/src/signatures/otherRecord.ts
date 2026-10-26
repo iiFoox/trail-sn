@@ -29,6 +29,9 @@ export function otherRecordRule(ctx: ChangeContext): Evidence[] {
   const nv = ctx.audit.newvalue ?? '';
   const out: Evidence[] = [];
   for (const b of rules) {
+    // Desligada hoje só conta se foi alterada depois desta mudança (as do próprio registro já chegam filtradas).
+    const off = b.active === 'false';
+    if (off && !((b.sys_updated_on ?? '') > ctx.at)) continue;
     // A regra roda na tabela do registro salvo (ou, na mesma hierarquia, numa tabela-mãe dele).
     const save = saves.find(({ w }) => w.table === b.collection || (ctx.meta.tables.includes(w.table) && ctx.meta.tables.includes(b.collection ?? '')));
     if (!save) continue;
@@ -45,7 +48,8 @@ export function otherRecordRule(ctx: ChangeContext): Evidence[] {
     if (nv.length >= 3 && (b.script ?? '').includes(nv)) facts.push(fact('sets_same_value', 'sys_script', 'o código traz exatamente o valor gravado'));
     if (save.t.sys_created_by === ctx.user) facts.push(fact('user_matches', 'syslog_transaction', `quem salvou o ${save.w.table} é quem aparece nesta mudança (${ctx.user})`));
     out.push(evidence('br_other_record', { name: b.name ?? '?', sysId: b.sys_id, table: 'sys_script' }, facts,
-      [`a regra roda ao salvar ${save.w.table} ${save.w.sysId}; as condições dela não foram avaliadas para aquele registro`]));
+      [`a regra roda ao salvar ${save.w.table} ${save.w.sysId}; as condições dela não foram avaliadas para aquele registro`,
+        ...(off && (ctx.traces.crossRules ?? []).includes(b) ? [`está desativado hoje; foi alterado em ${b.sys_updated_on}, depois da mudança (confira se estava ativo na hora)`] : [])]));
   }
   return out;
 }

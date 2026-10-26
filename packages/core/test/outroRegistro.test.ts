@@ -103,3 +103,18 @@ describe('regra de outro registro desligada depois da mudança', () => {
     expect(e.gaps.join(' ')).toContain('desativado hoje');
   });
 });
+
+describe('regra de outra tabela desligada depois da mudança', () => {
+  it('problema que gravou o incidente, regra já desligada: ainda é a causa, com o aviso', async () => {
+    const s = cascade('problem');
+    const c = build(s);
+    const rule = { sys_id: id(), name: '[PT] Problema atualiza incidente', when: 'before', order: '100', collection: 'problem', script: CHILD_SCRIPT('problem'), condition: '', filter_condition: '', active: 'false', sys_updated_on: '2026-10-18 01:40:00', action_update: 'true', action_insert: 'false' };
+    const old = { ...rule, sys_id: id(), name: '[PT] Desligada antes', sys_updated_on: '2026-10-01 00:00:00' };
+    c.rows('sys_script', [...s.brs, rule, old]);
+    const r = await investigate(c, { table: 'incident', number: INC.number, field: 'description' });
+    const e = r.changes[0]!.evidence[0]!;
+    expect([e.type, e.artifact.sysId]).toEqual(['br_other_record', rule.sys_id]);
+    expect(e.gaps.join(' ')).toContain('desativado hoje');
+    expect(r.changes[0]!.evidence.some((x) => x.artifact.sysId === old.sys_id)).toBe(false);
+  });
+});
