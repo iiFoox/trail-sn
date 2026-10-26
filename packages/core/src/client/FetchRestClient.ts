@@ -239,7 +239,8 @@ export class FetchRestClient implements RestClient {
         const col: MetaColumn | undefined = c[parts[i]!];
         if (!col) return 'no_filter';
         const last = i === parts.length - 1;
-        if (last && !order && col.canmatch !== true) return 'no_filter';
+        // Versão que não informa canmatch em nenhuma coluna da tabela: não dá para conferir, segue (como na 1.4.4).
+        if (last && !order && informsMatch(c) && col.canmatch !== true) return 'no_filter';
         if (!last) {
           if (!col.reference) return 'no_filter';
           const next = await this.uiMeta(col.reference);
@@ -446,12 +447,18 @@ const refusals = {
   },
 };
 
+/** A tabela informa canmatch em alguma coluna (a Brazil informa em todas; uma versão que não informa fica sem a conferência). */
+function informsMatch(cols: Record<string, MetaColumn>): boolean {
+  return Object.values(cols).some((c) => c.canmatch !== undefined);
+}
+
 /** Só o que o motor usa de cada coluna do ui/meta (guardado na sessão do navegador). */
 function slimColumns(raw: Record<string, MetaColumn>): Record<string, MetaColumn> {
   const out: Record<string, MetaColumn> = {};
   for (const [name, c] of Object.entries(raw)) {
     if (!c || typeof c !== 'object') continue;
-    out[name] = { canmatch: c.canmatch === true, label: c.label, type: c.type, reference: c.reference, reference_display_field: c.reference_display_field, mandatory: c.mandatory, read_only: c.read_only, attributes: c.attributes,
+    // canmatch só quando a instância informa: sem ele (outra versão), a conferência do filtro não se aplica.
+    out[name] = { ...(typeof c.canmatch === 'boolean' ? { canmatch: c.canmatch } : {}), label: c.label, type: c.type, reference: c.reference, reference_display_field: c.reference_display_field, mandatory: c.mandatory, read_only: c.read_only, attributes: c.attributes,
       ...(c.choices?.length ? { choices: c.choices.map((x) => ({ label: x.label, value: x.value })) } : {}) };
   }
   return out;

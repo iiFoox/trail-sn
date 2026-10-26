@@ -719,3 +719,8 @@ A pedido do dono, dois agentes à parte: um revisor de código e segurança (só
 - **Caça de uso real (Codex):** ~75 cenários no PDI; fila da aba Versões completa sem defeito (lista e diferenças por campo, BR/client script/UI policy/UI action, update set próprio, Revert to this version, conteúdo com `]]>`/`</script>`/acentos/HTML, itil e escopo.user "sem acesso" sem banners, versão DELETE). Achado de UX corrigido: resposta sem retorno não diz mais "não guarda versões" (9ab9ee3).
 - **Pacotes:** trail-chrome-1.4.6.zip 282.144 bytes (agora sem `build.txt`, que só serve à instalação manual), trail-extensao-1.4.6.zip 284.821 bytes; SHA-256 no README. Ficha: notas da versão e descrição longa com a aba Versões e as melhorias de atribuição; "E se?" no modo avançado.
 - Testes: 1079 passando.
+
+## 26/10/2026: compatibilidade com versões anteriores (canmatch)
+
+- **Pergunta do dono:** a empresa dele está na Australia (o PDI é Brazil). O ponto frágil entre versões é o `canmatch` do `/api/now/ui/meta`: sem ele, o Trail recusava as consultas filtradas ("sem acesso a tudo"). Agora, tabela cujo ui/meta não informa `canmatch` em nenhuma coluna segue sem essa conferência (como na 1.4.4); coluna ausente continua barrada. ui/meta ou histórico inexistentes já viravam "segue sem"/lacuna. 2 testes; 1081 passando.
+- Pacotes refeitos de novo (trail-chrome-1.4.6.zip 282.183 bytes). O dono vai criar PDIs Zurich e Australia para testar.

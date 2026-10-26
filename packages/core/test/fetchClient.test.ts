@@ -189,6 +189,21 @@ describe('tabelas com Query ACL: confere no ui/meta antes de filtrar', () => {
     expect(urls.some((u) => u.includes('/api/now/table/'))).toBe(false);
   });
 
+  it('versão que não informa canmatch em nenhuma coluna: consulta (sem a conferência, como na 1.4.4)', async () => {
+    const urls: string[] = [];
+    const fetchImpl = vi.fn(async (i: RequestInfo | URL) => { urls.push(String(i)); return String(i).includes('/ui/meta/syslog') ? json(200, { result: { columns: { sys_created_on: { label: 'Created' }, source: { label: 'Source' } } } }) : json(200, { result: [{ sys_id: 'x' }] }); }) as unknown as typeof fetch;
+    const c = new FetchRestClient({ baseUrl: 'https://guard-old.example.com', getToken: async () => 't', fetchImpl });
+    expect((await c.query({ table: 'syslog', query: 'sys_created_on>=2026-10-01 00:00:00^sourceINx', fields: ['message'], limit: 10 })).access).toBe('ok');
+    // Coluna que não existe no ui/meta continua barrada.
+    expect((await c.query({ table: 'syslog', query: 'levelIN2', fields: ['message'], limit: 10 })).access).toBe('no_filter');
+  });
+
+  it('com canmatch informado em alguma coluna, a que vem sem ele continua barrada', async () => {
+    const fetchImpl = vi.fn(async (i: RequestInfo | URL) => (String(i).includes('/ui/meta/syslog') ? json(200, { result: { columns: { sys_created_on: { canmatch: true }, source: { label: 'Source' } } } }) : json(200, { result: [{ sys_id: 'x' }] }))) as unknown as typeof fetch;
+    const c = new FetchRestClient({ baseUrl: 'https://guard-mixed.example.com', getToken: async () => 't', fetchImpl });
+    expect((await c.query({ table: 'syslog', query: 'sys_created_on>=2026-10-01 00:00:00^sourceINx', fields: ['message'], limit: 10 })).access).toBe('no_filter');
+  });
+
   it('com a coluna liberada (canmatch), consulta normalmente', async () => {
     const urls: string[] = [];
     const fetchImpl = vi.fn(async (i: RequestInfo | URL) => { urls.push(String(i)); return String(i).includes('/ui/meta/syslog') ? json(200, { result: { columns: { sys_created_on: { canmatch: true }, source: { canmatch: true } } } }) : json(200, { result: [{ sys_id: 'x' }] }); }) as unknown as typeof fetch;
