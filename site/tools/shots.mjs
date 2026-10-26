@@ -192,7 +192,7 @@ try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1, colorScheme: 'dark' });
     const html = storeShell({
       title: 'O que mudou entre dois momentos',
-      sub: 'Escolha dois momentos na linha do tempo e veja só o que ficou diferente no registro entre eles — ou simule na aba "E se?" o que mudaria antes de salvar.',
+      sub: 'Escolha dois momentos na linha do tempo e veja só o que ficou diferente no registro entre eles — ou confira na aba Versões o que mudou em cada salvamento.',
       rightHtml: `<div class="float-wrap"><div class="float-tab">›</div><div class="float-win"><iframe id="pframe" src="${base}/demo/panel.html?theme=dark&field=state&tab=history&float=1"></iframe></div></div>`,
     });
     await page.setContent(html, { waitUntil: 'networkidle' });

@@ -71,7 +71,7 @@
       "Registro inteiro · 'Tudo que mudou' em grupos por momento e 'O que roda neste registro' (regras na ordem de execução com campos gravados, flows, scripts e botões)",
       "Lote pela coluna da lista · mesma animação da trilha com a lupa, grupos por momento e exportação CSV",
       "Flows · execuções reais no registro (estado, horário, subflow recuado abaixo do flow pai e link) e flows configurados na tabela com gatilho e campos que gravam",
-      "E se? · simule outro valor antes de salvar e veja quais regras, client scripts ou lookups rodariam",
+      "Versões · lista as versões salvas de registros de configuração com quem salvou, quando, de qual update set e a diferença linha a linha",
       "Opções · tema, idioma, onde abrir o painel (na página, lateral ou janela separada), ícones e privacidade"
     ],
     en: [
@@ -79,7 +79,7 @@
       "Full record · 'Everything that changed' in save groups and 'What runs on this record' (rules in execution order with written fields, flows, scripts and buttons)",
       "Batch by list column · animated progress trail with magnifying glass, save groups and CSV export",
       "Flows · real record executions (status, timestamp, subflow indented under parent flow and link) and configured table flows with triggers and written fields",
-      "What if? · simulate another value before saving and see which rules, client scripts or lookups would run",
+      "Versions · saved version history for configuration records with who saved, when, update set and line-by-line diff",
       "Options · theme, language, where to open panel (in-page, side or separate window), icons and privacy"
     ]
   };

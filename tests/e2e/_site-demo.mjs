@@ -76,7 +76,7 @@ await page.waitForTimeout(1000);
 const recGroupTitle = await panelFrame.$eval('.bt-group summary', (el) => el.textContent.trim()).catch(() => '');
 if (!recGroupTitle.includes('salvou')) errs.push('clique na bolinha-assistente não abriu Tudo que mudou em grupos: ' + recGroupTitle);
 // galeria
-for (const label of ['Registro inteiro', 'Lote', 'Flows', 'E se?', 'Opções', 'Painel · escuro']) {
+for (const label of ['Registro inteiro', 'Lote', 'Flows', 'Versões', 'Opções', 'Painel · escuro']) {
   await page.click(`#galseg button:has-text("${label}")`);
   await page.waitForTimeout(900);
   if (label === 'Flows') {
