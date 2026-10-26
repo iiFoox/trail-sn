@@ -170,7 +170,7 @@ const dict = {
       expiredText: 'Os rastros desta data já foram apagados pela retenção da instância. Só a auditoria continua.',
       tr: {
         form: '{user} salvou o formulário', formWs: '{user} salvou pelo Workspace', ui_action: '{user} clicou no botão {label}', async: 'Regra rodou em segundo plano', job: 'Job agendado rodou',
-        api: 'Gravação via API', background_script: '{user} rodou um script de fundo', event: 'Evento {label} processado', flow: 'Flow {label} rodou',
+        api: 'Chamada à API neste registro', background_script: '{user} rodou um script de fundo', event: 'Evento {label} processado', flow: 'Flow {label} rodou',
         workflow: 'Workflow {label} rodou', change: '{field}: {old} → {new}', changeLong: '{field} mudou',
       } as Record<string, string>,
       sent: 'Enviou {field} = {value}',
@@ -565,7 +565,7 @@ const dict = {
       expiredText: 'Traces for this date were already purged by the instance retention. Only the audit remains.',
       tr: {
         form: '{user} saved the form', formWs: '{user} saved from the Workspace', ui_action: '{user} clicked the {label} button', async: 'Rule ran in the background', job: 'Scheduled job ran',
-        api: 'Write through the API', background_script: '{user} ran a background script', event: 'Event {label} processed', flow: 'Flow {label} ran',
+        api: 'API call on this record', background_script: '{user} ran a background script', event: 'Event {label} processed', flow: 'Flow {label} ran',
         workflow: 'Workflow {label} ran', change: '{field}: {old} → {new}', changeLong: '{field} changed',
       } as Record<string, string>,
       sent: 'Sent {field} = {value}',

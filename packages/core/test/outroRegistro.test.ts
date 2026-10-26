@@ -51,3 +51,24 @@ describe('regra de outro registro que grava neste (pai → filho)', () => {
     expect(r.changes[0]!.evidence.some((e) => e.type === 'br_other_record')).toBe(false);
   });
 });
+
+describe('leitura do filho pela API depois da cascata', () => {
+  it('GET /api/now/table/incident/<filho> 12 s depois não esconde a regra do pai', async () => {
+    const s = cascade('incident');
+    const rule = br(s, '[PT] Cascata pai para filho', 'before', CHILD_SCRIPT('incident'));
+    tx(s, '2026-10-18 01:37:12', 'rest', `/api/now/table/incident/${INC.sysId}`, 'admin');
+    const r = await investigate(build(s), { table: 'incident', number: INC.number, field: 'description' });
+    const e = r.changes[0]!.evidence[0]!;
+    expect([e.type, e.artifact.sysId]).toEqual(['br_other_record', rule.sys_id]);
+  });
+});
+
+describe('desempate entre regras de outro registro', () => {
+  it('a que cita este registro pelo sys_id fica na frente', async () => {
+    const s = cascade('incident');
+    br(s, '[PT] Genérica', 'before', "var gr = new GlideRecord('incident'); gr.addQuery('parent_incident', current.sys_id); gr.query(); while (gr.next()) { gr.description = 'x'; gr.update(); }");
+    const exact = br(s, '[PT] Exata', 'before', CHILD_SCRIPT('incident').replace("'[PT] Cascade da BR para filho'", 'current.description'));
+    const r = await investigate(build(s), { table: 'incident', number: INC.number, field: 'description' });
+    expect(r.changes[0]!.evidence[0]!.artifact.sysId).toBe(exact.sys_id);
+  });
+});

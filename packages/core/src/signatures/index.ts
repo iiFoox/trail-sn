@@ -75,7 +75,11 @@ function runSignaturesInner(full: ChangeContext): Evidence[] {
   const ruledOut = (e: Evidence) => e.facts.some((f) => f.kind === 'no_step_writes_field' || f.kind === 'sets_other_value' || f.kind === 'condition_false' || f.kind === 'reads_only' || f.kind === 'not_referenced');
   const strong = out.some((e) => !ruledOut(e) && e.facts.some((f) => f.kind === 'trace_names_artifact' || f.kind === 'trace_identifies_mechanism'));
   // Só transações DESTE registro: a mesma pessoa navegando em outras telas na hora não é uma gravação dela aqui.
-  const anyUserTx = ctx.traces.transactions.some((t) => t.sys_created_by === ctx.user && !/^JOB: /.test(t.url ?? '') && isRecordWrite(t.url, ctx.sysId))
+  // Chamada da Table API no caminho do registro (/api/now/table/t/<sys_id>) pode ser só leitura (integração, outra extensão,
+  // conferência): o syslog_transaction não registra o método. Só conta como gravação perto da mudança (no PDI, uma leitura
+  // 12 s depois fazia o filho de uma cascata parecer gravado pela pessoa, e a regra do pai sumia).
+  const nearChange = (t: { sys_created_on?: string; url?: string }) => isFormSubmitFor(t.url, ctx.sysId) || Math.abs(toMs(t.sys_created_on ?? '') - toMs(ctx.at)) <= 5000;
+  const anyUserTx = ctx.traces.transactions.some((t) => t.sys_created_by === ctx.user && !/^JOB: /.test(t.url ?? '') && isRecordWrite(t.url, ctx.sysId) && nearChange(t))
     // Regras de atribuição e alguns motores gravam como "system" DENTRO da transação de outra pessoa no mesmo registro.
     || (isSystemUser(ctx.user) && ctx.traces.transactions.some((t) => !/^JOB: /.test(t.url ?? '') && isRecordWrite(t.url, ctx.sysId) && Math.abs(toMs(t.sys_created_on ?? '') - toMs(ctx.at)) <= 2000));
   const anySubmit = ctx.traces.transactions.some((t) => t.type === 'form' && isFormSubmitFor(t.url, ctx.sysId));

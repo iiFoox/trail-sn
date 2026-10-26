@@ -36,6 +36,8 @@ export function otherRecordRule(ctx: ChangeContext): Evidence[] {
       fact('references_table', 'sys_script', `a regra abre ${ctx.table} por GlideRecord`),
       fact('references_field', 'sys_script', `e grava "${ctx.field}"`),
     ];
+    // O código aponta este registro pelo sys_id (guarda exata, gr.get('<sys_id>')): é ele, e não outro, que a regra grava.
+    if ((b.script ?? '').includes(ctx.sysId)) facts.push(fact('trace_identifies_mechanism', 'sys_script', 'o código cita este registro pelo sys_id'));
     if (nv.length >= 3 && (b.script ?? '').includes(nv)) facts.push(fact('sets_same_value', 'sys_script', 'o código traz exatamente o valor gravado'));
     if (save.t.sys_created_by === ctx.user) facts.push(fact('user_matches', 'syslog_transaction', `quem salvou o ${save.w.table} é quem aparece nesta mudança (${ctx.user})`));
     out.push(evidence('br_other_record', { name: b.name ?? '?', sysId: b.sys_id, table: 'sys_script' }, facts,
