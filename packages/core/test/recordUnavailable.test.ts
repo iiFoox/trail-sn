@@ -122,6 +122,20 @@ describe('fonte com uma consulta sem resposta (1.4.6, caça no PDI)', () => {
     const r = await investigate(c, { table: 'incident', sysId: INC.sysId, field: 'state' });
     expect(r.gaps).toContain('sysevent: timeout');
   });
+
+  it('sysevent volta no máximo um dia em sys_created_on (revisão de carga antes da loja)', async () => {
+    const s = scenario();
+    audit(s, 'state', '1', '2', T0, 'admin', 1);
+    const c = build(s);
+    await investigate(c, { table: 'incident', sysId: INC.sysId, field: 'state' });
+    const ev = c.log.filter((x) => x.table === 'sysevent');
+    expect(ev.length).toBeGreaterThan(0);
+    for (const e of ev) {
+      const from = e.query.match(/sys_created_on>=([^^]+)/)![1]!;
+      const to = e.query.match(/processed<=([^^]+)/)![1]!;
+      expect(Date.parse(`${to}Z`) - Date.parse(`${from}Z`)).toBeLessThanOrEqual((86400 + 30) * 1000);
+    }
+  });
 });
 
 describe('regras de negócio com 500 (caça 1.4.6, 146d)', () => {

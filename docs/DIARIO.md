@@ -635,5 +635,11 @@ A pedido do dono, dois agentes à parte: um revisor de código e segurança (só
 - **B-441 146a × 146d:** 418/441 em cada, sem mensagens vermelhas; as duas divergências amplas não se repetiram em 12 isolamentos.
 - **Perfis sem admin (itil, escopo.user):** fontes sem calados; cancelamento 15/15 (itil) e 13/15 (escopo.user; 2 sc_task sem leitura, nem chegam a consultar).
 - Detalhes e brutos: `tests/regression/seguranca/RELATORIO-5000.md`. Testes: 1046 passando.
-- **Pacotes refeitos** com tudo isso: trail-chrome-1.4.6.zip 277.348 bytes, trail-extensao-1.4.6.zip 278.150 bytes (SHA-256 no README dos pacotes). FAQ do site e notas da versão citam o aviso de fonte sem resposta.
+- **Pacotes refeitos** com tudo isso: trail-chrome-1.4.6.zip 277.345 bytes, trail-extensao-1.4.6.zip 278.147 bytes (SHA-256 no README dos pacotes). FAQ do site e notas da versão citam o aviso de fonte sem resposta.
 - Envio às lojas: só o dono.
+
+## 26/10/2026: revisão de carga antes da loja
+
+- Revisei tudo o que sai para a instância: só GET (Table API, ui/meta, histórico do formulário), no máximo 2 por vez por instância, uma repetição só em 429/502/503/504/500 do balanceador, `sysparm_no_count`, recusas guardadas 10 min, token sem laço, nada roda sozinho (lote até 50, registro inteiro só no clique), filtros sem `^`, `,` nem `javascript:` vindos de dados. LIKE só em tabelas de configuração; nas de log, janelas de segundos.
+- **Ajuste:** a busca de eventos (`sysevent`) voltava 7 dias em `sys_created_on` por janela (até 10 por investigação). Numa instância grande são milhões de linhas por dia, e a consulta abandonada aos 3 s continua no servidor (até a cota REST), prendendo a sessão de quem usa. Agora volta 1 dia (eventos agendados com mais de um dia de antecedência ficam de fora). Teste novo; 1047 passando.
+- Pacotes refeitos: trail-chrome-1.4.6.zip 277.345 bytes, trail-extensao-1.4.6.zip 278.147 bytes.
