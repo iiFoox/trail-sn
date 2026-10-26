@@ -14,6 +14,7 @@ import { getPrefs } from '../shared/prefs';
 import { demoFlows, FlowsView } from './Flows';
 import { ErrorMsg } from './ErrorMsg';
 import { Fold } from './Fold';
+import { Missing } from './Missing';
 
 const P = t(getPrefs().lang).p;
 const isDemo = new URLSearchParams(location.search).has('demo');
@@ -80,6 +81,7 @@ export function RecordRuns({ table, sysId, origin, items }: { table: string; sys
   return (
     <Fold cls="rruns" title={P.rrTitle} count={res ? total : undefined} hint={res ? groups.filter((g) => !g.denied).map((g) => `${g.title} ${g.count}`).slice(0, 4).join(' · ') : undefined}>
       <div class="muted small pad">{fmt(P.rrHint, { table })}</div>
+      {res && <Missing sources={res.missing} />}
       {res && (
         <div class="rr-tools">
           <label class="rr-search">{Glyph.search}<input type="search" value={query} placeholder={P.rrSearch} aria-label={P.rrSearch} onInput={(e) => setQuery((e.target as HTMLInputElement).value)} /></label>

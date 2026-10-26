@@ -11,6 +11,7 @@ import { fieldName } from './Result';
 import { Val } from './Val';
 import { ErrorMsg } from './ErrorMsg';
 import { Fold } from './Fold';
+import { Missing } from './Missing';
 
 const P = t(getPrefs().lang).p;
 const isDemo = new URLSearchParams(location.search).has('demo');
@@ -49,7 +50,7 @@ export function WhatIf({ r, origin }: { r: Investigation; origin: string; field?
         {st === 'run' && <div class="li"><span class="spin" /><span class="grow muted small">{P.wiRunning}</span></div>}
         {st === 'err' && <div class="li"><span class="ck w">!</span><span class="grow">{err === P.wiSame ? err : <ErrorMsg msg={err} />}</span></div>}
       </div>
-      {st === 'done' && res && <Outcome res={res} r={r} origin={origin} />}
+      {st === 'done' && res && <><Missing sources={res.missing} /><Outcome res={res} r={r} origin={origin} /></>}
     </div>
   );
 }

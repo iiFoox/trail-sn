@@ -13,7 +13,7 @@
 import type { RestClient } from './client/RestClient';
 import { scriptVerdict, type Env } from './scriptEval';
 import type { AccessState, Row } from './types';
-import { conditionFields, evalCondition, timedQuery, withTimeout } from './util';
+import { conditionFields, evalCondition, timedQuery, walkHierarchy, withTimeout } from './util';
 import { resolveDisplay } from './display';
 
 export type StateAspect = 'read_only' | 'mandatory' | 'hidden';
@@ -185,12 +185,9 @@ export async function fieldStates(
     return r.rows;
   };
 
-  const tables: string[] = [];
-  let cur: string | undefined = table;
-  for (let i = 0; cur && i < 10; i++) {
-    tables.push(cur);
-    cur = (await q('sys_db_object', `name=${cur}`, ['super_class.name'], 1, false))[0]?.['super_class.name'] || undefined;
-  }
+  const { tables, gap } = await walkHierarchy((t, query, fields, limit) => q(t, query, fields, limit, false), table);
+  // Hierarquia cortada: as regras de task podem ter ficado de fora; vira fonte lenta.
+  if (gap) note('sys_db_object', 'timeout');
   const inT = `IN${tables.join(',')}`;
   const inF = `IN${names_.join(',')}`;
   const likeAny = (col: string | string[]) => names_.flatMap((f) => (Array.isArray(col) ? col : [col]).map((c) => `${c}LIKE${f}`)).join('^OR');
@@ -219,7 +216,7 @@ export async function fieldStates(
   const depth = (t: string | undefined) => { const i = tables.indexOf(t ?? ''); return i < 0 ? 99 : i; };
   const dictionaryHidden = !dictAll.length && access.sys_dictionary === 'empty';
   const denied = Object.entries(access).filter(([, a]) => a === 'denied' || a === 'no_filter').map(([t]) => t);
-  const slow = Object.entries(access).filter(([, a]) => a === 'timeout').map(([t]) => t);
+  const slow = Object.entries(access).filter(([, a]) => a === 'timeout' || a === 'unknown').map(([t]) => t);
   const limited = dictionaryHidden || FORM_SOURCES.some((t) => denied.includes(t));
   const nowOf = (cond: string | undefined) => {
     const fs = conditionFields(cond);

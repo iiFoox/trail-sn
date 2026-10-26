@@ -7,6 +7,7 @@ import type { RestClient } from './client/RestClient';
 import { writtenFields } from './conflicts';
 import { recordFlows, type RecordFlows } from './flows';
 import type { AccessState, Row } from './types';
+import { failureLog, walkHierarchy } from './util';
 
 export interface AutomationItem {
   sysId: string;
@@ -34,6 +35,8 @@ export interface TableAutomations {
   jobs: AutomationItem[];
   flows?: RecordFlows;
   access: Record<string, AccessState>;
+  /** Fontes que não responderam (prazo, 5xx, página de login): o resultado pode estar incompleto. */
+  missing?: string[];
   timing: { totalMs: number; calls: number };
 }
 
@@ -47,15 +50,13 @@ export async function tableAutomations(client: RestClient, target: { table: stri
     try {
       const r = await client.query({ table, query, fields, limit });
       if (!access[table] || access[table] === 'empty') access[table] = r.access;
+      fails.note({ table, query, fields, limit }, r.access);
       return r.rows;
-    } catch { return []; }
+    } catch { fails.note({ table, query, fields, limit }, 'unknown'); return []; }
   };
-  const tables: string[] = [];
-  let cur: string | undefined = target.table;
-  for (let i = 0; cur && i < 10; i++) {
-    tables.push(cur);
-    cur = (await q('sys_db_object', `name=${cur}`, ['super_class.name'], 1))[0]?.['super_class.name'] || undefined;
-  }
+  // Fonte sem resposta vira lista vazia, mas fica anotada: o painel avisa que a lista pode estar incompleta.
+  const fails = failureLog();
+  const { tables } = await walkHierarchy(q, target.table);
   const inT = `IN${tables.join(',')}`;
   const en = opts.lang === 'en';
   const [brs, cs, pols, uas, dls, rules, jobs, flows] = await Promise.all([
@@ -107,6 +108,7 @@ export async function tableAutomations(client: RestClient, target: { table: stri
     jobs: jobs.map((j) => ({ sysId: j.sys_id ?? '', name: j.name ?? '?', table: 'sysauto_script', detail: j.run_type ?? '', writes: [], ...scope(j) })),
     ...(flows ? { flows } : {}),
     access,
+    ...(fails.missing().length ? { missing: fails.missing() } : {}),
     timing: { totalMs: Date.now() - started, calls: client.calls - calls0 },
   };
 }

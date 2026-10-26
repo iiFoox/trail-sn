@@ -29,7 +29,7 @@ import { tableHierarchy } from './fieldMap';
 import { evalExpr, mask, matchClose, skipWs, stmtEnd } from './scriptEval';
 import { shared } from './sharedClient';
 import type { AccessState, Row } from './types';
-import { isSysId, sameVal } from './util';
+import { isSysId, sameVal, walkHierarchy } from './util';
 
 // ---------------------------------------------------------------- tipos
 
@@ -724,7 +724,9 @@ export async function visibility(
   const extraFields = (opts.fields ?? []).filter((f) => /^[a-z0-9_]+$/.test(f));
 
   // ---------- 1: hierarquia, regras, ACLs e a pessoa ----------
-  const tables = await tableHierarchy(q, table);
+  const { tables, gap } = await walkHierarchy(q, table);
+  // Hierarquia cortada: regras e ACLs de task podem ter ficado de fora; vira fonte lenta.
+  if (gap) sc.mark('sys_db_object', 'timeout');
   const isKb = tables.includes('kb_knowledge');
   const keys = [...new Set([...tables, '*'].flatMap((t) => [t, `${t}.*`, ...extraFields.map((f) => `${t}.${f}`)]))];
   const userQ = input.user ? (isSysId(input.user) ? `sys_id=${input.user}` : `user_name=${input.user}`) : '';

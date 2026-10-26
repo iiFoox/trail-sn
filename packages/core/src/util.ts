@@ -420,3 +420,17 @@ export function trackedQuery(client: { query: (r: QueryRequest) => Promise<Query
   const marked = new Set<string>();
   return { q, missing: () => [...new Set([...failing.values(), ...marked])].sort(), mark: (t) => { marked.add(t); } };
 }
+
+/** Anota, por consulta, as que ficaram sem resposta; a mesma consulta que responde depois sai. `missing`: as fontes. */
+export function failureLog(): { note: (req: { table: string; query: string; fields: string[]; limit: number }, a: AccessState) => void; mark: (table: string) => void; missing: () => string[] } {
+  const failing = new Map<string, string>();
+  const marked = new Set<string>();
+  return {
+    note: (req, a) => {
+      const key = `${req.table}|${req.query}|${req.fields.join(',')}|${req.limit}`;
+      if (a === 'timeout' || a === 'unknown') failing.set(key, req.table); else failing.delete(key);
+    },
+    mark: (t) => { marked.add(t); },
+    missing: () => [...new Set([...failing.values(), ...marked])].sort(),
+  };
+}

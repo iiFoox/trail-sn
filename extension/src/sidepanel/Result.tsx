@@ -23,6 +23,7 @@ import { Val } from './Val';
 import { ErrorMsg } from './ErrorMsg';
 import { AdvancedTab } from './AdvancedTab';
 import { Fold, FoldStatic } from './Fold';
+import { Missing } from './Missing';
 
 const lang = getPrefs().lang;
 const s = t(lang);
@@ -498,6 +499,7 @@ function TableScan({ r, origin }: { r: Investigation; origin: string }) {
       {st === 'run' && <div class="li"><span class="spin" /><span class="grow muted small">{P.scRunning}</span></div>}
       {st === 'err' && <div class="li"><span class="ck w">!</span><span class="grow"><ErrorMsg msg={err} /></span></div>}
       {st === 'done' && res && <>
+        <Missing sources={res.missing} />
         <div class="li"><span class="grow muted small">{fmt(P.scSummary, { rules: res.rules, cs: res.clientScripts, fields: res.fields, ms: res.timing.totalMs })}</span></div>
         {!res.conflicts.length && <div class="li"><span class="ck">{Glyph.check}</span><span class="grow">{P.scNone}</span></div>}
         {res.conflicts.map((k, i) => (

@@ -7,7 +7,7 @@
  */
 import type { RestClient } from './client/RestClient';
 import type { AccessState, Row } from './types';
-import { decodeFlowValues, humanQuery, parseFieldValues } from './util';
+import { decodeFlowValues, failureLog, humanQuery, parseFieldValues, walkHierarchy } from './util';
 
 export interface FlowRun {
   sysId: string;
@@ -44,6 +44,8 @@ export interface RecordFlows {
   runs: FlowRun[];
   definitions: FlowDefinition[];
   access: { runs: AccessState; definitions: AccessState };
+  /** Fontes que não responderam (prazo, 5xx, página de login): o resultado pode estar incompleto. */
+  missing?: string[];
   timing: { totalMs: number; calls: number };
 }
 
@@ -57,17 +59,14 @@ export async function recordFlows(client: RestClient, target: { table: string; s
     try {
       const r = await client.query({ table, query, fields, limit });
       if (tag && (access[tag] === 'unknown' || access[tag] === 'empty')) access[tag] = r.access;
+      fails.note({ table, query, fields, limit }, r.access);
       return r.rows;
-    } catch { return []; }
+    } catch { fails.note({ table, query, fields, limit }, 'unknown'); return []; }
   };
+  const fails = failureLog();
 
   // Hierarquia da tabela: flows com gatilho em task também rodam em incident.
-  const tables: string[] = [];
-  let cur: string | undefined = target.table;
-  for (let i = 0; cur && i < 10; i++) {
-    tables.push(cur);
-    cur = (await q('sys_db_object', `name=${cur}`, ['super_class.name'], 1))[0]?.['super_class.name'] || undefined;
-  }
+  const { tables } = await walkHierarchy(q, target.table);
 
   const [rootRuns, triggers] = await Promise.all([
     q('sys_flow_context', `source_record=${target.sysId}^ORDERBYDESCsys_created_on`,
@@ -154,6 +153,7 @@ export async function recordFlows(client: RestClient, target: { table: string; s
     })),
     definitions,
     access,
+    ...(fails.missing().length ? { missing: fails.missing() } : {}),
     timing: { totalMs: Date.now() - started, calls: client.calls - calls0 },
   };
 }

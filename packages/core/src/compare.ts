@@ -294,7 +294,7 @@ export function scriptDiff(a: string | undefined, b: string | undefined, max = 1
 const normCond = (c: string | undefined) => (c ?? '').trim().replace(/\^EQ$/, '').replace(/^EQ$/, '');
 const normAttrs = (s: string | undefined) => (s ?? '').split(',').map((x) => x.trim()).filter(Boolean).sort().join(',');
 const readable = (a: AccessState | undefined) => a === 'ok' || a === 'empty';
-const blindReason = (a: AccessState | undefined): 'denied' | 'slow' => (a === 'timeout' ? 'slow' : 'denied');
+const blindReason = (a: AccessState | undefined): 'denied' | 'slow' => (a === 'timeout' || a === 'unknown' ? 'slow' : 'denied');
 
 // ---------------------------------------------------------------- leitura de um lado
 
@@ -530,7 +530,7 @@ export async function compareInstances(
   const dictState = async (s: CompareSide, row: Row | undefined, other: Row | undefined): Promise<'ok' | 'missing' | 'hidden' | 'denied' | 'slow'> => {
     const acc = S[s].sc.access.sys_dictionary;
     if (row) return 'ok';
-    if (acc === 'timeout') return 'slow';
+    if (acc === 'timeout' || acc === 'unknown') return 'slow';
     if (!readable(acc)) return 'denied';
     const probe = await q(s, 'sys_dictionary', `name${inT}`, ['sys_id'], 1);
     const seesDict = probe.length > 0 || (await q(s, 'sys_dictionary', '', ['sys_id'], 1)).length > 0;
@@ -650,10 +650,10 @@ export async function compareInstances(
   for (const s of ['a', 'b'] as const) {
     for (const [t, acc] of Object.entries(S[s].sc.access)) {
       if (!relevant.has(t) || readable(acc)) continue;
-      pushNC(s, SOURCE_CATEGORY[t]!, acc === 'timeout' ? 'slow' : 'denied', t);
+      pushNC(s, SOURCE_CATEGORY[t]!, blindReason(acc), t);
     }
     const hier = S[s].sc.access.sys_db_object;
-    if (hier !== 'ok' && !notCompared.some((x) => x.side === s && x.what === 'hierarchy')) pushNC(s, 'hierarchy', hier === 'timeout' ? 'slow' : hier === 'empty' ? 'hidden' : 'denied', 'sys_db_object');
+    if (hier !== 'ok' && !notCompared.some((x) => x.side === s && x.what === 'hierarchy')) pushNC(s, 'hierarchy', hier === 'empty' ? 'hidden' : blindReason(hier), 'sys_db_object');
   }
   if (dictionary.unknown?.reason === 'hidden') pushNC(dictionary.unknown.side, 'dictionary', 'hidden', 'sys_dictionary');
   const unreachable = (['a', 'b'] as const).filter((s) => { const v = Object.values(S[s].sc.access); return v.length > 0 && !v.some(readable); });

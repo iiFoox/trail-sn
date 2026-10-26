@@ -60,7 +60,8 @@ export class SharedClient implements RestClient {
     return Object.entries(this.access).filter(([t, a]) => (a === 'denied' || a === 'no_filter') && (!only || only.includes(t))).map(([t]) => t);
   }
   slow(only?: readonly string[]): string[] {
-    return Object.entries(this.access).filter(([t, a]) => a === 'timeout' && (!only || only.includes(t))).map(([t]) => t);
+    // Sem resposta é lenta: prazo, e também 500, rede ou página de login ('unknown'), que antes passavam calados.
+    return Object.entries(this.access).filter(([t, a]) => (a === 'timeout' || a === 'unknown') && (!only || only.includes(t))).map(([t]) => t);
   }
 }
 

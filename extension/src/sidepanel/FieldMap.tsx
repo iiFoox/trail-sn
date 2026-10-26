@@ -8,6 +8,7 @@ import { send } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
 import { ErrorMsg } from './ErrorMsg';
 import { Fold } from './Fold';
+import { Missing } from './Missing';
 
 const P = t(getPrefs().lang).p;
 const isDemo = new URLSearchParams(location.search).has('demo');
@@ -32,6 +33,7 @@ export function FieldMapBox({ r, origin, field }: { r: Investigation; origin: st
       {st === 'run' && <div class="li"><span class="spin" /><span class="grow muted small">{P.fmRunning}</span></div>}
       {st === 'err' && <div class="li"><span class="ck w">!</span><span class="grow"><ErrorMsg msg={err} /></span></div>}
       {st === 'done' && res && <>
+        <Missing sources={res.missing} />
         {!res.items.length && <div class="li"><span class="ck">{Glyph.check}</span><span class="grow">{P.fmNone}</span></div>}
         {LANES.map((lane) => {
           const list = res.items.filter((i) => i.lane === lane);

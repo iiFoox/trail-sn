@@ -7,6 +7,7 @@ import { send } from '../shared/messages';
 import { getPrefs } from '../shared/prefs';
 import { ErrorMsg } from './ErrorMsg';
 import { Fold, FoldStatic } from './Fold';
+import { Missing } from './Missing';
 
 const lang = getPrefs().lang;
 const P = t(lang).p;
@@ -47,6 +48,7 @@ export function FlowsView({ res, origin, field = '', filtered = false }: { res: 
   const triggers = P.flTrigger as Record<string, string>;
   return (
     <div class="flows">
+      <Missing sources={res.missing} />
       {/* Lista vazia (ou sem acesso): o próprio cabeçalho diz, sem nada para abrir. */}
       {!filtered && !res.runs.length && <FoldStatic cls="fl-ran" warn={res.access.runs === 'denied'} title={P.flRan} hint={res.access.runs === 'denied' ? P.flRunsDenied : P.flNoRuns} />}
       {res.runs.length > 0 && <Fold cls="fl-ran" title={P.flRan} count={res.runs.length} hint={runsHint(res, states)} open={filtered || undefined}>

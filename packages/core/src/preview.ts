@@ -9,7 +9,7 @@
 import type { RestClient } from './client/RestClient';
 import { writtenFields } from './conflicts';
 import { evalExpr, scriptVerdict, type Env } from './scriptEval';
-import { conditionFields, decodeFlowValues, evalCondition, isDynamicFlowValue, parseFieldValues, safeValue, sameVal } from './util';
+import { conditionFields, decodeFlowValues, evalCondition, failureLog, isDynamicFlowValue, parseFieldValues, safeValue, sameVal, walkHierarchy } from './util';
 import type { Row } from './types';
 import { resolveDisplay } from './display';
 
@@ -33,6 +33,8 @@ export interface PreviewStep {
   why: string;
 }
 export interface ChangePreview {
+  /** Fontes que não responderam (prazo, 5xx, página de login): a prévia pode estar incompleta. */
+  missing?: string[];
   table: string;
   sysId: string;
   field: string;
@@ -59,15 +61,15 @@ type Q = (table: string, query: string, fields: string[], limit: number) => Prom
 export async function previewChange(client: RestClient, target: { table: string; sysId: string; field: string; value: string; language?: string; user?: { name?: string; sysId?: string } }): Promise<ChangePreview> {
   const started = Date.now();
   const calls0 = client.calls;
-  const q: Q = async (t, query, fields, limit) => { try { return (await client.query({ table: t, query, fields, limit })).rows; } catch { return []; } };
+  // Fonte sem resposta vira lista vazia, mas fica anotada: a prévia avisa que pode estar incompleta.
+  const fails = failureLog();
+  const q: Q = async (t, query, fields, limit) => {
+    const req = { table: t, query, fields, limit };
+    try { const r = await client.query(req); fails.note(req, r.access); return r.rows; } catch { fails.note(req, 'unknown'); return []; }
+  };
   const { table, sysId, field, value } = target;
 
-  const tables: string[] = [];
-  let cur: string | undefined = table;
-  for (let i = 0; cur && i < 10; i++) {
-    tables.push(cur);
-    cur = (await q('sys_db_object', `name=${cur}`, ['super_class.name'], 1))[0]?.['super_class.name'] || undefined;
-  }
+  const { tables } = await walkHierarchy(q, table);
   const inT = `IN${tables.join(',')}`;
   const [recRows, brs, cs, pols, lookups, rules, triggers] = await Promise.all([
     q(table, `sys_id=${sysId}`, [], 1),
@@ -260,5 +262,5 @@ export async function previewChange(client: RestClient, target: { table: string;
   for (const st of [...steps, ...uncertain]) for (const w of st.writes) (wanted[w.field] ??= []).push(w.value);
   const names = await resolveDisplay(q, tables, wanted, target.language);
   const fieldLabels = names.fields, valueLabels = names.values, refTables = names.refs;
-  return { table, sysId, field, from, to: value, steps, uncertain, result, skipped, fieldLabels, valueLabels, refTables, timing: { totalMs: Date.now() - started, calls: client.calls - calls0 } };
+  return { table, sysId, field, from, to: value, steps, uncertain, result, skipped, fieldLabels, valueLabels, refTables, ...(fails.missing().length ? { missing: fails.missing() } : {}), timing: { totalMs: Date.now() - started, calls: client.calls - calls0 } };
 }

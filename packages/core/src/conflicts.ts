@@ -1,6 +1,6 @@
-import type { Row } from './types';
+import type { AccessState, Row } from './types';
 import { evalExpr, scriptVerdict, writesOf, type Env } from './scriptEval';
-import { assignedLiterals, evalCondition, parseFieldValues } from './util';
+import { assignedLiterals, evalCondition, failureLog, parseFieldValues, walkHierarchy } from './util';
 
 /**
  * Alerta de regras conflitantes: duas regras ativas que gravam o MESMO campo com valores DIFERENTES
@@ -180,23 +180,30 @@ export function writtenFields(script: string | undefined, template?: string): st
   return [...out];
 }
 
-export interface TableConflictScan { table: string; tables: string[]; rules: number; clientScripts: number; fields: number; conflicts: RuleConflict[]; timing: { totalMs: number; calls: number } }
+export interface TableConflictScan {
+  table: string; tables: string[]; rules: number; clientScripts: number; fields: number; conflicts: RuleConflict[];
+  /** Fontes que não responderam (prazo, 5xx, página de login): a varredura pode estar incompleta. */
+  missing?: string[];
+  timing: { totalMs: number; calls: number };
+}
 
 /**
  * Varredura da tabela inteira: todas as BRs e client scripts ativos da hierarquia, campo por campo.
  * Sem registro, só entram os pares que conflitam sempre (sem condição) ou que dependem dos mesmos campos
  * com condições que não se excluem.
  */
-export async function scanTableConflicts(client: { query: (r: { table: string; query: string; fields: string[]; limit: number }) => Promise<{ rows: Row[] }>; calls: number }, table: string): Promise<TableConflictScan> {
+export async function scanTableConflicts(client: { query: (r: { table: string; query: string; fields: string[]; limit: number }) => Promise<{ rows: Row[]; access?: AccessState }>; calls: number }, table: string): Promise<TableConflictScan> {
   const started = Date.now();
   const calls0 = client.calls;
-  const q = async (t: string, query: string, fields: string[], limit: number) => (await client.query({ table: t, query, fields, limit })).rows;
-  const tables: string[] = [];
-  let cur: string | undefined = table;
-  for (let i = 0; cur && i < 10; i++) {
-    tables.push(cur);
-    cur = (await q('sys_db_object', `name=${cur}`, ['super_class.name'], 1))[0]?.['super_class.name'] || undefined;
-  }
+  // Fonte sem resposta vira lista vazia, mas fica anotada: o painel avisa que a varredura pode estar incompleta.
+  const fails = failureLog();
+  const q = async (t: string, query: string, fields: string[], limit: number) => {
+    const req = { table: t, query, fields, limit };
+    const r = await client.query(req).catch(() => ({ rows: [] as Row[], access: 'unknown' as AccessState }));
+    fails.note(req, r.access ?? 'ok');
+    return r.rows;
+  };
+  const { tables } = await walkHierarchy(q, table);
   const [brs, cs] = await Promise.all([
     q('sys_script', `collectionIN${tables.join(',')}^active=true`, ['sys_id', 'name', 'when', 'order', 'collection', 'script', 'template', 'condition', 'filter_condition', 'action_insert', 'action_update'], 1000),
     q('sys_script_client', `tableIN${tables.join(',')}^active=true^scriptLIKEsetValue`, ['sys_id', 'name', 'type', 'field', 'table', 'script'], 500),
@@ -209,5 +216,5 @@ export async function scanTableConflicts(client: { query: (r: { table: string; q
   for (const [f, s] of byField) if (s.brs.length + s.cs.length > 1) conflicts.push(...findConflicts(f, s.brs, s.cs, {}, 50));
   const w = { always: 0, now: 1, possible: 2 };
   conflicts.sort((a, b) => w[a.overlap] - w[b.overlap] || a.field.localeCompare(b.field));
-  return { table, tables, rules: brs.length, clientScripts: cs.length, fields: byField.size, conflicts, timing: { totalMs: Date.now() - started, calls: client.calls - calls0 } };
+  return { table, tables, rules: brs.length, clientScripts: cs.length, fields: byField.size, conflicts, ...(fails.missing().length ? { missing: fails.missing() } : {}), timing:{ totalMs: Date.now() - started, calls: client.calls - calls0 } };
 }

@@ -2,7 +2,7 @@ import type { QueryRequest, RestClient } from './client/RestClient';
 import { documentation, fieldLabels } from './display';
 import { historyToAudit } from './history';
 import { RecordNotFoundError, RecordUnavailableError, recordUnanswered, type AccessState, type Row, type Target } from './types';
-import { isFormSubmitFor, isWorkspaceAction, shift, toMs, uiActionMatches, uiActionQuery, uiActionRef, timedQuery, withTimeout } from './util';
+import { failureLog, isFormSubmitFor, isWorkspaceAction, shift, toMs, uiActionMatches, uiActionQuery, uiActionRef, timedQuery, walkHierarchy, withTimeout } from './util';
 
 /**
  * Linha do tempo do registro inteiro: cada gravação (checkpoint da auditoria) com quem gravou,
@@ -41,6 +41,8 @@ export interface Timeline {
   /** Mudanças lidas do histórico do formulário (quem não lê sys_audit); só os campos de `historyFields`. */
   auditFrom?: 'history';
   historyFields?: string[];
+  /** Fontes que não responderam (prazo, 5xx, página de login): o resultado pode estar incompleto. */
+  missing?: string[];
   timing: { totalMs: number; calls: number };
 }
 
@@ -54,8 +56,12 @@ export async function recordTimeline(client: RestClient, target: Omit<Target, 'f
   const timeout = opts.sourceTimeoutMs ?? 4000;
   const q = async (table: string, query: string, fields: string[], limit = 100): Promise<Row[]> => {
     const req: QueryRequest = { table, query, fields, limit };
-    return (await timedQuery(client, req, timeout)).rows;
+    const r = await timedQuery(client, req, timeout);
+    fails.note(req, r.access);
+    return r.rows;
   };
+  // Fonte sem resposta vira lista vazia, mas fica anotada: a linha do tempo avisa que pode estar incompleta.
+  const fails = failureLog();
 
   // ---------- registro e hierarquia ----------
   const recQuery = target.sysId ? `sys_id=${target.sysId}` : `number=${target.number ?? ''}`;
@@ -191,18 +197,12 @@ export async function recordTimeline(client: RestClient, target: Omit<Target, 'f
     saves,
     truncated,
     ...(fromHistory ?? {}),
+    ...(fails.missing().length ? { missing: fails.missing() } : {}),
     timing: { totalMs: Date.now() - started, calls: client.calls - callsBefore },
   };
 
   async function hierarchy(table: string): Promise<string[]> {
-    const out: string[] = [];
-    let t: string | undefined = table;
-    for (let i = 0; t && i < 6; i++) {
-      out.push(t);
-      const r: Row | undefined = (await q('sys_db_object', `name=${t}`, ['super_class.name'], 1))[0];
-      t = r?.['super_class.name'] || undefined;
-    }
-    return out;
+    return (await walkHierarchy(q, table, 6)).tables;
   }
 }
 
