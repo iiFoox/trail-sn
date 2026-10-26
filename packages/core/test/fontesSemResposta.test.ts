@@ -78,3 +78,10 @@ describe('fonte com 500: não passa calada', () => {
     expect((await fieldRules(c, { table: 'incident', field: 'state' })).slow).toContain('sys_script');
   });
 });
+
+describe('automações: relatório de acesso depois da repetição do passo', () => {
+  it('uma falha na hierarquia: sys_db_object sai ok; nas duas, sai lento', async () => {
+    expect((await tableAutomations(hierarchyFlaky(1), { table: 'incident' })).access.sys_db_object).toBe('ok');
+    expect((await tableAutomations(hierarchyFlaky(9), { table: 'incident' })).access.sys_db_object).toBe('timeout');
+  });
+});

@@ -49,7 +49,10 @@ export async function tableAutomations(client: RestClient, target: { table: stri
   const q = async (table: string, query: string, fields: string[], limit: number): Promise<Row[]> => {
     try {
       const r = await client.query({ table, query, fields, limit });
-      if (!access[table] || access[table] === 'empty') access[table] = r.access;
+      // A resposta seguinte à mesma fonte vale mais que a falha (a hierarquia repete o passo); o que ficou sem resposta
+      // no fim volta como lento, abaixo.
+      const prev = access[table];
+      if (!prev || prev === 'empty' || prev === 'unknown' || (prev === 'timeout' && r.access !== 'timeout')) access[table] = r.access;
       fails.note({ table, query, fields, limit }, r.access);
       return r.rows;
     } catch { fails.note({ table, query, fields, limit }, 'unknown'); return []; }
@@ -98,6 +101,7 @@ export async function tableAutomations(client: RestClient, target: { table: stri
     detail: `${en ? 'called by' : 'chamado por'} ${(callers.get(s.name ?? '') ?? []).join(', ')}`, writes: [], ...scope(s),
   }));
 
+  for (const t of fails.missing()) if (access[t] !== 'denied' && access[t] !== 'no_filter') access[t] = 'timeout';
   return {
     table: target.table, tables, businessRules, scriptIncludes,
     clientScripts: cs.map((c) => ({ sysId: c.sys_id ?? '', name: c.name ?? '?', table: c.table ?? '', detail: c.type === 'onChange' && c.field ? `onChange ${en ? 'of' : 'de'} ${c.field}` : c.type ?? '', writes: [], ...scope(c) })),
