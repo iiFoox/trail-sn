@@ -158,9 +158,12 @@ export async function investigate(
   // quem desempata é o checkpoint. Sem isso a ordem vinha ao acaso e a mudança da regra podia aparecer como a da pessoa.
   const ownAudit = audit.filter((a) => a.fieldname === target.field)
     .sort((a, b) => toMs(a.sys_created_on ?? '') - toMs(b.sys_created_on ?? '') || Number(a.record_checkpoint ?? 0) - Number(b.record_checkpoint ?? 0));
-  const fieldChanges = ownAudit.filter((a, i) => !ownAudit.slice(0, i).some((p) =>
+  const allFieldChanges = ownAudit.filter((a, i) => !ownAudit.slice(0, i).some((p) =>
     p.oldvalue === a.oldvalue && p.newvalue === a.newvalue && Number(p.record_checkpoint) < Number(a.record_checkpoint)
-    && Math.abs(toMs(a.sys_created_on ?? '') - toMs(p.sys_created_on ?? '')) <= 2000)).slice(-opts.maxChanges).reverse();
+    && Math.abs(toMs(a.sys_created_on ?? '') - toMs(p.sys_created_on ?? '')) <= 2000));
+  // Só as mais recentes são analisadas (cada uma custa consultas); as mais antigas ficam contadas para o painel avisar.
+  const fieldChanges = allFieldChanges.slice(-opts.maxChanges).reverse();
+  const olderChanges = allFieldChanges.length - fieldChanges.length;
 
   // Regras desativadas depois da mudança: quem investiga costuma desligar a regra suspeita antes de perguntar quem
   // mudou o campo, e a busca só de regras ativas a escondia. Entram as inativas alteradas depois da mudança mais antiga.
@@ -488,6 +491,7 @@ export async function investigate(
     },
     access,
     gaps,
+    ...(olderChanges > 0 ? { olderChanges } : {}),
     ...(auditFrom === 'history' ? { auditFrom, historyFields, ...(historyFields && !historyFields.includes(target.field) ? { fieldNotInHistory: true } : {}) } : {}),
     conflicts: findConflicts(target.field, meta.brField, clientRows.filter((x) => x.active !== 'false'), { ...record, sys_id: sysId }),
     ...(() => { const pp = detectPingPong(changes); return pp ? { pingPong: pp } : {}; })(),

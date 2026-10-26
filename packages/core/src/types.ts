@@ -210,6 +210,8 @@ export interface Investigation {
   historyFields?: string[];
   /** O campo investigado não aparece no histórico do formulário: sem auditoria, não há como ver as mudanças dele. */
   fieldNotInHistory?: boolean;
+  /** Mudanças mais antigas do campo que não foram analisadas (só as `maxChanges` mais recentes são). */
+  olderChanges?: number;
   /** Regras ativas que gravam este campo com valores diferentes e podem rodar juntas. */
   conflicts?: import('./conflicts').RuleConflict[];
   /** Duas automações trocando o valor do campo entre si. */

@@ -657,6 +657,7 @@ function History({ r, origin, sel, onPick, open, onOpen }: { r: Investigation; o
     <div class="stack">
       {rows.length > 0 && <Fold cls="hist-fold" title={fmt(P.histList, { field })} count={rows.length} hint={curHint} open={open} onToggle={onOpen}>
       {r.changes.length > 0 && <div class="li"><span class="grow muted small">{P.historyIntro}</span></div>}
+      {r.olderChanges ? <div class="li"><span class="ck w">!</span><span class="grow small">{fmt(P.olderChanges, { n: r.olderChanges })}</span></div> : null}
       <div class="hist hist-in">
         {rows.map(({ at, i }) => {
           const p = parts(at);
