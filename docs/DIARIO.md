@@ -627,3 +627,13 @@ A pedido do dono, dois agentes à parte: um revisor de código e segurança (só
 - Já estavam feitos: M3 (fieldStates sem segunda tentativa), M10 (busca de pessoas com 3 letras) e B3 (CSV sem fórmula).
 - Testes: 1033 passando. Bundle de regressão `tests/regression/seguranca/results/bundle-146a`.
 - **Falta:** validação no PDI (Codex) e medir `query_range`/LIKE para perfis sem admin.
+
+## 26/10/2026: caça de defeitos da 1.4.6 (Codex no PDI) e pacotes refeitos
+
+- **Achados e correções:** passo da hierarquia sem resposta repete uma vez e, se continuar sem resposta, vira fonte que faltou (f4f5457, af11226, 6f6d6ec); falha de uma consulta isolada marca a fonte como lenta (362036d); todos os módulos (mapa do campo, automações, flows, linha do tempo, prévia, conflitos) avisam "Parte da instância não respondeu" (5c9409c, be4c9e3); resposta que chega depois do prazo conta como prazo estourado (6cac743); regras de negócio com 500 não deixam mais a pessoa "confirmada" (381e764).
+- **Matriz final (bundle-146f):** 36 casos de hierarquia × módulo e 77 de fonte × modo de falha (500 HTML/JSON, 429, 503, demora, JSON truncado, login), sem resultado errado calado e sem contaminar a leitura limpa seguinte. Os dois "calados" restantes de `sys_script` com demora eram artefato do injetor (devolvia `{"result":[]}` fabricado dentro do prazo da 2ª tentativa). Exceção prevista: `sys_choice` só muda rótulos.
+- **B-441 146a × 146d:** 418/441 em cada, sem mensagens vermelhas; as duas divergências amplas não se repetiram em 12 isolamentos.
+- **Perfis sem admin (itil, escopo.user):** fontes sem calados; cancelamento 15/15 (itil) e 13/15 (escopo.user; 2 sc_task sem leitura, nem chegam a consultar).
+- Detalhes e brutos: `tests/regression/seguranca/RELATORIO-5000.md`. Testes: 1046 passando.
+- **Pacotes refeitos** com tudo isso: trail-chrome-1.4.6.zip 277.348 bytes, trail-extensao-1.4.6.zip 278.150 bytes (SHA-256 no README dos pacotes). FAQ do site e notas da versão citam o aviso de fonte sem resposta.
+- Envio às lojas: só o dono.
