@@ -30,8 +30,11 @@ export function VersionsTab({ target, origin, title }: { target: { table: string
   const [res, setRes] = useState<RecordVersions>();
   const [err, setErr] = useState('');
   const [sel, setSel] = useState(-1);
+  const [n, setTry] = useState(0);
   useEffect(() => {
     let alive = true;
+    setRes(undefined);
+    setErr('');
     (async () => {
       try {
         const out = isDemo ? DEMO.list : await send<RecordVersions & { error?: string }>({ type: 'versions', origin, table: target.table, sysId: target.sysId });
@@ -41,11 +44,13 @@ export function VersionsTab({ target, origin, title }: { target: { table: string
       } catch (e) { if (alive) setErr((e as Error).message); }
     })();
     return () => { alive = false; };
-  }, [target.sysId]);
+  }, [target.sysId, n]);
 
   if (err) return <div class="box"><div class="li"><span class="ck w">!</span><span class="grow"><ErrorMsg msg={err} /></span></div></div>;
   if (!res) return <div class="box"><div class="li"><span class="spin" /><span class="grow muted small">{P.vrLoading}</span></div></div>;
   if (res.access === 'denied' || res.access === 'no_filter') return <div class="box"><div class="li"><span class="ck w">!</span><span class="grow small">{P.vrDenied}</span></div></div>;
+  // Sem resposta (prazo, 5xx, página de login): não é "não guarda versões".
+  if ((res.access === 'timeout' || res.access === 'unknown') && !res.versions.length) return <div class="box"><div class="li"><span class="ck w">!</span><span class="grow small">{P.vrSlow} <button class="link" onClick={() => setTry(n + 1)}>{P.ux.retry}</button></span></div></div>;
   if (!res.versions.length) return <div class="box"><div class="li"><span class="ck">i</span><span class="grow small">{P.vrNone}</span></div></div>;
   return (
     <div class="stack vr">
