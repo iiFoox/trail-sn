@@ -708,3 +708,8 @@ A pedido do dono, dois agentes à parte: um revisor de código e segurança (só
 - **Antigravity:** demonstração do site (`site/assets`, `site/demo`) atualizada da 1.4.4 para a extensão atual; passo 10 do tour agora é a aba Versões (PT/EN), botão da galeria "Versões", "E se?" citado como parte do Avançado; capturas do site e da loja refeitas; teste e2e do site ajustado.
 - **Revisão (eu):** frase do roteiro em inglês; novo tipo na seção "O que detecta": **Regra de outro registro** (pai salvo no mesmo segundo, vínculo por sys_id ou campo como parent_incident), "15 tipos".
 - **Pendente:** os dados de demonstração ainda trazem nomes de teste ("[PT] F18 Job…", "[PERICIA-TESTE]…") que aparecem nas capturas da loja — trocar por nomes de exemplo antes do envio.
+
+## 26/10/2026: client script onSubmit (146o)
+
+- **Achado do Codex (INC0010197):** onSubmit [PT] com `g_form.setValue('description', '[PT] onSubmit 146n')`; o formulário enviou e gravou `'[PT] onSubmitf044c3eb… 146n'`. Nesse caso o Trail está certo (o script grava outro valor; algo mudou o texto depois dele, provavelmente a automação do teste). Mas o caso mostrou uma lacuna: só client scripts onChange contavam como mecanismo identificado; um onSubmit gravando exatamente o valor deixava a pessoa "confirmada".
+- **Correção:** client script onSubmit ganha `trace_identifies_mechanism` ("roda em todo salvamento pelo formulário"); gravando o mesmo valor, a pessoa recebe `client_side_possible` e deixa de ser confirmada sozinha. 2 testes (`onSubmit.test.ts`); 1079 passando. Bundle `bundle-146o`.
