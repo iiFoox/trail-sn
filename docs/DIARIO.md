@@ -713,3 +713,9 @@ A pedido do dono, dois agentes à parte: um revisor de código e segurança (só
 
 - **Achado do Codex (INC0010197):** onSubmit [PT] com `g_form.setValue('description', '[PT] onSubmit 146n')`; o formulário enviou e gravou `'[PT] onSubmitf044c3eb… 146n'`. Nesse caso o Trail está certo (o script grava outro valor; algo mudou o texto depois dele, provavelmente a automação do teste). Mas o caso mostrou uma lacuna: só client scripts onChange contavam como mecanismo identificado; um onSubmit gravando exatamente o valor deixava a pessoa "confirmada".
 - **Correção:** client script onSubmit ganha `trace_identifies_mechanism` ("roda em todo salvamento pelo formulário"); gravando o mesmo valor, a pessoa recebe `client_side_possible` e deixa de ser confirmada sozinha. 2 testes (`onSubmit.test.ts`); 1079 passando. Bundle `bundle-146o`.
+
+## 26/10/2026: pacotes 1.4.6 refeitos com o dia inteiro
+
+- **Caça de uso real (Codex):** ~75 cenários no PDI; fila da aba Versões completa sem defeito (lista e diferenças por campo, BR/client script/UI policy/UI action, update set próprio, Revert to this version, conteúdo com `]]>`/`</script>`/acentos/HTML, itil e escopo.user "sem acesso" sem banners, versão DELETE). Achado de UX corrigido: resposta sem retorno não diz mais "não guarda versões" (9ab9ee3).
+- **Pacotes:** trail-chrome-1.4.6.zip 282.144 bytes (agora sem `build.txt`, que só serve à instalação manual), trail-extensao-1.4.6.zip 284.821 bytes; SHA-256 no README. Ficha: notas da versão e descrição longa com a aba Versões e as melhorias de atribuição; "E se?" no modo avançado.
+- Testes: 1079 passando.

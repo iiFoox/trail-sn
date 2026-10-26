@@ -5,8 +5,8 @@ Arquivos: pacote de loja `packages/trail-chrome-1.4.6.zip` (serve para Chrome e 
 
 | Campo | Arquivo | Tamanho | Chrome | Edge |
 |---|---|---|---|---|
-| Pacote da loja | `packages/trail-chrome-1.4.6.zip` | 277.350 bytes | obrigatório | obrigatório |
-| Pasta empacotada para instalação manual | `packages/trail-extensao-1.4.6.zip` | 278.153 bytes | não enviar | não enviar |
+| Pacote da loja | `packages/trail-chrome-1.4.6.zip` | 282.144 bytes | obrigatório | obrigatório |
+| Pasta empacotada para instalação manual | `packages/trail-extensao-1.4.6.zip` | 284.821 bytes | não enviar | não enviar |
 | Logo da loja | `logo-300.png` | 300×300 | — (usa o ícone do pacote) | obrigatório |
 | Capturas de tela | `shot-1-resposta.png` … `shot-5-flows.png` | 1280×800 | 1 a 5 | 1 a 6 |
 | Bloco promocional pequeno | `tile-440x280.png` | 440×280 | obrigatório | opcional |
@@ -14,9 +14,9 @@ Arquivos: pacote de loja `packages/trail-chrome-1.4.6.zip` (serve para Chrome e 
 O nome localizado (`Trail — Perícia de registros ServiceNow` / `Trail — ServiceNow Record Forensics`) e a descrição curta vêm do próprio pacote no Chrome. No Edge, use os campos abaixo.
 
 ## Notas da versão 1.4.6
-PT: Mais seguro e mais leve em instâncias de produção: o Trail confere antes o que o seu perfil pode filtrar e não deixa mensagens de acesso na sua sessão; faz no máximo 2 consultas por vez; ao clicar em outro campo, a investigação anterior para na hora; e lê só os script includes que as regras chamam (muito menos dados em instâncias grandes). Usa o histórico do formulário quando a auditoria não responde, identifica importações com mais precisão e se recupera melhor de instâncias instáveis: quando parte da instância não responde, o painel avisa que o resultado pode estar incompleto.
+PT: Mais seguro e mais leve em instâncias de produção: o Trail confere antes o que o seu perfil pode filtrar e não deixa mensagens de acesso na sua sessão; faz no máximo 2 consultas por vez; ao clicar em outro campo, a investigação anterior para na hora; e lê só os script includes que as regras chamam (muito menos dados em instâncias grandes). Usa o histórico do formulário quando a auditoria não responde, identifica importações com mais precisão e se recupera melhor de instâncias instáveis: quando parte da instância não responde, o painel avisa que o resultado pode estar incompleto. Nova aba Versões: as versões salvas de scripts e regras, com o que mudou em cada uma. Reconhece a regra do registro pai que gravou no filho, regras e client scripts desligados depois da mudança e textos longos salvos pelo formulário; no Rastro, a causa vem primeiro. O "E se?" passou para o modo avançado.
 
-EN: Safer and lighter on production instances: Trail checks first what your user may filter, so it leaves no access messages in your session; it makes at most 2 requests at a time; clicking another field stops the previous investigation right away; and it reads only the script includes your rules call (far less data on large instances). It uses the form history when the audit log does not answer, detects imports more accurately and recovers better from unstable instances: when part of the instance does not answer, the panel says the result may be incomplete.
+EN: Safer and lighter on production instances: Trail checks first what your user may filter, so it leaves no access messages in your session; it makes at most 2 requests at a time; clicking another field stops the previous investigation right away; and it reads only the script includes your rules call (far less data on large instances). It uses the form history when the audit log does not answer, detects imports more accurately and recovers better from unstable instances: when part of the instance does not answer, the panel says the result may be incomplete. New Versions tab: the saved versions of scripts and rules, with what changed in each one. Recognizes a parent record's rule writing to the child, rules and client scripts turned off after the change and long texts saved from the form; in the Trace, the cause comes first. "What if?" moved to advanced mode.
 
 ## Descrição curta (Edge pede; até 132 caracteres)
 PT: Descubra o que mudou qualquer campo do ServiceNow e por quê. Funciona sem admin, sem instalar nada nem criar papel. Só leitura.
@@ -36,7 +36,7 @@ PRINCIPAIS RECURSOS
 • Aba Flows: os flows que rodaram no registro (com subflows logo abaixo do flow pai) e os flows configurados para a tabela, com o gatilho em palavras e os campos que gravam.
 • O que roda neste registro: regras de negócio em ordem de execução, script includes, client scripts, UI policies, botões e jobs, com busca e o filtro "Só o que rodou aqui".
 • Tudo que mudou: alterações agrupadas por momento de salvamento, investigação do registro inteiro ou de colunas pela lista, com exportação em CSV, texto ou PDF.
-• Comparar dois momentos e simular "E se?" antes de salvar um valor.
+• Versões de scripts e regras: quem salvou, quando, de qual update set e o que mudou em cada uma. Comparar dois momentos do registro.
 • Bolinha-assistente que pode ser arrastada para qualquer lugar e painel flutuante redimensionável, com modo Sempre visível, tema claro ou escuro, atalho configurável (Alt+Shift+P) e painel lateral do navegador.
 • Acompanha a navegação: ao trocar de registro, o painel se atualiza sozinho.
 
@@ -63,7 +63,7 @@ KEY FEATURES
 • Flows tab: flows that ran on the record (subflows shown under their parent flow) and flows configured for the table, with the trigger in plain words and the fields they write.
 • What runs on this record: business rules in execution order, script includes, client scripts, UI policies, buttons and jobs, with search and a "Only what ran here" filter.
 • Everything that changed: changes grouped by save, whole-record or column investigation from lists, export to CSV, text or PDF.
-• Compare two moments and simulate "What if?" before saving a value.
+• Versions of scripts and rules: who saved, when, from which update set and what changed in each one. Compare two moments of the record.
 • Draggable assistant bubble and resizable floating panel, with Always on top mode, light or dark theme, configurable shortcut (Alt+Shift+P) and the browser side panel.
 • Follows navigation: when you open another record, the panel updates by itself.
 
