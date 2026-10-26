@@ -162,6 +162,23 @@ export async function investigate(
     p.oldvalue === a.oldvalue && p.newvalue === a.newvalue && Number(p.record_checkpoint) < Number(a.record_checkpoint)
     && Math.abs(toMs(a.sys_created_on ?? '') - toMs(p.sys_created_on ?? '')) <= 2000)).slice(-opts.maxChanges).reverse();
 
+  // Regras desativadas depois da mudança: quem investiga costuma desligar a regra suspeita antes de perguntar quem
+  // mudou o campo, e a busca só de regras ativas a escondia. Entram as inativas alteradas depois da mudança mais antiga.
+  const firstChange = fieldChanges.at(-1)?.sys_created_on;
+  const inactiveP = firstChange
+    ? quiet('sys_script', `collectionIN${meta.tables.join(',')}^active=false^sys_updated_on>=${firstChange}`, ['sys_id', 'name', 'when', 'order', 'collection', 'script', 'template', 'condition', 'filter_condition', 'action_insert', 'action_update', 'sys_updated_on'], 20)
+      .then((rows) => rows.filter((b) => refsField(b.script, target.field) || refsField(b.template, target.field)))
+    : Promise.resolve([] as Row[]);
+  // O mesmo para client scripts e UI policies (no PDI, um client script [PT] preencheu a descrição e foi desligado em
+  // seguida: a mudança saía como da pessoa). Consultas à parte: uma recusa aqui não derruba a lista das ativas.
+  const offSince = firstChange ? `^active=false^sys_updated_on>=${firstChange}` : '';
+  const inactiveClientP = firstChange
+    ? quiet('sys_script_client', `tableIN${meta.tables.join(',')}${offSince}^scriptLIKE${target.field}`, ['sys_id', 'name', 'type', 'field', 'table', 'script', 'ui_type', 'active', 'sys_updated_on'], 20)
+    : Promise.resolve([] as Row[]);
+  const inactivePolicyP = firstChange
+    ? quiet('sys_ui_policy', `tableIN${meta.tables.join(',')}${offSince}^run_scripts=true^script_trueLIKE${target.field}^ORscript_falseLIKE${target.field}`, ['sys_id', 'short_description', 'table', 'conditions', 'script_true', 'script_false', 'ui_type', 'reverse_if_false', 'active', 'sys_updated_on'], 20)
+    : Promise.resolve([] as Row[]);
+
   // ---------- rodada 2: rastros por mudança (janelas fundidas) ----------
   const windows = fieldChanges.map((c) => ({ from: shift(c.sys_created_on ?? '', -opts.windowBefore), to: shift(c.sys_created_on ?? '', opts.windowAfter) }));
   const merged = mergeWindows(windows);
@@ -301,6 +318,9 @@ export async function investigate(
     const pick = (n: string) => params.find((p) => p.name === n)?.value ?? '';
     return { flow: a.flow ?? '', order: a.order ?? '', action: a['action_type.name'] || a.comment || 'Ação', table: pick('table_name'), writes: parseFieldValues(pick('values') || pick('fields')), ...(a.subflow ? { subflow: a.subflow } : {}) };
   }));
+  const [inactiveClient, inactivePolicy] = await Promise.all([inactiveClientP, inactivePolicyP]);
+  clientRows.push(...inactiveClient);
+  policyRows.push(...inactivePolicy);
   const clientScripts = clientRows.filter((c) => new RegExp(`setValue\\(\\s*['"]${target.field}['"]`).test(c.script ?? ''));
   const setsField = (sc: string | undefined) => new RegExp(`setValue\\(\\s*['"]${target.field}['"]`).test(sc ?? '');
   const uiPolicies: Row[] = policyRows.flatMap((p) => [
@@ -337,6 +357,12 @@ export async function investigate(
     }
     return out;
   };
+  const inactive = await inactiveP;
+  // Só para mudanças anteriores à alteração da regra: depois dela, a regra já podia estar desligada.
+  const metaAt = (at: string): TableMeta => {
+    const off = inactive.filter((b) => (b.sys_updated_on ?? '') > at);
+    return off.length ? { ...meta, brField: [...meta.brField, ...off] } : meta;
+  };
   const changes: Change[] = fieldChanges.map((c, index) => {
     const at = c.sys_created_on ?? '';
     const from = shift(at, -opts.windowBefore);
@@ -352,8 +378,9 @@ export async function investigate(
       jobsByScript,
       listViews: listViews.filter((t) => t.sys_created_by === c.user && (t.sys_created_on ?? '') <= shift(at, 2) && (t.sys_created_on ?? '') >= shift(at, -LIST_LOOKBACK_S)),
       assignmentRules,
-      clientScripts,
-      uiPolicies,
+      // Desligado hoje só conta para mudanças anteriores à alteração dele.
+      clientScripts: clientScripts.filter((x) => x.active !== 'false' || (x.sys_updated_on ?? '') > at),
+      uiPolicies: uiPolicies.filter((x) => x.active !== 'false' || (x.sys_updated_on ?? '') > at),
       recorded: recordedAll.filter((r) => Math.abs(toMs(r.sys_created_on ?? '') - toMs(at)) <= 5000),
       dataLookups,
       flowSteps,
@@ -366,7 +393,7 @@ export async function investigate(
     };
     const ctx: ChangeContext = {
       table: target.table, field: target.field, sysId, audit: c, at, user: c.user ?? '',
-      checkpoint: Number(c.record_checkpoint ?? 0), checkpoints, meta, traces, opts, record: recordAt(Number(c.record_checkpoint ?? 0)),
+      checkpoint: Number(c.record_checkpoint ?? 0), checkpoints, meta: metaAt(at), traces, opts, record: recordAt(Number(c.record_checkpoint ?? 0)),
       // Criação do registro (insert) ou atualização: decide quais BRs rodaram (action_insert / action_update).
       // Um PATCH logo depois da criação ainda é atualização: na criação a auditoria não tem valor anterior.
       operation: rec.sys_created_on && Math.abs(toMs(rec.sys_created_on) - toMs(at)) <= 2000 && !(c.oldvalue ?? '') ? 'insert' : 'update',
@@ -379,6 +406,10 @@ export async function investigate(
       if (keep && ageSec > keep) notes.push(`traces_expired:${t}`);
     }
     const evidence = scoreAll(runSignatures(ctx));
+    for (const e of evidence) {
+      const off = [...inactive, ...inactiveClient, ...inactivePolicy].find((b) => b.sys_id && b.sys_id === e.artifact.sysId);
+      if (off) e.gaps.push(`está desativado hoje; foi alterado em ${off.sys_updated_on}, depois da mudança (confira se estava ativo na hora)`);
+    }
     const trace = buildTrace(ctx, evidence[0]);
     return {
       at, oldValue: c.oldvalue ?? '', newValue: c.newvalue ?? '', user: c.user ?? '', checkpoint: ctx.checkpoint,
@@ -442,14 +473,20 @@ export async function investigate(
     access,
     gaps,
     ...(auditFrom === 'history' ? { auditFrom, historyFields, ...(historyFields && !historyFields.includes(target.field) ? { fieldNotInHistory: true } : {}) } : {}),
-    conflicts: findConflicts(target.field, meta.brField, clientRows, { ...record, sys_id: sysId }),
+    conflicts: findConflicts(target.field, meta.brField, clientRows.filter((x) => x.active !== 'false'), { ...record, sys_id: sysId }),
     ...(() => { const pp = detectPingPong(changes); return pp ? { pingPong: pp } : {}; })(),
     timing: { totalMs: Date.now() - started, calls: client.calls - callsBefore },
   };
 
   // ---------- metadados da tabela ----------
   async function loadMeta(table: string, field: string): Promise<TableMeta> {
-    const cached = await cache.get(table);
+    let cached = await cache.get(table);
+    // Regra criada, ativada, desativada ou editada depois que o cache foi guardado (10 min na extensão): no PDI, uma BR
+    // ativada para um teste ficava de fora. Uma consulta mínima pergunta se alguma regra da tabela mudou desde então.
+    if (cached?.loadedAt) {
+      const changed = await quiet('sys_script', `collectionIN${cached.tables.join(',')}^sys_updated_on>=${shift(cached.loadedAt, -120)}`, ['sys_id'], 1);
+      if (changed.length) cached = undefined;
+    }
     const base = cached ?? (await loadMetaBase(table));
     // Metadados incompletos (consulta de regras estourou o tempo) não vão para o cache: senão o erro se repetiria.
     // Guardar é só economia: armazenamento cheio (cota da sessão do navegador) não derruba a investigação.
@@ -472,6 +509,7 @@ export async function investigate(
   }
 
   async function loadMetaBase(table: string): Promise<TableMeta> {
+    const startedAt = Date.now();
     const tables: string[] = [];
     let cur: string | undefined = table;
     // Passo da hierarquia sem resposta (no PDI, dois 500 seguidos do balanceador): a tabela pareceria sem pai e o
@@ -504,7 +542,8 @@ export async function investigate(
     const scriptIncludes = siNames.size ? await q('sys_script_include', `active=true^nameIN${[...siNames].join(',')}`, ['sys_id', 'name', 'script'], 200) : [];
     // App do Trail na instância (ou o protótipo da fase 18): tabela com o contexto gravado na hora.
     const recorder = (await quiet('sys_db_object', 'nameINx_trail_context,u_pt_trail_contexto^ORDERBYDESCname', ['name'], 2))[0]?.name;
-    return { tables, businessRules, scriptIncludes, brField: [], siField: [], brViaSi: [], ...(recorder ? { recorder } : {}), ...(incomplete ? { incomplete } : {}) };
+    const loadedAt = new Date(startedAt).toISOString().slice(0, 19).replace('T', ' ');
+    return { tables, businessRules, scriptIncludes, brField: [], siField: [], brViaSi: [], loadedAt, ...(recorder ? { recorder } : {}), ...(incomplete ? { incomplete } : {}) };
   }
 }
 

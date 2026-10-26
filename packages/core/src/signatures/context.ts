@@ -15,6 +15,8 @@ export interface TableMeta {
   /** `arg`: a BR passa o nome do campo como texto para um método genérico do SI (que grava por nome dinâmico). */
   /** As regras da tabela não carregaram por inteiro (tempo esgotado): "nenhuma automação concorrente" não pode ser afirmado. */
   incomplete?: boolean;
+  /** Quando as regras foram lidas da instância (UTC, "AAAA-MM-DD hh:mm:ss"): o cache confere se alguma mudou depois. */
+  loadedAt?: string;
   brViaSi: { br: Row; si: Row; arg?: { call: string; value?: string } }[];
 }
 

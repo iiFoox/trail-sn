@@ -144,7 +144,7 @@ describe('regras de negócio com 500 (caça 1.4.6, 146d)', () => {
     audit(s, 'state', '1', '2', T0, 'admin', 1);
     const c = build(s);
     let n = 0;
-    c.respond('sys_script', () => { n++; return { rows: [], status: 500, access: 'unknown' }; });
+    c.respond('sys_script', (req) => { if (req.query.includes('active=true')) n++; return { rows: [], status: 500, access: 'unknown' }; });
     const stored: unknown[] = [];
     const cache = { get: async () => undefined, set: async (_t: string, m: unknown) => { stored.push(m); } };
     const r = await investigate(c, { table: 'incident', sysId: INC.sysId, field: 'state' }, {}, cache);

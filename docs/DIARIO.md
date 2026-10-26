@@ -660,3 +660,10 @@ A pedido do dono, dois agentes à parte: um revisor de código e segurança (só
 - 4 testes novos (`formularioLongo.test.ts`, falham sem a correção); 1052 passando. Bundle `bundle-146g`.
 - **Codex:** caça contínua de "uso real" (mudanças feitas pela interface, em registros [PT], conferindo se a causa está certa); achados na nota "Caça uso real".
 - **Pacotes da loja: desatualizados** até o fim desta rodada; não enviar os de `docs/store/packages` por enquanto.
+
+## 26/10/2026: regra ou client script desligado depois da mudança; cache das regras
+
+- **Achados do Codex (caça de uso real, bundle 146g):** (1) BR before [PT] reescreveu `short_description` e foi desativada 23 s depois; a investigação, logo em seguida, não a apontou. (2) Client script [PT] onChange preencheu `description` no formulário e foi desativado em seguida; a mudança saiu como "admin, confirmada". Causa comum: o Trail só lia regras, client scripts e UI policies **ativos**. É o caso real de quem desliga a regra suspeita e depois pergunta quem mudou o campo.
+- **Correção:** BRs, client scripts e UI policies **inativos alterados depois da mudança mais antiga** entram como suspeitos (consultas à parte, até 20 cada, com `sys_updated_on>=`), só para mudanças anteriores à alteração deles, com o aviso "está desativado hoje; foi alterado em …, depois da mudança (confira se estava ativo na hora)". Ficam fora do alerta de conflitos.
+- **Cache das regras (10 min na extensão):** guardava as regras da tabela; uma regra criada, ativada ou editada logo antes ficava de fora. Agora o cache guarda `loadedAt` e, antes de usar, uma consulta mínima (`sys_script`, `sys_updated_on>=` 2 min antes, limite 1) pergunta se alguma regra da tabela mudou; se mudou, recarrega.
+- 5 testes novos (`regraDesativada.test.ts`; 4 falham sem a correção); 1057 passando. Bundle `bundle-146h`.
