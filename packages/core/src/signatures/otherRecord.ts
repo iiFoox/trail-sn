@@ -19,7 +19,8 @@ export function otherRecordRule(ctx: ChangeContext): Evidence[] {
   if (!saves.length) return [];
   const opens = (script: string | undefined) => ctx.meta.tables.some((tb) => new RegExp(`GlideRecord(?:Secure)?\\(\\s*['"]${tb}['"]`).test(script ?? ''));
   const seen = new Set<string>();
-  const rules = [...ctx.meta.businessRules, ...(ctx.traces.crossRules ?? [])].filter((b) => {
+  // brField traz também as regras desligadas depois da mudança (quem investiga costuma desligar a suspeita antes).
+  const rules = [...ctx.meta.businessRules, ...ctx.meta.brField, ...(ctx.traces.crossRules ?? [])].filter((b) => {
     const key = b.sys_id ?? b.name ?? '';
     if (seen.has(key)) return false;
     seen.add(key);

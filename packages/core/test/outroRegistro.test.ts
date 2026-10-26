@@ -90,3 +90,16 @@ describe('regras que não gravam outro registro', () => {
     expect(e.grade).toBe('candidate');
   });
 });
+
+describe('regra de outro registro desligada depois da mudança', () => {
+  it('a regra da cascata, já desligada, ainda aparece como causa, com o aviso', async () => {
+    const s = cascade('incident');
+    const rule = br(s, '[PT] Cascata desligada', 'before', CHILD_SCRIPT('incident'));
+    rule.active = 'false';
+    rule.sys_updated_on = '2026-10-18 01:40:00';
+    const r = await investigate(build(s), { table: 'incident', number: INC.number, field: 'description' });
+    const e = r.changes[0]!.evidence[0]!;
+    expect([e.type, e.artifact.sysId]).toEqual(['br_other_record', rule.sys_id]);
+    expect(e.gaps.join(' ')).toContain('desativado hoje');
+  });
+});
