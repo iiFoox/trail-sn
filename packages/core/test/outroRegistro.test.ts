@@ -118,3 +118,28 @@ describe('regra de outra tabela desligada depois da mudança', () => {
     expect(r.changes[0]!.evidence.some((x) => x.artifact.sysId === old.sys_id)).toBe(false);
   });
 });
+
+describe('vínculo entre o registro salvo e este (bateria B-441, M8-INC-SA-text)', () => {
+  const UPDATE_CHILDREN = "var gr = new GlideRecord('incident');\ngr.addQuery('parent_incident', current.sys_id);\ngr.query();\nwhile (gr.next()) { gr.description = current.description; gr.update(); }";
+
+  it('filho de verdade (parent_incident = registro salvo): causa forte', async () => {
+    const s = cascade('incident');
+    s.record.parent_incident = PARENT;
+    const rule = br(s, 'Update Child Incidents', 'after', UPDATE_CHILDREN);
+    const r = await investigate(build(s), { table: 'incident', number: INC.number, field: 'description' });
+    const e = r.changes[0]!.evidence[0]!;
+    expect([e.type, e.artifact.sysId]).toEqual(['br_other_record', rule.sys_id]);
+    expect(e.facts.map((f) => f.kind)).toContain('trace_identifies_mechanism');
+    expect(e.grade).not.toBe('candidate');
+  });
+
+  it('não é filho do registro salvo: a regra fica descartada', async () => {
+    const s = cascade('incident');
+    s.record.parent_incident = '';
+    br(s, 'Update Child Incidents', 'after', UPDATE_CHILDREN);
+    const r = await investigate(build(s), { table: 'incident', number: INC.number, field: 'description' });
+    const e = r.changes[0]!.evidence.find((x) => x.type === 'br_other_record')!;
+    expect(e.facts.map((f) => f.kind)).toContain('condition_false');
+    expect(e.grade).toBe('candidate');
+  });
+});

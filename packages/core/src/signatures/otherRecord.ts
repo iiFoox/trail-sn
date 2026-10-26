@@ -1,5 +1,5 @@
 import { fact } from '../scoring';
-import { escapeRegExp, otherRecordWrite, refsField, toMs } from '../util';
+import { escapeRegExp, linkFields, otherRecordWrite, refsField, toMs } from '../util';
 import { evidence, type ChangeContext } from './context';
 import type { Evidence, Row } from '../types';
 
@@ -33,22 +33,35 @@ export function otherRecordRule(ctx: ChangeContext): Evidence[] {
     const off = b.active === 'false';
     if (off && !((b.sys_updated_on ?? '') > ctx.at)) continue;
     // A regra roda na tabela do registro salvo (ou, na mesma hierarquia, numa tabela-mãe dele).
-    const save = saves.find(({ w }) => w.table === b.collection || (ctx.meta.tables.includes(w.table) && ctx.meta.tables.includes(b.collection ?? '')));
-    if (!save) continue;
+    const fits = saves.filter(({ w }) => w.table === b.collection || (ctx.meta.tables.includes(w.table) && ctx.meta.tables.includes(b.collection ?? '')));
+    if (!fits.length) continue;
+    // Vínculo entre este registro e o salvo: o código cita este sys_id, ou busca por um campo que aponta para o salvo
+    // (addQuery('parent_incident', current.sys_id)) e este registro tem esse campo = sys_id do salvo. Sem vínculo, uma
+    // gravação qualquer de outro registro no mesmo segundo não diz nada (na bateria, "Update Child Incidents" virava
+    // causa provável de um incidente que não era filho de ninguém).
+    const byId = (b.script ?? '').includes(ctx.sysId);
+    const links = linkFields(b.script);
+    const known = links.filter((f) => f in ctx.record);
+    const save = fits.find(({ w }) => known.some((f) => ctx.record[f] === w.sysId)) ?? fits[0]!;
+    const linkedBy = known.find((f) => ctx.record[f] === save.w.sysId);
+    const unlinked = !byId && links.length > 0 && known.length === links.length && !linkedBy;
+    const related = byId || !!linkedBy;
     const facts = [
-      fact('execution_in_window', 'syslog_transaction', `${save.w.table} ${save.w.sysId} foi salvo às ${save.t.sys_created_on} por ${save.t.sys_created_by}`),
+      ...(related ? [fact('execution_in_window', 'syslog_transaction', `${save.w.table} ${save.w.sysId} foi salvo às ${save.t.sys_created_on} por ${save.t.sys_created_by}`)] : []),
       fact('references_table', 'sys_script', `a regra abre ${ctx.table} por GlideRecord`),
       fact('references_field', 'sys_script', `e grava "${ctx.field}"`),
     ];
-    // O código aponta este registro pelo sys_id (guarda exata, gr.get('<sys_id>')): é ele, e não outro, que a regra grava.
-    if ((b.script ?? '').includes(ctx.sysId)) facts.push(fact('trace_identifies_mechanism', 'sys_script', 'o código cita este registro pelo sys_id'));
+    if (byId) facts.push(fact('trace_identifies_mechanism', 'sys_script', 'o código cita este registro pelo sys_id'));
+    else if (linkedBy) facts.push(fact('trace_identifies_mechanism', ctx.table, `este registro aponta para o ${save.w.table} salvo pelo campo ${linkedBy}`));
+    if (unlinked) facts.push(fact('condition_false', ctx.table, `este registro não aponta para o ${save.w.table} salvo (${links.join(', ')})`));
     // Valores fixos que o código grava no campo pelo GlideRecord: se há e nenhum é o gravado, não foi esta regra.
     const lits = literalWrites(b.script, ctx.field);
     if (lits.length && !lits.includes(nv)) facts.push(fact('sets_other_value', 'sys_script', `o código grava ${lits.map((x) => `"${x}"`).join(', ')}, não este valor`));
     if (nv.length >= 3 && (b.script ?? '').includes(nv)) facts.push(fact('sets_same_value', 'sys_script', 'o código traz exatamente o valor gravado'));
-    if (save.t.sys_created_by === ctx.user) facts.push(fact('user_matches', 'syslog_transaction', `quem salvou o ${save.w.table} é quem aparece nesta mudança (${ctx.user})`));
+    if (related && save.t.sys_created_by === ctx.user) facts.push(fact('user_matches', 'syslog_transaction', `quem salvou o ${save.w.table} é quem aparece nesta mudança (${ctx.user})`));
     out.push(evidence('br_other_record', { name: b.name ?? '?', sysId: b.sys_id, table: 'sys_script' }, facts,
       [`a regra roda ao salvar ${save.w.table} ${save.w.sysId}; as condições dela não foram avaliadas para aquele registro`,
+        ...(related || unlinked ? [] : [`não deu para ligar este registro ao ${save.w.table} salvo: a regra não cita este sys_id nem busca por um campo dele`]),
         ...(off && (ctx.traces.crossRules ?? []).includes(b) ? [`está desativado hoje; foi alterado em ${b.sys_updated_on}, depois da mudança (confira se estava ativo na hora)`] : [])]));
   }
   return out;

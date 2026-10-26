@@ -384,6 +384,16 @@ export function otherRecordWrite(url: string | undefined, sysId: string): { tabl
   return form && id && id !== sysId ? { table: form[1]!, sysId: id } : null;
 }
 
+/**
+ * Campos pelos quais um script busca os registros ligados ao atual: `gr.addQuery('parent_incident', current.sys_id)`
+ * (também `getUniqueValue()` e `getValue('sys_id')`). O registro investigado é "filho" do salvo quando tem esse campo
+ * igual ao sys_id dele.
+ */
+export function linkFields(script: string | undefined): string[] {
+  const re = /\.addQuery\(\s*['"]([a-z0-9_]+)['"]\s*,\s*(?:['"]=['"]\s*,\s*)?current\.(?:sys_id|getUniqueValue\(\s*\)|getValue\(\s*['"]sys_id['"]\s*\))\s*\)/g;
+  return [...new Set([...(script ?? '').matchAll(re)].map((m) => m[1]!))];
+}
+
 /** Atualização de vários registros de uma vez pela lista. */
 export function isMultiUpdate(url: string | undefined): boolean {
   // O envio vai para <tabela>.do com sys_action=sysverb_post_update; abrir o formulário de atualização (<tabela>_update.do) não grava.

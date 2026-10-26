@@ -22,7 +22,7 @@ import {
 } from './types';
 import { isSaveButton } from './signatures/uiAction';
 import { formSubmitOf } from './signatures/sameTransaction';
-import { decodeFlowValues, formSent, otherRecordWrite, isBatchCall, isFormSubmitFor, isMultiUpdate, isRecordWrite, isWorkspaceAction, parseFieldValues, uiActionMatches, uiActionQuery, uiActionRef } from './util';
+import { decodeFlowValues, formSent, linkFields, otherRecordWrite, isBatchCall, isFormSubmitFor, isMultiUpdate, isRecordWrite, isWorkspaceAction, parseFieldValues, uiActionMatches, uiActionQuery, uiActionRef } from './util';
 import { conditionFields, inList, mergeWindows, refsField, shift, timedQuery, toMs, windowsFilter, withTimeout } from './util';
 
 /** Cache de metadados por tabela (hierarquia, BRs, script includes). A extensão guarda em chrome.storage.session. */
@@ -365,6 +365,13 @@ export async function investigate(
     ? (await quiet('sys_script', [`active=true`, ...(firstChange ? [`active=false^sys_updated_on>=${firstChange}`] : [])].map((a) => `collectionIN${otherTables.join(',')}^${a}^scriptLIKEGlideRecord^scriptLIKE${target.field}`).join('^NQ'), ['sys_id', 'name', 'when', 'order', 'collection', 'script', 'condition', 'filter_condition', 'action_insert', 'action_update', 'active', 'sys_updated_on'], 50))
       .filter((b) => refsField(b.script, target.field))
     : [];
+  // Campo de vínculo das regras que gravam outros registros (parent_incident, problem_id...): lido deste registro só
+  // quando outro registro foi salvo na janela, para saber se este é mesmo "filho" do salvo.
+  if (txAll.some((t) => otherRecordWrite(t.url, sysId))) {
+    const need = unique([...meta.businessRules, ...crossRules].flatMap((b) => linkFields(b.script))).filter((f) => !(f in record)).slice(0, 10);
+    const row = need.length ? (await quiet(target.table, `sys_id=${sysId}`, need, 1))[0] : undefined;
+    if (row) for (const f of need) if (f in row) record[f] = row[f] ?? '';
+  }
   const inactive = await inactiveP;
   // Só para mudanças anteriores à alteração da regra: depois dela, a regra já podia estar desligada.
   const metaAt = (at: string): TableMeta => {

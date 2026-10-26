@@ -696,3 +696,9 @@ A pedido do dono, dois agentes à parte: um revisor de código e segurança (só
 - 2 testes novos; 1073 passando. Bundle `bundle-146k`.
 - **146l:** a busca de "regra de outro registro" também considera as regras desligadas depois da mudança (as que já entram para o próprio registro). No PDI, a BR da cascata, já desligada e com o sys_id do filho no código, não aparecia. 1 teste novo (falha sem a correção); 1074 passando.
 - **146m:** regras de **outra tabela** (ex.: problem → incident) também entram quando foram desligadas depois da mudança (consulta com `^NQ` para ativas e desligadas recentes), com o aviso. No PDI, a BR [PT] do problema foi desligada logo após o teste e o incidente ficava sem causa. 1 teste novo; 1075 passando.
+
+## 26/10/2026: B-441 no 146m e vínculo pai → filho (146n)
+
+- **B-441 no 146m (Codex):** 419/441 (146d/146a: 418), sem banners, mediana 3,6 s. Três deltas convergiram em isolamento 3×/versão. Divergência estável: **M8-INC-SA-text** (`close_notes`, esperado script_action, falha nas duas versões) passou de `scheduled_job candidate 15` para `br_other_record probable 50` "Update Child Incidents": outro incidente salvo no mesmo segundo bastava para ligar a regra nativa de cascata a um incidente que não era filho de ninguém.
+- **Correção (`otherRecord.ts`, `linkFields` em util):** a regra de outro registro precisa de vínculo verificável: o código cita o sys_id deste registro, ou busca por um campo (`addQuery('parent_incident', current.sys_id)`) e este registro tem esse campo igual ao sys_id do salvo (lido numa consulta mínima só quando há gravação de outro registro na janela). Com vínculo: `trace_identifies_mechanism` + horário + pessoa. Sem vínculo verificável: só "cita a tabela e o campo" (candidata). Vínculo desmentido (campo com outro valor): `condition_false`.
+- 2 testes novos; 1077 passando. Bundle `bundle-146n`.
