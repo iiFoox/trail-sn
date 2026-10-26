@@ -8,6 +8,7 @@ import { getPrefs } from '../shared/prefs';
 import { ErrorMsg } from './ErrorMsg';
 import { Fold, FoldStatic } from './Fold';
 import { Missing } from './Missing';
+import { tzOpt } from '../shared/tz';
 
 const lang = getPrefs().lang;
 const P = t(lang).p;
@@ -16,7 +17,7 @@ const isDemo = new URLSearchParams(location.search).has('demo');
 const when = (s: string) => {
   if (!s) return '';
   const d = new Date(s.replace(' ', 'T') + 'Z');
-  return Number.isNaN(d.getTime()) ? s : d.toLocaleString(lang === 'en' ? 'en-US' : 'pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  return Number.isNaN(d.getTime()) ? s : d.toLocaleString(lang === 'en' ? 'en-US' : 'pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', ...tzOpt() });
 };
 
 /** `field`: o campo investigado (destaca os flows que gravam nele); no registro inteiro, vazio. */

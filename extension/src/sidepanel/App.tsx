@@ -12,6 +12,7 @@ import { setTrackedTab } from '../shared/tabRef';
 import { send, storageKey, type TabState } from '../shared/messages';
 import { isEnabled, looksLikeServiceNow } from '../shared/instances';
 import { ErrorMsg } from './ErrorMsg';
+import { setDisplayTimeZone } from '../shared/tz';
 
 const s = t(getPrefs().lang);
 const params = new URLSearchParams(location.search);
@@ -199,6 +200,8 @@ export function App() {
   };
 
   const origin = state?.ctx?.origin ?? fallbackOrigin;
+  // Horas no fuso do usuário no ServiceNow (o do formulário), não no do navegador.
+  setDisplayTimeZone(state?.ctx?.timeZone);
   const level = state?.access?.level;
 
   return (

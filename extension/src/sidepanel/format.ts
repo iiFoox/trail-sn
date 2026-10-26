@@ -5,6 +5,7 @@
 import type { Change, Evidence, Investigation, TraceItem } from '@trail/core';
 import { fmt, t } from '../shared/i18n';
 import { getPrefs } from '../shared/prefs';
+import { dayNumber, tzOpt } from '../shared/tz';
 
 export const lang = getPrefs().lang;
 const s = t(lang);
@@ -29,11 +30,10 @@ export function parts(utc: string): { date: string; time: string; full: string; 
   const d = new Date(utc.replace(' ', 'T') + 'Z');
   if (isNaN(d.getTime())) return { date: utc, time: '', full: utc, rel: '' };
   const loc = lang === 'en' ? 'en-US' : 'pt-BR';
-  const date = d.toLocaleDateString(loc, { day: '2-digit', month: '2-digit' });
-  const time = d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' });
-  const sec = d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  const day = (x: Date) => Math.floor((x.getTime() - x.getTimezoneOffset() * 60000) / 86400000);
-  const diff = day(new Date()) - day(d);
+  const date = d.toLocaleDateString(loc, { day: '2-digit', month: '2-digit', ...tzOpt() });
+  const time = d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', ...tzOpt() });
+  const sec = d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', second: '2-digit', ...tzOpt() });
+  const diff = dayNumber(new Date()) - dayNumber(d);
   return { date, time, full: sec, rel: diff === 0 ? P.today : diff === 1 ? P.yesterday : '' };
 }
 

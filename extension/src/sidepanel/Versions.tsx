@@ -12,6 +12,7 @@ import { looksLong } from '../shared/diff';
 import { changedFields, parsePayload } from '../shared/versions';
 import { ErrorMsg } from './ErrorMsg';
 import { DiffOverlay, DiffSummary, humanField, refLink } from './Result';
+import { tzOpt } from '../shared/tz';
 
 const lang = getPrefs().lang;
 const P = t(lang).p;
@@ -20,7 +21,7 @@ const isDemo = new URLSearchParams(location.search).has('demo');
 const when = (s: string) => {
   if (!s) return '';
   const d = new Date(s.replace(' ', 'T') + 'Z');
-  return Number.isNaN(d.getTime()) ? s : d.toLocaleString(lang === 'en' ? 'en-US' : 'pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return Number.isNaN(d.getTime()) ? s : d.toLocaleString(lang === 'en' ? 'en-US' : 'pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', ...tzOpt() });
 };
 
 const sourceText = (v: RecordVersion) =>
