@@ -34,7 +34,8 @@ export function VersionsTab({ target, origin, title }: { target: { table: string
     let alive = true;
     (async () => {
       try {
-        const out = isDemo ? { versions: [], access: 'empty' as const, timing: { totalMs: 0, calls: 0 } } : await send<RecordVersions & { error?: string }>({ type: 'versions', origin, table: target.table, sysId: target.sysId });
+        const out = isDemo ? DEMO.list : await send<RecordVersions & { error?: string }>({ type: 'versions', origin, table: target.table, sysId: target.sysId });
+        if (isDemo) await new Promise((x) => setTimeout(x, 450));
         if ((out as { error?: string }).error) throw new Error((out as { error?: string }).error);
         if (alive) setRes(out);
       } catch (e) { if (alive) setErr((e as Error).message); }
@@ -79,7 +80,7 @@ function VersionDiff({ origin, version, previous, title }: { origin: string; ver
     let alive = true;
     (async () => {
       try {
-        const out = await send<Record<string, string> & { error?: string }>({ type: 'version-payloads', origin, sysIds: [version.sysId, previous.sysId] });
+        const out = isDemo ? DEMO.payloads : await send<Record<string, string> & { error?: string }>({ type: 'version-payloads', origin, sysIds: [version.sysId, previous.sysId] });
         if (out.error) throw new Error(out.error);
         if (alive) setRows(changedFields(parsePayload(out[previous.sysId] ?? ''), parsePayload(out[version.sysId] ?? '')));
       } catch (e) { if (alive) setErr((e as Error).message); }
@@ -109,3 +110,32 @@ function VersionDiff({ origin, version, previous, title }: { origin: string; ver
     </div>
   );
 }
+
+/** Demonstração do site: um script include com três versões; a última acrescenta um comentário e muda a descrição. */
+const demoXml = (desc: string, extra: string) => `<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include"><sys_script_include action="INSERT_OR_UPDATE"><active>true</active><description>${desc}</description><name>IncidentUtils</name><script><![CDATA[var IncidentUtils = Class.create();
+IncidentUtils.prototype = {
+    initialize: function() {},
+${extra}    childCount: function(id) {
+        var ga = new GlideAggregate('incident');
+        ga.addQuery('parent_incident', id);
+        ga.addAggregate('COUNT');
+        ga.query();
+        return ga.next() ? ga.getAggregate('COUNT') : 0;
+    },
+    type: 'IncidentUtils'
+};]]></script><sys_updated_on>2026-10-26 13:57:09</sys_updated_on></sys_script_include></record_update>`;
+const DEMO = {
+  list: {
+    versions: [
+      { sysId: 'a0000000000000000000000000000003', at: '2026-10-26 13:57:09', by: 'maria.souza', state: 'current', action: 'INSERT_OR_UPDATE', source: 'update_set', sourceName: 'Melhorias de incidentes' },
+      { sysId: 'a0000000000000000000000000000002', at: '2026-10-21 09:12:40', by: 'joao.lima', state: 'previous', action: 'INSERT_OR_UPDATE', source: 'update_set', sourceName: 'Default' },
+      { sysId: 'a0000000000000000000000000000001', at: '2026-09-23 03:47:54', by: 'system', state: 'history', action: 'INSERT_OR_UPDATE', source: 'upgrade' },
+    ] as RecordVersion[],
+    access: 'ok' as const,
+    timing: { totalMs: 0, calls: 0 },
+  } as RecordVersions,
+  payloads: {
+    a0000000000000000000000000000003: demoXml('Contagem de incidentes filhos (com cache)', '    // conta só os filhos ativos; ver chamado INC0012345\n'),
+    a0000000000000000000000000000002: demoXml('Contagem de incidentes filhos', ''),
+  } as Record<string, string>,
+};
