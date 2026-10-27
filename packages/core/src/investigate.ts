@@ -141,6 +141,9 @@ export async function investigate(
   let auditFrom: 'audit' | 'history' = 'audit';
   let historyFields: string[] | undefined;
   let historyUnavailable = false;
+  // Auditoria que não respondeu (e não negada): o histórico entra no lugar, mas não mostra tudo o que as regras gravaram.
+  // Na matriz de falhas (27/10/2026), com o ui/meta de sys_audit em 500, a BR assíncrona sumia e a pessoa saía confirmada.
+  const auditTimedOut = access.sys_audit === 'timeout';
   // Auditoria que não respondeu (no PDI, o 500 ao acaso na conferência do ui/meta) também tenta o histórico: é a
   // mesma informação, e sem ele a tela ficava só com "auditoria lenta" (bloco C, 24/10/2026: 6 de 300 para itil).
   if ((access.sys_audit === 'denied' || access.sys_audit === 'timeout') && client.history) {
@@ -456,6 +459,15 @@ export async function investigate(
       top.gaps.push(`${silent.join(', ')} não respondeu: uma automação dessa fonte pode ter feito a mudança`);
     }
   }
+  if (auditTimedOut && auditFrom === 'history') {
+    for (const c of changes) {
+      const top = c.evidence[0];
+      if (!top || top.type !== 'user_action' || top.grade !== 'confirmed') continue;
+      top.grade = 'probable';
+      top.score = Math.min(top.score, THRESHOLDS.confirmed - 1);
+      top.gaps.push('a auditoria (sys_audit) não respondeu e foi usado o histórico do formulário, que não mostra tudo o que as regras gravaram');
+    }
+  }
 
   // ---------- atualizações sem auditoria (setWorkflow(false) etc.) ----------
   let unaudited: Investigation['unaudited'] = null;
@@ -487,7 +499,7 @@ export async function investigate(
   // respondido: antes, um 500 ('unknown') ou uma janela perdida passava calado e a perícia saía incompleta.
   for (const tag of new Set(failed.values())) if (access[tag] !== 'denied' && access[tag] !== 'no_filter') access[tag] = 'timeout';
   const gaps = Object.entries(access)
-    .filter(([k, s]) => (s === 'denied' || s === 'timeout' || s === 'no_filter') && !(k === 'sys_audit' && auditFrom === 'history'))
+    .filter(([k, s]) => (s === 'denied' || s === 'timeout' || s === 'no_filter') && !(k === 'sys_audit' && auditFrom === 'history' && !auditTimedOut))
     .map(([k, s]) => `${k}: ${s}`);
   if (historyUnavailable) gaps.push('list_history: unavailable');
 

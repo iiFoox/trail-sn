@@ -10,6 +10,6 @@ A 1.4.6 inclui tudo da 1.4.5 (que pode ser pulada nas lojas). A 1.4.4 não deve 
 ## SHA-256
 
 ```text
-ff32d6b4860a15c7619522e2fd233238da1ada02b61df6dcf97be0157e6e6fc7  trail-chrome-1.4.6.zip
-590f5162c5b7cd0aef8672e5976912c9ac1a744609aaec8aed6d8e93020fb9ea  trail-extensao-1.4.6.zip
+f5d34e92ceb370637170e11cfd168bfbad8bd210ec5f9df7367068ce9512d7a5  trail-chrome-1.4.6.zip
+0659914b4035c980448bd9b122a7f06f0883ba9c62ee7f8dae6eee79b09c6639  trail-extensao-1.4.6.zip
 ```
