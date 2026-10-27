@@ -141,12 +141,12 @@ export async function investigate(
   let auditFrom: 'audit' | 'history' = 'audit';
   let historyFields: string[] | undefined;
   let historyUnavailable = false;
-  // Auditoria que não respondeu (e não negada): o histórico entra no lugar, mas não mostra tudo o que as regras gravaram.
+  // Auditoria que não respondeu (prazo ou 500; não negada): o histórico entra no lugar, mas não mostra tudo o que as regras gravaram.
   // Na matriz de falhas (27/10/2026), com o ui/meta de sys_audit em 500, a BR assíncrona sumia e a pessoa saía confirmada.
-  const auditTimedOut = access.sys_audit === 'timeout';
+  const auditTimedOut = access.sys_audit === 'timeout' || access.sys_audit === 'unknown';
   // Auditoria que não respondeu (no PDI, o 500 ao acaso na conferência do ui/meta) também tenta o histórico: é a
   // mesma informação, e sem ele a tela ficava só com "auditoria lenta" (bloco C, 24/10/2026: 6 de 300 para itil).
-  if ((access.sys_audit === 'denied' || access.sys_audit === 'timeout') && client.history) {
+  if ((access.sys_audit === 'denied' || auditTimedOut) && client.history) {
     // No PDI (21/10/2026) o histórico às vezes não volta (1 em ~300 investigações por perfil): uma segunda tentativa, e
     // se ainda falhar, a lacuna aparece em vez de "nenhuma mudança".
     const ask = () => client.history!(target.table, sysId).catch(() => null);

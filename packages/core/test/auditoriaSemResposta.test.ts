@@ -15,12 +15,12 @@ const history = parseHistory({
   entries: [{ sys_timestamp: Date.UTC(y, mo - 1, d, h, mi, se), user_id: ADMIN, sys_created_by: 'System Administrator', entries: { changes: [{ field_name: 'short_description', old_value: 'antes', new_value: 'depois' }] } }],
 })!;
 
-function admin(auditAnswer: 'timeout' | 'ok') {
+function admin(auditAnswer: 'timeout' | 'unknown' | 'ok') {
   const s = scenario();
   audit(s, 'short_description', 'antes', 'depois', T0, 'admin', 1);
   formTx(s, T0, 'admin', { short_description: 'depois' });
   const c = build(s).rows('sys_user', [{ sys_id: ADMIN, user_name: 'admin' }]);
-  return auditAnswer === 'timeout' ? c.respond('sys_audit', () => ({ rows: [], status: 0, access: 'timeout' })).withHistory(history) : c;
+  return auditAnswer === 'ok' ? c : c.respond('sys_audit', () => ({ rows: [], status: auditAnswer === 'timeout' ? 0 : 500, access: auditAnswer })).withHistory(history);
 }
 
 describe('auditoria sem resposta, histórico no lugar', () => {
@@ -32,6 +32,13 @@ describe('auditoria sem resposta, histórico no lugar', () => {
     expect(top.type).toBe('user_action');
     expect(top.grade).toBe('probable');
     expect(top.gaps.join(' ')).toContain('histórico do formulário');
+  });
+
+  it('auditoria em 500: também usa o histórico, com a mesma trava', async () => {
+    const r = await investigate(admin('unknown'), { table: 'incident', number: INC.number, field: 'short_description' });
+    expect(r.auditFrom).toBe('history');
+    expect(r.gaps).toContain('sys_audit: timeout');
+    expect(r.changes[0]!.evidence[0]!.grade).toBe('probable');
   });
 
   it('com a auditoria respondendo, segue confirmada', async () => {

@@ -5,8 +5,8 @@ Arquivos: pacote de loja `packages/trail-chrome-1.4.6.zip` (serve para Chrome e 
 
 | Campo | Arquivo | Tamanho | Chrome | Edge |
 |---|---|---|---|---|
-| Pacote da loja | `packages/trail-chrome-1.4.6.zip` | 282.886 bytes | obrigatório | obrigatório |
-| Pasta empacotada para instalação manual | `packages/trail-extensao-1.4.6.zip` | 285.563 bytes | não enviar | não enviar |
+| Pacote da loja | `packages/trail-chrome-1.4.6.zip` | 282.887 bytes | obrigatório | obrigatório |
+| Pasta empacotada para instalação manual | `packages/trail-extensao-1.4.6.zip` | 285.564 bytes | não enviar | não enviar |
 | Logo da loja | `logo-300.png` | 300×300 | — (usa o ícone do pacote) | obrigatório |
 | Capturas de tela | `shot-1-resposta.png` … `shot-5-flows.png` | 1280×800 | 1 a 5 | 1 a 6 |
 | Bloco promocional pequeno | `tile-440x280.png` | 440×280 | obrigatório | opcional |
