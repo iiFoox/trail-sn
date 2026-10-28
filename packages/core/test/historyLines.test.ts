@@ -65,6 +65,18 @@ describe('histórico guardado (sys_history_line) para campo fora do Activity Str
     expect(ok.historyLines).toBe(true);
   });
 
+  // Zurich 147c: 14 caixas de seleção ("1" na linha, "true" no registro) e 2 referências (nome na linha, sys_id no
+  // registro) tinham a mudança certa descartada.
+  it('caixa de seleção e referência pelo nome não são descartadas', async () => {
+    const bool = await investigate(itil([line({ old_value: '0', new_value: '1', old: 'false', new: 'true' })], { description: 'true', sys_mod_count: '1' }), { table: 'incident', number: INC.number, field: 'description' });
+    expect(bool.historyLines).toBe(true);
+    const ref = await investigate(itil([line({ old: 'Service Desk', new: 'Application Development' })], { description: 'a'.repeat(32), sys_mod_count: '1' }), { table: 'incident', number: INC.number, field: 'description' });
+    expect(ref.historyLines).toBe(true);
+    // Referência já em sys_id na linha, mas outro: não é deste registro.
+    const wrong = await investigate(itil([line({ new_value: 'c'.repeat(32), new: 'Outro grupo' })], { description: 'a'.repeat(32), sys_mod_count: '1' }), { table: 'incident', number: INC.number, field: 'description' });
+    expect(wrong.historyLines).toBeUndefined();
+  });
+
   it('sem leitura de sys_history_line: segue como antes, sem lacuna nova', async () => {
     const r = await investigate(itil('denied'), { table: 'incident', number: INC.number, field: 'description' });
     expect(r.fieldNotInHistory).toBe(true);

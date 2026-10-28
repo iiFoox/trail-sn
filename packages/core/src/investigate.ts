@@ -176,10 +176,17 @@ export async function investigate(
           const merged = mergeHistoryLines(h, target.field, lines);
           const withLines = await historyToAudit(merged, meta.tables, quiet, rec.sys_created_on);
           // A última mudança das linhas tem de deixar o valor que o registro tem hoje; senão as linhas não são deste
-          // registro (ou não dá para ler o valor) e ficam de fora.
-          const last = withLines.filter((a) => a.fieldname === target.field).sort((a, b) => toMs(a.sys_created_on ?? '') - toMs(b.sys_created_on ?? '')).at(-1);
-          const norm = (v?: string) => (v ?? '').replace(/\r\n/g, '\n').trim();
-          if (!(target.field in rec) || (last && norm(last.newvalue) === norm(rec[target.field]))) { h = merged; historyLinesUsed = true; }
+          // registro e ficam de fora. Vale o valor interno ou o exibido da linha de maior `update` (e o convertido):
+          // caixa de seleção vem "1"/"true", referência vem pelo nome (na 147c, 16 mudanças certas eram descartadas).
+          // Referência cujo nome não virou sys_id não dá para comparar: fica (as outras conferências já passaram).
+          const top = lines.filter((l) => l.update !== '0').sort((a, b) => Number(a.update ?? 0) - Number(b.update ?? 0) || (a.update_time ?? '').localeCompare(b.update_time ?? '')).at(-1);
+          const lastAt = withLines.filter((a) => a.fieldname === target.field).map((a) => a.sys_created_on ?? '').sort().at(-1);
+          const norm = (v?: string) => { const x = (v ?? '').replace(/\r\n/g, '\n').trim(); return x === '1' ? 'true' : x === '0' ? 'false' : x; };
+          const seen = [top?.new_value, top?.new, ...withLines.filter((a) => a.fieldname === target.field && a.sys_created_on === lastAt).map((a) => a.newvalue)].map(norm);
+          const cur = norm(rec[target.field]);
+          const isId = (v: string) => /^[0-9a-f]{32}$/.test(v);
+          const fits = !(target.field in rec) || seen.includes(cur) || (isId(cur) && !seen.some(isId));
+          if (fits) { h = merged; historyLinesUsed = true; }
         }
       }
       audit = await historyToAudit(h, meta.tables, quiet, rec.sys_created_on);
