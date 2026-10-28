@@ -18,6 +18,15 @@ describe('avaliador de expressões', () => {
     expect(evalExpr("current.urgency == 1 && current.impact == 2", env())).toBe(false); // falso vence o desconhecido
     expect(evalExpr("gs.getUserName() == 'admin'", env())).toBeUndefined();
   });
+
+  // Zurich W9: `g_form.getValue('description') || ''` virava true, e o script "gravava" "true [PT] client Zurich".
+  it('|| devolve o operando, como no JavaScript', () => {
+    expect(evalExpr("g_form.getValue('description') || ''", env())).toBe('x');
+    expect(evalExpr("g_form.getValue('urgency') || 'pad'", env({ rec: { urgency: '' }, old: {}, changed: new Set() }))).toBe('pad');
+    expect(evalExpr("g_form.getValue('urgency') || ''", env())).toBeUndefined();
+    expect(evalExpr("current.urgency == 1 || current.impact == 3", env())).toBe(true); // verdadeiro vence o desconhecido
+    expect(evalExpr("current.impact == 2 || current.category == 'x'", env())).toBe(false);
+  });
 });
 
 describe('onde o script grava', () => {

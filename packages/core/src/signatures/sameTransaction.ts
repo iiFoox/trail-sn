@@ -252,7 +252,7 @@ function userTransaction(ctx: ChangeContext): Evidence[] {
   const clientEvidence = (scripts: Row[]): Evidence[] => scripts.map((cs) => {
     const trigger = cs.field ?? '';
     const triggered = cs.type === 'onChange' && changedTogether.includes(trigger);
-    const facts = [fact('references_field', 'sys_script_client', `o client script altera "${ctx.field}"`), fact('references_table', 'sys_script_client', `client script da tabela ${cs.table}`), ...scriptFacts(ctx, cs.script, 'sys_script_client', { trigger: cs.type === 'onChange' ? trigger : undefined, hasCondition: triggered })];
+    const facts = [fact('references_field', 'sys_script_client', `o client script altera "${ctx.field}"`), fact('references_table', 'sys_script_client', `client script da tabela ${cs.table}`), ...scriptFacts(ctx, cs.script, 'sys_script_client', { trigger: cs.type === 'onChange' ? trigger : undefined, hasCondition: triggered, fieldValue: UNKNOWN_VALUE })];
     if (triggered) facts.push(fact('trace_identifies_mechanism', 'sys_audit', `${trigger} mudou na mesma gravação e dispara o script`), fact('condition_true', 'sys_script_client', 'onChange do campo que mudou'));
     // onSubmit roda em todo salvamento pelo formulário: o envio é o próprio gatilho (no PDI, a pessoa saía "confirmada").
     if (cs.type === 'onSubmit') facts.push(fact('trace_identifies_mechanism', 'syslog_transaction', 'roda em todo salvamento pelo formulário'));

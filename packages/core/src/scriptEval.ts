@@ -426,7 +426,8 @@ function evalStrict(expr: string, env: Env): Val {
   }
   function or(): Val {
     let l = and();
-    while (eat('||')) { const r = and(); l = (l !== U && truthy(l)) || (r !== U && truthy(r)) ? true : l === U || r === U ? U : false; }
+    // Como no JavaScript, `a || b` vale a (se verdadeiro) ou b: `g_form.getValue('x') || ''` é o valor do campo, não true.
+    while (eat('||')) { const r = and(); l = l !== U && truthy(l) ? l : l !== U ? r : r !== U && truthy(r) && typeof r === 'boolean' ? true : U; }
     return l;
   }
   function ternary(): Val {
