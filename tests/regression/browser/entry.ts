@@ -1,5 +1,5 @@
 /** Bundle para rodar a bateria dentro de uma aba logada da instância (console/devtools). */
-import { FetchRestClient, detectAccess, investigate, recordTimeline, previewChange, fieldMap, recordFlows, tableAutomations, fieldState as coreFieldState, fieldStates as coreFieldStates, fieldRules as coreFieldRules, fieldDeps as coreFieldDeps, simulateValue as coreSimulateValue, saveTiming as coreSaveTiming, recordSaveTimes as coreRecordSaveTimes, timingFields as coreTimingFields, visibility as coreVisibility, readQueryScript as coreReadQueryScript, compareInstances as coreCompareInstances, type Grade, type FieldObserved } from '../../../packages/core/src/index';
+import { FetchRestClient, detectAccess, investigate, recordTimeline, previewChange, fieldMap, recordFlows, tableAutomations, fieldState as coreFieldState, fieldStates as coreFieldStates, fieldRules as coreFieldRules, fieldDeps as coreFieldDeps, simulateValue as coreSimulateValue, saveTiming as coreSaveTiming, recordSaveTimes as coreRecordSaveTimes, timingFields as coreTimingFields, visibility as coreVisibility, readQueryScript as coreReadQueryScript, compareInstances as coreCompareInstances, recordVersions as coreRecordVersions, versionPayloads as coreVersionPayloads, type Grade, type FieldObserved } from '../../../packages/core/src/index';
 import cases from '../cases.json';
 
 const order: Grade[] = ['candidate', 'probable', 'confirmed'];
@@ -39,6 +39,14 @@ export async function runOne(target: { table: string; number?: string; sysId?: s
       trace: c.trace.map((t) => `${t.at.slice(11)} ${t.kind}${t.cause ? '*' : ''} ${t.label || ''}${t.sent !== undefined ? ' sent=' + t.sent : ''}${t.fields ? ' [' + t.fields.map((f) => f.field).join(',') + ']' : ''}${t.ref ? ' ->' + t.ref.table : ''}`),
     })),
   };
+}
+
+/** Aba Versões: as versões salvas do registro e, se pedido, o payload das duas mais recentes. */
+export async function runVersions(target: { table: string; sysId: string }, withPayloads = true): Promise<unknown> {
+  const c = makeClient();
+  const r = await coreRecordVersions(c, target);
+  const ids = r.versions.slice(0, 2).map((v) => v.sysId);
+  return { ...r, calls: c.calls, ...(withPayloads && ids.length ? { payloads: await coreVersionPayloads(c, ids) } : {}) };
 }
 
 export async function runCases(list: any[]): Promise<unknown> {
