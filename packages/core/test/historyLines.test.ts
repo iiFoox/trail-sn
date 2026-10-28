@@ -77,6 +77,13 @@ describe('histórico guardado (sys_history_line) para campo fora do Activity Str
     expect(wrong.historyLines).toBeUndefined();
   });
 
+  // Zurich 147e (CHG0030019): duas gravações no mesmo segundo saíam invertidas em relação à auditoria.
+  it('duas gravações no mesmo segundo seguem a ordem do update', async () => {
+    const r = await investigate(itil([line({ old: 'b', new: 'c', update: '10' }), line({ old: 'a', new: 'b', update: '9' })], { description: 'c', sys_mod_count: '10' }), { table: 'incident', number: INC.number, field: 'description' });
+    expect(r.historyLines).toBe(true);
+    expect(r.changes.map((c) => `${c.oldValue}>${c.newValue}`)).toEqual(['b>c', 'a>b']);
+  });
+
   it('sem leitura de sys_history_line: segue como antes, sem lacuna nova', async () => {
     const r = await investigate(itil('denied'), { table: 'incident', number: INC.number, field: 'description' });
     expect(r.fieldNotInHistory).toBe(true);

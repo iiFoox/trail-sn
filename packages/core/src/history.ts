@@ -120,16 +120,22 @@ function unique<T>(xs: T[]): T[] {
  * Cada mudança entra na gravação do mesmo instante (±1 s), ou numa nova; o valor interno vale mais que o exibido.
  */
 export function mergeHistoryLines(h: HistoryResult, field: string, lines: Row[]): HistoryResult {
-  const entries = h.entries.map((e) => ({ ...e, changes: [...e.changes] }));
-  for (const l of lines) {
+  const entries: (HistoryEntry & { seq?: number })[] = h.entries.map((e) => ({ ...e, changes: [...e.changes] }));
+  // Na ordem das gravações (`update`): duas no mesmo segundo saíam invertidas em relação à auditoria (Zurich, 147e).
+  const ordered = [...lines].sort((a, b) => Number(a.update ?? 0) - Number(b.update ?? 0));
+  for (const l of ordered) {
     const at = l.update_time ?? '';
     if (l.field !== field || l.update === '0' || !DATE_TIME.test(at)) continue;
     const change: HistoryChange = { field, ...(l.label ? { label: l.label } : {}), ...(l.type ? { type: l.type } : {}),
       oldValue: l.old_value || l.old || '', newValue: l.new_value || l.new || '' };
-    const same = entries.find((e) => Math.abs(toMs(e.at) - toMs(at)) <= 1000 && !e.changes.some((c) => c.field === field));
-    if (same) same.changes.push(change);
-    else entries.push({ at, ...(l.user ? { userId: l.user } : {}), ...(l.user_id ? { userName: l.user_id } : {}), changes: [change] });
+    // Só junta quando há uma gravação só naquele instante: com duas, não dá para saber qual delas.
+    const near = entries.filter((e) => Math.abs(toMs(e.at) - toMs(at)) <= 1000 && !e.changes.some((c) => c.field === field));
+    const seq = Number(l.update ?? 0);
+    if (near.length === 1) { near[0]!.changes.push(change); near[0]!.seq ??= seq; }
+    else entries.push({ at, seq, ...(l.user ? { userId: l.user } : {}), ...(l.user_id ? { userName: l.user_id } : {}), changes: [change] });
   }
-  entries.sort((a, b) => a.at.localeCompare(b.at));
+  // Mesmo segundo: desempata pela ordem das gravações (sort estável: o que não tem número fica onde estava).
+  entries.sort((a, b) => a.at.localeCompare(b.at) || (a.seq !== undefined && b.seq !== undefined ? a.seq - b.seq : 0));
+  for (const e of entries) delete e.seq;
   return { ...h, entries, fields: h.fields.includes(field) ? h.fields : [...h.fields, field] };
 }
