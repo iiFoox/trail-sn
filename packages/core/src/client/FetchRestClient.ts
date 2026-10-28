@@ -92,6 +92,11 @@ export class FetchRestClient implements RestClient {
   /**
    * Histórico do formulário: o mesmo endpoint que o Activity Stream do UI16 usa (`angular.do?sysparm_type=list_history`).
    * Responde com as ACLs de quem está logado; no PDI, um usuário só com `itil` recebe 403 em `sys_audit` e 200 aqui.
+   *
+   * Só é chamado quando o cache de histórico do registro (sys_history_set) já existe. Na Zurich (28/10/2026) o GET do
+   * list_history num registro sem cache fez a plataforma criar o sys_history_set; a leitura de sys_history_line pela
+   * Table API não cria nada. Decisão do dono: o Trail nunca provoca essa criação. Sem cache, ou sem como conferir
+   * (sys_history_line negada), devolve null, como histórico indisponível.
    */
   async history(table: string, sysId: string): Promise<HistoryResult | null> {
     if (!TABLE_NAME.test(table) || !SYS_ID.test(sysId)) return null;
@@ -103,7 +108,10 @@ export class FetchRestClient implements RestClient {
     // O mesmo registro pedido por várias investigações (registro inteiro, lote) vai à instância uma vez só.
     const key = `${this.opts.baseUrl.replace(/\/$/, '')}|${this.token ?? ''}|${table}|${sysId}`;
     let entry = histCache.get(key);
-    if (!entry || Date.now() - entry.at >= HIST_TTL_MS) { entry = { at: Date.now(), p: this.fetchHistory(table, sysId) }; histCache.set(key, entry); }
+    if (!entry || Date.now() - entry.at >= HIST_TTL_MS) {
+      entry = { at: Date.now(), p: this.historyCacheExists(sysId).then((ok) => (ok ? this.fetchHistory(table, sysId) : null)) };
+      histCache.set(key, entry);
+    }
     const hist = await entry.p;
     if (!hist) histCache.delete(key);
     const h = parseHistory(hist);
@@ -114,6 +122,12 @@ export class FetchRestClient implements RestClient {
       const tz = await this.opts.getTimeZone?.().catch(() => undefined); if (tz) h.timeZone = tz;
     }
     return h;
+  }
+
+  /** O cache de histórico do registro existe? Pela Table API de sys_history_line (só leitura, não cria o set). */
+  private async historyCacheExists(sysId: string): Promise<boolean> {
+    const r = await this.query({ table: 'sys_history_line', query: `set.id=${sysId}`, fields: ['set'], limit: 1 }).catch(() => undefined);
+    return !!r?.rows.length;
   }
 
   private async fetchHistory(table: string, sysId: string): Promise<unknown> {
