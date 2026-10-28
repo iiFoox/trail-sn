@@ -1,5 +1,5 @@
 /** Bundle para rodar a bateria dentro de uma aba logada da instância (console/devtools). */
-import { FetchRestClient, detectAccess, investigate, recordTimeline, previewChange, fieldMap, recordFlows, tableAutomations, fieldState as coreFieldState, fieldStates as coreFieldStates, fieldRules as coreFieldRules, fieldDeps as coreFieldDeps, simulateValue as coreSimulateValue, saveTiming as coreSaveTiming, recordSaveTimes as coreRecordSaveTimes, timingFields as coreTimingFields, visibility as coreVisibility, readQueryScript as coreReadQueryScript, compareInstances as coreCompareInstances, recordVersions as coreRecordVersions, versionPayloads as coreVersionPayloads, type Grade, type FieldObserved } from '../../../packages/core/src/index';
+import { FetchRestClient, detectAccess, investigate, recordTimeline, previewChange, fieldMap, recordFlows, tableAutomations, fieldState as coreFieldState, fieldStates as coreFieldStates, fieldRules as coreFieldRules, fieldDeps as coreFieldDeps, simulateValue as coreSimulateValue, saveTiming as coreSaveTiming, recordSaveTimes as coreRecordSaveTimes, timingFields as coreTimingFields, visibility as coreVisibility, readQueryScript as coreReadQueryScript, compareInstances as coreCompareInstances, recordVersions as coreRecordVersions, versionPayloads as coreVersionPayloads, resolveDotWalk as coreResolveDotWalk, type Grade, type FieldObserved } from '../../../packages/core/src/index';
 import cases from '../cases.json';
 
 const order: Grade[] = ['candidate', 'probable', 'confirmed'];
@@ -39,6 +39,15 @@ export async function runOne(target: { table: string; number?: string; sysId?: s
       trace: c.trace.map((t) => `${t.at.slice(11)} ${t.kind}${t.cause ? '*' : ''} ${t.label || ''}${t.sent !== undefined ? ' sent=' + t.sent : ''}${t.fields ? ' [' + t.fields.map((f) => f.field).join(',') + ']' : ''}${t.ref ? ' ->' + t.ref.table : ''}`),
     })),
   };
+}
+
+/** Campo com dot-walking (a.b.campo), como o worker faz: segue as referências e investiga o registro apontado. */
+export async function runDotWalk(target: { table: string; sysId: string; field: string }): Promise<unknown> {
+  const c = makeClient();
+  try {
+    const walk = await coreResolveDotWalk(c, { table: target.table, sysId: target.sysId, path: target.field });
+    return { walk, result: await runOne({ table: walk.table, sysId: walk.sysId, field: walk.field }) };
+  } catch (e) { return { error: (e as Error).name + ': ' + (e as Error).message, calls: c.calls }; }
 }
 
 /** Aba Versões: as versões salvas do registro e, se pedido, o payload das duas mais recentes. */
