@@ -212,6 +212,8 @@ export interface Investigation {
   historyFields?: string[];
   /** O campo investigado não aparece no histórico do formulário: sem auditoria, não há como ver as mudanças dele. */
   fieldNotInHistory?: boolean;
+  /** As mudanças do campo vieram do histórico guardado do registro (sys_history_line), por estar fora do Activity Stream. */
+  historyLines?: boolean;
   /** Mudanças mais antigas do campo que não foram analisadas (só as `maxChanges` mais recentes são). */
   olderChanges?: number;
   /** Regras ativas que gravam este campo com valores diferentes e podem rodar juntas. */

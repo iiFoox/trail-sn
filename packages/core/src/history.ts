@@ -111,3 +111,25 @@ export function localToUtc(local: string, timeZone: string): string | null {
 function unique<T>(xs: T[]): T[] {
   return [...new Set(xs)];
 }
+
+/**
+ * Linhas de sys_history_line de um campo → mudanças no histórico do formulário. O Activity Stream só mostra os campos
+ * do formatter; o histórico guardado do registro (sys_history_line) tem todos os auditados. Na Zurich (28/10/2026), um
+ * usuário itil sem leitura de sys_audit nem de sys_history_set lia essas linhas por `set.id=<sys_id>`, e a consulta
+ * pela Table API não criava set nenhum. A linha 0 é o valor inicial (criação) e fica de fora.
+ * Cada mudança entra na gravação do mesmo instante (±1 s), ou numa nova; o valor interno vale mais que o exibido.
+ */
+export function mergeHistoryLines(h: HistoryResult, field: string, lines: Row[]): HistoryResult {
+  const entries = h.entries.map((e) => ({ ...e, changes: [...e.changes] }));
+  for (const l of lines) {
+    const at = l.update_time ?? '';
+    if (l.field !== field || l.update === '0' || !DATE_TIME.test(at)) continue;
+    const change: HistoryChange = { field, ...(l.label ? { label: l.label } : {}), ...(l.type ? { type: l.type } : {}),
+      oldValue: l.old_value || l.old || '', newValue: l.new_value || l.new || '' };
+    const same = entries.find((e) => Math.abs(toMs(e.at) - toMs(at)) <= 1000 && !e.changes.some((c) => c.field === field));
+    if (same) same.changes.push(change);
+    else entries.push({ at, ...(l.user ? { userId: l.user } : {}), ...(l.user_id ? { userName: l.user_id } : {}), changes: [change] });
+  }
+  entries.sort((a, b) => a.at.localeCompare(b.at));
+  return { ...h, entries, fields: h.fields.includes(field) ? h.fields : [...h.fields, field] };
+}

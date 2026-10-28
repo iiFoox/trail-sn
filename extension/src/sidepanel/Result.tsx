@@ -198,8 +198,8 @@ export function Result({ r, origin, access, toast, onField, advanced = false, me
       {/* Sem leitura de sys_audit: as mudanças vêm do histórico do formulário (o que a pessoa já vê na instância). */}
       {r.auditFrom === 'history' && (
         <div class={`notice ${r.fieldNotInHistory ? '' : 'info'} small`}>
-          <div class="title">{r.fieldNotInHistory ? s.notInHistoryTitle : s.fromHistoryTitle}</div>
-          <div>{r.fieldNotInHistory ? s.notInHistoryHint : s.fromHistoryHint}</div>
+          <div class="title">{r.fieldNotInHistory ? s.notInHistoryTitle : r.historyLines ? s.linesTitle : s.fromHistoryTitle}</div>
+          <div>{r.fieldNotInHistory ? s.notInHistoryHint : r.historyLines ? s.linesHint : s.fromHistoryHint}</div>
         </div>
       )}
       {c && diffOpen && <DiffOverlay at={diffOpen} title={`${r.target.display} · ${field}`} sub={when(c.at)} oldText={c.oldValue} newText={c.newValue} onClose={() => setDiffOpen(false)} />}

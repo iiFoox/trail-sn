@@ -2,7 +2,7 @@ import { findConflicts } from './conflicts';
 import { detectPingPong } from './pingpong';
 import { documentation, fieldLabels, resolveDisplay } from './display';
 import type { QueryRequest, RestClient } from './client/RestClient';
-import { historyToAudit } from './history';
+import { historyToAudit, mergeHistoryLines } from './history';
 import { scoreAll, THRESHOLDS } from './scoring';
 import { fieldsRead, writesOf } from './scriptEval';
 import { siCallsWithField } from './util';
@@ -141,6 +141,14 @@ export async function investigate(
   let auditFrom: 'audit' | 'history' = 'audit';
   let historyFields: string[] | undefined;
   let historyUnavailable = false;
+  let historyLinesUsed = false;
+  // Linhas do campo no histórico guardado. Filtro pelo sys_id do registro no set (`set.id`): na Zurich foi o único
+  // consistente; `set.document_key` era ignorado e vinham linhas de outros registros. Linha de outro set descarta tudo.
+  const historyLines = async (id: string): Promise<Row[]> => {
+    const rows = await quiet('sys_history_line', `set.id=${id}^field=${target.field}^ORDERBYupdate_time`,
+      ['field', 'label', 'type', 'old', 'new', 'old_value', 'new_value', 'user', 'user_id', 'update_time', 'update', 'set.id'], 200);
+    return rows.some((r) => r['set.id'] && r['set.id'] !== id) ? [] : rows;
+  };
   // Auditoria que não respondeu (prazo ou 500; não negada): o histórico entra no lugar, mas não mostra tudo o que as regras gravaram.
   // Na matriz de falhas (27/10/2026), com o ui/meta de sys_audit em 500, a BR assíncrona sumia e a pessoa saía confirmada.
   const auditTimedOut = access.sys_audit === 'timeout' || access.sys_audit === 'unknown';
@@ -150,9 +158,14 @@ export async function investigate(
     // No PDI (21/10/2026) o histórico às vezes não volta (1 em ~300 investigações por perfil): uma segunda tentativa, e
     // se ainda falhar, a lacuna aparece em vez de "nenhuma mudança".
     const ask = () => client.history!(target.table, sysId).catch(() => null);
-    const h = (await ask()) ?? (await ask());
+    let h = (await ask()) ?? (await ask());
     if (!h) historyUnavailable = true;
     if (h) {
+      // Campo fora do Activity Stream: tenta o histórico guardado do registro (sys_history_line), só leitura.
+      if (!h.fields.includes(target.field)) {
+        const lines = await historyLines(sysId);
+        if (lines.length) { h = mergeHistoryLines(h, target.field, lines); historyLinesUsed = true; }
+      }
       audit = await historyToAudit(h, meta.tables, quiet, rec.sys_created_on);
       auditFrom = 'history';
       historyFields = h.fields;
@@ -524,7 +537,7 @@ export async function investigate(
     access,
     gaps,
     ...(olderChanges > 0 ? { olderChanges } : {}),
-    ...(auditFrom === 'history' ? { auditFrom, historyFields, ...(historyFields && !historyFields.includes(target.field) ? { fieldNotInHistory: true } : {}) } : {}),
+    ...(auditFrom === 'history' ? { auditFrom, historyFields, ...(historyFields && !historyFields.includes(target.field) ? { fieldNotInHistory: true } : {}), ...(historyLinesUsed ? { historyLines: true } : {}) } : {}),
     conflicts: findConflicts(target.field, meta.brField, clientRows.filter((x) => x.active !== 'false'), { ...record, sys_id: sysId }),
     ...(() => { const pp = detectPingPong(changes); return pp ? { pingPong: pp } : {}; })(),
     timing: { totalMs: Date.now() - started, calls: client.calls - callsBefore },
