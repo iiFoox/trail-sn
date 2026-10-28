@@ -143,11 +143,16 @@ export async function investigate(
   let historyUnavailable = false;
   let historyLinesUsed = false;
   // Linhas do campo no histórico guardado. Filtro pelo sys_id do registro no set (`set.id`): na Zurich foi o único
-  // consistente; `set.document_key` era ignorado e vinham linhas de outros registros. Linha de outro set descarta tudo.
-  const historyLines = async (id: string): Promise<Row[]> => {
+  // consistente; `set.document_key` era ignorado e vinham linhas de outros registros. Se a instância ignorar o filtro,
+  // descarta tudo: linha de outro set, de mais de um set (o itil não lê sys_history_set e `set.id` volta omitido, mas a
+  // coluna `set` vem), ou com horário fora da vida do registro.
+  const historyLines = async (id: string, from: string, to: string): Promise<Row[]> => {
     const rows = await quiet('sys_history_line', `set.id=${id}^field=${target.field}^ORDERBYupdate_time`,
-      ['field', 'label', 'type', 'old', 'new', 'old_value', 'new_value', 'user', 'user_id', 'update_time', 'update', 'set.id'], 200);
-    return rows.some((r) => r['set.id'] && r['set.id'] !== id) ? [] : rows;
+      ['field', 'label', 'type', 'old', 'new', 'old_value', 'new_value', 'user', 'user_id', 'update_time', 'update', 'set', 'set.id'], 200);
+    const sets = new Set(rows.map((r) => r.set ?? ''));
+    const inLife = (t: string) => !Number.isNaN(toMs(t)) && (!from || toMs(t) >= toMs(from) - 2000) && (!to || toMs(t) <= toMs(to) + 2000);
+    const foreign = rows.some((r) => (r['set.id'] && r['set.id'] !== id) || !inLife(r.update_time ?? ''));
+    return foreign || sets.size > 1 ? [] : rows;
   };
   // Auditoria que não respondeu (prazo ou 500; não negada): o histórico entra no lugar, mas não mostra tudo o que as regras gravaram.
   // Na matriz de falhas (27/10/2026), com o ui/meta de sys_audit em 500, a BR assíncrona sumia e a pessoa saía confirmada.
@@ -163,7 +168,7 @@ export async function investigate(
     if (h) {
       // Campo fora do Activity Stream: tenta o histórico guardado do registro (sys_history_line), só leitura.
       if (!h.fields.includes(target.field)) {
-        const lines = await historyLines(sysId);
+        const lines = await historyLines(sysId, rec.sys_created_on ?? '', rec.sys_updated_on ?? '');
         if (lines.length) { h = mergeHistoryLines(h, target.field, lines); historyLinesUsed = true; }
       }
       audit = await historyToAudit(h, meta.tables, quiet, rec.sys_created_on);

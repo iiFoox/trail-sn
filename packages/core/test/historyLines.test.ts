@@ -14,7 +14,7 @@ const history = parseHistory({
   fields: [{ name: 'short_description' }],
   entries: [{ sys_timestamp: Date.UTC(y, mo - 1, d, h, mi, se), user_id: ADMIN, sys_created_by: 'System Administrator', entries: { changes: [{ field_name: 'short_description', old_value: 'a', new_value: 'b' }] } }],
 })!;
-const line = (o: Record<string, string>) => ({ field: 'description', set_id: '', user: ADMIN, user_id: 'admin', update_time: T0, update: '1', old: '', new: '', old_value: '', new_value: '', ...o });
+const line = (o: Record<string, string>) => ({ field: 'description', set_id: '', set: 'e'.repeat(32), user: ADMIN, user_id: 'admin', update_time: T0, update: '1', old: '', new: '', old_value: '', new_value: '', ...o });
 
 function itil(lines: Record<string, string>[] | 'denied') {
   const s = scenario();
@@ -28,7 +28,7 @@ function itil(lines: Record<string, string>[] | 'denied') {
 
 describe('histórico guardado (sys_history_line) para campo fora do Activity Stream', () => {
   it('traz a mudança com valores, usuário e hora; o painel sabe de onde veio', async () => {
-    const r = await investigate(itil([line({ update: '0', new: 'inicial', update_time: '2026-01-01 00:00:00' }), line({ old: 'antes', new: 'depois', set_id: INC.sysId })]), { table: 'incident', number: INC.number, field: 'description' });
+    const r = await investigate(itil([line({ update: '0', new: 'inicial' }), line({ old: 'antes', new: 'depois', set_id: INC.sysId })]), { table: 'incident', number: INC.number, field: 'description' });
     expect(r.auditFrom).toBe('history');
     expect(r.historyLines).toBe(true);
     expect(r.fieldNotInHistory).toBeUndefined();
@@ -41,6 +41,16 @@ describe('histórico guardado (sys_history_line) para campo fora do Activity Str
     expect(r.historyLines).toBeUndefined();
     expect(r.fieldNotInHistory).toBe(true);
     expect(r.changes).toHaveLength(0);
+  });
+
+  // Zurich 147a: para o itil a resposta omite `set.id` (não lê sys_history_set); a coluna `set` vem.
+  it('itil sem set.id: linhas de mais de um set ou fora da vida do registro descartam tudo', async () => {
+    const two = await investigate(itil([line({ old: 'antes', new: 'depois' }), line({ old: 'x', new: 'y', set: 'd'.repeat(32) })]), { table: 'incident', number: INC.number, field: 'description' });
+    expect(two.historyLines).toBeUndefined();
+    const old = await investigate(itil([line({ old: 'antes', new: 'depois', update_time: '2030-01-01 00:00:00' })]), { table: 'incident', number: INC.number, field: 'description' });
+    expect(old.historyLines).toBeUndefined();
+    const ok = await investigate(itil([line({ old: 'antes', new: 'depois' })]), { table: 'incident', number: INC.number, field: 'description' });
+    expect(ok.historyLines).toBe(true);
   });
 
   it('sem leitura de sys_history_line: segue como antes, sem lacuna nova', async () => {
