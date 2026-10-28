@@ -35,7 +35,7 @@ export const noCache: MetaCache = { get: async () => undefined, set: async () =>
 /** Quanto antes do processamento um evento pode ter sido criado (agendado) e ainda entrar na busca. */
 const EVENT_LOOKBACK_S = 86400;
 /** Fontes de automação: se uma delas não respondeu, a pessoa não sai "confirmada" como autora. */
-const AUTOMATION_SOURCES = ['sys_script', 'sysrule_assignment', 'dl_definition_rel_set', 'sys_script_client', 'sys_ui_policy', 'sys_flow_context', 'wf_context', 'sysevent', 'sysevent_script_action', 'sysauto_script'];
+const AUTOMATION_SOURCES = ['sys_script', 'sys_script_include', 'sys_ui_action', 'sysrule_assignment', 'dl_definition_rel_set', 'sys_script_client', 'sys_ui_policy', 'sys_flow_context', 'wf_context', 'sysevent', 'sysevent_script_action', 'sysauto_script'];
 /**
  * Quanto antes da mudança a abertura da lista pela pessoa ainda conta como pista de edição na célula. Cada minuto a mais
  * é mais syslog_transaction lido (a tabela que mais cresce numa instância); quem edita pela lista costuma abrir,
@@ -588,11 +588,14 @@ export async function investigate(
     if (unanswered(brRes.access)) brRes = await timedQuery(client, brReq, opts.sourceTimeoutMs * 3);
     if (!access.sys_script || unanswered(access.sys_script)) access.sys_script = brRes.access === 'unknown' ? 'timeout' : brRes.access;
     const businessRules = brRes.rows;
-    const incomplete = unanswered(brRes.access) || hierarchyGap;
     // Script includes citados pelas BRs (por nome; buscar por conteúdo traz centenas de scripts nativos).
     const siNames = new Set<string>();
     for (const b of businessRules) (b.script ?? '').replace(/new\s+(?:global\.)?([A-Z][A-Za-z0-9_]+)\s*\(/g, (_m, n: string) => { siNames.add(n); return _m; });
     const scriptIncludes = siNames.size ? await q('sys_script_include', `active=true^nameIN${[...siNames].join(',')}`, ['sys_id', 'name', 'script'], 200) : [];
+    // Sem resposta, as BRs que delegam a script include não mostram o que gravam: metadados incompletos, fora do cache
+    // (no cache, a falha ficava calada nas investigações seguintes). Achado na Zurich (27/10/2026).
+    const siMissing = [...failed.values()].includes('sys_script_include');
+    const incomplete = unanswered(brRes.access) || hierarchyGap || siMissing;
     // App do Trail na instância (ou o protótipo da fase 18): tabela com o contexto gravado na hora.
     const recorder = (await quiet('sys_db_object', 'nameINx_trail_context,u_pt_trail_contexto^ORDERBYDESCname', ['name'], 2))[0]?.name;
     const loadedAt = new Date(startedAt).toISOString().slice(0, 19).replace('T', ' ');

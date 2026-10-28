@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { investigate } from '../src/investigate';
-import { INC, T0, audit, build, formTx, scenario } from './fixtures/builder';
+import { INC, T0, audit, br, build, formTx, id, scenario } from './fixtures/builder';
 
 /**
  * B-441 (F9-B6): com sysrule_assignment respondendo 500, a mudança de assignment_group saía "pessoa, certeza alta".
@@ -46,5 +46,28 @@ describe('fontes lidas em modo silencioso', () => {
     const c = build(s).respond('sys_choice', () => ({ rows: [], status: 500, access: 'unknown' }));
     const r = await investigate(c, { table: 'incident', number: INC.number, field: 'assignment_group' });
     expect(r.gaps.some((g) => g.startsWith('sys_choice'))).toBe(false);
+  });
+});
+
+/**
+ * Zurich (27/10/2026): com sys_script_include em 500, a lacuna aparecia, mas a pessoa saía confirmada. Uma BR que
+ * delega a um script include não mostra o que grava sem o script include.
+ */
+describe('script include sem resposta', () => {
+  const s = () => {
+    const sc = scenario();
+    br(sc, 'PT chama SI', 'before', 'new PTAjusta().ajusta(current);');
+    sc.sis.push({ sys_id: id(), name: 'PTAjusta', script: "var PTAjusta = Class.create(); PTAjusta.prototype = { ajusta: function(r) { r.setValue('impact', '2'); } };", active: 'true' });
+    audit(sc, 'impact', '3', '2', T0, 'admin', 1);
+    formTx(sc, T0, 'admin', { impact: '2' });
+    return sc;
+  };
+
+  it('a pessoa não sai confirmada e a lacuna aparece', async () => {
+    const c = build(s()).respond('sys_script_include', () => ({ rows: [], status: 500, access: 'unknown' }));
+    const r = await investigate(c, { table: 'incident', number: INC.number, field: 'impact' });
+    expect(r.gaps).toContain('sys_script_include: timeout');
+    const top = r.changes[0]!.evidence[0]!;
+    expect(top.type === 'user_action' && top.grade === 'confirmed').toBe(false);
   });
 });
