@@ -28,8 +28,21 @@ export const sameTransaction: Signature = (ctx) => {
   const isWrite = (u: string) => isFormSubmitFor(u, ctx.sysId) || u.includes(`/api/now/table/${ctx.table}/${ctx.sysId}`);
   const userWrites = close ? ctx.traces.transactions.filter((t) => t.sys_created_by === ctx.user && isWrite(t.url ?? '')
     && toMs(t.sys_created_on ?? '') >= toMs(prevAt) - 1000 && toMs(t.sys_created_on ?? '') <= toMs(ctx.at) + 1000).length : 0;
-  return close && userWrites < 2 ? chainedUpdate(ctx) : userTransaction(ctx);
+  if (!close || userWrites < 2) return close ? chainedUpdate(ctx) : userTransaction(ctx);
+  // Gravações seguidas da pessoa, mas o checkpoint veio no mesmo segundo do anterior: uma regra after/async que grava
+  // este campo também pode ter sido a autora. A URL não diz o método, e uma leitura pela API do registro logo depois
+  // contava como segunda gravação; a pessoa saía confirmada acima da regra (Zurich 147f, BR after/async escopadas).
+  const chain = chainedUpdate(ctx).filter((e) => !e.facts.some((f) => RULED.has(f.kind)));
+  const out = userTransaction(ctx);
+  if (!chain.length) return out;
+  for (const e of out.filter((x) => x.type === 'user_action')) {
+    e.facts = e.facts.filter((f) => f.kind !== 'api_write_on_record' && f.kind !== 'no_competing_automation');
+    e.gaps.push('a gravação veio no mesmo segundo da anterior, e uma regra after/async que grava este campo pode ter gravado em seguida');
+  }
+  return [...out, ...chain];
 };
+
+const RULED = new Set(['condition_false', 'sets_other_value', 'reads_only', 'not_referenced']);
 
 /**
  * Gravação aninhada numa gravação de fundo (job, script action, evento): a gravação anterior foi no mesmo segundo,
