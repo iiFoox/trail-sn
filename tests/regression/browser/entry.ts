@@ -31,7 +31,7 @@ export async function runOne(target: { table: string; number?: string; sysId?: s
   const t0 = performance.now();
   const r = await investigate(makeClient(), target);
   return {
-    ms: Math.round(performance.now() - t0), calls: r.timing.calls, title: r.target.title, labels: r.labels, gaps: r.gaps, pingPong: r.pingPong, auditFrom: r.auditFrom, fieldNotInHistory: r.fieldNotInHistory,
+    ms: Math.round(performance.now() - t0), calls: r.timing.calls, title: r.target.title, labels: r.labels, gaps: r.gaps, pingPong: r.pingPong, auditFrom: r.auditFrom, fieldNotInHistory: r.fieldNotInHistory, historyLines: r.historyLines,
     conflicts: (r.conflicts ?? []).map((k) => `${k.overlap} ${k.a.name}=${k.a.values[0]} x ${k.b.name}=${k.b.values[0]} vence:${k.winner ?? '?'}`),
     unaudited: r.unaudited, changes: r.changes.slice(0, 10).map((c) => ({
       at: c.at, old: c.oldValue, neu: c.newValue, cp: c.checkpoint, user: c.user, notes: c.notes,

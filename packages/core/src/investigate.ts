@@ -105,7 +105,7 @@ export async function investigate(
 
   // ---------- rodada 1: registro, auditoria e metadados ----------
   const recQuery = target.sysId ? `sys_id=${target.sysId}` : `number=${target.number ?? ''}`;
-  const recReq: QueryRequest = { table: target.table, query: recQuery, fields: ['sys_id', 'number', 'name', 'short_description', 'sys_mod_count', 'sys_created_on', 'sys_updated_on', 'sys_updated_by'], limit: 1 };
+  const recReq: QueryRequest = { table: target.table, query: recQuery, fields: unique(['sys_id', 'number', 'name', 'short_description', 'sys_mod_count', 'sys_created_on', 'sys_updated_on', 'sys_updated_by', target.field]), limit: 1 };
   const recTimeout = { rows: [] as Row[], status: 0, access: 'timeout' as AccessState };
   const [recFirst, metaOrNull] = await Promise.all([
     timedQuery(client, recReq, opts.sourceTimeoutMs),
@@ -146,12 +146,15 @@ export async function investigate(
   // consistente; `set.document_key` era ignorado e vinham linhas de outros registros. Se a instância ignorar o filtro,
   // descarta tudo: linha de outro set, de mais de um set (o itil não lê sys_history_set e `set.id` volta omitido, mas a
   // coluna `set` vem), ou com horário fora da vida do registro.
-  const historyLines = async (id: string, from: string, to: string): Promise<Row[]> => {
+  const historyLines = async (id: string, from: string, to: string, modCount?: string): Promise<Row[]> => {
     const rows = await quiet('sys_history_line', `set.id=${id}^field=${target.field}^ORDERBYupdate_time`,
       ['field', 'label', 'type', 'old', 'new', 'old_value', 'new_value', 'user', 'user_id', 'update_time', 'update', 'set', 'set.id'], 200);
     const sets = new Set(rows.map((r) => r.set ?? ''));
     const inLife = (t: string) => !Number.isNaN(toMs(t)) && (!from || toMs(t) >= toMs(from) - 2000) && (!to || toMs(t) <= toMs(to) + 2000);
-    const foreign = rows.some((r) => (r['set.id'] && r['set.id'] !== id) || !inLife(r.update_time ?? ''));
+    // Gravação de número maior que as do registro também é de outro (no controle da Zurich, um incidente nunca alterado
+    // recebeu uma linha de outro set pelo filtro ignorado).
+    const beyond = (u?: string) => !!modCount && /^\d+$/.test(modCount) && Number(u ?? 0) > Number(modCount);
+    const foreign = rows.some((r) => (r['set.id'] && r['set.id'] !== id) || !inLife(r.update_time ?? '') || beyond(r.update));
     return foreign || sets.size > 1 ? [] : rows;
   };
   // Auditoria que não respondeu (prazo ou 500; não negada): o histórico entra no lugar, mas não mostra tudo o que as regras gravaram.
@@ -168,8 +171,16 @@ export async function investigate(
     if (h) {
       // Campo fora do Activity Stream: tenta o histórico guardado do registro (sys_history_line), só leitura.
       if (!h.fields.includes(target.field)) {
-        const lines = await historyLines(sysId, rec.sys_created_on ?? '', rec.sys_updated_on ?? '');
-        if (lines.length) { h = mergeHistoryLines(h, target.field, lines); historyLinesUsed = true; }
+        const lines = await historyLines(sysId, rec.sys_created_on ?? '', rec.sys_updated_on ?? '', rec.sys_mod_count);
+        if (lines.length) {
+          const merged = mergeHistoryLines(h, target.field, lines);
+          const withLines = await historyToAudit(merged, meta.tables, quiet, rec.sys_created_on);
+          // A última mudança das linhas tem de deixar o valor que o registro tem hoje; senão as linhas não são deste
+          // registro (ou não dá para ler o valor) e ficam de fora.
+          const last = withLines.filter((a) => a.fieldname === target.field).sort((a, b) => toMs(a.sys_created_on ?? '') - toMs(b.sys_created_on ?? '')).at(-1);
+          const norm = (v?: string) => (v ?? '').replace(/\r\n/g, '\n').trim();
+          if (!(target.field in rec) || (last && norm(last.newvalue) === norm(rec[target.field]))) { h = merged; historyLinesUsed = true; }
+        }
       }
       audit = await historyToAudit(h, meta.tables, quiet, rec.sys_created_on);
       auditFrom = 'history';

@@ -16,9 +16,10 @@ const history = parseHistory({
 })!;
 const line = (o: Record<string, string>) => ({ field: 'description', set_id: '', set: 'e'.repeat(32), user: ADMIN, user_id: 'admin', update_time: T0, update: '1', old: '', new: '', old_value: '', new_value: '', ...o });
 
-function itil(lines: Record<string, string>[] | 'denied') {
+function itil(lines: Record<string, string>[] | 'denied', record: Record<string, string> = {}) {
   const s = scenario();
   audit(s, 'description', 'antes', 'depois', T0, 'admin', 1);
+  Object.assign(s.record, record);
   formTx(s, T0, 'admin', { description: 'depois' });
   const c = build(s).rows('sys_user', [{ sys_id: ADMIN, user_name: 'admin' }]).deny('sys_audit').withHistory(history);
   // Como a instância responde (sem filtrar de novo aqui): o teste do filtro ignorado precisa ver a linha de outro set.
@@ -50,6 +51,17 @@ describe('histórico guardado (sys_history_line) para campo fora do Activity Str
     const old = await investigate(itil([line({ old: 'antes', new: 'depois', update_time: '2030-01-01 00:00:00' })]), { table: 'incident', number: INC.number, field: 'description' });
     expect(old.historyLines).toBeUndefined();
     const ok = await investigate(itil([line({ old: 'antes', new: 'depois' })]), { table: 'incident', number: INC.number, field: 'description' });
+    expect(ok.historyLines).toBe(true);
+  });
+
+  // Zurich 147b: num incidente nunca alterado, o filtro foi ignorado para o itil e veio uma linha de outro set.
+  it('linha que não deixa o valor atual do registro, ou de gravação além das dele: descarta tudo', async () => {
+    const other = await investigate(itil([line({ old: 'antes', new: 'depois' })], { description: 'outro texto', sys_mod_count: '1' }), { table: 'incident', number: INC.number, field: 'description' });
+    expect(other.historyLines).toBeUndefined();
+    expect(other.changes).toHaveLength(0);
+    const beyond = await investigate(itil([line({ old: 'antes', new: 'depois', update: '3' })], { description: 'depois', sys_mod_count: '0' }), { table: 'incident', number: INC.number, field: 'description' });
+    expect(beyond.historyLines).toBeUndefined();
+    const ok = await investigate(itil([line({ old: 'antes', new: 'depois' })], { description: 'depois\r\n', sys_mod_count: '1' }), { table: 'incident', number: INC.number, field: 'description' });
     expect(ok.historyLines).toBe(true);
   });
 
