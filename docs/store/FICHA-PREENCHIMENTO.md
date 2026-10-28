@@ -1,22 +1,22 @@
-# Ficha de preenchimento das lojas (Trail 1.4.6)
+# Ficha de preenchimento das lojas (Trail 1.4.7)
 
 Tudo pronto para copiar e colar, campo por campo. Os textos estão em texto puro, porque as lojas não aceitam markdown.
-Arquivos: pacote de loja `packages/trail-chrome-1.4.6.zip` (serve para Chrome e Edge); pacote da pasta carregada manualmente `packages/trail-extensao-1.4.6.zip`; imagens nesta pasta (`docs/store/`).
+Arquivos: pacote de loja `packages/trail-chrome-1.4.7.zip` (serve para Chrome e Edge); pacote da pasta carregada manualmente `packages/trail-extensao-1.4.7.zip`; imagens nesta pasta (`docs/store/`).
 
 | Campo | Arquivo | Tamanho | Chrome | Edge |
 |---|---|---|---|---|
-| Pacote da loja | `packages/trail-chrome-1.4.6.zip` | 282.926 bytes | obrigatório | obrigatório |
-| Pasta empacotada para instalação manual | `packages/trail-extensao-1.4.6.zip` | 285.602 bytes | não enviar | não enviar |
+| Pacote da loja | `packages/trail-chrome-1.4.7.zip` | 285.175 bytes | obrigatório | obrigatório |
+| Pasta empacotada para instalação manual | `packages/trail-extensao-1.4.7.zip` | 287.851 bytes | não enviar | não enviar |
 | Logo da loja | `logo-300.png` | 300×300 | — (usa o ícone do pacote) | obrigatório |
 | Capturas de tela | `shot-1-resposta.png` … `shot-5-flows.png` | 1280×800 | 1 a 5 | 1 a 6 |
 | Bloco promocional pequeno | `tile-440x280.png` | 440×280 | obrigatório | opcional |
 
 O nome localizado (`Trail — Perícia de registros ServiceNow` / `Trail — ServiceNow Record Forensics`) e a descrição curta vêm do próprio pacote no Chrome. No Edge, use os campos abaixo.
 
-## Notas da versão 1.4.6
-PT: Mais seguro e mais leve em instâncias de produção: o Trail confere antes o que o seu perfil pode filtrar e não deixa mensagens de acesso na sua sessão; faz no máximo 2 consultas por vez; ao clicar em outro campo, a investigação anterior para na hora; e lê só os script includes que as regras chamam (muito menos dados em instâncias grandes). Usa o histórico do formulário quando a auditoria não responde, identifica importações com mais precisão e se recupera melhor de instâncias instáveis: quando parte da instância não responde, o painel avisa que o resultado pode estar incompleto. Nova aba Versões: as versões salvas de scripts e regras, com o que mudou em cada uma. Reconhece a regra do registro pai que gravou no filho, regras e client scripts desligados depois da mudança e textos longos salvos pelo formulário; no Rastro, a causa vem primeiro. O "E se?" passou para o modo avançado.
+## Notas da versão 1.4.7
+PT: Campos de outro registro mostrados no formulário (dot-walking, como solicitacao.number) agora têm o ícone: o Trail segue a referência e investiga o registro apontado. Sem acesso à auditoria, o Trail lê o histórico guardado do registro (History) para campos que não aparecem no histórico do formulário, e nunca provoca a criação desse histórico na instância. Mais precisão: um script do formulário que altera o valor ao salvar e regras que regravam o campo logo depois de uma gravação pela API não deixam mais a pessoa como autora certa.
 
-EN: Safer and lighter on production instances: Trail checks first what your user may filter, so it leaves no access messages in your session; it makes at most 2 requests at a time; clicking another field stops the previous investigation right away; and it reads only the script includes your rules call (far less data on large instances). It uses the form history when the audit log does not answer, detects imports more accurately and recovers better from unstable instances: when part of the instance does not answer, the panel says the result may be incomplete. New Versions tab: the saved versions of scripts and rules, with what changed in each one. Recognizes a parent record's rule writing to the child, rules and client scripts turned off after the change and long texts saved from the form; in the Trace, the cause comes first. "What if?" moved to advanced mode.
+EN: Fields from another record shown on the form (dot-walking, like request.number) now have the icon: Trail follows the reference and investigates that record. Without audit access, Trail reads the record’s stored history (History) for fields that are not in the form history, and never causes that history to be created on the instance. More precise: a form script that changes the value on save, and rules that rewrite the field right after an API write, no longer leave the person as the certain author.
 
 ## Descrição curta (Edge pede; até 132 caracteres)
 PT: Descubra o que mudou qualquer campo do ServiceNow e por quê. Funciona sem admin, sem instalar nada nem criar papel. Só leitura.
@@ -27,7 +27,7 @@ EN: Find out what changed any ServiceNow field and why. Works without admin, not
 Um campo de um incidente, mudança ou tarefa apareceu com outro valor e ninguém sabe se foi uma pessoa, uma integração, uma regra de negócio, um script, um job agendado ou um flow. O Trail responde: o que mudou este campo, quando e por quê.
 
 FUNCIONA SEM SER ADMIN
-O Trail usa o que o seu próprio login já vê na instância. Não instala nada no ServiceNow e não cria papel nenhum. Quando a auditoria completa é restrita para o seu perfil, ele usa o histórico que você já enxerga no formulário e diz, em palavras simples, o que os seus papéis deixam ver.
+O Trail usa o que o seu próprio login já vê na instância. Não instala nada no ServiceNow e não cria papel nenhum. Quando a auditoria completa é restrita para o seu perfil, ele usa o histórico que você já enxerga no formulário e o histórico guardado do registro, e diz, em palavras simples, o que os seus papéis deixam ver.
 
 PRINCIPAIS RECURSOS
 • Ícone ao lado de cada campo: um clique mostra quem mudou, quando, de qual valor para qual, com os rótulos do formulário e o grau de certeza (alta, média ou baixa), mais um resumo pronto para colar no chamado.
@@ -38,6 +38,7 @@ PRINCIPAIS RECURSOS
 • Tudo que mudou: alterações agrupadas por momento de salvamento, investigação do registro inteiro ou de colunas pela lista, com exportação em CSV, texto ou PDF.
 • Versões de scripts e regras: quem salvou, quando, de qual update set e o que mudou em cada uma. Comparar dois momentos do registro.
 • Bolinha-assistente que pode ser arrastada para qualquer lugar e painel flutuante redimensionável, com modo Sempre visível, tema claro ou escuro, atalho configurável (Alt+Shift+P) e painel lateral do navegador.
+• Campos de outro registro (dot-walking): o ícone segue a referência e investiga o registro apontado.
 • Acompanha a navegação: ao trocar de registro, o painel se atualiza sozinho.
 
 PRIVACIDADE E SEGURANÇA
@@ -54,7 +55,7 @@ Política de privacidade: https://trail-sn.vercel.app/privacidade/
 A field on an incident, change or task suddenly shows a different value and nobody knows whether it was a person, an integration, a business rule, a script, a scheduled job or a flow. Trail answers: what changed this field, when and why.
 
 WORKS WITHOUT ADMIN
-Trail uses what your own login already sees on the instance. Nothing is installed on ServiceNow and no role is created. When full audit access is restricted for your user, it uses the form history you already see and tells you, in plain words, what your roles let it see.
+Trail uses what your own login already sees on the instance. Nothing is installed on ServiceNow and no role is created. When full audit access is restricted for your user, it uses the form history you already see and the record’s stored history, and tells you, in plain words, what your roles let it see.
 
 KEY FEATURES
 • Icon next to every field: one click shows who changed it, when, from which value to which, with the form's own labels and a certainty level (high, medium or low), plus a summary ready to paste into the ticket.
@@ -65,6 +66,7 @@ KEY FEATURES
 • Everything that changed: changes grouped by save, whole-record or column investigation from lists, export to CSV, text or PDF.
 • Versions of scripts and rules: who saved, when, from which update set and what changed in each one. Compare two moments of the record.
 • Draggable assistant bubble and resizable floating panel, with Always on top mode, light or dark theme, configurable shortcut (Alt+Shift+P) and the browser side panel.
+• Fields from another record (dot-walking): the icon follows the reference and investigates that record.
 • Follows navigation: when you open another record, the panel updates by itself.
 
 PRIVACY AND SECURITY

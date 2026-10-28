@@ -125,7 +125,7 @@
 
     if (typeof updateCapUi === 'function') updateCapUi();
     $$('.road-more').forEach((btn) => {
-      btn.dataset.more = lang === 'en' ? 'View more (+24)' : 'Ver mais (+24)';
+      btn.dataset.more = lang === 'en' ? 'View more (+26)' : 'Ver mais (+26)';
       btn.dataset.less = lang === 'en' ? 'View less' : 'Ver menos';
       const isOpen = btn.closest('div')?.classList.contains('open');
       btn.textContent = isOpen ? btn.dataset.less : btn.dataset.more;
