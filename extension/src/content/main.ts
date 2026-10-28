@@ -244,7 +244,8 @@ function decorateForm(): void {
   // Campos comuns: for="incident.state". Referências (Caller, Service, Assignment group...): for="sys_display.incident.caller_id".
   // Somente leitura: "sys_readonly." na frente. Caixas de seleção: "ni.". Listas (watch list): "select_0incident.watch_list".
   // Sem tratar esses prefixos, as referências e as listas ficavam sem ícone (visto no PDI).
-  const re = new RegExp(`^(?:sys_readonly\\.)?(?:sys_display\\.|ni\\.|select_0)?${ctx.table}\\.([a-z0-9_]+)$`);
+  // Dot-walking (for="incident.u_solicitacao.number"): campo de outro registro; o worker segue a referência até ele.
+  const re = new RegExp(`^(?:sys_readonly\\.)?(?:sys_display\\.|ni\\.|select_0)?${ctx.table}\\.([a-z0-9_]+(?:\\.[a-z0-9_]+){0,4})$`);
   const labels = document.querySelectorAll<HTMLLabelElement>(`label[for*="${ctx.table}."]`);
   // Um ícone por campo (a caixa de seleção do Knowledge, por exemplo, tem dois rótulos).
   const done = new Set([...labels].filter((l) => decorated.has(l)).map((l) => l.getAttribute('for')?.match(re)?.[1] ?? ''));

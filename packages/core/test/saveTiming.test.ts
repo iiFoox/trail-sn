@@ -273,7 +273,8 @@ describe('recordSaveTimes / recentSlowSaves', () => {
   it('syslog_transaction negada: lista vazia com tx_denied', async () => {
     const c = base();
     c.deny('syslog_transaction');
-    const r = await recordSaveTimes(c, { table: 'incident', sysId: ID });
+    // Janela larga: a gravação da fixture (AT, 21/10/2026) não pode sair dos 7 dias padrão com o passar do tempo.
+    const r = await recordSaveTimes(c, { table: 'incident', sysId: ID }, { days: 36500 });
     expect(r.saves).toEqual([]);
     expect(r.notes).toContain('tx_denied');
     expect(r.denied).toEqual(['syslog_transaction']);

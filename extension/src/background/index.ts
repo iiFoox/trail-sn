@@ -3,7 +3,7 @@
  * guarda estado em chrome.storage.session e abre o painel. Não toca no DOM.
  * Nenhum estado em memória que importe: o worker pode ser encerrado a qualquer momento.
  */
-import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, batchItemFrom, fieldMap, previewChange, recordTimeline, scanTableConflicts, type AccessReport, type BatchItem, type MetaCache, type TableMeta, recordFlows, tableAutomations, fieldState, fieldStates, fieldRules, simulateValue, saveTiming, visibility, findUsers, compareInstances, recordVersions, versionPayloads } from '@trail/core';
+import { FetchRestClient, detectAccess, fetchRetention, fetchTokenFromHtml, investigate, batchItemFrom, fieldMap, previewChange, recordTimeline, scanTableConflicts, type AccessReport, type BatchItem, type MetaCache, type TableMeta, recordFlows, tableAutomations, fieldState, fieldStates, fieldRules, simulateValue, saveTiming, visibility, findUsers, compareInstances, recordVersions, versionPayloads, resolveDotWalk, DOT_PATH } from '@trail/core';
 import { addInstance, INSTANCES_KEY, isEnabled, listInstances, looksLikeServiceNow, removeInstance } from '../shared/instances';
 import { loadPrefs, PREFS_KEY, savePrefs, type PanelMode } from '../shared/prefs';
 import { normalizeInstanceLanguage, storageKey, type Message, type PageContext, type ProbeResult, type TabState } from '../shared/messages';
@@ -690,10 +690,14 @@ async function runInvestigation(tabId: number, origin: string, target: { table: 
   try {
     const client = makeClient(origin, signal);
     const retention = await retentionFor(origin, client);
-    const [result, access] = await Promise.all([
-      investigate(client, target, { retention, language }, metaCache(origin)),
+    // Campo de outro registro mostrado no formulário (u_solicitacao.number): investiga o registro apontado.
+    const walk = target.field.includes('.') && target.sysId ? await resolveDotWalk(client, { table: target.table, sysId: target.sysId, path: target.field }) : undefined;
+    const real = walk ? { table: walk.table, sysId: walk.sysId, field: walk.field } : target;
+    const [found, access] = await Promise.all([
+      investigate(client, real, { retention, language }, metaCache(origin)),
       checkAccess(origin),
     ]);
+    const result = walk && target.sysId ? { ...found, dotWalk: { from: { table: target.table, sysId: target.sysId }, path: target.field, via: walk.via } } : found;
     // Cancelada por um clique novo: o painel já mostra a investigação seguinte.
     if (!signal.aborted) await setTab({ ...(await getTab(tabId)), status: 'done', result, access });
   } catch (e) {
@@ -740,7 +744,7 @@ function badInput(msg: Message, sender: chrome.runtime.MessageSender): string | 
   const objs = [m, m.target as Record<string, unknown> | undefined].filter((x): x is Record<string, unknown> => !!x && typeof x === 'object');
   for (const o of objs) {
     if (o.table !== undefined && o.table !== '' && !NAME_RE.test(String(o.table))) return 'tabela';
-    if (o.field !== undefined && o.field !== '' && o.field !== '*' && !NAME_RE.test(String(o.field))) return 'campo';
+    if (o.field !== undefined && o.field !== '' && o.field !== '*' && !NAME_RE.test(String(o.field)) && !(msg.type === 'investigate' && DOT_PATH.test(String(o.field)))) return 'campo';
     if (o.sysId !== undefined && o.sysId !== '' && !SYSID_RE.test(String(o.sysId))) return 'sys_id';
     if (o.number !== undefined && o.number !== '' && !NUMBER_RE.test(String(o.number))) return 'número';
   }

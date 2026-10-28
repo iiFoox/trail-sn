@@ -191,6 +191,8 @@ export interface Investigation {
   labels: Record<string, string>;
   /** Rótulo do campo no formulário (ex.: business_service → Service). */
   fieldLabel?: string;
+  /** Campo com dot-walking (u_solicitacao.number): o caminho pedido e as referências seguidas até o registro investigado. */
+  dotWalk?: { from: { table: string; sysId: string }; path: string; via: { table: string; field: string }[] };
   /** Tabela referenciada, quando o campo é uma referência (os valores são sys_ids dela). */
   refTable?: string;
   /** Nomes como no formulário dos outros campos citados no rastro (rótulo, texto dos valores, tabela referenciada). */

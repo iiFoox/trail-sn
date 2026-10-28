@@ -5,9 +5,11 @@
 import { t } from './i18n';
 import type { Lang } from './prefs';
 
-export type ErrorKind = 'notFound' | 'unavailable' | 'offline' | 'reloaded' | 'session' | 'other';
+export type ErrorKind = 'emptyRef' | 'notFound' | 'unavailable' | 'offline' | 'reloaded' | 'session' | 'other';
 
 const RULES: [ErrorKind, RegExp][] = [
+  // Dot-walking por uma referência em branco (EmptyReferenceError do motor): não há outro registro para investigar.
+  ['emptyRef', /^Empty reference/],
   // Antes de "not found": "Record unavailable" (RecordUnavailableError do motor) é falta de resposta, não ausência.
   ['unavailable', /record unavailable|timeout|timed out|abort|HTTP 5\d\d|\b(500|502|503|504)\b|service unavailable|internal server error/i],
   ['reloaded', /receiving end does not exist|extension context invalidated|could not establish connection|message port closed/i],
@@ -25,6 +27,7 @@ export function errorKind(msg: string | undefined): ErrorKind {
 export function friendlyError(msg: string | undefined, lang: Lang): string {
   const s = t(lang);
   switch (errorKind(msg)) {
+    case 'emptyRef': return s.errEmptyRef;
     case 'notFound': return s.errNotFound;
     case 'unavailable': return s.errUnavailable;
     case 'offline': return s.errOffline;

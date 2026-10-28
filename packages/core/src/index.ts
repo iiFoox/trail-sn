@@ -23,3 +23,4 @@ export * from './compare';
 export * from './saveTiming';
 export * from './visibility';
 export * from './versions';
+export * from './dotWalk';

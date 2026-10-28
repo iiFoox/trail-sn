@@ -189,6 +189,12 @@ export function Result({ r, origin, access, toast, onField, advanced = false, me
         {c && <div class="when2">{when(c.at)}{(() => { const d = traceDaysLeft(c); return d !== null ? <span class="expire" title={P.expireHint}>{fmt(d === 0 ? P.expireToday : P.expireIn, { n: d })}</span> : null; })()}</div>}
         {c && r.changes.length > 1 && <ChangePath r={r} sel={sel} onPick={setSel} />}
       </div>
+      {r.dotWalk && (
+        <div class="notice info small">
+          <div class="title">{s.dotWalkTitle}</div>
+          <div>{fmt(s.dotWalkHint, { path: r.dotWalk.path, table: r.target.table })}</div>
+        </div>
+      )}
       {/* Sem leitura de sys_audit: as mudanças vêm do histórico do formulário (o que a pessoa já vê na instância). */}
       {r.auditFrom === 'history' && (
         <div class={`notice ${r.fieldNotInHistory ? '' : 'info'} small`}>
