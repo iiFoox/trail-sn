@@ -10,6 +10,18 @@ Convenções:
 
 ---
 
+## 2026-10-31 — 1.4.8 começa: reconstrução pelo log de transações (Claude)
+
+- **Decisão do dono:** seguir com a 1.4.8, só leitura, sem informar de onde veio a informação, e testar tudo na PDI. Nada em ambiente de trabalho. A 1.4.7 já foi testada pelo dono.
+- **PDI, valores longos (medido):** submit de formulário com texto de cerca de 2500 caracteres chegou com o campo `incident.description` cortado em cerca de 1000 caracteres e "..." no fim. O `sys_original` do mesmo campo veio cortado do mesmo jeito quando o valor antigo era longo.
+- **URL do submit:** duas medições de 6173 e 7219 caracteres. A URL pode ser cortada no fim sem "..."; os últimos parâmetros se perdem.
+- **Não confirmado:** o save de 1515 caracteres (com `&`, `<`, `%`) não apareceu no log em duas consultas. Não dá para afirmar o comportamento de caracteres especiais ainda.
+- **Código:** `packages/core/src/txLog.ts`: `parseSubmit` (lê a URL, separa antes de decodificar entidades, marca valor cortado) e `chainField` (ordena por início, confere que cada submit parte do valor que o anterior deixou, e que o último bate com o registro; valor cortado só confere pelo começo). Testes em `packages/core/test/txLog.test.ts`: 12 passando, dados sintéticos.
+- **Em aberto:** confirmar o corte total da URL e o atraso do log; caracteres especiais; mudanças feitas por Portal (vão no corpo, não aparecem); limite de campos por submit; detecção de mudanças que o log não trouxe (comparar `sys_mod_count` com os submits capturados).
+- **Pendência de outra natureza:** a 1.4.7 segue com o teste do dono registrado; a 1.4.8 não depende dela para o código, mas a publicação espera.
+
+---
+
 ## 2026-10-25 — validação PDI da 1.4.6 (Codex #2)
 
 - **Escopo e segurança:** validação somente leitura com `bundle-146a`; não alterei fontes de produção, propriedades, roles, dados preexistentes ou configurações. Usei apenas registros [PT]. Nenhum commit. A sessão terminou conferida em `admin` / `Global`.
