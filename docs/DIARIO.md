@@ -10,6 +10,18 @@ Convenções:
 
 ---
 
+## 2026-10-31 — 1.4.8 implementada: mudanças reconstruídas quando a auditoria não é legível (Claude)
+
+- **Código:** `txLog.ts` (lê os envios de formulário guardados pela instância; separa parâmetros pelo `&` seguido de chave; não troca `+` por espaço; marca valor cortado; confere a cadeia com o valor atual do registro). Integrado em `investigate.ts` quando `sys_audit` é negada e o histórico do formulário não traz o campo. Resultado com `transactionChain: true`; aviso no painel neutro, sem citar a origem. Confiança rebaixada para provável.
+- **Testes:** 1134 passando (17 novos: `txLog.test.ts`, `txChain.test.ts`). Typecheck e build OK.
+- **PDI, dados reais (registro [PT] de teste):** o parser reproduziu os dois submits de texto longo. Achados: o `&` chega cru dentro dos valores; a instância corta valores longos em cerca de 1000 caracteres, às vezes sem "..."; a URL do submit pode ser cortada no fim. Com a correção, o `short_description` com `&` bateu exatamente com o registro, e a investigação completa reconstruiu as duas mudanças da descrição, com aviso de texto cortado.
+- **Limitação conhecida:** o valor cortado aparece como "1002 → 1002" quando o texto novo tem o mesmo tamanho do antigo cortado. Melhorar a exibição fica para a próxima rodada.
+- **ACLs da syslog_transaction (leitura pelo dono na PDI):** seis ACLs; a que dá acesso amplo tem papel oculto. Confirmar o papel exige admin (ler o "Requires role" da ACL). Em DEV, cerca de 0,5% dos usuários ativos têm algum papel que dá acesso.
+- **Versão:** manifest 1.4.8. Política de privacidade (PT/EN) atualizada. Roteiro do site: item novo (PT/EN).
+- **Em aberto:** teste de interface no navegador (precisa recarregar a extensão e a sessão logada no Chrome do dono); pacotes da loja 1.4.8 e ficha de notas da versão; decisão do dono sobre publicar, considerando a exposição de dados de outros usuários a quem tem o papel oculto.
+
+---
+
 ## 2026-10-31 — 1.4.8 começa: reconstrução pelo log de transações (Claude)
 
 - **Decisão do dono:** seguir com a 1.4.8, só leitura, sem informar de onde veio a informação, e testar tudo na PDI. Nada em ambiente de trabalho. A 1.4.7 já foi testada pelo dono.
