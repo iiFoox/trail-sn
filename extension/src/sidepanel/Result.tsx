@@ -202,6 +202,12 @@ export function Result({ r, origin, access, toast, onField, advanced = false, me
           <div>{r.fieldNotInHistory ? s.notInHistoryHint : r.historyLines ? s.linesHint : s.fromHistoryHint}</div>
         </div>
       )}
+      {r.transactionChain && (
+        <div class="notice info small">
+          <div class="title">{s.transactionTitle}</div>
+          <div>{s.transactionHint}</div>
+        </div>
+      )}
       {c && diffOpen && <DiffOverlay at={diffOpen} title={`${r.target.display} · ${field}`} sub={when(c.at)} oldText={c.oldValue} newText={c.newValue} onClose={() => setDiffOpen(false)} />}
 
       {c && (

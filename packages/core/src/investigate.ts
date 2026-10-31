@@ -6,6 +6,7 @@ import { historyToAudit, mergeHistoryLines } from './history';
 import { scoreAll, THRESHOLDS } from './scoring';
 import { fieldsRead, writesOf } from './scriptEval';
 import { siCallsWithField } from './util';
+import { chainField, parseSubmit } from './txLog';
 import { runSignatures, type ChangeContext, type TableMeta, type Traces } from './signatures';
 import {
   DEFAULT_OPTIONS,
@@ -157,6 +158,37 @@ export async function investigate(
     const foreign = rows.some((r) => (r['set.id'] && r['set.id'] !== id) || !inLife(r.update_time ?? '') || beyond(r.update));
     return foreign || sets.size > 1 ? [] : rows;
   };
+  // Reconstrução a partir das gravações de formulário guardadas: cada submit vira uma linha de auditoria, e a cadeia
+  // precisa bater com o valor atual do registro; senão nada entra. Valor cortado pela instância fica marcado.
+  const txChanges = async (id: string, r: Row): Promise<{ rows: Row[]; gap?: string }> => {
+    const from = r.sys_created_on ?? '';
+    const to = shift(r.sys_updated_on ?? '', 60);
+    if (!from || !to || !(target.field in r)) return { rows: [] };
+    const logRows = await quiet('syslog_transaction',
+      `urlLIKE${id}^type=form^sys_created_on>=${from}^sys_created_on<=${to}^ORDERBYsys_created_on`,
+      ['url', 'sys_created_on', 'start_process_at', 'sys_created_by'], 200);
+    const parsed = logRows.flatMap((x) => {
+      const s = parseSubmit(x.url ?? '', target.table, toMs(x.start_process_at || x.sys_created_on || ''));
+      return s ? [{ s, user: x.sys_created_by ?? '' }] : [];
+    });
+    if (!parsed.length) return { rows: [] };
+    const chain = chainField(parsed.map((p) => p.s), target.field, r[target.field] ?? '');
+    if (!chain.matchesCurrent || !chain.changes.length) return { rows: [] };
+    const rows: Row[] = chain.changes.map((c, i) => {
+      const src = parsed.find((p) => p.s.startMs === c.at);
+      return {
+        sys_id: `tx${i}`,
+        fieldname: target.field,
+        oldvalue: c.oldValue ?? '',
+        newvalue: c.newValue ?? '',
+        user: src?.user ?? '',
+        sys_created_on: new Date(c.at).toISOString().slice(0, 19).replace('T', ' '),
+        record_checkpoint: String(src?.s.sysModCount ?? i + 1),
+      };
+    });
+    const gap = [...chain.gaps, ...(chain.changes.some((c) => c.truncated) ? ['valor longo cortado: aparece só o começo'] : [])];
+    return { rows, ...(gap.length ? { gap: gap.join('; ') } : {}) };
+  };
   // Auditoria que não respondeu (prazo ou 500; não negada): o histórico entra no lugar, mas não mostra tudo o que as regras gravaram.
   // Na matriz de falhas (27/10/2026), com o ui/meta de sys_audit em 500, a BR assíncrona sumia e a pessoa saía confirmada.
   const auditTimedOut = access.sys_audit === 'timeout' || access.sys_audit === 'unknown';
@@ -192,6 +224,19 @@ export async function investigate(
       audit = await historyToAudit(h, meta.tables, quiet, rec.sys_created_on);
       auditFrom = 'history';
       historyFields = h.fields;
+    }
+  }
+  // Sem auditoria e sem o campo no histórico do formulário: reconstrói pelos submits de formulário que a instância
+  // guardou (syslog_transaction, janela do próprio registro). Só entra o que bate com o valor atual do registro.
+  let transactionChain = false;
+  const txGaps: string[] = [];
+  const noFieldHistory = auditFrom === 'audit' || !historyFields?.includes(target.field);
+  if ((access.sys_audit === 'denied' || auditTimedOut) && !historyLinesUsed && noFieldHistory) {
+    const rebuilt = await txChanges(sysId, rec);
+    if (rebuilt.rows.length) {
+      audit = [...audit.filter((a) => a.fieldname !== target.field), ...rebuilt.rows];
+      transactionChain = true;
+      if (rebuilt.gap) txGaps.push(rebuilt.gap);
     }
   }
   const checkpoints: Record<string, Row[]> = {};
@@ -495,6 +540,15 @@ export async function investigate(
       top.gaps.push(`${silent.join(', ')} não respondeu: uma automação dessa fonte pode ter feito a mudança`);
     }
   }
+  if (transactionChain) {
+    for (const c of changes) {
+      const top = c.evidence[0];
+      if (!top || top.type !== 'user_action' || top.grade !== 'confirmed') continue;
+      top.grade = 'probable';
+      top.score = Math.min(top.score, THRESHOLDS.confirmed - 1);
+      top.gaps.push('reconstruída a partir das gravações de formulário guardadas: pode faltar alguma gravação');
+    }
+  }
   if (auditTimedOut && auditFrom === 'history') {
     for (const c of changes) {
       const top = c.evidence[0];
@@ -538,6 +592,7 @@ export async function investigate(
     .filter(([k, s]) => (s === 'denied' || s === 'timeout' || s === 'no_filter') && !(k === 'sys_audit' && auditFrom === 'history' && !auditTimedOut))
     .map(([k, s]) => `${k}: ${s}`);
   if (historyUnavailable) gaps.push('list_history: unavailable');
+  for (const g of txGaps) gaps.push(`reconstrução: ${g}`);
 
   return {
     target: { ...target, sysId, display: rec.number || rec.name || sysId, ...(rec.short_description ? { title: rec.short_description } : rec.number && rec.name ? { title: rec.name } : {}) },
@@ -561,6 +616,7 @@ export async function investigate(
     gaps,
     ...(olderChanges > 0 ? { olderChanges } : {}),
     ...(auditFrom === 'history' ? { auditFrom, historyFields, ...(historyFields && !historyFields.includes(target.field) ? { fieldNotInHistory: true } : {}), ...(historyLinesUsed ? { historyLines: true } : {}) } : {}),
+    ...(transactionChain ? { transactionChain: true } : {}),
     conflicts: findConflicts(target.field, meta.brField, clientRows.filter((x) => x.active !== 'false'), { ...record, sys_id: sysId }),
     ...(() => { const pp = detectPingPong(changes); return pp ? { pingPong: pp } : {}; })(),
     timing: { totalMs: Date.now() - started, calls: client.calls - callsBefore },

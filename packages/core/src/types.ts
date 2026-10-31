@@ -214,6 +214,12 @@ export interface Investigation {
   fieldNotInHistory?: boolean;
   /** As mudanças do campo vieram do histórico guardado do registro (sys_history_line), por estar fora do Activity Stream. */
   historyLines?: boolean;
+  /**
+   * As mudanças do campo foram reconstruídas a partir das gravações de formulário que a instância guardou, quando nem a
+   * auditoria nem o histórico do formulário trazem o campo. Só mostra o que bate com o valor atual do registro; pode
+   * faltar alguma gravação (fora do formulário clássico, ou com texto longo cortado).
+   */
+  transactionChain?: boolean;
   /** Mudanças mais antigas do campo que não foram analisadas (só as `maxChanges` mais recentes são). */
   olderChanges?: number;
   /** Regras ativas que gravam este campo com valores diferentes e podem rodar juntas. */

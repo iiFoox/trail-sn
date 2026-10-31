@@ -10,7 +10,10 @@ export interface TxChange {
   /** Valor ao carregar o formulário; ausente quando o log não trouxe. */
   oldValue?: string;
   newValue?: string;
+  /** Valor antigo ou novo cortado pela instância. */
   truncated: boolean;
+  /** Só o valor novo cortado: é ele que se compara com o registro atual. */
+  newTruncated: boolean;
 }
 
 export interface TxSubmit {
@@ -22,7 +25,7 @@ export interface TxSubmit {
 
 export interface TxChain {
   field: string;
-  changes: { at: number; oldValue?: string; newValue?: string; truncated: boolean }[];
+  changes: { at: number; oldValue?: string; newValue?: string; truncated: boolean; newTruncated: boolean }[];
   /** Motivos pelos quais a cadeia não fecha. Vazio quando a reconstrução está completa. */
   gaps: string[];
   /** false quando o valor atual do registro não bate com o fim da cadeia: nada é mostrado. */
@@ -36,9 +39,14 @@ export function decodeEntities(s: string): string {
   return s.replace(/&(amp|lt|gt|quot|#39|#x27);/g, (_, e: string) => ENTITY[e] ?? _);
 }
 
+/**
+ * O log guarda os valores crus (na PDI, `+`, `%` e `#` aparecem como foram digitados). Só decodifica quando há uma
+ * sequência %XX; e nunca troca `+` por espaço, que mudaria o texto.
+ */
 function safeDecode(s: string): string {
+  if (!/%[0-9A-Fa-f]{2}/.test(s)) return s;
   try {
-    return decodeURIComponent(s.replace(/\+/g, ' '));
+    return decodeURIComponent(s);
   } catch {
     return s;
   }
@@ -58,11 +66,14 @@ export function normalizeValue(v?: string): string {
  */
 export function parseSubmit(url: string, table: string, startMs: number): TxSubmit | null {
   const m = /^\/?([a-z0-9_]+)\.do\?/i.exec(url);
-  if (!m || m[1].toLowerCase() !== table.toLowerCase()) return null;
+  if (!m || (m[1] ?? '').toLowerCase() !== table.toLowerCase()) return null;
   const query = url.slice(m[0].length);
   const params = new Map<string, string>();
   // Separa antes de decodificar: o `&` que separa parâmetros chega cru, e o que faz parte de um valor chega como &amp;.
-  for (const part of query.split('&')) {
+  // O `&` que separa parâmetros vem seguido de `chave=`. Na PDI (31/10/2026) o `&` dentro de um valor chegou cru,
+  // e o corte no `&` cortava o texto ("AB" no lugar de 1515 caracteres). Um `&` de valor seguido de `nome=` ainda se confunde.
+  // Parâmetro sem `=` (ex.: `sys_display.original.incident.caused_by`, vazio) também separa.
+  for (const part of query.split(/&(?=[A-Za-z0-9_.]+(?:=|&|$))/)) {
     const i = part.indexOf('=');
     const k = i < 0 ? part : part.slice(0, i);
     if (params.has(k)) continue;
@@ -79,7 +90,7 @@ export function parseSubmit(url: string, table: string, startMs: number): TxSubm
   for (const [field, newValue] of sent) {
     const oldValue = orig.get(field);
     if (oldValue !== undefined && normalizeValue(oldValue) === normalizeValue(newValue)) continue;
-    changes.push({ field, oldValue, newValue, truncated: isCut(oldValue) || isCut(newValue) });
+    changes.push({ field, oldValue, newValue, truncated: isCut(oldValue) || isCut(newValue), newTruncated: isCut(newValue) });
   }
   if (!changes.length) return null;
   const mc = params.get('sys_modCount');
@@ -104,7 +115,7 @@ export function chainField(submits: TxSubmit[], field: string, current?: string)
     if (c.oldValue === undefined) gaps.push('submit sem valor original');
     else if (prev && !prev.truncated && !c.truncated && normalizeValue(c.oldValue) !== normalizeValue(prev.newValue))
       gaps.push('o valor original não é o que o submit anterior deixou');
-    const item = { at: s.startMs, oldValue: c.oldValue, newValue: c.newValue, truncated: c.truncated };
+    const item = { at: s.startMs, oldValue: c.oldValue, newValue: c.newValue, truncated: c.truncated, newTruncated: c.newTruncated };
     changes.push(item);
     prev = item;
     prevMc = s.sysModCount;
@@ -113,8 +124,14 @@ export function chainField(submits: TxSubmit[], field: string, current?: string)
   let matchesCurrent = true;
   if (current !== undefined && last) {
     // Valor cortado no log (PDI: ~1000 caracteres + "..."): só dá para conferir o começo com o registro.
-    if (last.truncated) matchesCurrent = last.newValue !== undefined && current.startsWith(last.newValue.slice(0, -3)) && current.length > last.newValue.length - 3;
+    const nv = last.newValue ?? '';
+    if (last.newTruncated) matchesCurrent = current.startsWith(nv.slice(0, -3)) && current.length > nv.length - 3;
     else matchesCurrent = normalizeValue(last.newValue) === normalizeValue(current);
+    // Na PDI (31/10/2026) o corte às vezes vem sem o "...": o valor do log é o começo do registro, e ele é mais longo.
+    if (!matchesCurrent && !last.newTruncated && nv && current.length > nv.length && current.startsWith(nv)) {
+      matchesCurrent = true;
+      gaps.push('valor longo cortado: aparece só o começo');
+    }
     if (!matchesCurrent) gaps.push('o último valor não bate com o valor atual do registro');
   }
   return { field, changes, gaps, matchesCurrent };

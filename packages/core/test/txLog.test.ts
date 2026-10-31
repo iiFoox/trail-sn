@@ -13,7 +13,7 @@ describe('parseSubmit', () => {
     const s = parseSubmit(url({ 'sys_original.incident.description': 'inicio', 'incident.description': 'novo texto' }), 'incident', 1000);
     expect(s).not.toBeNull();
     expect(s!.sysModCount).toBe(1);
-    expect(s!.changes).toEqual([{ field: 'description', oldValue: 'inicio', newValue: 'novo texto', truncated: false }]);
+    expect(s!.changes).toEqual([{ field: 'description', oldValue: 'inicio', newValue: 'novo texto', truncated: false, newTruncated: false }]);
   });
 
   it('ignora campo sem mudança e URL de outra tabela', () => {
@@ -23,7 +23,7 @@ describe('parseSubmit', () => {
 
   it('marca valor cortado com "..." como truncado', () => {
     const s = parseSubmit(url({ 'sys_original.incident.description': 'inicio', 'incident.description': 'ini-' + CUT }), 'incident', 1);
-    expect(s!.changes[0].truncated).toBe(true);
+    expect(s!.changes[0]?.truncated).toBe(true);
   });
 
   it('desfaz entidades HTML em uma passada só: &amp;lt; vira &lt;, não <', () => {
@@ -32,7 +32,25 @@ describe('parseSubmit', () => {
 
   it('campo enviado sem valor original fica sem oldValue', () => {
     const s = parseSubmit(url({ 'incident.description': 'x' }), 'incident', 1);
-    expect(s!.changes[0].oldValue).toBeUndefined();
+    expect(s!.changes[0]?.oldValue).toBeUndefined();
+  });
+});
+
+describe('valores com & cru (medido na PDI)', () => {
+  it('& dentro do valor não corta o texto: só o & seguido de chave=', () => {
+    const raw = '/incident.do?sys_uniqueValue=abc&sys_original.incident.description=antes&incident.description=AB&<>%+ #yyy&sys_modCount=3';
+    const s = parseSubmit(raw, 'incident', 1);
+    expect(s!.changes[0]?.newValue).toBe('AB&<>%+ #yyy');
+    expect(s!.sysModCount).toBe(3);
+  });
+
+  it('valor antigo cortado e novo exato: o novo é comparado inteiro com o registro', () => {
+    const atual = 'AB&<>%+ #yyy';
+    const s = parseSubmit(`/incident.do?sys_original.incident.description=${'x'.repeat(997)}...&incident.description=${atual}`, 'incident', 1);
+    const r = chainField([s!], 'description', atual);
+    expect(r.changes[0]?.newTruncated).toBe(false);
+    expect(r.matchesCurrent).toBe(true);
+    expect(chainField([s!], 'description', 'AB').matchesCurrent).toBe(false);
   });
 });
 
@@ -40,7 +58,7 @@ describe('chainField', () => {
   const sub = (startMs: number, mc: number, oldValue: string, newValue: string): TxSubmit => ({
     startMs,
     sysModCount: mc,
-    changes: [{ field: 'description', oldValue, newValue, truncated: newValue.endsWith('...') || oldValue.endsWith('...') }],
+    changes: [{ field: 'description', oldValue, newValue, truncated: newValue.endsWith('...') || oldValue.endsWith('...'), newTruncated: newValue.endsWith('...') }],
   });
 
   it('cadeia contínua que termina no valor atual: completa', () => {
