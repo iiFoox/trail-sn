@@ -164,9 +164,20 @@ export async function investigate(
     const from = r.sys_created_on ?? '';
     const to = shift(r.sys_updated_on ?? '', 60);
     if (!from || !to || !(target.field in r)) return { rows: [] };
-    const logRows = await quiet('syslog_transaction',
-      `urlLIKE${id}^type=form^sys_created_on>=${from}^sys_created_on<=${to}^ORDERBYsys_created_on`,
-      ['url', 'sys_created_on', 'start_process_at', 'sys_created_by'], 200);
+    const fields = ['url', 'type', 'sys_created_on', 'start_process_at', 'sys_created_by'];
+    // 1ª tentativa: filtro pela URL (o sys_id do registro). Se o cliente barrar esse filtro (no_filter: a coluna
+    // não aceita filtro para o usuário), vai para a janela de datas, que a instância aceita, e confere o sys_id no código.
+    const first = await timedQuery(client, { table: 'syslog_transaction', query: `urlLIKE${id}^type=form^sys_created_on>=${from}^sys_created_on<=${to}^ORDERBYsys_created_on`, fields, limit: 200 }, opts.sourceTimeoutMs);
+    let logRows = first.rows;
+    let access2 = first.access;
+    let windowLimited = false;
+    if (first.access === 'no_filter') {
+      const byWindow = await timedQuery(client, { table: 'syslog_transaction', query: `sys_created_on>=${from}^sys_created_on<=${to}^ORDERBYsys_created_on`, fields, limit: 1000 }, opts.sourceTimeoutMs);
+      access2 = byWindow.access;
+      logRows = byWindow.rows.filter((x) => x.type === 'form' && (x.url ?? '').includes(id));
+      windowLimited = byWindow.rows.length >= 1000;
+    }
+    access.syslog_transaction = access2;
     const parsed = logRows.flatMap((x) => {
       const s = parseSubmit(x.url ?? '', target.table, toMs(x.start_process_at || x.sys_created_on || ''));
       return s ? [{ s, user: x.sys_created_by ?? '' }] : [];
@@ -186,7 +197,11 @@ export async function investigate(
         record_checkpoint: String(src?.s.sysModCount ?? i + 1),
       };
     });
-    const gap = [...chain.gaps, ...(chain.changes.some((c) => c.truncated) ? ['valor longo cortado: aparece só o começo'] : [])];
+    const gap = [
+      ...chain.gaps,
+      ...(chain.changes.some((c) => c.truncated) ? ['valor longo cortado: aparece só o começo'] : []),
+      ...(windowLimited ? ['janela com muitas gravações: parte pode ter ficado de fora'] : []),
+    ];
     return { rows, ...(gap.length ? { gap: gap.join('; ') } : {}) };
   };
   // Auditoria que não respondeu (prazo ou 500; não negada): o histórico entra no lugar, mas não mostra tudo o que as regras gravaram.

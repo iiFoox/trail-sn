@@ -58,6 +58,33 @@ describe('reconstrução pelo log de transações (sem sys_audit)', () => {
     expect(r.changes).toHaveLength(0);
   });
 
+  it('filtro pela URL barrado (no_filter): cai para a janela de datas e reconstrói', async () => {
+    const s = cenario('depois');
+    submit(s, T0, 'alguem', 'antes', 'depois', 1);
+    s.client.deny('sys_audit');
+    const c = build(s);
+    c.respond('syslog_transaction', (req) => (req.query.startsWith('urlLIKE')
+      ? { rows: [], status: 403, access: 'no_filter' }
+      : s.tx));
+    const r = await investigate(c, target);
+    expect(r.transactionChain).toBe(true);
+    expect(r.changes).toHaveLength(1);
+    expect(r.access.syslog_transaction).toBe('ok');
+  });
+
+  it('janela com 1000 gravações ou mais: avisa que pode ter ficado de fora', async () => {
+    const s = cenario('depois');
+    submit(s, T0, 'alguem', 'antes', 'depois', 1);
+    s.client.deny('sys_audit');
+    const c = build(s);
+    const filler = Array.from({ length: 1000 }, (_, i) => ({ sys_created_on: T0, type: 'rest', url: `/api/now/x${i}`, sys_created_by: 'x' }));
+    c.respond('syslog_transaction', (req) => (req.query.startsWith('urlLIKE')
+      ? { rows: [], status: 403, access: 'no_filter' }
+      : [...s.tx, ...filler]));
+    const r = await investigate(c, target);
+    expect(r.gaps.join(' ')).toContain('janela com muitas gravações');
+  });
+
   it('auditoria respondendo: o log de transações não é usado', async () => {
     const s = cenario('depois');
     submit(s, T0, 'alguem', 'antes', 'depois', 1);
