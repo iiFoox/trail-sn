@@ -616,11 +616,23 @@ export async function investigate(
         before = sent.at(-1);
       }
     }
+    // Linha do tempo bruta: o que o log de transações e os fluxos do registro mostram, em ordem, sem concluir quem fez o quê.
+    let timeline: { at: string; text: string }[] | undefined;
+    if (updatedOn) {
+      const flowsAll = await q('sys_flow_context', `source_record=${sysId}^sys_created_on>=${shift(rec.sys_created_on ?? updatedOn, -5)}^sys_created_on<=${shift(updatedOn, 60)}^ORDERBYsys_created_on`, ['name', 'state', 'sys_created_on'], 200, 'sys_flow_context');
+      const { parsed: subsAll } = await loadSubmits(sysId, rec);
+      const items = [
+        ...subsAll.map((p) => ({ ms: p.s.startMs, text: `formulário (${p.user}): ${p.s.changes.map((c) => `${c.field} ${c.oldValue ?? '∅'} → ${c.newValue ?? '∅'}`).join('; ')}` })),
+        ...flowsAll.map((f) => ({ ms: toMs(f.sys_created_on ?? ''), text: `fluxo ${f.name ?? ''} (${f.state ?? ''})` })),
+      ].sort((a, b) => a.ms - b.ms);
+      timeline = items.map((i) => ({ at: new Date(i.ms).toISOString().slice(0, 19).replace('T', ' '), text: i.text }));
+    }
     unaudited = {
       count: mods - maxCheckpoint, lastUpdatedOn: updatedOn, lastUpdatedBy: rec.sys_updated_by ?? '', clues,
       ...(flow ? { flow } : {}),
       ...(flowCandidates ? { flowCandidates } : {}),
       ...(before !== undefined ? { before, after: rec[target.field] ?? '' } : {}),
+      ...(timeline ? { timeline } : {}),
     };
   }
 

@@ -482,6 +482,12 @@ function Proof({ r, c, origin, field, denied, expired, access, copy }: { r: Inve
             {r.unaudited.flow && <div class="det">{fmt(P.unauditedFlow, { name: r.unaudited.flow.name, state: r.unaudited.flow.state, at: when(r.unaudited.flow.at) })}</div>}
             {r.unaudited.flowCandidates && <div class="det">{fmt(P.unauditedCandidates, { list: r.unaudited.flowCandidates.join(' · ') })}</div>}
             {r.unaudited.before !== undefined && <div class="det">{fmt(P.unauditedBeforeAfter, { before: r.unaudited.before || '∅', after: r.unaudited.after || '∅' })}</div>}
+            {r.unaudited.timeline && r.unaudited.timeline.length > 0 && (
+              <div class="det">
+                <b>{P.unauditedTimeline}</b>
+                {r.unaudited.timeline.slice(0, 60).map((x) => <div class="det">{x.at} · {x.text}</div>)}
+              </div>
+            )}
             {r.unaudited.clues.map((x) => <div class="det">{fmt(P.clue, { x: localizeTimes(x, '') })}</div>)}
           </div></div>
         )}

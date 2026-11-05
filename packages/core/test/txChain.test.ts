@@ -106,6 +106,18 @@ describe('reconstrução pelo log de transações (sem sys_audit)', () => {
     expect(r.unaudited?.flowCandidates?.length).toBe(2);
   });
 
+  it('gravação sem auditoria: linha do tempo com envios e fluxos, em ordem, com nome', async () => {
+    const s = cenario('C');
+    submit(s, shiftStr(T0, -600), 'alguem', 'A', 'B', 1);
+    s.flows.push({ name: 'Fluxo Z', state: 'complete', sys_created_on: shiftStr(T0, -300) }, { name: 'Fluxo X', state: 'complete', sys_created_on: T0 });
+    s.client.deny('sys_audit');
+    const r = await investigate(build(s), target);
+    const texts = r.unaudited?.timeline?.map((x) => x.text) ?? [];
+    expect(texts[0]).toContain('formulário');
+    expect(texts.join(' | ')).toContain('fluxo Fluxo Z');
+    expect(texts.at(-1)).toContain('fluxo Fluxo X');
+  });
+
   it('auditoria respondendo: o log de transações não é usado', async () => {
     const s = cenario('depois');
     submit(s, T0, 'alguem', 'antes', 'depois', 1);

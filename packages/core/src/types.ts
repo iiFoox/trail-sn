@@ -175,6 +175,8 @@ export interface UnauditedUpdates {
   before?: string;
   /** Valor atual do campo no registro. */
   after?: string;
+  /** O que a instância registrou no período, em ordem: envios de formulário (com valores) e fluxos (com nome). Sem conclusão. */
+  timeline?: { at: string; text: string }[];
 }
 
 export type AccessState = 'ok' | 'denied' | 'empty' | 'no_filter' | 'timeout' | 'unknown';
