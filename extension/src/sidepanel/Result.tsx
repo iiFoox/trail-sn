@@ -202,6 +202,12 @@ export function Result({ r, origin, access, toast, onField, advanced = false, me
           <div>{r.fieldNotInHistory ? s.notInHistoryHint : r.historyLines ? s.linesHint : s.fromHistoryHint}</div>
         </div>
       )}
+      {r.gaps.length > 0 && (
+        <div class="notice info small">
+          <div class="title">{s.gapsTitle}</div>
+          <div>{r.gaps.join(' · ')}</div>
+        </div>
+      )}
       {r.transactionChain && (
         <div class="notice info small">
           <div class="title">{s.transactionTitle}</div>
