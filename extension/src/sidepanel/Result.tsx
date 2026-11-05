@@ -216,6 +216,7 @@ export function Result({ r, origin, access, toast, onField, advanced = false, me
       )}
       {c && diffOpen && <DiffOverlay at={diffOpen} title={`${r.target.display} · ${field}`} sub={when(c.at)} oldText={c.oldValue} newText={c.newValue} onClose={() => setDiffOpen(false)} />}
 
+      {!c && r.unaudited && <div class="stack"><div class="ul"><UnauditedDetail r={r} /></div></div>}
       {c && (
         <div class={`seg-tabs ${advanced ? 't7' : ''}`} role="tablist" ref={tabsRef} style={`--ix:${ind.x}px;--iw:${ind.w}px`}>
           <span class="ind" aria-hidden="true" />
@@ -440,6 +441,28 @@ function sentIsNew(sent: string, value: string): boolean {
   return n(sent) === n(value) || (sent.length >= 3 && n(value).startsWith(n(sent)));
 }
 
+// Gravação sem auditoria: detalhe (fluxo, antes/depois, linha do tempo). Aparece também sem mudança selecionada, porque
+// as abas só existem quando há uma mudança, e sem isto a investigação que não reconstrói nada não mostrava nada.
+function UnauditedDetail({ r }: { r: Investigation }) {
+  const u = r.unaudited;
+  if (!u) return null;
+  return (
+    <div class="li"><span class="ck w">!</span><div class="grow">
+      <b>{plural(P.unauditedItem, u.count)}</b> {fmt(P.unauditedText, { when: when(u.lastUpdatedOn), user: u.lastUpdatedBy })}
+      {u.flow && <div class="det">{fmt(P.unauditedFlow, { name: u.flow.name, state: u.flow.state, at: when(u.flow.at) })}</div>}
+      {u.flowCandidates && <div class="det">{fmt(P.unauditedCandidates, { list: u.flowCandidates.join(' · ') })}</div>}
+      {u.before !== undefined && <div class="det">{fmt(P.unauditedBeforeAfter, { before: u.before || '∅', after: u.after || '∅' })}</div>}
+      {u.timeline && u.timeline.length > 0 && (
+        <div class="det">
+          <b>{P.unauditedTimeline}</b>
+          {u.timeline.slice(0, 60).map((x) => <div class="det">{x.at} · {x.text}</div>)}
+        </div>
+      )}
+      {u.clues.map((x) => <div class="det">{fmt(P.clue, { x: localizeTimes(x, '') })}</div>)}
+    </div></div>
+  );
+}
+
 // ---------- Provas ----------
 function Proof({ r, c, origin, field, denied, expired, access, copy }: { r: Investigation; c: Change; origin: string; field: string; denied: string[]; expired: boolean; access?: AccessReport; copy: (t: string) => void }) {
   const [top, ...others] = c.evidence;
@@ -476,22 +499,8 @@ function Proof({ r, c, origin, field, denied, expired, access, copy }: { r: Inve
             <div><button class="link" onClick={() => copy(fmt(P.request, { host, tables: denied.join(', ') }))}>{Glyph.copy} {P.copyRequest}</button></div>
           </div></div>
         )}
-        {r.unaudited && (
-          <div class="li"><span class="ck w">!</span><div class="grow">
-            <b>{plural(P.unauditedItem, r.unaudited.count)}</b> {fmt(P.unauditedText, { when: when(r.unaudited.lastUpdatedOn), user: r.unaudited.lastUpdatedBy })}
-            {r.unaudited.flow && <div class="det">{fmt(P.unauditedFlow, { name: r.unaudited.flow.name, state: r.unaudited.flow.state, at: when(r.unaudited.flow.at) })}</div>}
-            {r.unaudited.flowCandidates && <div class="det">{fmt(P.unauditedCandidates, { list: r.unaudited.flowCandidates.join(' · ') })}</div>}
-            {r.unaudited.before !== undefined && <div class="det">{fmt(P.unauditedBeforeAfter, { before: r.unaudited.before || '∅', after: r.unaudited.after || '∅' })}</div>}
-            {r.unaudited.timeline && r.unaudited.timeline.length > 0 && (
-              <div class="det">
-                <b>{P.unauditedTimeline}</b>
-                {r.unaudited.timeline.slice(0, 60).map((x) => <div class="det">{x.at} · {x.text}</div>)}
-              </div>
-            )}
-            {r.unaudited.clues.map((x) => <div class="det">{fmt(P.clue, { x: localizeTimes(x, '') })}</div>)}
-          </div></div>
-        )}
-        {expired && <div class="li"><span class="ck w">!</span><div class="grow"><b>{P.expiredItem}</b> {P.expiredText}</div></div>}
+        {r.unaudited && <UnauditedDetail r={r} />}
+        {expired &&<div class="li"><span class="ck w">!</span><div class="grow"><b>{P.expiredItem}</b> {P.expiredText}</div></div>}
       </Fold>}
       <Fold cls="tech-access" title={P.techAccess} count={accRows.length}>
         <div class="acc-list">
