@@ -1,5 +1,6 @@
 import type { QueryRequest, RestClient } from './client/RestClient';
-import { documentation, fieldLabels } from './display';
+import { documentation, fieldLabels, refTexts } from './display';
+import { fieldPair, parseSubmit } from './txLog';
 import { historyToAudit } from './history';
 import { RecordNotFoundError, RecordUnavailableError, recordUnanswered, type AccessState, type Row, type Target } from './types';
 import { failureLog, isFormSubmitFor, isWorkspaceAction, shift, toMs, uiActionMatches, uiActionQuery, uiActionRef, timedQuery, walkHierarchy, withTimeout } from './util';
@@ -41,6 +42,10 @@ export interface Timeline {
   /** Mudanças lidas do histórico do formulário (quem não lê sys_audit); só os campos de `historyFields`. */
   auditFrom?: 'history';
   historyFields?: string[];
+  /** Gravações reconstruídas dos envios de formulário (sem auditoria nem histórico): só o que o formulário enviou. */
+  fromTransactions?: boolean;
+  /** O usuário não lê sys_audit (e não houve histórico do formulário): a tela avisa que a auditoria não está disponível. */
+  auditDenied?: boolean;
   /** Fontes que não responderam (prazo, 5xx, página de login): o resultado pode estar incompleto. */
   missing?: string[];
   timing: { totalMs: number; calls: number };
@@ -65,7 +70,7 @@ export async function recordTimeline(client: RestClient, target: Omit<Target, 'f
 
   // ---------- registro e hierarquia ----------
   const recQuery = target.sysId ? `sys_id=${target.sysId}` : `number=${target.number ?? ''}`;
-  const recReq: QueryRequest = { table: target.table, query: recQuery, fields: ['sys_id', 'number', 'name', 'short_description', 'sys_created_on', 'sys_created_by'], limit: 1 };
+  const recReq: QueryRequest = { table: target.table, query: recQuery, fields: ['sys_id', 'number', 'name', 'short_description', 'sys_created_on', 'sys_created_by', 'sys_updated_on'], limit: 1 };
   const recTimeout = { rows: [] as Row[], status: 0, access: 'timeout' as AccessState };
   const [recFirst, tables] = await Promise.all([
     timedQuery(client, recReq, timeout),
@@ -89,6 +94,40 @@ export async function recordTimeline(client: RestClient, target: Omit<Target, 'f
   if (auditRes.access === 'denied' && client.history) {
     const h = await client.history(target.table, sysId).catch(() => null);
     if (h) { audit = (await historyToAudit(h, tables, q, rec.sys_created_on)).reverse(); fromHistory = { auditFrom: 'history', historyFields: h.fields }; }
+  }
+  // Sem auditoria e sem histórico do formulário: as gravações vêm dos envios de formulário que a instância guardou
+  // (syslog_transaction). Só aparece o que o formulário enviou; gravação de fluxo, regra ou script não aparece.
+  // Texto exibido no formulário (sys_display): vale para valor de referência que a tabela não deixou ler.
+  const formDisplay: Record<string, Record<string, string>> = {};
+  let fromTx = false;
+  if (!audit.length && (auditRes.access === 'denied' || auditRes.access === 'timeout') && rec.sys_created_on) {
+    const fieldsTx = ['url', 'type', 'sys_created_on', 'start_process_at', 'sys_created_by'];
+    const to = shift(rec.sys_updated_on || rec.sys_created_on, 60);
+    const first = await timedQuery(client, { table: 'syslog_transaction', query: `urlLIKE${sysId}^type=form^sys_created_on>=${rec.sys_created_on}^sys_created_on<=${to}^ORDERBYsys_created_on`, fields: fieldsTx, limit: 200 }, timeout);
+    let rows = first.rows;
+    // Filtro pela URL barrado para o usuário: janela de datas, que a instância aceita, e o sys_id conferido aqui.
+    if (first.access === 'no_filter') {
+      const byWindow = await timedQuery(client, { table: 'syslog_transaction', query: `sys_created_on>=${rec.sys_created_on}^sys_created_on<=${to}^ORDERBYsys_created_on`, fields: fieldsTx, limit: 1000 }, timeout);
+      rows = byWindow.rows.filter((x) => x.type === 'form' && (x.url ?? '').includes(sysId));
+    }
+    const built: Row[] = [];
+    for (const x of rows) {
+      const startMs = toMs(x.start_process_at || x.sys_created_on || '');
+      const s = parseSubmit(x.url ?? '', target.table, startMs);
+      if (!s || Number.isNaN(startMs)) continue;
+      const at = new Date(startMs).toISOString().slice(0, 19).replace('T', ' ');
+      const cp = s.insert ? 1 : Math.max(2, (s.sysModCount ?? 0) + 1);
+      for (const c of s.changes) {
+        // Campo com ponto é de outro registro mostrado no formulário (dot-walking), não deste.
+        if (c.field.includes('.')) continue;
+        built.push({ fieldname: c.field, oldvalue: c.oldValue ?? '', newvalue: c.newValue ?? '', user: x.sys_created_by ?? '', sys_created_on: at, record_checkpoint: String(cp) });
+        const p = fieldPair(x.url ?? '', target.table, c.field);
+        const m = (formDisplay[c.field] ??= {});
+        if (p.orig && p.origShown && p.origShown !== p.orig) m[p.orig] = p.origShown;
+        if (p.sent && p.sentShown && p.sentShown !== p.sent) m[p.sent] = p.sentShown;
+      }
+    }
+    if (built.length) { audit = built.sort((a, b) => (b.sys_created_on ?? '').localeCompare(a.sys_created_on ?? '')); fromTx = true; }
   }
   const truncated = audit.length >= MAX_AUDIT;
   const byCp = new Map<number, Row[]>();
@@ -127,10 +166,9 @@ export async function recordTimeline(client: RestClient, target: Omit<Target, 'f
   }
   const refDisplay: Record<string, string> = {};
   await Promise.all(Object.entries(refIds).slice(0, 6).map(async ([t, ids]) => {
-    const rows = await q(t, `sys_idIN${[...ids].slice(0, 80).join(',')}`, ['sys_id', 'name', 'number', 'user_name', 'short_description'], 80);
-    for (const r of rows) refDisplay[r.sys_id ?? ''] = r.name || r.number || r.user_name || r.short_description || '';
+    Object.assign(refDisplay, await refTexts(q, t, [...ids]));
   }));
-  const display = (field: string, v: string) => (v ? choiceLabel[field]?.[v] ?? refDisplay[v] ?? v : '');
+  const display = (field: string, v: string) => (v ? choiceLabel[field]?.[v] ?? refDisplay[v] ?? formDisplay[field]?.[v] ?? v : '');
 
   // ---------- transações das gravações mais recentes (janelas fundidas) ----------
   const recent = cps.slice(0, MAX_TX_SAVES).map((cp) => byCp.get(cp)![0]!.sys_created_on ?? '').filter(Boolean);
@@ -197,6 +235,8 @@ export async function recordTimeline(client: RestClient, target: Omit<Target, 'f
     saves,
     truncated,
     ...(fromHistory ?? {}),
+    ...(fromTx ? { fromTransactions: true } : {}),
+    ...(auditRes.access === 'denied' && !fromHistory ? { auditDenied: true } : {}),
     ...(fails.missing().length ? { missing: fails.missing() } : {}),
     timing: { totalMs: Date.now() - started, calls: client.calls - callsBefore },
   };

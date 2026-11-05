@@ -51,7 +51,11 @@ export function RecordTimeline({ origin, table, sysId, onField }: { origin: stri
 
   if (err) return <div class="notice bad small"><ErrorMsg msg={err} text={fmt(P.tlError, { msg: friendlyError(err, getPrefs().lang) })} /></div>;
   if (!data) return <div class="card"><div class="row"><span class="spin" /> <span class="muted">{P.tlLoading}</span></div><div class="skeleton" /><div class="skeleton" style="width:70%" /></div>;
-  if (!data.saves.length) return <><Missing sources={data.missing} /><div class="muted small">{P.tlEmpty}</div></>;
+  // Sem leitura de sys_audit: a tela diz que a auditoria não está disponível, em vez de "nenhuma alteração".
+  const noAudit = data.auditDenied ? (
+    <div class="notice info small"><div class="title">{P.tlNoAuditTitle}</div><div>{data.fromTransactions ? P.tlNoAuditTx : P.tlNoAuditEmpty}</div></div>
+  ) : null;
+  if (!data.saves.length) return <><Missing sources={data.missing} />{noAudit ?? <div class="muted small">{P.tlEmpty}</div>}</>;
 
   const users = [...new Set(data.saves.map((x) => x.user))].sort();
   const needle = q.trim().toLowerCase();
@@ -65,6 +69,7 @@ export function RecordTimeline({ origin, table, sysId, onField }: { origin: stri
   return (
     <div class="stack">
       <Missing sources={data.missing} />
+      {noAudit}
       <div class="muted small">{P.tlIntro} <b>{plural(P.tlSaves, data.saves.length)}</b>.</div>
       <div class="tlf">
         <div class="chips" role="group">

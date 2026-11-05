@@ -42,6 +42,23 @@ export async function documentation(q: Q, tables: string[], names: string[], lan
 }
 
 /** `tables`: a hierarquia da tabela, da mais específica para a base. `wanted`: campo → valores a traduzir. */
+/**
+ * Texto de registros de uma tabela referenciada: a coluna de exibição da tabela (dicionário, display=true) e depois os
+ * nomes comuns. Tabela customizada costuma exibir outra coluna (no DEV do dono, o Status saía como sys_id, 05/11/2026).
+ */
+export async function refTexts(q: Q, table: string, ids: string[]): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  if (!/^[a-z0-9_]+$/.test(table) || !ids.length) return out;
+  const d = await q('sys_dictionary', `name=${table}^display=true`, ['element'], 1);
+  const df = /^[a-z0-9_]+$/.test(d[0]?.element ?? '') ? d[0]!.element! : '';
+  const fields = [...new Set(['sys_id', 'name', 'number', 'user_name', 'short_description', ...(df ? [df] : [])])];
+  for (const r of await q(table, `sys_idIN${ids.slice(0, 80).join(',')}`, fields, 80)) {
+    const text = (df && r[df]) || r.name || r.number || r.user_name || r.short_description || '';
+    if (r.sys_id && text) out[r.sys_id] = text;
+  }
+  return out;
+}
+
 export async function resolveDisplay(q: Q, tables: string[], wanted: Record<string, (string | undefined)[]>, language = 'en', loadedDocs?: Row[]): Promise<DisplayNames> {
   const out: DisplayNames = { fields: {}, values: {}, refs: {} };
   const names = Object.keys(wanted).filter((f) => /^[a-z0-9_]+$/.test(f)).slice(0, 60);
@@ -65,11 +82,8 @@ export async function resolveDisplay(q: Q, tables: string[], wanted: Record<stri
   const ids: Record<string, Set<string>> = {};
   for (const [f, t] of Object.entries(out.refs)) for (const v of wanted[f] ?? []) if (v && SYS_ID.test(v)) (ids[t] ??= new Set()).add(v);
   await Promise.all(Object.entries(ids).slice(0, 6).map(async ([t, set]) => {
-    for (const r of await q(t, `sys_idIN${[...set].slice(0, 80).join(',')}`, ['sys_id', 'name', 'number', 'user_name', 'short_description'], 80)) {
-      if (!r.sys_id) continue;
-      const text = r.name || r.number || r.user_name || r.short_description || '';
-      if (!text) continue;
-      for (const [f, rt] of Object.entries(out.refs)) if (rt === t) (out.values[f] ??= {})[r.sys_id] = text;
+    for (const [id, text] of Object.entries(await refTexts(q, t, [...set]))) {
+      for (const [f, rt] of Object.entries(out.refs)) if (rt === t) (out.values[f] ??= {})[id] = text;
     }
   }));
   return out;

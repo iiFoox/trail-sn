@@ -744,6 +744,11 @@ export async function investigate(
   const wanted: Record<string, string[]> = {};
   for (const c of changes) for (const t of c.trace ?? []) for (const f of t.fields ?? []) (wanted[f.field] ??= []).push(f.oldValue, f.newValue);
   const display = Object.keys(wanted).length ? await resolveDisplay(quiet, meta.tables, wanted, opts.language) : undefined;
+  // Valor do campo investigado sem texto da tabela: o texto que o formulário mostrava (labels, do log de transações).
+  if (display && transactionChain) {
+    const m = (display.values[target.field] ??= {});
+    for (const [v, l] of Object.entries(labels)) if (!(v in m)) m[v] = l;
+  }
 
   // Fonte com alguma consulta sem resposta (prazo, 500, página de login) vira lenta, mesmo que outra consulta a ela tenha
   // respondido: antes, um 500 ('unknown') ou uma janela perdida passava calado e a perícia saía incompleta.
@@ -932,7 +937,9 @@ function buildTrace(ctx: ChangeContext, top: Change['evidence'][number] | undefi
     if (!between(at, from, to)) continue;
     // Nas outras gravações, o próprio campo investigado vem primeiro (ex.: a pessoa salvou de novo trocando o valor).
     const fields = writes(rows, true).sort((a, b) => Number(b.field === ctx.field) - Number(a.field === ctx.field));
-    if (fields.length) items.push({ at, kind: 'write', label: '', user: rows[0]?.user ?? '', source: 'sys_audit', fields, checkpoint: cp, ref: auditRef(cp) });
+    // Gravação reconstruída pelo log de transações (linhas tx*): a origem não é a auditoria.
+    const rowsFromTx = rows.some((a) => (a.sys_id ?? '').startsWith('tx'));
+    if (fields.length) items.push({ at, kind: 'write', label: '', user: rows[0]?.user ?? '', source: rowsFromTx ? 'syslog_transaction' : 'sys_audit', fields, checkpoint: cp, ref: rowsFromTx ? { table: 'syslog_transaction', query: `urlLIKE${ctx.sysId}^type=form` } : auditRef(cp) });
   }
   const same = writes(ctx.checkpoints[String(ctx.checkpoint)] ?? []);
   // Mudança reconstruída pelo log de transações (linhas tx*): a origem é o envio do formulário, não a auditoria.
