@@ -175,8 +175,6 @@ export interface UnauditedUpdates {
   before?: string;
   /** Valor atual do campo no registro. */
   after?: string;
-  /** O que a instância registrou no período, em ordem: envios de formulário (com valores) e fluxos (com nome). Sem conclusão. */
-  events?: UnauditedEvent[];
 }
 
 /** Um registro da instância perto da gravação sem auditoria. */
@@ -255,6 +253,8 @@ export interface Investigation {
    * faltar alguma gravação (fora do formulário clássico, ou com texto longo cortado).
    */
   transactionChain?: boolean;
+  /** Sem auditoria: envios de formulário e fluxos do registro, em ordem (o que a instância registrou, sem conclusão). */
+  recordEvents?: UnauditedEvent[];
   /** Mudanças mais antigas do campo que não foram analisadas (só as `maxChanges` mais recentes são). */
   olderChanges?: number;
   /** Regras ativas que gravam este campo com valores diferentes e podem rodar juntas. */

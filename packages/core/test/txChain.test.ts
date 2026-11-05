@@ -32,6 +32,19 @@ describe('reconstrução: o que a tela mostra (teste do dono no DEV, 05/11/2026)
   });
 });
 
+describe('texto exibido do valor (referência como sys_id)', () => {
+  it('usa o texto que o formulário exibia (sys_display) quando a tabela referenciada não dá o nome', async () => {
+    const A = 'a'.repeat(32), B = 'b'.repeat(32);
+    const s = cenario(B);
+    tx(s, shiftStr(T0, -60), 'form', `/incident.do?sys_uniqueValue=${INC.sysId}&sys_modCount=1&sys_original.incident.description=${A}&sys_display.original.incident.description=Em Andamento&incident.description=${B}&sys_display.incident.description=Concluído`, 'pessoa');
+    s.client.deny('sys_audit');
+    const r = await investigate(build(s), target);
+    expect(r.changes.map((c) => `${c.oldValue}>${c.newValue}`)).toEqual([`${A}>${B}`]);
+    expect(r.labels[A]).toBe('Em Andamento');
+    expect(r.labels[B]).toBe('Concluído');
+  });
+});
+
 describe('mudança de valor sem formulário (ex.: Status por fluxo)', () => {
   it('sai da sequência do que os formulários viram ao abrir, com intervalo e fluxos do intervalo', async () => {
     const s = cenario('C');
@@ -43,21 +56,27 @@ describe('mudança de valor sem formulário (ex.: Status por fluxo)', () => {
     );
     s.client.deny('sys_audit');
     const r = await investigate(build(s), target);
-    const values = (r.unaudited?.events ?? []).filter((e) => e.kind === 'value');
-    expect(values.map((e) => `${e.from}>${e.to}`)).toEqual(['A>B', 'B>C']);
-    expect(values[0]!.candidates?.map((c) => c.name).join(' ')).toContain('Fluxo do meio');
-    expect(values[0]!.candidates?.map((c) => c.name).join(' ')).not.toContain('Fluxo do fim');
-    expect(values[1]!.candidates?.map((c) => c.name).join(' ')).toContain('Fluxo do fim');
-    const flows = (r.unaudited?.events ?? []).filter((e) => e.kind === 'flow');
+    // Viram mudanças normais (abas, prova, rastro), da mais recente para a mais antiga.
+    expect(r.changes.map((c) => `${c.oldValue}>${c.newValue}`)).toEqual(['B>C', 'A>B']);
+    // Horário: o do único fluxo do intervalo, quando há um só.
+    expect(r.changes[1]!.at).toBe(shiftStr(T0, -300));
+    expect(r.changes[0]!.at).toBe(T0);
+    for (const c of r.changes) {
+      expect(c.evidence[0]?.grade).not.toBe('confirmed');
+      expect(c.evidence[0]?.gaps.join(' ')).toContain('mudança deduzida');
+    }
+    const flows = (r.recordEvents ?? []).filter((e) => e.kind === 'flow');
+    expect(flows.length).toBe(2);
     expect(flows.every((f) => f.sysId)).toBe(true);
   });
 
-  it('mudança que o próprio formulário enviou não vira mudança sem autor', async () => {
+  it('mudança que o próprio formulário enviou não vira mudança deduzida', async () => {
     const s = cenario('B');
     submit(s, shiftStr(T0, -600), 'pessoa', 'A', 'B', 1);
     s.client.deny('sys_audit');
     const r = await investigate(build(s), target);
-    expect((r.unaudited?.events ?? []).filter((e) => e.kind === 'value')).toHaveLength(0);
+    expect(r.changes.map((c) => `${c.oldValue}>${c.newValue}`)).toEqual(['A>B']);
+    expect(r.changes[0]!.evidence[0]?.gaps.join(' ') ?? '').not.toContain('mudança deduzida');
   });
 });
 
@@ -74,13 +93,15 @@ describe('reconstrução pelo log de transações (sem sys_audit)', () => {
     expect(r.changes[0]).toMatchObject({ oldValue: 'meio', newValue: 'depois', user: 'outra.pessoa' });
   });
 
-  it('valor atual diferente do último submit: nada é mostrado', async () => {
+  it('valor atual diferente do último envio: a mudança do formulário aparece, e a seguinte é deduzida', async () => {
     const s = cenario('outro texto');
-    submit(s, T0, 'alguem', 'antes', 'depois', 1);
+    submit(s, shiftStr(T0, -60), 'alguem', 'antes', 'depois', 1);
     s.client.deny('sys_audit');
     const r = await investigate(build(s), target);
-    expect(r.transactionChain).toBeUndefined();
-    expect(r.changes).toHaveLength(0);
+    expect(r.changes.map((c) => `${c.oldValue}>${c.newValue}`)).toEqual(['depois>outro texto', 'antes>depois']);
+    expect(r.changes[1]!.user).toBe('alguem');
+    expect(r.changes[0]!.evidence[0]?.gaps.join(' ')).toContain('mudança deduzida');
+    expect(r.changes[1]!.evidence[0]?.gaps.join(' ') ?? '').not.toContain('mudança deduzida');
   });
 
   it('texto cortado pela instância: confere pelo começo e avisa que é só o começo', async () => {
@@ -131,6 +152,8 @@ describe('reconstrução pelo log de transações (sem sys_audit)', () => {
 
   it('gravação sem auditoria: fluxo do mesmo segundo, com antes (último do formulário) e depois (atual)', async () => {
     const s = cenario('C');
+    // Mais gravações do que as explicadas: continua havendo gravação sem auditoria.
+    s.record.sys_mod_count = '5';
     submit(s, shiftStr(T0, -600), 'alguem', 'A', 'B', 1);
     s.flows.push({ name: 'Fluxo X', state: 'complete', sys_created_on: T0 });
     s.client.deny('sys_audit');
@@ -156,8 +179,7 @@ describe('reconstrução pelo log de transações (sem sys_audit)', () => {
     s.flows.push({ name: 'Fluxo Z', state: 'complete', sys_created_on: shiftStr(T0, -300) }, { name: 'Fluxo X', state: 'complete', sys_created_on: T0 });
     s.client.deny('sys_audit');
     const r = await investigate(build(s), target);
-    // Só envios e fluxos aqui; a mudança B → C (sem formulário) tem teste próprio.
-    const ev = (r.unaudited?.events ?? []).filter((e) => e.kind !== 'value');
+    const ev = r.recordEvents ?? [];
     expect(ev[0]).toMatchObject({ kind: 'form', who: 'alguem', from: 'A', to: 'B', changed: true });
     expect(ev.map((e) => e.name ?? '')).toContain('Fluxo Z');
     expect(ev.at(-1)).toMatchObject({ kind: 'flow', name: 'Fluxo X', state: 'complete' });

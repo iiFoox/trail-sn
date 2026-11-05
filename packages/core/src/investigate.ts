@@ -217,6 +217,62 @@ export async function investigate(
     ];
     return { rows, ...(gap.length ? { gap: gap.join('; ') } : {}) };
   };
+  // Mudanças que nenhum formulário enviou (fluxo, regra, script): saem da sequência dos valores observados no log de
+  // transações. Cada formulário mostra o valor ao abrir e, se o campo mudou, o valor enviado; no fim vem o valor atual.
+  // Cada formulário abre depois do envio anterior, então uma mudança entre duas observações aconteceu nesse intervalo.
+  // Viram linhas como as da auditoria, para seguirem o caminho normal (abas, prova, rastro, nomes de referência):
+  // - tx f*: mudança enviada pelo formulário, quando a cadeia do formulário não fechou com o valor atual (senão ela já
+  //   aparece pelo txChanges);
+  // - txv*: mudança deduzida, sem autor. Horário: o do único fluxo do registro no intervalo, ou o fim do intervalo.
+  const inferredKeys = new Set<string>();
+  // Valor cortado pela instância (~1000 caracteres, com ou sem "...") é o mesmo valor que o completo.
+  const sameValue = (a: string, b: string) => {
+    if (normalizeValue(a) === normalizeValue(b)) return true;
+    const [s, l] = a.length <= b.length ? [a, b] : [b, a];
+    if (s.endsWith('...') && l.startsWith(s.slice(0, -3))) return true;
+    return s.length >= 900 && l.startsWith(s);
+  };
+  const valueRows = async (id: string, r: Row, includeForm: boolean): Promise<Row[]> => {
+    if (!(target.field in r) || !r.sys_updated_on) return [];
+    const { forms } = await loadSubmits(id, r);
+    type Obs = { ms: number; raw: string; kind: 'open' | 'sent' | 'now'; user: string; mc?: number };
+    const obs: Obs[] = [];
+    for (const f of [...forms].sort((a, b) => a.ms - b.ms)) {
+      const p = fieldPair(f.url, target.table, target.field);
+      const m = /(?:^|[?&])sys_modCount=(\d+)/.exec(f.url)?.[1];
+      const mc = m !== undefined ? Number(m) : undefined;
+      if (p.orig !== undefined) obs.push({ ms: f.ms - 1, raw: p.orig, kind: 'open', user: f.user, ...(mc !== undefined ? { mc } : {}) });
+      if (p.sent !== undefined && p.orig !== undefined && !sameValue(p.sent, p.orig)) obs.push({ ms: f.ms, raw: p.sent, kind: 'sent', user: f.user, ...(mc !== undefined ? { mc: mc + 1 } : {}) });
+    }
+    if (!obs.length) return [];
+    const mcNow = Number(r.sys_mod_count ?? '');
+    const seq: Obs[] = [...obs, { ms: toMs(r.sys_updated_on), raw: r[target.field] ?? '', kind: 'now', user: '', ...(Number.isNaN(mcNow) ? {} : { mc: mcNow }) }];
+    const flows = await quiet('sys_flow_context', `source_record=${id}^sys_created_on>=${shift(r.sys_created_on ?? r.sys_updated_on, -5)}^sys_created_on<=${shift(r.sys_updated_on, 60)}^ORDERBYsys_created_on`, ['sys_created_on'], 200);
+    const sec = (ms: number) => Math.floor(ms / 1000) * 1000;
+    const iso = (ms: number) => new Date(ms).toISOString().slice(0, 19).replace('T', ' ');
+    const out: Row[] = [];
+    for (let k = 1; k < seq.length; k++) {
+      const a = seq[k - 1]!;
+      const b = seq[k]!;
+      if (sameValue(a.raw, b.raw)) continue;
+      if (b.kind === 'sent') {
+        // O formulário enviou o valor novo: mudança com autor.
+        if (includeForm) out.push({ sys_id: `txf${k}`, fieldname: target.field, oldvalue: a.raw, newvalue: b.raw, user: b.user, sys_created_on: iso(b.ms), record_checkpoint: String(Math.max(2, b.mc ?? 0)) });
+        continue;
+      }
+      // Depois de um envio, o valor do servidor é o enviado: a mudança veio depois dele. Depois de uma abertura, a mudança
+      // pode ter vindo a qualquer momento depois da observação anterior (o formulário abriu depois dela).
+      const lower = a.kind === 'sent' ? a.ms : k >= 2 ? seq[k - 2]!.ms : toMs(r.sys_created_on ?? '');
+      if (Number.isNaN(lower) || Number.isNaN(b.ms)) continue;
+      const upper = b.kind === 'now' ? b.ms + 999 : sec(b.ms) - 1;
+      const inWin = flows.map((f) => toMs(f.sys_created_on ?? '')).filter((m) => m >= sec(lower) && m <= upper);
+      const atMs = inWin.length === 1 ? inWin[0]! : b.kind === 'now' ? b.ms : b.ms - 1000;
+      const cp = Math.max(2, b.mc ?? 0);
+      out.push({ sys_id: `txv${k}`, fieldname: target.field, oldvalue: a.raw, newvalue: b.raw, user: '', sys_created_on: iso(atMs), record_checkpoint: String(cp) });
+      inferredKeys.add(`${cp}|${b.raw}`);
+    }
+    return out;
+  };
   // Auditoria que não respondeu (prazo ou 500; não negada): o histórico entra no lugar, mas não mostra tudo o que as regras gravaram.
   // Na matriz de falhas (27/10/2026), com o ui/meta de sys_audit em 500, a BR assíncrona sumia e a pessoa saía confirmada.
   const auditTimedOut = access.sys_audit === 'timeout' || access.sys_audit === 'unknown';
@@ -266,10 +322,16 @@ export async function investigate(
       transactionChain = true;
       if (rebuilt.gap) txGaps.push(rebuilt.gap);
     }
+    const inferred = await valueRows(sysId, rec, !rebuilt.rows.length);
+    if (inferred.length) {
+      audit = [...audit, ...inferred];
+      transactionChain = true;
+    }
   }
   const checkpoints: Record<string, Row[]> = {};
   for (const a of audit) (checkpoints[a.record_checkpoint ?? '0'] ??= []).push(a);
-  const maxCheckpoint = Math.max(0, ...Object.keys(checkpoints).map(Number));
+  // Mudanças deduzidas (txv*) não explicam uma gravação específica: não contam para a gravação sem auditoria.
+  const maxCheckpoint = Math.max(0, ...Object.entries(checkpoints).filter(([, rows]) => rows.some((a) => !(a.sys_id ?? '').startsWith('txv'))).map(([k]) => Number(k)));
   // Um update() numa BR after regrava na auditoria as mudanças que ainda estão em "previous": a mesma
   // mudança aparece de novo no checkpoint seguinte, segundos depois. Essa cópia não é uma mudança nova.
   // Duas gravações do mesmo campo no mesmo segundo (a pessoa grava 2→4 e uma regra devolve 4→2): o horário empata e
@@ -323,8 +385,15 @@ export async function investigate(
     fieldChanges.length ? q('sys_flow_context', `source_record=${sysId}`, ['sys_id', 'name', 'state', 'flow', 'sys_created_on', 'sys_updated_on'], 50) : Promise.resolve([]),
     fieldChanges.length ? q('wf_context', `id=${sysId}`, ['sys_id', 'workflow_version.name', 'state', 'started', 'ended'], 50) : Promise.resolve([]),
     !values.length ? Promise.resolve([])
-      : refTable ? (values.some((v) => /^[0-9a-f]{32}$/.test(v)) ? quiet(refTable, `sys_idIN${values.filter((v) => /^[0-9a-f]{32}$/.test(v)).join(',')}`, ['sys_id', 'name', 'number', 'user_name'], 50) : Promise.resolve([] as Row[]))
-        .then((rows) => rows.map((r) => ({ value: r.sys_id ?? '', label: r.name || r.number || r.user_name || '' })))
+      // Texto da referência: a coluna de exibição da tabela (dicionário, display=true), e depois name/number/user_name.
+      // Tabela customizada costuma exibir outra coluna (no DEV do dono, o Status saía como sys_id, 05/11/2026).
+      : refTable ? (values.some((v) => /^[0-9a-f]{32}$/.test(v))
+        ? quiet('sys_dictionary', `name=${refTable}^display=true`, ['element'], 1).then((d) => {
+          const df = /^[a-z0-9_]+$/.test(d[0]?.element ?? '') ? d[0]!.element! : '';
+          return quiet(refTable, `sys_idIN${values.filter((v) => /^[0-9a-f]{32}$/.test(v)).join(',')}`, unique(['sys_id', 'name', 'number', 'user_name', ...(df ? [df] : [])]), 50)
+            .then((rows) => rows.map((r) => ({ value: r.sys_id ?? '', label: (df && r[df]) || r.name || r.number || r.user_name || '' })));
+        })
+        : Promise.resolve([] as { value: string; label: string }[]))
       : quiet('sys_choice', `nameIN${meta.tables.join(',')}^element=${target.field}^inactive=false`, ['name', 'value', 'label', 'language'], 300)
         // A tabela mais específica ganha (incident.state 2 = In Progress; task.state 2 = Work in Progress); depois o inglês.
         .then((rows) => rows.sort((a, b) => (meta.tables.indexOf(a.name ?? '') - meta.tables.indexOf(b.name ?? '')) || ((a.language === 'en' ? -1 : 0) - (b.language === 'en' ? -1 : 0)))),
@@ -339,6 +408,15 @@ export async function investigate(
   ]);
   const labels: Record<string, string> = {};
   for (const r of labelRows) if (r.value && r.label && !(r.value in labels)) labels[r.value] = r.label;
+  // Texto que o próprio formulário exibia (sys_display no log de transações): vale para valor que a tabela não deixou ler.
+  if (transactionChain && submitsMemo) {
+    const { forms } = await submitsMemo;
+    for (const f of forms) {
+      const p = fieldPair(f.url, target.table, target.field);
+      if (p.orig && p.origShown && p.origShown !== p.orig && !(p.orig in labels)) labels[p.orig] = p.origShown;
+      if (p.sent && p.sentShown && p.sentShown !== p.sent && !(p.sent in labels)) labels[p.sent] = p.sentShown;
+    }
+  }
 
   // ---------- rodada 3: artefatos citados pelos rastros ----------
   const jobNames = unique(txAll.filter((t) => /^JOB: /.test(t.url ?? '') && !/^JOB: ASYNC: /.test(t.url ?? '')).map((t) => (t.url ?? '').slice(5).trim()));
@@ -570,6 +648,16 @@ export async function investigate(
   }
   // Só rebaixa quando a reconstrução tem lacuna (texto cortado, cadeia quebrada, janela grande). Envio de formulário que
   // bate exatamente com o valor atual é prova direta de quem gravou (teste do dono no DEV, 05/11/2026).
+  // Mudança deduzida da sequência de valores (sem formulário): nunca é "certeza alta", e diz por quê.
+  if (inferredKeys.size) {
+    for (const c of changes) {
+      if (!inferredKeys.has(`${c.checkpoint}|${c.newValue}`)) continue;
+      const top = c.evidence[0];
+      if (!top) continue;
+      if (top.grade === 'confirmed') { top.grade = 'probable'; top.score = Math.min(top.score, THRESHOLDS.confirmed - 1); }
+      top.gaps.push('mudança deduzida: nenhum formulário enviou este valor; o horário é o do fluxo do intervalo, ou o fim do intervalo');
+    }
+  }
   if (transactionChain && txGaps.length) {
     for (const c of changes) {
       const top = c.evidence[0];
@@ -625,66 +713,31 @@ export async function investigate(
         before = sent.at(-1);
       }
     }
-    // O que o log de transações e os fluxos do registro mostram, em ordem, sem concluir quem fez a gravação: cada envio
-    // de formulário com o valor do campo ao abrir e o enviado (texto exibido quando há), e cada fluxo com nome e estado.
-    let events: UnauditedEvent[] | undefined;
-    if (updatedOn) {
-      const flowsAll = await q('sys_flow_context', `source_record=${sysId}^sys_created_on>=${shift(rec.sys_created_on ?? updatedOn, -5)}^sys_created_on<=${shift(updatedOn, 60)}^ORDERBYsys_created_on`, ['sys_id', 'name', 'state', 'sys_created_on'], 200, 'sys_flow_context');
-      const { forms } = await loadSubmits(sysId, rec);
-      const iso = (ms: number) => new Date(ms).toISOString().slice(0, 19).replace('T', ' ');
-      const shown = (v?: string, label?: string) => (v === undefined ? undefined : label && label !== v ? label : v);
-      const formEvents: UnauditedEvent[] = forms.flatMap((f) => {
-        const p = fieldPair(f.url, target.table, target.field);
-        if (p.orig === undefined && p.sent === undefined) return [];
-        const changed = p.sent !== undefined && p.orig !== undefined && p.sent !== p.orig;
-        return [{ at: iso(f.ms), kind: 'form' as const, who: f.user, ...(p.orig !== undefined ? { from: shown(p.orig, p.origShown) } : {}), ...(p.sent !== undefined ? { to: shown(p.sent, p.sentShown) } : {}), changed }];
-      });
-      const flowEvents: UnauditedEvent[] = flowsAll.map((f) => ({ at: f.sys_created_on ?? '', kind: 'flow' as const, who: '', name: f.name ?? '', state: f.state ?? '', ...(f.sys_id ? { sysId: f.sys_id } : {}) }));
-      // Mudança de valor que nenhum formulário enviou (fluxo, regra, script): sai da sequência dos valores que cada
-      // formulário viu ao abrir, terminando no valor atual. Cada formulário abre depois do envio anterior; então a mudança
-      // aconteceu depois do envio que antecede o formulário que viu o valor antigo e antes do envio que viu o novo (ou
-      // da última gravação, para o valor atual). Os fluxos do registro nesse intervalo ficam listados, sem escolher um.
-      const obs = forms
-        .flatMap((f) => { const p = fieldPair(f.url, target.table, target.field); return p.orig === undefined ? [] : [{ ms: f.ms, raw: p.orig, shown: p.origShown, sent: p.sent }]; })
-        .sort((a, b) => a.ms - b.ms);
-      const seq: { ms: number; raw: string; shown?: string; sent?: string; current?: boolean }[] = [...obs, { ms: toMs(updatedOn), raw: rec[target.field] ?? '', current: true }];
-      const sec = (ms: number) => Math.floor(ms / 1000) * 1000;
-      const valueEvents: UnauditedEvent[] = [];
-      for (let k = 1; k < seq.length && obs.length; k++) {
-        const a = seq[k - 1]!;
-        const b = seq[k]!;
-        if (normalizeValue(a.raw) === normalizeValue(b.raw)) continue;
-        // O próprio formulário enviou o valor novo: a mudança é dele e já aparece na linha do formulário.
-        if (a.sent !== undefined && normalizeValue(a.sent) === normalizeValue(b.raw)) continue;
-        const lower = k >= 2 ? seq[k - 2]!.ms : toMs(rec.sys_created_on ?? '');
-        if (Number.isNaN(lower) || Number.isNaN(b.ms)) continue;
-        const candidates = flowsAll
-          .filter((f) => { const m = toMs(f.sys_created_on ?? ''); return m >= sec(lower) && (b.current ? m <= b.ms + 999 : m < sec(b.ms)); })
-          .map((f) => ({ name: f.name ?? '', at: f.sys_created_on ?? '', ...(f.sys_id ? { sysId: f.sys_id } : {}) }));
-        valueEvents.push({
-          at: iso(b.ms), kind: 'value', who: '', since: iso(lower), candidates,
-          from: shown(a.raw, a.shown) ?? '', to: shown(b.raw, b.shown) ?? '', fromRaw: a.raw, toRaw: b.raw,
-        });
-      }
-      // Valor sem texto exibido (referência ou lista que nenhum formulário mostrou, como o valor atual): busca o texto.
-      const bare = unique(valueEvents.flatMap((e) => [e.from === e.fromRaw ? e.fromRaw : '', e.to === e.toRaw ? e.toRaw : '']).filter((v): v is string => !!v));
-      if (bare.length) {
-        const d = await resolveDisplay(quiet, meta.tables, { [target.field]: bare }, opts.language);
-        const txt = d.values[target.field] ?? {};
-        for (const e of valueEvents) {
-          if (e.from === e.fromRaw && e.fromRaw && txt[e.fromRaw]) e.from = txt[e.fromRaw];
-          if (e.to === e.toRaw && e.toRaw && txt[e.toRaw]) e.to = txt[e.toRaw];
-        }
-      }
-      events = [...formEvents, ...flowEvents, ...valueEvents].sort((a, b) => toMs(a.at) - toMs(b.at));
-    }
     unaudited = {
       count: mods - maxCheckpoint, lastUpdatedOn: updatedOn, lastUpdatedBy: rec.sys_updated_by ?? '', clues,
       ...(flow ? { flow } : {}),
       ...(flowCandidates ? { flowCandidates } : {}),
       ...(before !== undefined ? { before, after: rec[target.field] ?? '' } : {}),
-      ...(events?.length ? { events } : {}),
     };
+  }
+
+  // Envios de formulário e fluxos do registro, em ordem, sem concluir quem gravou: cada envio com o valor do campo ao
+  // abrir e o enviado (texto exibido quando há), e cada fluxo com nome, estado e link. Vale sempre que a auditoria não é
+  // legível, mesmo sem gravação sem auditoria (quando as mudanças deduzidas explicam todas as gravações).
+  let recordEvents: UnauditedEvent[] | undefined;
+  if ((access.sys_audit === 'denied' || auditTimedOut) && rec.sys_updated_on) {
+    const flowsAll = await q('sys_flow_context', `source_record=${sysId}^sys_created_on>=${shift(rec.sys_created_on ?? rec.sys_updated_on, -5)}^sys_created_on<=${shift(rec.sys_updated_on, 60)}^ORDERBYsys_created_on`, ['sys_id', 'name', 'state', 'sys_created_on'], 200, 'sys_flow_context');
+    const { forms } = await loadSubmits(sysId, rec);
+    const iso = (ms: number) => new Date(ms).toISOString().slice(0, 19).replace('T', ' ');
+    const shown = (v?: string, label?: string) => (v === undefined ? undefined : label && label !== v ? label : v);
+    const formEvents: UnauditedEvent[] = forms.flatMap((f) => {
+      const p = fieldPair(f.url, target.table, target.field);
+      if (p.orig === undefined && p.sent === undefined) return [];
+      const changed = p.sent !== undefined && p.orig !== undefined && p.sent !== p.orig;
+      return [{ at: iso(f.ms), kind: 'form' as const, who: f.user, ...(p.orig !== undefined ? { from: shown(p.orig, p.origShown) } : {}), ...(p.sent !== undefined ? { to: shown(p.sent, p.sentShown) } : {}), changed }];
+    });
+    const flowEvents: UnauditedEvent[] = flowsAll.map((f) => ({ at: f.sys_created_on ?? '', kind: 'flow' as const, who: '', name: f.name ?? '', state: f.state ?? '', ...(f.sys_id ? { sysId: f.sys_id } : {}) }));
+    recordEvents = [...formEvents, ...flowEvents].sort((a, b) => toMs(a.at) - toMs(b.at));
   }
 
   // Nomes como no formulário para os outros campos que aparecem no rastro (gravados junto ou perto da mudança).
@@ -724,6 +777,7 @@ export async function investigate(
     ...(olderChanges > 0 ? { olderChanges } : {}),
     ...(auditFrom === 'history' ? { auditFrom, historyFields, ...(historyFields && !historyFields.includes(target.field) ? { fieldNotInHistory: true } : {}), ...(historyLinesUsed ? { historyLines: true } : {}) } : {}),
     ...(transactionChain ? { transactionChain: true } : {}),
+    ...(recordEvents?.length ? { recordEvents } : {}),
     conflicts: findConflicts(target.field, meta.brField, clientRows.filter((x) => x.active !== 'false'), { ...record, sys_id: sysId }),
     ...(() => { const pp = detectPingPong(changes); return pp ? { pingPong: pp } : {}; })(),
     timing: { totalMs: Date.now() - started, calls: client.calls - callsBefore },

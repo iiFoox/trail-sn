@@ -656,7 +656,7 @@ function History({ r, origin, sel, onPick, open, onOpen, onTrace }: { r: Investi
   const rows: Row[] = r.changes.map((c, i) => ({ at: c.at, i }));
   if (r.unaudited?.lastUpdatedOn) rows.push({ at: r.unaudited.lastUpdatedOn, i: -1 });
   // Envios de formulário e fluxos do registro (sem auditoria): entram na mesma lista, com índice -100, -101...
-  (r.unaudited?.events ?? []).forEach((e, k) => rows.push({ at: e.at, i: -100 - k }));
+  (r.recordEvents ?? []).forEach((e, k) => rows.push({ at: e.at, i: -100 - k }));
   rows.sort((a, b) => (a.at < b.at ? 1 : -1));
   const S = r.suspects;
   const whenRank: Record<string, number> = { before: 0, after: 1, async: 2, async_always: 2, display: 3 };
@@ -689,7 +689,7 @@ function History({ r, origin, sel, onPick, open, onOpen, onTrace }: { r: Investi
         {rows.map(({ at, i }) => {
           const p = parts(at);
           if (i <= -100) {
-            const e = r.unaudited!.events![-100 - i]!;
+            const e = r.recordEvents![-100 - i]!;
             // Mudança de valor sem formulário: mesmo visual de uma mudança, com o intervalo e os fluxos que rodaram nele.
             if (e.kind === 'value') {
               return (
