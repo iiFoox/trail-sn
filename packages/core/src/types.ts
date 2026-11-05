@@ -183,7 +183,8 @@ export interface UnauditedUpdates {
 export interface UnauditedEvent {
   /** UTC, "AAAA-MM-DD hh:mm:ss". */
   at: string;
-  kind: 'form' | 'flow';
+  /** form: envio de formulário; flow: fluxo do registro; value: mudança de valor sem formulário (intervalo, sem autor). */
+  kind: 'form' | 'flow' | 'value';
   /** Quem enviou o formulário (user_name); vazio para fluxo. */
   who: string;
   /** Formulário: valor do campo ao abrir (texto exibido quando há). Ausente quando o envio não trouxe o campo. */
@@ -192,9 +193,15 @@ export interface UnauditedEvent {
   to?: string;
   /** Formulário: o valor enviado é diferente do valor ao abrir. */
   changed?: boolean;
-  /** Fluxo: nome e estado. */
+  /** Fluxo: nome, estado e sys_id do contexto (link para o ServiceNow). */
   name?: string;
   state?: string;
+  sysId?: string;
+  /** Mudança sem formulário: valores crus (o texto vai em from/to), início do intervalo e fluxos que rodaram nele. */
+  fromRaw?: string;
+  toRaw?: string;
+  since?: string;
+  candidates?: { name: string; at: string; sysId?: string }[];
 }
 
 export type AccessState = 'ok' | 'denied' | 'empty' | 'no_filter' | 'timeout' | 'unknown';

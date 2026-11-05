@@ -690,6 +690,18 @@ function History({ r, origin, sel, onPick, open, onOpen, onTrace }: { r: Investi
           const p = parts(at);
           if (i <= -100) {
             const e = r.unaudited!.events![-100 - i]!;
+            // Mudança de valor sem formulário: mesmo visual de uma mudança, com o intervalo e os fluxos que rodaram nele.
+            if (e.kind === 'value') {
+              return (
+                <div class="h tx val" style={`--i:${-100 - i}`}><div class="dt">{p.date}<small>{p.time}</small></div>
+                  <div class="c">
+                    {e.from || P.empty} → <b>{e.to || P.empty}</b>
+                    <small>{fmt(P.txBetween, { since: when(e.since ?? ''), until: when(e.at) })}</small>
+                    <small>{e.candidates?.length ? fmt(P.txCandidates, { list: e.candidates.map((f) => `${f.name} (${parts(f.at).time})`).join(' · ') }) : P.txNoCandidates}</small>
+                  </div>
+                  <span class="g warn">{P.txNoAuthor}</span></div>
+              );
+            }
             return e.kind === 'form' ? (
               <div class="h tx" style={`--i:${-100 - i}`}><div class="dt">{p.date}<small>{p.time}</small></div>
                 <div class="c">
@@ -702,7 +714,12 @@ function History({ r, origin, sel, onPick, open, onOpen, onTrace }: { r: Investi
             ) : (
               <div class={`h tx ${onTrace ? 'go' : ''}`} style={`--i:${-100 - i}`} {...(onTrace ? { role: 'button', tabIndex: 0, title: P.txOpenTrace, onClick: onTrace, onKeyDown: (ev: KeyboardEvent) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onTrace(); } } } : {})}>
                 <div class="dt">{p.date}<small>{p.time}</small></div>
-                <div class="c"><b>{e.name}</b><small>{fmt(P.txFlowState, { state: e.state ?? '' })}</small></div>
+                <div class="c">
+                  {e.sysId
+                    ? <a href={recordLink(origin, 'sys_flow_context', e.sysId)} target="_blank" rel="noreferrer" title={P.txOpenFlow} onClick={(ev) => ev.stopPropagation()}><b>{e.name}</b> ↗</a>
+                    : <b>{e.name}</b>}
+                  <small>{fmt(P.txFlowState, { state: e.state ?? '' })}</small>
+                </div>
                 <span class="g src flow">{P.txFlow}</span></div>
             );
           }

@@ -6,7 +6,7 @@ import { historyToAudit, mergeHistoryLines } from './history';
 import { scoreAll, THRESHOLDS } from './scoring';
 import { fieldsRead, writesOf } from './scriptEval';
 import { siCallsWithField } from './util';
-import { chainField, fieldPair, parseSubmit, type TxSubmit } from './txLog';
+import { chainField, fieldPair, normalizeValue, parseSubmit, type TxSubmit } from './txLog';
 import { runSignatures, type ChangeContext, type TableMeta, type Traces } from './signatures';
 import {
   DEFAULT_OPTIONS,
@@ -629,7 +629,7 @@ export async function investigate(
     // de formulário com o valor do campo ao abrir e o enviado (texto exibido quando há), e cada fluxo com nome e estado.
     let events: UnauditedEvent[] | undefined;
     if (updatedOn) {
-      const flowsAll = await q('sys_flow_context', `source_record=${sysId}^sys_created_on>=${shift(rec.sys_created_on ?? updatedOn, -5)}^sys_created_on<=${shift(updatedOn, 60)}^ORDERBYsys_created_on`, ['name', 'state', 'sys_created_on'], 200, 'sys_flow_context');
+      const flowsAll = await q('sys_flow_context', `source_record=${sysId}^sys_created_on>=${shift(rec.sys_created_on ?? updatedOn, -5)}^sys_created_on<=${shift(updatedOn, 60)}^ORDERBYsys_created_on`, ['sys_id', 'name', 'state', 'sys_created_on'], 200, 'sys_flow_context');
       const { forms } = await loadSubmits(sysId, rec);
       const iso = (ms: number) => new Date(ms).toISOString().slice(0, 19).replace('T', ' ');
       const shown = (v?: string, label?: string) => (v === undefined ? undefined : label && label !== v ? label : v);
@@ -639,8 +639,44 @@ export async function investigate(
         const changed = p.sent !== undefined && p.orig !== undefined && p.sent !== p.orig;
         return [{ at: iso(f.ms), kind: 'form' as const, who: f.user, ...(p.orig !== undefined ? { from: shown(p.orig, p.origShown) } : {}), ...(p.sent !== undefined ? { to: shown(p.sent, p.sentShown) } : {}), changed }];
       });
-      const flowEvents: UnauditedEvent[] = flowsAll.map((f) => ({ at: f.sys_created_on ?? '', kind: 'flow' as const, who: '', name: f.name ?? '', state: f.state ?? '' }));
-      events = [...formEvents, ...flowEvents].sort((a, b) => toMs(a.at) - toMs(b.at));
+      const flowEvents: UnauditedEvent[] = flowsAll.map((f) => ({ at: f.sys_created_on ?? '', kind: 'flow' as const, who: '', name: f.name ?? '', state: f.state ?? '', ...(f.sys_id ? { sysId: f.sys_id } : {}) }));
+      // Mudança de valor que nenhum formulário enviou (fluxo, regra, script): sai da sequência dos valores que cada
+      // formulário viu ao abrir, terminando no valor atual. Cada formulário abre depois do envio anterior; então a mudança
+      // aconteceu depois do envio que antecede o formulário que viu o valor antigo e antes do envio que viu o novo (ou
+      // da última gravação, para o valor atual). Os fluxos do registro nesse intervalo ficam listados, sem escolher um.
+      const obs = forms
+        .flatMap((f) => { const p = fieldPair(f.url, target.table, target.field); return p.orig === undefined ? [] : [{ ms: f.ms, raw: p.orig, shown: p.origShown, sent: p.sent }]; })
+        .sort((a, b) => a.ms - b.ms);
+      const seq: { ms: number; raw: string; shown?: string; sent?: string; current?: boolean }[] = [...obs, { ms: toMs(updatedOn), raw: rec[target.field] ?? '', current: true }];
+      const sec = (ms: number) => Math.floor(ms / 1000) * 1000;
+      const valueEvents: UnauditedEvent[] = [];
+      for (let k = 1; k < seq.length && obs.length; k++) {
+        const a = seq[k - 1]!;
+        const b = seq[k]!;
+        if (normalizeValue(a.raw) === normalizeValue(b.raw)) continue;
+        // O próprio formulário enviou o valor novo: a mudança é dele e já aparece na linha do formulário.
+        if (a.sent !== undefined && normalizeValue(a.sent) === normalizeValue(b.raw)) continue;
+        const lower = k >= 2 ? seq[k - 2]!.ms : toMs(rec.sys_created_on ?? '');
+        if (Number.isNaN(lower) || Number.isNaN(b.ms)) continue;
+        const candidates = flowsAll
+          .filter((f) => { const m = toMs(f.sys_created_on ?? ''); return m >= sec(lower) && (b.current ? m <= b.ms + 999 : m < sec(b.ms)); })
+          .map((f) => ({ name: f.name ?? '', at: f.sys_created_on ?? '', ...(f.sys_id ? { sysId: f.sys_id } : {}) }));
+        valueEvents.push({
+          at: iso(b.ms), kind: 'value', who: '', since: iso(lower), candidates,
+          from: shown(a.raw, a.shown) ?? '', to: shown(b.raw, b.shown) ?? '', fromRaw: a.raw, toRaw: b.raw,
+        });
+      }
+      // Valor sem texto exibido (referência ou lista que nenhum formulário mostrou, como o valor atual): busca o texto.
+      const bare = unique(valueEvents.flatMap((e) => [e.from === e.fromRaw ? e.fromRaw : '', e.to === e.toRaw ? e.toRaw : '']).filter((v): v is string => !!v));
+      if (bare.length) {
+        const d = await resolveDisplay(quiet, meta.tables, { [target.field]: bare }, opts.language);
+        const txt = d.values[target.field] ?? {};
+        for (const e of valueEvents) {
+          if (e.from === e.fromRaw && e.fromRaw && txt[e.fromRaw]) e.from = txt[e.fromRaw];
+          if (e.to === e.toRaw && e.toRaw && txt[e.toRaw]) e.to = txt[e.toRaw];
+        }
+      }
+      events = [...formEvents, ...flowEvents, ...valueEvents].sort((a, b) => toMs(a.at) - toMs(b.at));
     }
     unaudited = {
       count: mods - maxCheckpoint, lastUpdatedOn: updatedOn, lastUpdatedBy: rec.sys_updated_by ?? '', clues,

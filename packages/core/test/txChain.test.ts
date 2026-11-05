@@ -32,6 +32,35 @@ describe('reconstrução: o que a tela mostra (teste do dono no DEV, 05/11/2026)
   });
 });
 
+describe('mudança de valor sem formulário (ex.: Status por fluxo)', () => {
+  it('sai da sequência do que os formulários viram ao abrir, com intervalo e fluxos do intervalo', async () => {
+    const s = cenario('C');
+    submit(s, shiftStr(T0, -600), 'pessoa', 'A', 'A', 1);
+    submit(s, shiftStr(T0, -60), 'pessoa', 'B', 'B', 2);
+    s.flows.push(
+      { sys_id: 'f'.repeat(32), name: 'Fluxo do meio', state: 'complete', sys_created_on: shiftStr(T0, -300) },
+      { sys_id: 'e'.repeat(32), name: 'Fluxo do fim', state: 'complete', sys_created_on: T0 },
+    );
+    s.client.deny('sys_audit');
+    const r = await investigate(build(s), target);
+    const values = (r.unaudited?.events ?? []).filter((e) => e.kind === 'value');
+    expect(values.map((e) => `${e.from}>${e.to}`)).toEqual(['A>B', 'B>C']);
+    expect(values[0]!.candidates?.map((c) => c.name).join(' ')).toContain('Fluxo do meio');
+    expect(values[0]!.candidates?.map((c) => c.name).join(' ')).not.toContain('Fluxo do fim');
+    expect(values[1]!.candidates?.map((c) => c.name).join(' ')).toContain('Fluxo do fim');
+    const flows = (r.unaudited?.events ?? []).filter((e) => e.kind === 'flow');
+    expect(flows.every((f) => f.sysId)).toBe(true);
+  });
+
+  it('mudança que o próprio formulário enviou não vira mudança sem autor', async () => {
+    const s = cenario('B');
+    submit(s, shiftStr(T0, -600), 'pessoa', 'A', 'B', 1);
+    s.client.deny('sys_audit');
+    const r = await investigate(build(s), target);
+    expect((r.unaudited?.events ?? []).filter((e) => e.kind === 'value')).toHaveLength(0);
+  });
+});
+
 describe('reconstrução pelo log de transações (sem sys_audit)', () => {
   it('cadeia que bate com o registro vira mudanças, com valores e usuário', async () => {
     const s = cenario('depois');
@@ -127,7 +156,8 @@ describe('reconstrução pelo log de transações (sem sys_audit)', () => {
     s.flows.push({ name: 'Fluxo Z', state: 'complete', sys_created_on: shiftStr(T0, -300) }, { name: 'Fluxo X', state: 'complete', sys_created_on: T0 });
     s.client.deny('sys_audit');
     const r = await investigate(build(s), target);
-    const ev = r.unaudited?.events ?? [];
+    // Só envios e fluxos aqui; a mudança B → C (sem formulário) tem teste próprio.
+    const ev = (r.unaudited?.events ?? []).filter((e) => e.kind !== 'value');
     expect(ev[0]).toMatchObject({ kind: 'form', who: 'alguem', from: 'A', to: 'B', changed: true });
     expect(ev.map((e) => e.name ?? '')).toContain('Fluxo Z');
     expect(ev.at(-1)).toMatchObject({ kind: 'flow', name: 'Fluxo X', state: 'complete' });
