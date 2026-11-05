@@ -437,8 +437,9 @@ function sentIsNew(sent: string, value: string): boolean {
   return n(sent) === n(value) || (sent.length >= 3 && n(value).startsWith(n(sent)));
 }
 
-// Gravação sem auditoria: detalhe (fluxo, antes/depois, linha do tempo). Aparece também sem mudança selecionada, porque
-// as abas só existem quando há uma mudança, e sem isto a investigação que não reconstrói nada não mostrava nada.
+// Gravação sem auditoria: resumo e fluxo do mesmo segundo. Aparece também sem mudança selecionada, porque as abas só
+// existem quando há uma mudança. As pistas por horário (jobs e chamadas no mesmo segundo) não aparecem: eram de outros
+// processos e liam mal (dono, 05/11/2026); os envios de formulário e os fluxos do registro estão na lista de mudanças.
 function UnauditedDetail({ r }: { r: Investigation }) {
   const u = r.unaudited;
   if (!u) return null;
@@ -447,7 +448,6 @@ function UnauditedDetail({ r }: { r: Investigation }) {
       <b>{plural(P.unauditedItem, u.count)}</b> {fmt(P.unauditedText, { when: when(u.lastUpdatedOn), user: u.lastUpdatedBy })}
       {u.flow && <div class="det">{fmt(P.unauditedFlow, { name: u.flow.name, state: u.flow.state, at: when(u.flow.at) })}</div>}
       {u.flowCandidates && <div class="det">{fmt(P.unauditedCandidates, { list: u.flowCandidates.join(' · ') })}</div>}
-      {u.clues.map((x) => <div class="det">{fmt(P.clue, { x: localizeTimes(x, '') })}</div>)}
     </div></div>
   );
 }
