@@ -17,6 +17,21 @@ function cenario(current: string) {
   return s;
 }
 
+describe('reconstrução: o que a tela mostra (teste do dono no DEV, 05/11/2026)', () => {
+  it('de (vazio) para Sim não vira "Criado como", não rebaixa sem lacuna e o rastro aponta para o formulário', async () => {
+    const s = cenario('true');
+    submit(s, T0, 'quem.salvou', '', 'true', 0);
+    s.client.deny('sys_audit');
+    const r = await investigate(build(s), target);
+    const c = r.changes[0]!;
+    expect(c.oldValue).toBe('');
+    expect(c.checkpoint).toBeGreaterThanOrEqual(2);
+    expect(c.evidence[0]?.gaps.join(' ') ?? '').not.toContain('reconstruída a partir');
+    const change = (c.trace ?? []).find((t) => t.kind === 'change');
+    expect(change?.source).toBe('syslog_transaction');
+  });
+});
+
 describe('reconstrução pelo log de transações (sem sys_audit)', () => {
   it('cadeia que bate com o registro vira mudanças, com valores e usuário', async () => {
     const s = cenario('depois');

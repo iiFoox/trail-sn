@@ -340,6 +340,8 @@ details.fold summary h4 .pill + * { display: none; }
 .h .g.warn { background: var(--probable-bg); color: var(--probable); }
 /* Envio de formulário e fluxo do registro, quando não há auditoria: mesma linha, etiqueta da fonte. */
 .h.tx { cursor: default; }
+.h.tx.go { cursor: pointer; }
+.h.tx.go:hover, .h.tx.go:focus-visible { border-color: var(--teal-2); }
 .h .g.src { background: color-mix(in srgb, var(--muted) 16%, transparent); color: var(--fg-2); }
 .h .g.src.flow { background: color-mix(in srgb, var(--teal-2) 16%, transparent); color: var(--teal-2); }
 .footer { justify-content: center; }
@@ -377,7 +379,8 @@ details.grp > .li { padding-left: 46px; border-top: 1px dashed var(--line); }
 
 /* histórico: este campo / registro inteiro */
 .hist-switch { display: flex; width: 100%; }
-.hist-switch button { flex: 1; }
+/* Rótulo longo (campo customizado com nome grande) não pode ser comido pela borda arredondada: corta com reticências. */
+.hist-switch button { display: block; flex: 1; min-width: 0; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
 ol.rtl { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 ol.rtl > li { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
 ol.rtl .hd { display: flex; gap: 10px; align-items: center; padding: 10px 12px; }
@@ -476,7 +479,7 @@ b.add { color: #3ecf8e; } b.del { color: #ef5b6b; }
 .seg-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .seg-tabs button { min-width: 0; white-space: nowrap; }
 .hist-switch { display: grid; grid-template-columns: 1fr 1fr; width: 100%; box-sizing: border-box; border-radius: 12px; margin-bottom: 12px; }
-.hist-switch button { display: flex; justify-content: center; align-items: center; text-align: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 9px; padding: 7px 8px; font-size: 12.5px; }
+.hist-switch button { display: block; text-align: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 9px; padding: 7px 8px; font-size: 12.5px; }
 .card.connect { display: flex; flex-direction: column; gap: 10px; }
 .card.connect p { margin: 0; line-height: 1.5; }
 body { overflow-x: hidden; }

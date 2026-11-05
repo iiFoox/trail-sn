@@ -205,7 +205,9 @@ export async function investigate(
         newvalue: c.newValue ?? '',
         user: src?.user ?? '',
         sys_created_on: new Date(c.at).toISOString().slice(0, 19).replace('T', ' '),
-        record_checkpoint: String(src?.s.sysModCount ?? i + 1),
+        // Envio de formulário de registro que já existe nunca é criação: o checkpoint fica ≥ 2, senão a tela mostrava
+        // "Criado como Sim" para uma mudança de (vazio) para Sim. sys_modCount é o do formulário aberto; o envio soma 1.
+        record_checkpoint: src?.s.insert ? '1' : String(Math.max(2, (src?.s.sysModCount ?? 0) + 1)),
       };
     });
     const gap = [
@@ -566,7 +568,9 @@ export async function investigate(
       top.gaps.push(`${silent.join(', ')} não respondeu: uma automação dessa fonte pode ter feito a mudança`);
     }
   }
-  if (transactionChain) {
+  // Só rebaixa quando a reconstrução tem lacuna (texto cortado, cadeia quebrada, janela grande). Envio de formulário que
+  // bate exatamente com o valor atual é prova direta de quem gravou (teste do dono no DEV, 05/11/2026).
+  if (transactionChain && txGaps.length) {
     for (const c of changes) {
       const top = c.evidence[0];
       if (!top || top.type !== 'user_action' || top.grade !== 'confirmed') continue;
@@ -841,7 +845,9 @@ function buildTrace(ctx: ChangeContext, top: Change['evidence'][number] | undefi
     if (fields.length) items.push({ at, kind: 'write', label: '', user: rows[0]?.user ?? '', source: 'sys_audit', fields, checkpoint: cp, ref: auditRef(cp) });
   }
   const same = writes(ctx.checkpoints[String(ctx.checkpoint)] ?? []);
-  items.push({ at: ctx.at, kind: 'change', label: '', user: ctx.user, source: 'sys_audit', ref: auditRef(ctx.checkpoint), ...(same.length ? { fields: same } : {}) });
+  // Mudança reconstruída pelo log de transações (linhas tx*): a origem é o envio do formulário, não a auditoria.
+  const fromTx = (ctx.checkpoints[String(ctx.checkpoint)] ?? []).some((a) => (a.sys_id ?? '').startsWith('tx'));
+  items.push({ at: ctx.at, kind: 'change', label: '', user: ctx.user, source: fromTx ? 'syslog_transaction' : 'sys_audit', ref: fromTx ? { table: 'syslog_transaction', query: `urlLIKE${ctx.sysId}^type=form` } : auditRef(ctx.checkpoint), ...(same.length ? { fields: same } : {}) });
   // O syslog_transaction registra a transação quando ela TERMINA; um job que gravou às 01:37:01 aparece às 01:37:02.
   // A causa que terminou até 3 s depois da mudança é posta antes dela, mantendo o horário real.
   const sortAt = (t: TraceItem) => (t.cause && t.source === 'syslog_transaction' && t.at > ctx.at && toMs(t.at) - toMs(ctx.at) <= 3000 ? ctx.at : t.at);

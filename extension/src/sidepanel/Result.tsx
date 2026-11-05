@@ -239,11 +239,11 @@ export function Result({ r, origin, access, toast, onField, advanced = false, me
       {c && tab === 'history' && (
         <>
           <div class="seg2 hist-switch" role="group">
-            <button aria-pressed={histMode === 'field'} onClick={() => setHistMode('field')}>{P.histField} · {field}</button>
+            <button aria-pressed={histMode === 'field'} title={`${P.histField} · ${field}`} onClick={() => setHistMode('field')}>{P.histField} · {field}</button>
             <button aria-pressed={histMode === 'record'} onClick={() => setHistMode('record')}>{P.histRecord}</button>
           </div>
           {histMode === 'field'
-            ? <History r={r} origin={origin} sel={sel} open={histOpen} onOpen={setHistOpen} onPick={(i) => { setSel(i); setTab(tabFor(r.changes[i]) === 'trace' ? 'trace' : 'answer'); }} />
+            ? <History r={r} origin={origin} sel={sel} open={histOpen} onOpen={setHistOpen} onTrace={() => setTab('trace')} onPick={(i) => { setSel(i); setTab(tabFor(r.changes[i]) === 'trace' ? 'trace' : 'answer'); }} />
             : <RecordTimeline origin={origin} table={r.target.table} sysId={r.target.sysId} onField={(f) => { setHistMode('field'); onField(f); }} />}
         </>
       )}
@@ -310,15 +310,11 @@ function Answer({ r, c, origin, field, denied, expired, goProof, copy, toastFn }
       ) : (
         <div class="who none"><span class="ic">{Glyph.question}</span><div><div class="nm">{P.noCause}</div><div class="tech">{P.noCauseHint}</div></div></div>
       )}
-      <div class="plain">
-        <div class="pl-hd"><b>{P.plainTitle}</b><span class="muted small">{P.plainHint}</span></div>
-        <p>{plainSummary(r, c)}</p>
-        <button class="link" onClick={() => copy(plainSummary(r, c))}>{Glyph.copy} {P.plainCopy}</button>
-      </div>
-      <div class={`btns ${link ? '' : 'one'}`}>
-        {link && <a class="btn primary big" href={link} target="_blank" rel="noreferrer">{Glyph.open} {fmt(P.openArtifact, { what: P.what[top?.artifact.table ?? ''] ?? s.openInStudio })}</a>}
-        <button class="btn big" onClick={() => copy(summary())}>{Glyph.copy} {P.copySummary}</button>
-      </div>
+      {link && (
+        <div class="btns one">
+          <a class="btn primary big" href={link} target="_blank" rel="noreferrer">{Glyph.open} {fmt(P.openArtifact, { what: P.what[top?.artifact.table ?? ''] ?? s.openInStudio })}</a>
+        </div>
+      )}
       <div class="export">
         <button class="link" onClick={() => copy(fullReport(r, c, origin))}>{Glyph.copy} {P.copyFull}</button>
         <button class="link" onClick={() => void savePdf(r, r.changes.indexOf(c), origin, () => toastFn(P.demoPdf))}>{Glyph.open} {P.savePdf}</button>
@@ -451,7 +447,6 @@ function UnauditedDetail({ r }: { r: Investigation }) {
       <b>{plural(P.unauditedItem, u.count)}</b> {fmt(P.unauditedText, { when: when(u.lastUpdatedOn), user: u.lastUpdatedBy })}
       {u.flow && <div class="det">{fmt(P.unauditedFlow, { name: u.flow.name, state: u.flow.state, at: when(u.flow.at) })}</div>}
       {u.flowCandidates && <div class="det">{fmt(P.unauditedCandidates, { list: u.flowCandidates.join(' · ') })}</div>}
-      {u.before !== undefined && <div class="det">{fmt(P.unauditedBeforeAfter, { before: u.before || '∅', after: u.after || '∅' })}</div>}
       {u.clues.map((x) => <div class="det">{fmt(P.clue, { x: localizeTimes(x, '') })}</div>)}
     </div></div>
   );
@@ -655,7 +650,7 @@ function ChangePath({ r, sel, onPick }: { r: Investigation; sel: number; onPick:
   );
 }
 
-function History({ r, origin, sel, onPick, open, onOpen }: { r: Investigation; origin: string; sel: number; onPick: (i: number) => void; /** Lista aberta (fica com o Result: ↑ ↓ trocam a mudança sem recolher). */ open?: boolean; onOpen?: (o: boolean) => void }) {
+function History({ r, origin, sel, onPick, open, onOpen, onTrace }: { r: Investigation; origin: string; sel: number; onPick: (i: number) => void; /** Lista aberta (fica com o Result: ↑ ↓ trocam a mudança sem recolher). */ open?: boolean; onOpen?: (o: boolean) => void; /** Fluxo clicado: abre o Rastro, onde os fluxos aparecem com o resto. */ onTrace?: () => void }) {
   const field = fieldName(r);
   type Row = { at: string; i: number };
   const rows: Row[] = r.changes.map((c, i) => ({ at: c.at, i }));
@@ -705,7 +700,8 @@ function History({ r, origin, sel, onPick, open, onOpen }: { r: Investigation; o
                 </div>
                 <span class="g src">{P.txForm}</span></div>
             ) : (
-              <div class="h tx" style={`--i:${-100 - i}`}><div class="dt">{p.date}<small>{p.time}</small></div>
+              <div class={`h tx ${onTrace ? 'go' : ''}`} style={`--i:${-100 - i}`} {...(onTrace ? { role: 'button', tabIndex: 0, title: P.txOpenTrace, onClick: onTrace, onKeyDown: (ev: KeyboardEvent) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onTrace(); } } } : {})}>
+                <div class="dt">{p.date}<small>{p.time}</small></div>
                 <div class="c"><b>{e.name}</b><small>{fmt(P.txFlowState, { state: e.state ?? '' })}</small></div>
                 <span class="g src flow">{P.txFlow}</span></div>
             );

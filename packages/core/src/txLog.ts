@@ -21,6 +21,8 @@ export interface TxSubmit {
   startMs: number;
   sysModCount?: number;
   changes: TxChange[];
+  /** Envio que criou o registro (sysverb_insert). */
+  insert?: boolean;
 }
 
 export interface TxChain {
@@ -94,7 +96,7 @@ export function parseSubmit(url: string, table: string, startMs: number): TxSubm
   }
   if (!changes.length) return null;
   const mc = params.get('sys_modCount');
-  return { startMs, sysModCount: mc !== undefined && /^\d+$/.test(mc) ? Number(mc) : undefined, changes };
+  return { startMs, sysModCount: mc !== undefined && /^\d+$/.test(mc) ? Number(mc) : undefined, changes, insert: /sysverb_insert/.test(query) };
 }
 
 /**
