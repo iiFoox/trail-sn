@@ -479,6 +479,9 @@ function Proof({ r, c, origin, field, denied, expired, access, copy }: { r: Inve
         {r.unaudited && (
           <div class="li"><span class="ck w">!</span><div class="grow">
             <b>{plural(P.unauditedItem, r.unaudited.count)}</b> {fmt(P.unauditedText, { when: when(r.unaudited.lastUpdatedOn), user: r.unaudited.lastUpdatedBy })}
+            {r.unaudited.flow && <div class="det">{fmt(P.unauditedFlow, { name: r.unaudited.flow.name, state: r.unaudited.flow.state, at: when(r.unaudited.flow.at) })}</div>}
+            {r.unaudited.flowCandidates && <div class="det">{fmt(P.unauditedCandidates, { list: r.unaudited.flowCandidates.join(' · ') })}</div>}
+            {r.unaudited.before !== undefined && <div class="det">{fmt(P.unauditedBeforeAfter, { before: r.unaudited.before || '∅', after: r.unaudited.after || '∅' })}</div>}
             {r.unaudited.clues.map((x) => <div class="det">{fmt(P.clue, { x: localizeTimes(x, '') })}</div>)}
           </div></div>
         )}

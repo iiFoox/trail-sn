@@ -6,7 +6,7 @@ import { historyToAudit, mergeHistoryLines } from './history';
 import { scoreAll, THRESHOLDS } from './scoring';
 import { fieldsRead, writesOf } from './scriptEval';
 import { siCallsWithField } from './util';
-import { chainField, parseSubmit } from './txLog';
+import { chainField, parseSubmit, type TxSubmit } from './txLog';
 import { runSignatures, type ChangeContext, type TableMeta, type Traces } from './signatures';
 import {
   DEFAULT_OPTIONS,
@@ -160,10 +160,11 @@ export async function investigate(
   };
   // Reconstrução a partir das gravações de formulário guardadas: cada submit vira uma linha de auditoria, e a cadeia
   // precisa bater com o valor atual do registro; senão nada entra. Valor cortado pela instância fica marcado.
-  const txChanges = async (id: string, r: Row): Promise<{ rows: Row[]; gap?: string }> => {
+  // Envios de formulário do registro (a busca no log de transações), feita uma vez só por investigação.
+  let submitsMemo: Promise<{ parsed: { s: TxSubmit; user: string }[]; windowLimited: boolean }> | undefined;
+  const loadSubmits = (id: string, r: Row) => (submitsMemo ??= (async () => {
     const from = r.sys_created_on ?? '';
     const to = shift(r.sys_updated_on ?? '', 60);
-    if (!from || !to || !(target.field in r)) return { rows: [] };
     const fields = ['url', 'type', 'sys_created_on', 'start_process_at', 'sys_created_by'];
     // 1ª tentativa: filtro pela URL (o sys_id do registro). Se o cliente barrar esse filtro (no_filter: a coluna
     // não aceita filtro para o usuário), vai para a janela de datas, que a instância aceita, e confere o sys_id no código.
@@ -182,6 +183,13 @@ export async function investigate(
       const s = parseSubmit(x.url ?? '', target.table, toMs(x.start_process_at || x.sys_created_on || ''));
       return s ? [{ s, user: x.sys_created_by ?? '' }] : [];
     });
+    return { parsed, windowLimited };
+  })());
+  const txChanges = async (id: string, r: Row): Promise<{ rows: Row[]; gap?: string }> => {
+    const from = r.sys_created_on ?? '';
+    const to = shift(r.sys_updated_on ?? '', 60);
+    if (!from || !to || !(target.field in r)) return { rows: [] };
+    const { parsed, windowLimited } = await loadSubmits(id, r);
     if (!parsed.length) return { rows: [] };
     const chain = chainField(parsed.map((p) => p.s), target.field, r[target.field] ?? '');
     if (!chain.matchesCurrent || !chain.changes.length) return { rows: [] };
@@ -592,7 +600,28 @@ export async function investigate(
       }
       for (const e of evs) clues.push(`${e.sys_created_on} evento ${e.name ?? ''} neste registro`);
     }
-    unaudited = { count: mods - maxCheckpoint, lastUpdatedOn: updatedOn, lastUpdatedBy: rec.sys_updated_by ?? '', clues };
+    // Quem gravou no mesmo segundo: fluxo (sys_flow_context) do registro. Só vale com horário exato; mais de um candidato
+    // não escolhe. Antes: último valor que o formulário gravou no campo (log de transações). Depois: o valor atual.
+    let flow: { name: string; state: string; at: string } | undefined;
+    let flowCandidates: string[] | undefined;
+    let before: string | undefined;
+    if (updatedOn) {
+      const flowsNear = await q('sys_flow_context', `source_record=${sysId}^sys_created_on>=${shift(updatedOn, -1)}^sys_created_on<=${shift(updatedOn, 1)}^ORDERBYsys_created_on`, ['name', 'state', 'sys_created_on'], 20, 'sys_flow_context');
+      const exact = flowsNear.filter((f) => toMs(f.sys_created_on ?? '') === toMs(updatedOn));
+      if (exact.length === 1) flow = { name: exact[0]!.name ?? '', state: exact[0]!.state ?? '', at: exact[0]!.sys_created_on ?? '' };
+      else if (exact.length > 1) flowCandidates = exact.map((f) => `${f.name ?? ''} (${f.state ?? ''})`);
+      if (target.field in rec) {
+        const { parsed: subs } = await loadSubmits(sysId, rec);
+        const sent = subs.filter((p) => p.s.startMs <= toMs(updatedOn) + 2000).flatMap((p) => p.s.changes.filter((c) => c.field === target.field).map((c) => c.newValue));
+        before = sent.at(-1);
+      }
+    }
+    unaudited = {
+      count: mods - maxCheckpoint, lastUpdatedOn: updatedOn, lastUpdatedBy: rec.sys_updated_by ?? '', clues,
+      ...(flow ? { flow } : {}),
+      ...(flowCandidates ? { flowCandidates } : {}),
+      ...(before !== undefined ? { before, after: rec[target.field] ?? '' } : {}),
+    };
   }
 
   // Nomes como no formulário para os outros campos que aparecem no rastro (gravados junto ou perto da mudança).

@@ -167,6 +167,14 @@ export interface UnauditedUpdates {
   lastUpdatedOn: string;
   lastUpdatedBy: string;
   clues: string[];
+  /** Fluxo que rodou no mesmo segundo da gravação (sys_flow_context do registro), quando há um só candidato exato. */
+  flow?: { name: string; state: string; at: string };
+  /** Mais de um fluxo no mesmo segundo: a ferramenta não escolhe, lista todos. */
+  flowCandidates?: string[];
+  /** Último valor do campo que o formulário gravou (log de transações), antes da gravação sem auditoria. */
+  before?: string;
+  /** Valor atual do campo no registro. */
+  after?: string;
 }
 
 export type AccessState = 'ok' | 'denied' | 'empty' | 'no_filter' | 'timeout' | 'unknown';

@@ -85,6 +85,27 @@ describe('reconstrução pelo log de transações (sem sys_audit)', () => {
     expect(r.gaps.join(' ')).toContain('janela com muitas gravações');
   });
 
+  it('gravação sem auditoria: fluxo do mesmo segundo, com antes (último do formulário) e depois (atual)', async () => {
+    const s = cenario('C');
+    submit(s, shiftStr(T0, -600), 'alguem', 'A', 'B', 1);
+    s.flows.push({ name: 'Fluxo X', state: 'complete', sys_created_on: T0 });
+    s.client.deny('sys_audit');
+    const r = await investigate(build(s), target);
+    expect(r.unaudited?.flow?.name).toBe('Fluxo X');
+    expect(r.unaudited?.flowCandidates).toBeUndefined();
+    expect(r.unaudited?.before).toBe('B');
+    expect(r.unaudited?.after).toBe('C');
+  });
+
+  it('dois fluxos no mesmo segundo: lista os dois e não escolhe', async () => {
+    const s = cenario('C');
+    s.flows.push({ name: 'Fluxo X', state: 'complete', sys_created_on: T0 }, { name: 'Fluxo Y', state: 'complete', sys_created_on: T0 });
+    s.client.deny('sys_audit');
+    const r = await investigate(build(s), target);
+    expect(r.unaudited?.flow).toBeUndefined();
+    expect(r.unaudited?.flowCandidates?.length).toBe(2);
+  });
+
   it('auditoria respondendo: o log de transações não é usado', async () => {
     const s = cenario('depois');
     submit(s, T0, 'alguem', 'antes', 'depois', 1);
