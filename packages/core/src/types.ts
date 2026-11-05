@@ -176,7 +176,25 @@ export interface UnauditedUpdates {
   /** Valor atual do campo no registro. */
   after?: string;
   /** O que a instância registrou no período, em ordem: envios de formulário (com valores) e fluxos (com nome). Sem conclusão. */
-  timeline?: { at: string; text: string }[];
+  events?: UnauditedEvent[];
+}
+
+/** Um registro da instância perto da gravação sem auditoria. */
+export interface UnauditedEvent {
+  /** UTC, "AAAA-MM-DD hh:mm:ss". */
+  at: string;
+  kind: 'form' | 'flow';
+  /** Quem enviou o formulário (user_name); vazio para fluxo. */
+  who: string;
+  /** Formulário: valor do campo ao abrir (texto exibido quando há). Ausente quando o envio não trouxe o campo. */
+  from?: string;
+  /** Formulário: valor enviado. Ausente quando o formulário não enviou o campo. */
+  to?: string;
+  /** Formulário: o valor enviado é diferente do valor ao abrir. */
+  changed?: boolean;
+  /** Fluxo: nome e estado. */
+  name?: string;
+  state?: string;
 }
 
 export type AccessState = 'ok' | 'denied' | 'empty' | 'no_filter' | 'timeout' | 'unknown';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chainField, decodeEntities, parseSubmit, type TxSubmit } from '../src/txLog';
+import { chainField, decodeEntities, fieldPair, parseSubmit, type TxSubmit } from '../src/txLog';
 
 /** Formato medido na PDI (31/10/2026): sys_original.<tabela>.<campo> e <tabela>.<campo>, valor cortado em ~1000 + "...". */
 const url = (fields: Record<string, string>, mc = 1) =>
@@ -33,6 +33,16 @@ describe('parseSubmit', () => {
   it('campo enviado sem valor original fica sem oldValue', () => {
     const s = parseSubmit(url({ 'incident.description': 'x' }), 'incident', 1);
     expect(s!.changes[0]?.oldValue).toBeUndefined();
+  });
+});
+
+describe('fieldPair', () => {
+  it('traz o valor ao abrir e o enviado, mesmo sem mudança', () => {
+    const u = '/incident.do?sys_original.incident.state=Em Andamento&incident.state=Em Andamento&incident.description=x';
+    expect(fieldPair(u, 'incident', 'state')).toEqual({ orig: 'Em Andamento', sent: 'Em Andamento' });
+  });
+  it('campo fora do envio: indefinido, sem inventar valor', () => {
+    expect(fieldPair('/incident.do?incident.description=x', 'incident', 'state')).toEqual({ orig: undefined, sent: undefined });
   });
 });
 

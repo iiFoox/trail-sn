@@ -112,10 +112,10 @@ describe('reconstrução pelo log de transações (sem sys_audit)', () => {
     s.flows.push({ name: 'Fluxo Z', state: 'complete', sys_created_on: shiftStr(T0, -300) }, { name: 'Fluxo X', state: 'complete', sys_created_on: T0 });
     s.client.deny('sys_audit');
     const r = await investigate(build(s), target);
-    const texts = r.unaudited?.timeline?.map((x) => x.text) ?? [];
-    expect(texts[0]).toContain('formulário');
-    expect(texts.join(' | ')).toContain('fluxo Fluxo Z');
-    expect(texts.at(-1)).toContain('fluxo Fluxo X');
+    const ev = r.unaudited?.events ?? [];
+    expect(ev[0]).toMatchObject({ kind: 'form', who: 'alguem', from: 'A', to: 'B', changed: true });
+    expect(ev.map((e) => e.name ?? '')).toContain('Fluxo Z');
+    expect(ev.at(-1)).toMatchObject({ kind: 'flow', name: 'Fluxo X', state: 'complete' });
   });
 
   it('auditoria respondendo: o log de transações não é usado', async () => {

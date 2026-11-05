@@ -6,7 +6,7 @@ import { historyToAudit, mergeHistoryLines } from './history';
 import { scoreAll, THRESHOLDS } from './scoring';
 import { fieldsRead, writesOf } from './scriptEval';
 import { siCallsWithField } from './util';
-import { chainField, parseSubmit, type TxSubmit } from './txLog';
+import { chainField, fieldPair, parseSubmit, type TxSubmit } from './txLog';
 import { runSignatures, type ChangeContext, type TableMeta, type Traces } from './signatures';
 import {
   DEFAULT_OPTIONS,
@@ -17,6 +17,7 @@ import {
   type Change,
   type Investigation,
   type InvestigationOptions,
+  type UnauditedEvent,
   type Row,
   type Target,
   type TraceItem,
@@ -161,7 +162,7 @@ export async function investigate(
   // Reconstrução a partir das gravações de formulário guardadas: cada submit vira uma linha de auditoria, e a cadeia
   // precisa bater com o valor atual do registro; senão nada entra. Valor cortado pela instância fica marcado.
   // Envios de formulário do registro (a busca no log de transações), feita uma vez só por investigação.
-  let submitsMemo: Promise<{ parsed: { s: TxSubmit; user: string }[]; windowLimited: boolean }> | undefined;
+  let submitsMemo: Promise<{ parsed: { s: TxSubmit; user: string }[]; windowLimited: boolean; forms: { ms: number; user: string; url: string }[] }> | undefined;
   const loadSubmits = (id: string, r: Row) => (submitsMemo ??= (async () => {
     const from = r.sys_created_on ?? '';
     const to = shift(r.sys_updated_on ?? '', 60);
@@ -183,7 +184,9 @@ export async function investigate(
       const s = parseSubmit(x.url ?? '', target.table, toMs(x.start_process_at || x.sys_created_on || ''));
       return s ? [{ s, user: x.sys_created_by ?? '' }] : [];
     });
-    return { parsed, windowLimited };
+    // Todos os envios de formulário do registro, com ou sem mudança: a linha do tempo mostra o valor original e o enviado.
+    const forms = logRows.map((x) => ({ ms: toMs(x.start_process_at || x.sys_created_on || ''), user: x.sys_created_by ?? '', url: x.url ?? '' }));
+    return { parsed, windowLimited, forms };
   })());
   const txChanges = async (id: string, r: Row): Promise<{ rows: Row[]; gap?: string }> => {
     const from = r.sys_created_on ?? '';
@@ -596,7 +599,9 @@ export async function investigate(
         quiet('sysevent', `instance=${sysId}^sys_created_on>=${shift(updatedOn, -3)}^sys_created_on<=${shift(updatedOn, 5)}`, ['sys_created_on', 'name'], 20),
       ]);
       for (const t of tx) {
-        if (/^JOB: |\/sys\.scripts\.do|\/api\//.test(t.url ?? '')) clues.push(`${t.sys_created_on} ${t.type} ${(t.url ?? '').split('?')[0]?.slice(0, 80)} (${t.sys_created_by})`);
+        // Só pista ligada a este registro: chamada de API de outra pessoa ou outro registro no mesmo segundo é ruído.
+        const u = t.url ?? '';
+        if (/^JOB: |\/sys\.scripts\.do/.test(u) || (u.includes('/api/') && u.includes(sysId))) clues.push(`${t.sys_created_on} ${t.type} ${(t.url ?? '').split('?')[0]?.slice(0, 80)} (${t.sys_created_by})`);
       }
       for (const e of evs) clues.push(`${e.sys_created_on} evento ${e.name ?? ''} neste registro`);
     }
@@ -616,23 +621,29 @@ export async function investigate(
         before = sent.at(-1);
       }
     }
-    // Linha do tempo bruta: o que o log de transações e os fluxos do registro mostram, em ordem, sem concluir quem fez o quê.
-    let timeline: { at: string; text: string }[] | undefined;
+    // O que o log de transações e os fluxos do registro mostram, em ordem, sem concluir quem fez a gravação: cada envio
+    // de formulário com o valor do campo ao abrir e o enviado (texto exibido quando há), e cada fluxo com nome e estado.
+    let events: UnauditedEvent[] | undefined;
     if (updatedOn) {
       const flowsAll = await q('sys_flow_context', `source_record=${sysId}^sys_created_on>=${shift(rec.sys_created_on ?? updatedOn, -5)}^sys_created_on<=${shift(updatedOn, 60)}^ORDERBYsys_created_on`, ['name', 'state', 'sys_created_on'], 200, 'sys_flow_context');
-      const { parsed: subsAll } = await loadSubmits(sysId, rec);
-      const items = [
-        ...subsAll.map((p) => ({ ms: p.s.startMs, text: `formulário (${p.user}): ${p.s.changes.map((c) => `${c.field} ${c.oldValue ?? '∅'} → ${c.newValue ?? '∅'}`).join('; ')}` })),
-        ...flowsAll.map((f) => ({ ms: toMs(f.sys_created_on ?? ''), text: `fluxo ${f.name ?? ''} (${f.state ?? ''})` })),
-      ].sort((a, b) => a.ms - b.ms);
-      timeline = items.map((i) => ({ at: new Date(i.ms).toISOString().slice(0, 19).replace('T', ' '), text: i.text }));
+      const { forms } = await loadSubmits(sysId, rec);
+      const iso = (ms: number) => new Date(ms).toISOString().slice(0, 19).replace('T', ' ');
+      const shown = (v?: string, label?: string) => (v === undefined ? undefined : label && label !== v ? label : v);
+      const formEvents: UnauditedEvent[] = forms.flatMap((f) => {
+        const p = fieldPair(f.url, target.table, target.field);
+        if (p.orig === undefined && p.sent === undefined) return [];
+        const changed = p.sent !== undefined && p.orig !== undefined && p.sent !== p.orig;
+        return [{ at: iso(f.ms), kind: 'form' as const, who: f.user, ...(p.orig !== undefined ? { from: shown(p.orig, p.origShown) } : {}), ...(p.sent !== undefined ? { to: shown(p.sent, p.sentShown) } : {}), changed }];
+      });
+      const flowEvents: UnauditedEvent[] = flowsAll.map((f) => ({ at: f.sys_created_on ?? '', kind: 'flow' as const, who: '', name: f.name ?? '', state: f.state ?? '' }));
+      events = [...formEvents, ...flowEvents].sort((a, b) => toMs(a.at) - toMs(b.at));
     }
     unaudited = {
       count: mods - maxCheckpoint, lastUpdatedOn: updatedOn, lastUpdatedBy: rec.sys_updated_by ?? '', clues,
       ...(flow ? { flow } : {}),
       ...(flowCandidates ? { flowCandidates } : {}),
       ...(before !== undefined ? { before, after: rec[target.field] ?? '' } : {}),
-      ...(timeline ? { timeline } : {}),
+      ...(events?.length ? { events } : {}),
     };
   }
 

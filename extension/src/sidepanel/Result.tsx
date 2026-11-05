@@ -452,12 +452,6 @@ function UnauditedDetail({ r }: { r: Investigation }) {
       {u.flow && <div class="det">{fmt(P.unauditedFlow, { name: u.flow.name, state: u.flow.state, at: when(u.flow.at) })}</div>}
       {u.flowCandidates && <div class="det">{fmt(P.unauditedCandidates, { list: u.flowCandidates.join(' · ') })}</div>}
       {u.before !== undefined && <div class="det">{fmt(P.unauditedBeforeAfter, { before: u.before || '∅', after: u.after || '∅' })}</div>}
-      {u.timeline && u.timeline.length > 0 && (
-        <div class="det">
-          <b>{P.unauditedTimeline}</b>
-          {u.timeline.slice(0, 60).map((x) => <div class="det">{x.at} · {x.text}</div>)}
-        </div>
-      )}
       {u.clues.map((x) => <div class="det">{fmt(P.clue, { x: localizeTimes(x, '') })}</div>)}
     </div></div>
   );
@@ -666,6 +660,8 @@ function History({ r, origin, sel, onPick, open, onOpen }: { r: Investigation; o
   type Row = { at: string; i: number };
   const rows: Row[] = r.changes.map((c, i) => ({ at: c.at, i }));
   if (r.unaudited?.lastUpdatedOn) rows.push({ at: r.unaudited.lastUpdatedOn, i: -1 });
+  // Envios de formulário e fluxos do registro (sem auditoria): entram na mesma lista, com índice -100, -101...
+  (r.unaudited?.events ?? []).forEach((e, k) => rows.push({ at: e.at, i: -100 - k }));
   rows.sort((a, b) => (a.at < b.at ? 1 : -1));
   const S = r.suspects;
   const whenRank: Record<string, number> = { before: 0, after: 1, async: 2, async_always: 2, display: 3 };
@@ -697,6 +693,23 @@ function History({ r, origin, sel, onPick, open, onOpen }: { r: Investigation; o
       <div class="hist hist-in">
         {rows.map(({ at, i }) => {
           const p = parts(at);
+          if (i <= -100) {
+            const e = r.unaudited!.events![-100 - i]!;
+            return e.kind === 'form' ? (
+              <div class="h tx" style={`--i:${-100 - i}`}><div class="dt">{p.date}<small>{p.time}</small></div>
+                <div class="c">
+                  {e.changed
+                    ? <>{e.from || P.empty} → <b>{e.to || P.empty}</b></>
+                    : <>{(e.to ?? e.from) || P.empty}<small>{e.to === undefined ? P.txNotSent : P.txNoChange}</small></>}
+                  <small>{fmt(P.txFormBy, { who: e.who })}</small>
+                </div>
+                <span class="g src">{P.txForm}</span></div>
+            ) : (
+              <div class="h tx" style={`--i:${-100 - i}`}><div class="dt">{p.date}<small>{p.time}</small></div>
+                <div class="c"><b>{e.name}</b><small>{fmt(P.txFlowState, { state: e.state ?? '' })}</small></div>
+                <span class="g src flow">{P.txFlow}</span></div>
+            );
+          }
           if (i === -1) {
             return (
               <div class="h unaud"><div class="dt">{p.date}<small>{p.time}</small></div>

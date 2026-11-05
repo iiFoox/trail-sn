@@ -338,6 +338,10 @@ details.fold summary h4 .pill + * { display: none; }
 .h .g.confirmed { background: var(--confirmed-bg); color: var(--confirmed); }
 .h .g.probable { background: var(--probable-bg); color: var(--probable); }
 .h .g.warn { background: var(--probable-bg); color: var(--probable); }
+/* Envio de formulário e fluxo do registro, quando não há auditoria: mesma linha, etiqueta da fonte. */
+.h.tx { cursor: default; }
+.h .g.src { background: color-mix(in srgb, var(--muted) 16%, transparent); color: var(--fg-2); }
+.h .g.src.flow { background: color-mix(in srgb, var(--teal-2) 16%, transparent); color: var(--teal-2); }
 .footer { justify-content: center; }
 .acc-list .state.empty { padding: 0; text-align: right; color: var(--ok); }
 .headcard .added { font-size: 13px; font-weight: 400; color: var(--fg-2); }

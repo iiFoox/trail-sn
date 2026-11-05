@@ -98,6 +98,28 @@ export function parseSubmit(url: string, table: string, startMs: number): TxSubm
 }
 
 /**
+ * Valor original (ao abrir o formulário) e valor enviado de um campo num submit, mesmo quando não mudou. `undefined`
+ * quando a URL não traz o parâmetro (campo fora do formulário, ou URL cortada pela instância antes dele).
+ */
+export function fieldPair(url: string, table: string, field: string): { orig?: string; sent?: string; origShown?: string; sentShown?: string } {
+  const m = /^\/?([a-z0-9_]+)\.do\?/i.exec(url);
+  if (!m) return {};
+  const out: { orig?: string; sent?: string; origShown?: string; sentShown?: string } = {};
+  for (const part of url.slice(m[0].length).split(/&(?=[A-Za-z0-9_.]+(?:=|&|$))/)) {
+    const i = part.indexOf('=');
+    if (i < 0) continue;
+    const k = part.slice(0, i);
+    const v = decodeEntities(safeDecode(part.slice(i + 1)));
+    if (k === `sys_original.${table}.${field}`) out.orig ??= v;
+    else if (k === `${table}.${field}`) out.sent ??= v;
+    // Texto exibido no formulário (referência e lista): o valor cru é sys_id ou código.
+    else if (k === `sys_display.original.${table}.${field}`) out.origShown ??= v;
+    else if (k === `sys_display.${table}.${field}`) out.sentShown ??= v;
+  }
+  return out;
+}
+
+/**
  * Cadeia de um campo, em ordem de tempo. Cada submit precisa começar do valor que o anterior deixou; o último valor
  * precisa bater com o valor atual do registro. Sem isso, o que faltou fica em `gaps` e o que não bate não é mostrado.
  */
