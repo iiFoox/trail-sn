@@ -1,19 +1,24 @@
-# Ficha de preenchimento das lojas (Trail 1.4.7)
+# Ficha de preenchimento das lojas (Trail 1.4.8)
 
 Tudo pronto para copiar e colar, campo por campo. Os textos estão em texto puro, porque as lojas não aceitam markdown.
-Arquivos: pacote de loja `packages/trail-chrome-1.4.7.zip` (serve para Chrome e Edge); pacote da pasta carregada manualmente `packages/trail-extensao-1.4.7.zip`; imagens nesta pasta (`docs/store/`).
+Arquivos: pacote de loja `packages/trail-chrome-1.4.8.zip` (serve para Chrome e Edge); pacote da pasta carregada manualmente `packages/trail-extensao-1.4.8.zip`; imagens nesta pasta (`docs/store/`).
 
 | Campo | Arquivo | Tamanho | Chrome | Edge |
 |---|---|---|---|---|
-| Pacote da loja | `packages/trail-chrome-1.4.7.zip` | 285.175 bytes | obrigatório | obrigatório |
-| Pasta empacotada para instalação manual | `packages/trail-extensao-1.4.7.zip` | 287.851 bytes | não enviar | não enviar |
+| Pacote da loja | `packages/trail-chrome-1.4.8.zip` | 293.069 bytes | obrigatório | obrigatório |
+| Pasta empacotada para instalação manual | `packages/trail-extensao-1.4.8.zip` | 294.797 bytes | não enviar | não enviar |
 | Logo da loja | `logo-300.png` | 300×300 | — (usa o ícone do pacote) | obrigatório |
 | Capturas de tela | `shot-1-resposta.png` … `shot-5-flows.png` | 1280×800 | 1 a 5 | 1 a 6 |
 | Bloco promocional pequeno | `tile-440x280.png` | 440×280 | obrigatório | opcional |
 
 O nome localizado (`Trail — Perícia de registros ServiceNow` / `Trail — ServiceNow Record Forensics`) e a descrição curta vêm do próprio pacote no Chrome. No Edge, use os campos abaixo.
 
-## Notas da versão 1.4.7
+## Notas da versão 1.4.8
+PT: Sem acesso à auditoria, o Trail agora reconstrói as mudanças de um campo a partir dos envios de formulário que a própria instância guarda: mostra quem salvou, o valor antes e depois, e as mudanças que nenhum formulário enviou (como as feitas por fluxos), com o intervalo em que aconteceram e os fluxos que rodaram nele. Só entra o que bate com o valor atual do registro; o que não dá para confirmar fica marcado. A visão do registro inteiro também passa a funcionar sem auditoria e avisa quando ela não está disponível. Nomes de valores de referência aparecem no lugar de códigos, fluxos do histórico têm link, e o painel ficou mais enxuto.
+
+EN: Without audit access, Trail now rebuilds a field's changes from the form submissions the instance itself keeps: it shows who saved, the value before and after, and the changes no form sent (such as those made by flows), with the interval in which they happened and the flows that ran in it. Only what matches the record's current value is shown; anything that cannot be confirmed is marked. The whole-record view also works without audit and says when the audit is unavailable. Reference values show their names instead of codes, flows in the history have links, and the panel is leaner.
+
+## Notas da versão 1.4.7 (anterior)
 PT: Campos de outro registro mostrados no formulário (dot-walking, como solicitacao.number) agora têm o ícone: o Trail segue a referência e investiga o registro apontado. Sem acesso à auditoria, o Trail lê o histórico guardado do registro (History) para campos que não aparecem no histórico do formulário, e nunca provoca a criação desse histórico na instância. Mais precisão: um script do formulário que altera o valor ao salvar e regras que regravam o campo logo depois de uma gravação pela API não deixam mais a pessoa como autora certa.
 
 EN: Fields from another record shown on the form (dot-walking, like request.number) now have the icon: Trail follows the reference and investigates that record. Without audit access, Trail reads the record’s stored history (History) for fields that are not in the form history, and never causes that history to be created on the instance. More precise: a form script that changes the value on save, and rules that rewrite the field right after an API write, no longer leave the person as the certain author.

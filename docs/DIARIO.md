@@ -10,6 +10,25 @@ Convenções:
 
 ---
 
+## 2026-11-09 — pacotes da 1.4.8 para a loja (Claude)
+
+- **Pacotes:** `trail-chrome-1.4.8.zip` 293.069 bytes e `trail-extensao-1.4.8.zip` 294.797 bytes, do build normal (`npm run build` + `tools/atualizar-extensao.sh`), com SHA-256 no README dos pacotes. Pacote da loja com `manifest.json` na raiz, sem mapas, sem `build.txt` e sem barra invertida nos caminhos. Manifest igual ao da 1.4.7 fora a versão: a atualização não pede permissão nova. Os zips da 1.4.7 saíram da pasta (ficam no histórico do git).
+- **Ficha:** notas da versão 1.4.8 (PT/EN).
+- **O que a 1.4.8 traz desde a entrada de 31/10** (commits 27eefef a 160a976, testados pelo dono no DEV da empresa e nas capturas do modo demo):
+  - painel mostra as fontes sem leitura; gravação sem auditoria aparece mesmo sem mudança selecionada;
+  - consulta ao log de transações cai para janela de datas quando o filtro pela URL é barrado (no_filter);
+  - mudanças sem formulário (fluxo, regra, script) deduzidas da sequência de valores do log viram mudanças normais (abas, prova, rastro), no máximo "provável", com a lacuna explicada e o horário do único fluxo do intervalo;
+  - envios de formulário e fluxos do registro na lista de mudanças do campo, fluxos com link;
+  - "Registro inteiro" sem auditoria: gravações dos envios de formulário, com o aviso "Auditoria indisponível por falta de acesso";
+  - nome de referência pela coluna de exibição da tabela (dicionário) e pelo texto que o formulário mostrava;
+  - mudança de (vazio) para um valor não aparece mais como "Criado como"; certeza só rebaixa com lacuna real; rastro não chama de Auditoria o que veio do log;
+  - saíram "Para o usuário", "Copiar resumo", as pistas por horário e o bloco de texto corrido; seletor do histórico com reticências;
+  - teste e2e de ícones alinhado ao dot-walking da 1.4.7 (Codex).
+- **Testes:** 1146 passando, typecheck e build OK.
+- **Em aberto:** publicação na loja (só o dono); confirmação do dono, no DEV, do último zip de teste (nomes de referência e "Registro inteiro"); merge da branch `feat/1.4.8-log-transacoes` no master quando o dono aprovar.
+
+---
+
 ## 2026-10-31 — 1.4.8 implementada: mudanças reconstruídas quando a auditoria não é legível (Claude)
 
 - **Código:** `txLog.ts` (lê os envios de formulário guardados pela instância; separa parâmetros pelo `&` seguido de chave; não troca `+` por espaço; marca valor cortado; confere a cadeia com o valor atual do registro). Integrado em `investigate.ts` quando `sys_audit` é negada e o histórico do formulário não traz o campo. Resultado com `transactionChain: true`; aviso no painel neutro, sem citar a origem. Confiança rebaixada para provável.
